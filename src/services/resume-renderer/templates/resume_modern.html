@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: #333;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .sidebar-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 68mm;
+    height: 100%;
+    background: #2c3e50;
+    z-index: 0;
+  }
+  .content {
+    display: flex;
+    min-height: 297mm;
+    position: relative;
+    z-index: 1;
+  }
+
+  .sidebar {
+    width: 68mm;
+    color: #ecf0f1;
+    padding: 20mm 6mm 12mm;
+    flex-shrink: 0;
+
+    h1 { font-size: 18pt; font-weight: 600; margin-bottom: 2px; color: #fff; }
+    h3 {
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #1abc9c;
+      border-bottom: 1px solid #1abc9c;
+      padding-bottom: 3px;
+      margin: 14px 0 8px;
+    }
+    .contact-item { font-size: 8.5pt; margin-bottom: 5px; word-break: break-all; }
+    .skill-items { font-size: 8.5pt; color: #bdc3c7; }
+    .lang { font-size: 9pt; margin-bottom: 3px; }
+    .lang-level { color: #bdc3c7; font-size: 8pt; }
+    .hobbies { font-size: 8.5pt; color: #bdc3c7; }
+  }
+
+  .main {
+    flex: 1;
+    padding: 20mm 14mm 10mm 12mm;
+    box-decoration-break: clone;
+
+    h2 {
+      font-size: 12pt;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #2c3e50;
+      border-bottom: 2px solid #1abc9c;
+      padding-bottom: 3px;
+      margin: 16px 0 10px;
+      break-after: avoid;
+
+      &:first-child { margin-top: 0; }
+    }
+  }
+
+  .job {
+    margin-bottom: 12px;
+    break-inside: avoid;
+  }
+  .job-header { display: flex; justify-content: space-between; align-items: baseline; }
+  .job-role { font-weight: 700; font-size: 10.5pt; color: #2c3e50; }
+  .job-dates { font-size: 8.5pt; color: #888; white-space: nowrap; }
+  .job-company { color: #1abc9c; font-weight: 500; font-size: 9.5pt; }
+  .job-location { font-size: 8.5pt; color: #999; }
+  ul { margin: 4px 0 0 14px; }
+  li { margin-bottom: 2px; font-size: 9.5pt; }
+
+  .edu {
+    margin-bottom: 8px;
+    break-inside: avoid;
+  }
+  .edu-header { display: flex; justify-content: space-between; }
+  .edu-course { font-weight: 600; }
+  .edu-dates { font-size: 8.5pt; color: #888; }
+  .edu-school { font-size: 9pt; color: #666; }
+</style>
+</head>
+<body>
+  <div class="sidebar-bg"></div>
+  <div class="content">
+  <div class="sidebar">
+    <h1>{{personal.name}}</h1>
+
+    <h3>Kontakt</h3>
+    {{#if personal.email}}<div class="contact-item">{{personal.email}}</div>{{/if}}
+    {{#if personal.phone}}<div class="contact-item">{{personal.phone}}</div>{{/if}}
+    {{#if personal.location}}<div class="contact-item">{{personal.location}}</div>{{/if}}
+
+    {{#if skills}}
+    <h3>Kenntnisse</h3>
+    <div class="skill-items">{{join skills ", "}}</div>
+    {{/if}}
+
+    {{#if languages}}
+    <h3>Sprachen</h3>
+    {{#each languages}}
+    <div class="lang">{{this.language}} <span class="lang-level">{{this.level}}</span></div>
+    {{/each}}
+    {{/if}}
+
+    {{#if hobbies}}
+    <h3>Interessen</h3>
+    <div class="hobbies">{{join hobbies ", "}}</div>
+    {{/if}}
+  </div>
+
+  <div class="main">
+    {{#if experience}}
+    <h2>Berufserfahrung</h2>
+    {{#each experience}}
+    <div class="job">
+      <div class="job-header">
+        <span class="job-role">{{this.role}}</span>
+        {{#if this.startDate}}<span class="job-dates">{{this.startDate}} – {{this.endDate}}</span>{{/if}}
+      </div>
+      <div class="job-company">{{this.company}}</div>
+      {{#if this.location}}<div class="job-location">{{this.location}}</div>{{/if}}
+      {{#if this.highlights}}
+      <ul>{{#each this.highlights}}<li>{{this}}</li>{{/each}}</ul>
+      {{/if}}
+    </div>
+    {{/each}}
+    {{/if}}
+
+    {{#if education}}
+    <h2>Ausbildung</h2>
+    {{#each education}}
+    <div class="edu">
+      <div class="edu-header">
+        <span class="edu-course">{{this.course}}</span>
+        {{#if this.startDate}}<span class="edu-dates">{{this.startDate}} – {{this.endDate}}</span>{{/if}}
+      </div>
+      <div class="edu-school">{{this.institution}}{{#if this.location}}, {{this.location}}{{/if}}</div>
+      {{#if this.highlights}}
+      <ul>{{#each this.highlights}}<li>{{this}}</li>{{/each}}</ul>
+      {{/if}}
+    </div>
+    {{/each}}
+    {{/if}}
+
+    {{#if certifications}}
+    <h2>Zertifikate</h2>
+    {{#each certifications}}
+    <div class="edu">
+      <div class="edu-header">
+        <span class="edu-course">{{this.name}}</span>
+        {{#if this.date}}<span class="edu-dates">{{this.date}}</span>{{/if}}
+      </div>
+      {{#if this.issuer}}<div class="edu-school">{{this.issuer}}</div>{{/if}}
+      {{#if this.description}}<div>{{this.description}}</div>{{/if}}
+    </div>
+    {{/each}}
+    {{/if}}
+  </div>
+  </div>
+</body>
+</html>

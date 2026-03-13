@@ -1,0 +1,18 @@
+import { DEFAULT_CONFIG, type AppConfig } from "@/models/config/types.js";
+import type { ConfigRepository } from "./types.js";
+
+export function createStubConfigRepository(
+  initial?: AppConfig,
+): ConfigRepository {
+  let stored: AppConfig = structuredClone(initial ?? DEFAULT_CONFIG);
+
+  return {
+    load(): AppConfig {
+      return structuredClone(stored);
+    },
+
+    async save(data: AppConfig) {
+      stored = structuredClone(data);
+    },
+  };
+}

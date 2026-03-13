@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright and system dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Check formatting
+        run: npx prettier --check "**/*.{ts,tsx}"
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check shared code
+        run: npm run check:shared-code
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Integration tests
+        run: npm run test:integration
+
+      - name: Build
+        run: npm run electron:build
+
+      - name: E2E tests
+        run: xvfb-run --auto-servernum npm run test:e2e

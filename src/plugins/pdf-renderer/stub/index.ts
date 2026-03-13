@@ -1,0 +1,15 @@
+import type { PdfRenderer } from "@/plugins/pdf-renderer/types.js";
+
+class StubPdfRenderer implements PdfRenderer {
+  constructor(private readonly fixedBuffer?: Buffer | Uint8Array) {}
+
+  async htmlToPdf(): Promise<Buffer | Uint8Array> {
+    return this.fixedBuffer ?? Buffer.from("%PDF-1.4 stub");
+  }
+}
+
+export function createStubPdfRenderer(
+  fixedBuffer?: Buffer | Uint8Array,
+): PdfRenderer {
+  return new StubPdfRenderer(fixedBuffer);
+}

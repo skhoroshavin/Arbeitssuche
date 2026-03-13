@@ -1,0 +1,274 @@
+import { ipcMain, type WebContents } from "electron";
+import type { AppServices } from "./index.js";
+import type { Applicant } from "@/models/applicant/types.js";
+import type { JobSearch, SearchMode } from "@/models/job-search/types.js";
+import type { Activity, Vacancy } from "@/models/vacancy/types.js";
+import type { Secrets, SecretKey } from "@/models/secrets/types.js";
+import type { ConfigKey } from "@/models/config/types.js";
+import { resolveConfig } from "@/models/config/resolve.js";
+import {
+  deriveStatus,
+  deriveSources,
+} from "@/services/vacancy-scanner/index.js";
+import { getJobSiteInfos } from "@/plugins/job-site/index.js";
+import { startCrawl, abortCrawl } from "./crawl-manager.js";
+
+function maskToken(token: string | undefined): string {
+  if (!token) return "";
+  if (token.length <= 8)
+    return token.slice(0, 2) + "••••••••" + token.slice(-2);
+  return token.slice(0, 4) + "••••••••" + token.slice(-4);
+}
+
+interface IpcHandlerOptions {
+  services: AppServices;
+  getWebContents: () => WebContents | undefined;
+}
+
+export function registerIpcHandlers(options: IpcHandlerOptions): void {
+  const { services, getWebContents } = options;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function handle<F extends (...args: any[]) => unknown>(
+    channel: string,
+    handler: F,
+  ): void {
+    ipcMain.handle(channel, async (_event, ...args) => {
+      return handler(...args);
+    });
+  }
+
+  // --- Applicants ---
+  handle("applicants:list", () => ({
+    applicants: services.applicantRepo.list(),
+  }));
+  handle("applicants:create", (name: string) => {
+    const id = services.applicantRepo.create(name);
+    return { id };
+  });
+  handle("applicants:load", (id: string) => services.applicantRepo.load(id));
+  handle("applicants:save", async (id: string, data: Applicant) => {
+    await services.applicantRepo.save(id, data);
+    return { ok: true };
+  });
+  handle("applicants:delete", (id: string) => {
+    services.applicantRepo.delete(id);
+    return { deleted: id };
+  });
+  handle("applicants:resume", (id: string, template: string) =>
+    services.resumeRenderer.generate(id, template),
+  );
+  handle("applicants:consult-searches", (id: string) =>
+    services.jobConsultant.consult(id),
+  );
+
+  // --- Job Searches ---
+  handle("job-searches:list", (applicantId: string | undefined) => {
+    const list = applicantId
+      ? services.jobSearchRepo.listByApplicant(applicantId)
+      : services.jobSearchRepo.list();
+    return { jobSearches: list };
+  });
+  handle(
+    "job-searches:create",
+    (
+      searchTerm: string,
+      applicantId: string,
+      searchMode: SearchMode | undefined,
+    ) => {
+      const id = services.jobSearchRepo.create(
+        searchTerm,
+        applicantId,
+        searchMode,
+      );
+      return { id, applicantId };
+    },
+  );
+  handle("job-searches:load", (id: string) => services.jobSearchRepo.load(id));
+  handle("job-searches:save", async (id: string, data: JobSearch) => {
+    await services.jobSearchRepo.save(id, data);
+    return { ok: true };
+  });
+  handle("job-searches:delete", (id: string) => {
+    services.jobSearchRepo.delete(id);
+    return { deleted: id };
+  });
+
+  // --- Cover letter ---
+  handle("job-searches:cover-letter:load", (id: string) => {
+    const content = services.jobSearchRepo.loadCoverLetter(id);
+    return { content: content ?? "" };
+  });
+  handle(
+    "job-searches:cover-letter:save",
+    async (id: string, content: string) => {
+      await services.jobSearchRepo.saveCoverLetter(id, content);
+      return { ok: true };
+    },
+  );
+  handle("job-searches:cover-letter:generate", (id: string) =>
+    services.coverLetterWriter.generate(id),
+  );
+
+  // --- Vacancies ---
+  handle("job-searches:vacancies:list", (id: string) => {
+    const output = services.vacancyRepo.loadAll(id);
+    if (!output) {
+      return { vacancies: [], totalCount: 0 };
+    }
+    const vacancies = output.vacancies.map((v) => ({
+      ...v,
+      status: deriveStatus(v),
+      sources: deriveSources(v),
+    }));
+    return {
+      vacancies,
+      totalCount: vacancies.length,
+      generatedAt: output.generatedAt,
+      latestCrawl: output.latestCrawl,
+    };
+  });
+  handle(
+    "job-searches:vacancies:seed",
+    (id: string, vacancies: Vacancy[], latestCrawl: string) => {
+      services.vacancyRepo.save(
+        id,
+        vacancies,
+        latestCrawl ?? new Date().toISOString().slice(0, 10),
+      );
+      return { ok: true as const, count: vacancies.length };
+    },
+  );
+  handle("job-searches:vacancies:load", (id: string, hash: string) => {
+    const vacancy = services.vacancyRepo.findByHash(id, hash);
+    if (!vacancy) {
+      throw new Error(`Vacancy "${hash}" not found`);
+    }
+    return {
+      ...vacancy,
+      status: deriveStatus(vacancy),
+      sources: deriveSources(vacancy),
+    };
+  });
+  handle(
+    "job-searches:vacancies:add-activity",
+    async (id: string, hash: string, activity: Activity) => {
+      await services.vacancyRepo.addActivity(id, hash, activity);
+      return { ok: true };
+    },
+  );
+
+  // --- Vacancy cover letter ---
+  handle(
+    "job-searches:vacancies:cover-letter:load",
+    (id: string, hash: string) => {
+      const content = services.jobSearchRepo.loadApplicationCoverLetter(
+        id,
+        hash,
+      );
+      return { content: content ?? "" };
+    },
+  );
+  handle(
+    "job-searches:vacancies:cover-letter:save",
+    async (id: string, hash: string, content: string) => {
+      await services.jobSearchRepo.saveApplicationCoverLetter(
+        id,
+        hash,
+        content,
+      );
+      return { ok: true };
+    },
+  );
+  handle(
+    "job-searches:vacancies:cover-letter:generate",
+    (id: string, hash: string) =>
+      services.coverLetterWriter.generateForVacancy(id, hash),
+  );
+
+  // --- Crawl ---
+  handle("job-searches:crawl:start", (id: string) => {
+    const webContents = getWebContents();
+
+    startCrawl({
+      jobSearchId: id,
+      vacancyScanner: services.vacancyScanner,
+      onProgress: (event) => {
+        webContents?.send("job:progress", { jobSearchId: id, ...event });
+      },
+      onComplete: () => {
+        webContents?.send("job:progress", {
+          jobSearchId: id,
+          message: "Crawl finished",
+          phase: "done",
+        });
+      },
+      onError: (err) => {
+        webContents?.send("job:progress", {
+          jobSearchId: id,
+          message: `Crawl error: ${err.message}`,
+          phase: "done",
+        });
+      },
+    });
+  });
+
+  handle("job-searches:crawl:abort", (id: string) => {
+    abortCrawl(id);
+    return { aborted: true };
+  });
+
+  // --- Sites ---
+  handle("sites:list", () => ({ sites: getJobSiteInfos() }));
+
+  // --- Settings ---
+  handle("settings:secrets:load", () => {
+    const secrets = services.secretsRepo.load();
+    const keys: SecretKey[] = ["openrouterApiKey", "googleMapsApiKey"];
+    const result: Record<string, { masked: string; isSet: boolean }> = {};
+    for (const key of keys) {
+      const value = secrets[key];
+      result[key] = { masked: maskToken(value), isSet: !!value };
+    }
+    return result;
+  });
+  if (process.env.ELECTRON_TEST === "1") {
+    handle("settings:secrets:load-raw", () => services.secretsRepo.load());
+  }
+  handle("settings:secrets:save", async (data: Secrets) => {
+    await services.secretsRepo.save(data);
+    services.rebuild();
+    return { ok: true };
+  });
+  handle("settings:secrets:save-one", async (key: SecretKey, value: string) => {
+    const secrets = services.secretsRepo.load();
+    secrets[key] = value;
+    await services.secretsRepo.save(secrets);
+    services.rebuild();
+    return { ok: true };
+  });
+  handle("settings:secrets:clear", async (key: SecretKey) => {
+    const secrets = services.secretsRepo.load();
+    delete secrets[key];
+    await services.secretsRepo.save(secrets);
+    services.rebuild();
+    return { ok: true };
+  });
+
+  // --- OpenRouter models ---
+  handle("settings:openrouter-models", () =>
+    services.modelRegistry.fetchModels(),
+  );
+
+  // --- Config (non-secret settings) ---
+  handle("settings:config:load", () =>
+    resolveConfig(services.configRepo.load()),
+  );
+  handle("settings:config:save", async (key: ConfigKey, value: string) => {
+    const config = services.configRepo.load();
+    config[key] = value;
+    await services.configRepo.save(config);
+    services.rebuild();
+    return { ok: true };
+  });
+}

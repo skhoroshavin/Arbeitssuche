@@ -1,0 +1,54 @@
+import { Routes, Route } from "react-router";
+import { AppLayout } from "./layout";
+import {
+  ApplicantList,
+  ApplicantLayout,
+  ApplicantOverview,
+  ApplicantEditPersonal,
+  ApplicantEditExperience,
+  ApplicantEditEducation,
+  ApplicantEditCertifications,
+  ApplicantEditOther,
+} from "./pages/applicant";
+import {
+  JobSearchLayout,
+  JobSearchConfig,
+  JobSearchCoverLetter,
+  JobSearchVacancyList,
+  JobSearchVacancyDetail,
+} from "./pages/job-search";
+import { SettingsLayout, SettingsAI, SettingsMaps } from "./pages/settings";
+
+export default function App() {
+  return (
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<ApplicantList />} />
+        <Route path="/settings" element={<SettingsLayout />}>
+          <Route index element={<SettingsAI />} />
+          <Route path="maps" element={<SettingsMaps />} />
+        </Route>
+        <Route path="/applicants/:id" element={<ApplicantLayout />}>
+          <Route index element={<ApplicantOverview />} />
+          <Route path="personal" element={<ApplicantEditPersonal />} />
+          <Route path="experience" element={<ApplicantEditExperience />} />
+          <Route path="education" element={<ApplicantEditEducation />} />
+          <Route
+            path="certifications"
+            element={<ApplicantEditCertifications />}
+          />
+          <Route path="other" element={<ApplicantEditOther />} />
+        </Route>
+        <Route path="/job-searches/:id" element={<JobSearchLayout />}>
+          <Route index element={<JobSearchConfig />} />
+          <Route path="cover-letter" element={<JobSearchCoverLetter />} />
+          <Route path="vacancies" element={<JobSearchVacancyList />} />
+        </Route>
+        <Route
+          path="/job-searches/:id/vacancies/:hash"
+          element={<JobSearchVacancyDetail />}
+        />
+      </Route>
+    </Routes>
+  );
+}

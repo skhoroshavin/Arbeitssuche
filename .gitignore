@@ -1,0 +1,30 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# Node
+node_modules/
+
+# Build output
+dist/
+out/
+test-results/
+
+# Environment
+.env
+data/secrets.yaml
+data/*.db
+
+# Root output (legacy, resumake fallback)
+/output/
+
+!misc/images/*.jpg
+!misc/images/*.pdf

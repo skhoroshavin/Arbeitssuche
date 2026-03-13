@@ -1,0 +1,6 @@
+output/
+node_modules/
+html_samples/
+input/vacancies/
+scratchpad/
+scratchpad_dev/
