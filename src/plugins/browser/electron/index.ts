@@ -20,6 +20,7 @@ function createElectronPage(partition: string): {
       partition,
       offscreen: true,
       contextIsolation: true,
+      nodeIntegration: false,
       sandbox: true,
     },
   });
