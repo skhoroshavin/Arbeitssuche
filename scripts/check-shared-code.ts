@@ -99,6 +99,10 @@ function isImportedBySibling(
   return false;
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
+}
+
 function findImporters(
   files: FileInfo[],
   sharedExport: SharedExport,
@@ -113,7 +117,7 @@ function findImporters(
     // Check direct file import (e.g. @/ui/components/AutoSaveStatus)
     const directImportPath = `${importPath}/${sharedExport.sourceModule}`;
     const directImportRe = new RegExp(
-      `from\\s+["']${directImportPath.replace(/\//g, "\\/")}["']`,
+      `from\\s+["']${escapeRegExp(directImportPath)}["']`,
     );
     if (directImportRe.test(file.content)) {
       results.push({
@@ -125,7 +129,7 @@ function findImporters(
 
     // Check barrel import (e.g. @/ui/components)
     const importLineRe = new RegExp(
-      `import\\s+(?:type\\s+)?\\{([^}]+)\\}\\s+from\\s+["']${importPath.replace(/\//g, "\\/")}["']`,
+      `import\\s+(?:type\\s+)?\\{([^}]+)\\}\\s+from\\s+["']${escapeRegExp(importPath)}["']`,
     );
     const importMatch = importLineRe.exec(file.content);
     if (!importMatch) continue;
