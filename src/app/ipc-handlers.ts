@@ -224,7 +224,11 @@ export function registerIpcHandlers(options: IpcHandlerOptions): void {
   // --- Settings ---
   handle("settings:secrets:load", () => {
     const secrets = services.secretsRepo.load();
-    const keys: SecretKey[] = ["openrouterApiKey", "googleMapsApiKey"];
+    const keys: SecretKey[] = [
+      "openrouterApiKey",
+      "requestyApiKey",
+      "googleMapsApiKey",
+    ];
     const result: Record<string, { masked: string; isSet: boolean }> = {};
     for (const key of keys) {
       const value = secrets[key];
@@ -255,10 +259,8 @@ export function registerIpcHandlers(options: IpcHandlerOptions): void {
     return { ok: true };
   });
 
-  // --- OpenRouter models ---
-  handle("settings:openrouter-models", () =>
-    services.modelRegistry.fetchModels(),
-  );
+  // --- LLM models ---
+  handle("settings:llm-models", () => services.modelRegistry.fetchModels());
 
   // --- Config (non-secret settings) ---
   handle("settings:config:load", () =>
@@ -266,7 +268,11 @@ export function registerIpcHandlers(options: IpcHandlerOptions): void {
   );
   handle("settings:config:save", async (key: ConfigKey, value: string) => {
     const config = services.configRepo.load();
-    config[key] = value;
+    if (key === "provider") {
+      config.provider = value === "requesty" ? "requesty" : "openrouter";
+    } else {
+      config[key] = value;
+    }
     await services.configRepo.save(config);
     services.rebuild();
     return { ok: true };

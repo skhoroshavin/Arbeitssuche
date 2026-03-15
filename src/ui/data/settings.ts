@@ -5,7 +5,8 @@ import {
   ipcFetch,
 } from "@/ui/hooks";
 import type { MaskedSecrets, SecretKey } from "@/models/secrets/types";
-import type { ConfigKey, OpenRouterModel } from "@/models/config/types";
+import type { ConfigKey, LlmModel } from "@/models/config/types";
+import type { ResolvedConfig } from "@/models/config/resolve";
 
 export function useSecrets() {
   return useIpcQuery({
@@ -38,19 +39,19 @@ export function useClearSecret() {
 export function useConfig() {
   return useIpcQuery({
     queryKey: ["config"],
-    queryFn: () =>
-      ipcFetch<{ assessmentModel: string; coverLetterModel: string }>(
-        "/settings/config",
-      ),
+    queryFn: () => ipcFetch<ResolvedConfig>("/settings/config"),
   });
 }
 
-export function useOpenRouterModels() {
+export function useLlmModels() {
   return useIpcQuery({
-    queryKey: ["openrouter-models"],
-    queryFn: () => ipcFetch<OpenRouterModel[]>("/settings/openrouter-models"),
+    queryKey: ["llm-models"],
+    queryFn: () => ipcFetch<LlmModel[]>("/settings/llm-models"),
   });
 }
+
+/** @deprecated Use useLlmModels instead */
+export const useOpenRouterModels = useLlmModels;
 
 export function useSaveConfig() {
   const invalidate = useInvalidate();
@@ -60,6 +61,9 @@ export function useSaveConfig() {
         method: "PUT",
         body: JSON.stringify({ value }),
       }),
-    onSuccess: () => invalidate(["config"]),
+    onSuccess: () => {
+      invalidate(["config"]);
+      invalidate(["llm-models"]);
+    },
   });
 }

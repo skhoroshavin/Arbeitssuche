@@ -34,6 +34,7 @@ export {
   useSaveSecret,
   useClearSecret,
   useConfig,
+  useLlmModels,
   useOpenRouterModels,
   useSaveConfig,
 } from "./settings";

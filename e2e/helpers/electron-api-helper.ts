@@ -106,6 +106,25 @@ export class ElectronApiHelper {
     );
   }
 
+  async getConfig(): Promise<Record<string, string>> {
+    return this.page.evaluate(async () => {
+      return (window as any).electronAPI.invoke("settings:config:load");
+    }) as Promise<Record<string, string>>;
+  }
+
+  async saveConfig(key: string, value: string) {
+    await this.page.evaluate(
+      async ({ key, value }) => {
+        await (window as any).electronAPI.invoke(
+          "settings:config:save",
+          key,
+          value,
+        );
+      },
+      { key, value },
+    );
+  }
+
   async getSecrets(): Promise<Record<string, string>> {
     return this.page.evaluate(async () => {
       return (window as any).electronAPI.invoke("settings:secrets:load-raw");

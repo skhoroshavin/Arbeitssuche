@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import type { OpenRouterModel } from "@/models/config/types";
+import type { LlmModel } from "@/models/config/types";
 
 function formatPrice(price: string): string {
   const n = parseFloat(price);
@@ -7,10 +7,8 @@ function formatPrice(price: string): string {
   return `$${(n * 1_000_000).toFixed(2)}`;
 }
 
-function groupByProvider(
-  models: OpenRouterModel[],
-): Map<string, OpenRouterModel[]> {
-  const groups = new Map<string, OpenRouterModel[]>();
+function groupByProvider(models: LlmModel[]): Map<string, LlmModel[]> {
+  const groups = new Map<string, LlmModel[]>();
   for (const m of models) {
     const slash = m.id.indexOf("/");
     const provider = slash > 0 ? m.id.slice(0, slash) : "other";
@@ -33,7 +31,7 @@ export function ModelCombobox({
   label,
   isLoading,
 }: {
-  models: OpenRouterModel[];
+  models: LlmModel[];
   value: string;
   onChange: (id: string) => void;
   label: string;

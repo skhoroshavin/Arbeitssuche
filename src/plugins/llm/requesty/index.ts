@@ -1,14 +1,11 @@
 import { createOpenAICompatibleClient } from "@/plugins/llm/openai-compatible/client.js";
 import type { LlmClient } from "@/plugins/llm/types.js";
 
-export function createOpenRouterClient(
-  apiKey: string,
-  model: string,
-): LlmClient {
+export function createRequestyClient(apiKey: string, model: string): LlmClient {
   return createOpenAICompatibleClient(
-    "https://openrouter.ai/api/v1",
+    "https://router.eu.requesty.ai/v1",
     apiKey,
     model,
-    "OpenRouter",
+    "Requesty",
   );
 }

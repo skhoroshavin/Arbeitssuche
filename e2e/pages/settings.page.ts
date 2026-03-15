@@ -49,12 +49,22 @@ export class SettingsPage {
     return this.page.getByRole("button", { name: `${label} abbrechen` });
   }
 
+  providerButton(name: string): Locator {
+    return this.page.getByRole("button", { name, exact: false }).filter({
+      has: this.page.locator("div.font-medium"),
+    });
+  }
+
   modelSelect(label: string): Locator {
     return this.page.getByRole("combobox").filter({
       has: this.page.locator("..").filter({
         has: this.page.getByText(label, { exact: true }),
       }),
     });
+  }
+
+  async selectProvider(name: string) {
+    await this.providerButton(name).click();
   }
 
   async replaceAndSave(label: string, value: string) {
