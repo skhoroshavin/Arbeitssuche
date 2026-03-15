@@ -1,5 +1,6 @@
 appId: com.arbeitssuche.app
 productName: Arbeitssuche
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 directories:
   buildResources: build
   output: dist
