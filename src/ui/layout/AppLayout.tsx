@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Link, NavLink, Outlet } from "react-router";
+import { useRef, useState } from "react";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
+import { useScrollRestoration } from "@/ui/hooks/use-scroll-restoration";
 import {
   LayoutContext,
   useLayout,
@@ -57,6 +58,9 @@ function Sidebar() {
 
 function MainArea() {
   const { headerTitle, headerBackLink, headerExtra } = useLayout();
+  const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
+  useScrollRestoration(mainRef, location.pathname + location.search);
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
@@ -74,7 +78,7 @@ function MainArea() {
         {headerExtra}
       </header>
 
-      <main className="flex-1 overflow-y-auto p-6">
+      <main ref={mainRef} className="flex-1 overflow-y-auto p-6">
         <div className="max-w-3xl mx-auto">
           <Outlet />
         </div>

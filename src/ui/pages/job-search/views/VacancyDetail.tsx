@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useLocation } from "react-router";
 import {
   useJobSearchVacancy,
   useAddActivity,
@@ -147,6 +147,8 @@ function VacancyCoverLetterSection({
 
 export default function JobSearchVacancyDetail() {
   const { id, hash } = useParams<{ id: string; hash: string }>();
+  const location = useLocation();
+  const backSearch: string = location.state?.vacancyListSearch ?? "";
   const { data, isLoading, refetch } = useJobSearchVacancy(id!, hash!);
   const addActivity = useAddActivity(id!);
   const coverLetterQuery = useVacancyCoverLetter(id!, hash!);
@@ -166,14 +168,14 @@ export default function JobSearchVacancyDetail() {
       headerTitle: title,
       headerBackLink: (
         <Link
-          to={`/job-searches/${id}/vacancies`}
+          to={`/job-searches/${id}/vacancies${backSearch}`}
           aria-label="Zurück zu Stellen"
         >
           <ArrowLeftIcon />
         </Link>
       ),
     }),
-    [title, id],
+    [title, id, backSearch],
   );
 
   if (isLoading) return <Loading />;
