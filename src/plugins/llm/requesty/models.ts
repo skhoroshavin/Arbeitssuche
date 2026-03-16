@@ -1,11 +1,17 @@
-import type { LlmModelRegistry } from "@/plugins/llm/types.js";
+import type { LlmModelInfo, LlmModelRegistry } from "@/plugins/llm/types.js";
 import { createModelRegistry } from "@/plugins/llm/openai-compatible/models.js";
+
+function splitRegion(id: string): { baseId: string; region: string | null } {
+  const at = id.lastIndexOf("@");
+  return at >= 0
+    ? { baseId: id.slice(0, at), region: id.slice(at + 1) }
+    : { baseId: id, region: null };
+}
 
 function deriveModelName(id: string): string {
   const slash = id.indexOf("/");
   const base = slash >= 0 ? id.slice(slash + 1) : id;
-  const atSign = base.indexOf("@");
-  const withoutRegion = atSign >= 0 ? base.slice(0, atSign) : base;
+  const { baseId: withoutRegion } = splitRegion(base);
   const parts = withoutRegion.split("-");
   const result: string[] = [];
   for (const part of parts) {
@@ -21,8 +27,46 @@ function deriveModelName(id: string): string {
   return result.join(" ");
 }
 
+const EU_REGIONS = new Set([
+  "francecentral",
+  "swedencentral",
+  "germanywestcentral",
+  "westeurope",
+  "northeurope",
+  "uksouth",
+  "ukwest",
+  "italynorth",
+  "polandcentral",
+  "spaincentral",
+]);
+
+function isEuRegion(region: string): boolean {
+  return EU_REGIONS.has(region) || region.startsWith("eu-");
+}
+
+function filterEuAndDeduplicate(models: LlmModelInfo[]): LlmModelInfo[] {
+  const seen = new Map<string, LlmModelInfo>();
+  for (const model of models) {
+    const { baseId, region } = splitRegion(model.id);
+    if (region !== null && !isEuRegion(region)) continue;
+    if (!seen.has(baseId)) {
+      seen.set(baseId, { ...model, id: baseId });
+    }
+  }
+  return [...seen.values()];
+}
+
+class EuFilteredModelRegistry implements LlmModelRegistry {
+  constructor(private readonly inner: LlmModelRegistry) {}
+
+  async fetchModels(): Promise<LlmModelInfo[]> {
+    const all = await this.inner.fetchModels();
+    return filterEuAndDeduplicate(all);
+  }
+}
+
 export function createRequestyModelRegistry(): LlmModelRegistry {
-  return createModelRegistry(
+  const inner = createModelRegistry(
     "https://router.eu.requesty.ai/v1/models",
     (m) => ({
       id: String(m.id),
@@ -33,4 +77,6 @@ export function createRequestyModelRegistry(): LlmModelRegistry {
       },
     }),
   );
+
+  return new EuFilteredModelRegistry(inner);
 }
