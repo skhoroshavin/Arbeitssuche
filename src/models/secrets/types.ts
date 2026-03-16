@@ -1,5 +1,6 @@
 export interface Secrets {
   openrouterApiKey?: string;
+  requestyApiKey?: string;
   googleMapsApiKey?: string;
 }
 
@@ -8,7 +9,10 @@ export interface MaskedSecret {
   isSet: boolean;
 }
 
-export type SecretKey = "openrouterApiKey" | "googleMapsApiKey";
+export type SecretKey =
+  | "openrouterApiKey"
+  | "requestyApiKey"
+  | "googleMapsApiKey";
 
 export type MaskedSecrets = Record<SecretKey, MaskedSecret>;
 

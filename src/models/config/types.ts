@@ -1,21 +1,30 @@
+export type LlmProvider = "openrouter" | "requesty";
+
+export const DEFAULT_PROVIDER: LlmProvider = "openrouter";
+
 export interface AppConfig {
+  provider?: LlmProvider;
   assessmentModel?: string;
   coverLetterModel?: string;
   consultationModel?: string;
 }
 
 export type ConfigKey =
+  | "provider"
   | "assessmentModel"
   | "coverLetterModel"
   | "consultationModel";
 
 export const DEFAULT_CONFIG: AppConfig = {};
 
-export interface OpenRouterModel {
+export interface LlmModel {
   id: string;
   name: string;
   pricing: { prompt: string; completion: string };
 }
+
+/** @deprecated Use LlmModel instead */
+export type OpenRouterModel = LlmModel;
 
 export const DEFAULT_ASSESSMENT_MODEL = "google/gemini-2.5-flash";
 export const DEFAULT_COVER_LETTER_MODEL = "anthropic/claude-opus-4";

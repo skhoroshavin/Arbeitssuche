@@ -1,5 +1,12 @@
-export type { AppConfig, ConfigKey, OpenRouterModel } from "./types.js";
+export type {
+  AppConfig,
+  ConfigKey,
+  LlmProvider,
+  LlmModel,
+  OpenRouterModel,
+} from "./types.js";
 export {
+  DEFAULT_PROVIDER,
   DEFAULT_ASSESSMENT_MODEL,
   DEFAULT_COVER_LETTER_MODEL,
 } from "./types.js";

@@ -11,8 +11,7 @@ import type { CommuteClient } from "@/plugins/commute/types.js";
 import type { PdfRenderer } from "@/plugins/pdf-renderer/types.js";
 import { createElectronPdfRenderer } from "@/plugins/pdf-renderer/index.js";
 import type { LlmClient, LlmModelRegistry } from "@/plugins/llm/types.js";
-import { createLlmClient } from "@/plugins/llm/index.js";
-import { createOpenRouterModelRegistry } from "@/plugins/llm/openrouter/models.js";
+import { createLlmClient, createModelRegistry } from "@/plugins/llm/index.js";
 import { resolveConfig } from "@/models/config/resolve.js";
 import { ResumeRenderer } from "@/services/resume-renderer/index.js";
 import { JobConsultant } from "@/services/job-consultant/index.js";
@@ -34,6 +33,7 @@ export interface ServiceContext {
 
 function buildLlmClient(
   factory: LlmClientFactory | undefined,
+  provider: string,
   apiKey: string | undefined,
   model: string,
 ): LlmClient | null {
@@ -45,7 +45,7 @@ function buildLlmClient(
     }
   }
   if (!apiKey) return null;
-  return createLlmClient(apiKey, model);
+  return createLlmClient(provider, apiKey, model);
 }
 
 export interface AppServices {
@@ -64,32 +64,43 @@ export interface AppServices {
 
 export function createAppServices(ctx: ServiceContext): AppServices {
   const pdfRenderer = ctx.pdfRenderer ?? createElectronPdfRenderer();
-  const modelRegistry = ctx.modelRegistry ?? createOpenRouterModelRegistry();
 
   function buildServices() {
-    const { assessmentModel, coverLetterModel, consultationModel } =
+    const { provider, assessmentModel, coverLetterModel, consultationModel } =
       resolveConfig(ctx.configRepo.load());
-    const apiKey = ctx.secretsRepo.load().openrouterApiKey;
+    const secrets = ctx.secretsRepo.load();
+
+    const apiKeyMap: Record<string, string | undefined> = {
+      openrouter: secrets.openrouterApiKey,
+      requesty: secrets.requestyApiKey,
+    };
+    const apiKey = apiKeyMap[provider];
 
     const assessmentLlm = buildLlmClient(
       ctx.llmClientFactory,
+      provider,
       apiKey,
       assessmentModel,
     );
     const coverLetterLlm = buildLlmClient(
       ctx.llmClientFactory,
+      provider,
       apiKey,
       coverLetterModel,
     );
     const consultationLlm = buildLlmClient(
       ctx.llmClientFactory,
+      provider,
       apiKey,
       consultationModel,
     );
 
     const commuteClient = ctx.commuteClient ?? null;
 
+    const modelRegistry = ctx.modelRegistry ?? createModelRegistry(provider);
+
     return {
+      modelRegistry,
       resumeRenderer: new ResumeRenderer(ctx.applicantRepo, pdfRenderer),
       jobConsultant: new JobConsultant(ctx.applicantRepo, consultationLlm),
       vacancyScanner: new VacancyScanner(
@@ -116,7 +127,9 @@ export function createAppServices(ctx: ServiceContext): AppServices {
     vacancyRepo: ctx.vacancyRepo,
     secretsRepo: ctx.secretsRepo,
     configRepo: ctx.configRepo,
-    modelRegistry,
+    get modelRegistry() {
+      return services.modelRegistry;
+    },
     get resumeRenderer() {
       return services.resumeRenderer;
     },

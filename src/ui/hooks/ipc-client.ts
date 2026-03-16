@@ -260,12 +260,12 @@ const ROUTE_MAP: Array<{
       extractArgs: (p) => [p[1]],
     },
   },
-  // OpenRouter models
+  // LLM models
   {
     method: "GET",
-    pattern: /^\/settings\/openrouter-models$/,
+    pattern: /^\/settings\/llm-models$/,
     mapping: {
-      channel: "settings:openrouter-models",
+      channel: "settings:llm-models",
       extractArgs: () => [],
     },
   },
