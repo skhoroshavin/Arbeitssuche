@@ -12,17 +12,9 @@ export interface StubBrowser extends Browser {
 }
 
 function loadData(dir: string): Record<string, string> {
-  const index: Record<string, string> = JSON.parse(
-    readFileSync(join(dir, "index.json"), "utf-8"),
-  );
-  const data: Record<string, string> = JSON.parse(
+  return JSON.parse(
     gunzipSync(readFileSync(join(dir, "data.json.gz"))).toString("utf-8"),
   );
-  const pages: Record<string, string> = {};
-  for (const [url, file] of Object.entries(index)) {
-    pages[url] = data[file];
-  }
-  return pages;
 }
 
 class StubBrowserImpl implements StubBrowser {

@@ -70,18 +70,10 @@ class PlaywrightBrowser implements Browser {
 
     if (this.recordDir && this.recorded.length > 0) {
       mkdirSync(this.recordDir, { recursive: true });
-      const index: Record<string, string> = {};
       const data: Record<string, string> = {};
-      for (let i = 0; i < this.recorded.length; i++) {
-        const file = `${i}.html`;
-        index[this.recorded[i].url] = file;
-        data[file] = this.recorded[i].html;
+      for (const { url, html } of this.recorded) {
+        data[url] = html;
       }
-      writeFileSync(
-        join(this.recordDir, "index.json"),
-        JSON.stringify(index, null, 2),
-        "utf-8",
-      );
       writeFileSync(
         join(this.recordDir, "data.json.gz"),
         gzipSync(Buffer.from(JSON.stringify(data), "utf-8")),

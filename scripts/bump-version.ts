@@ -41,7 +41,8 @@ export function formatVersion(v: ParsedVersion): string {
   return `${base}-rc.${v.prerelease.rc}`;
 }
 
-type BumpArg = "dev" | "major" | "minor" | "patch" | "release";
+const BUMP_ARGS = ["dev", "major", "minor", "patch", "release"] as const;
+type BumpArg = (typeof BUMP_ARGS)[number];
 
 export function computeNextVersion(
   current: ParsedVersion,
@@ -54,7 +55,7 @@ export function computeNextVersion(
       // dev → strip dev, bump patch → release
       return { ...current, patch: current.patch + 1, prerelease: null };
     }
-    if (current.prerelease !== null && current.prerelease !== "dev") {
+    if (current.prerelease !== null && typeof current.prerelease === "object") {
       // rc → increment N
       return {
         ...current,
@@ -111,19 +112,27 @@ export function computeNextVersion(
 
 // --- CLI ---
 
+function bumpFiles(nextVersion: string): void {
+  const pkg: { version: string } = JSON.parse(readFileSync(PKG_PATH, "utf-8"));
+  pkg.version = nextVersion;
+  writeFileSync(PKG_PATH, JSON.stringify(pkg, null, 2) + "\n");
+
+  const lock = JSON.parse(readFileSync(LOCK_PATH, "utf-8"));
+  lock.version = nextVersion;
+  if (lock.packages?.[""]?.version) {
+    lock.packages[""].version = nextVersion;
+  }
+  writeFileSync(LOCK_PATH, JSON.stringify(lock, null, 2) + "\n");
+}
+
 function main() {
   const args = process.argv.slice(2);
-  const validCommands: Set<string> = new Set([
-    "dev",
-    "major",
-    "minor",
-    "patch",
-    "release",
-  ]);
+  const validCommands: Set<string> = new Set(BUMP_ARGS);
   const isBumpArg = (s: string): s is BumpArg => validCommands.has(s);
   const command: BumpArg | null =
     args[0] && isBumpArg(args[0]) ? args[0] : null;
   const rc = args.includes("rc");
+  const noGit = args.includes("--no-git");
 
   if (rc && (!command || !["major", "minor", "patch"].includes(command))) {
     console.error(
@@ -132,23 +141,25 @@ function main() {
     process.exit(1);
   }
 
-  if (args.length > 0 && !command && !rc) {
+  if (args.length > 0 && !command && !rc && !noGit) {
     console.error(
       `Error: Unknown command "${args[0]}". Valid: dev, major, minor, patch, release`,
     );
     process.exit(1);
   }
 
-  // Check clean working tree
-  const status = execSync("git status --porcelain", {
-    cwd: ROOT,
-    encoding: "utf-8",
-  }).trim();
-  if (status) {
-    console.error(
-      "Error: Working tree is not clean. Commit or stash changes first.",
-    );
-    process.exit(1);
+  if (!noGit) {
+    // Check clean working tree
+    const status = execSync("git status --porcelain", {
+      cwd: ROOT,
+      encoding: "utf-8",
+    }).trim();
+    if (status) {
+      console.error(
+        "Error: Working tree is not clean. Commit or stash changes first.",
+      );
+      process.exit(1);
+    }
   }
 
   // Read current version
@@ -160,17 +171,14 @@ function main() {
   const next = computeNextVersion(parsed, command, rc);
   const nextStr = formatVersion(next);
 
-  // Update package.json
-  pkg.version = nextStr;
-  writeFileSync(PKG_PATH, JSON.stringify(pkg, null, 2) + "\n");
+  // Update files
+  bumpFiles(nextStr);
 
-  // Update package-lock.json
-  const lock = JSON.parse(readFileSync(LOCK_PATH, "utf-8"));
-  lock.version = nextStr;
-  if (lock.packages?.[""]?.version) {
-    lock.packages[""].version = nextStr;
+  if (noGit) {
+    // Output version for CI consumption
+    process.stdout.write(nextStr);
+    return;
   }
-  writeFileSync(LOCK_PATH, JSON.stringify(lock, null, 2) + "\n");
 
   // Git commit
   execSync(`git add package.json package-lock.json`, {
@@ -195,5 +203,4 @@ function main() {
 }
 
 // Only run when executed directly, not when imported for testing
-const isDirectRun = !process.argv[1]?.includes(".test.");
-if (isDirectRun) main();
+if (import.meta.url === `file://${process.argv[1]}`) main();
