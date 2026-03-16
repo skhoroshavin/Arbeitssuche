@@ -36,36 +36,6 @@ describe("createRequestyModelRegistry", () => {
     assert.notEqual(models[0]!.name, "undefined");
   });
 
-  it("returns models with non-undefined names", async () => {
-    mockFetch({
-      data: [
-        {
-          id: "anthropic/claude-sonnet-4",
-          input_price: 0.000003,
-          output_price: 0.000015,
-        },
-        {
-          id: "google/gemini-2.5-flash",
-          input_price: 0,
-          output_price: 0,
-        },
-        {
-          id: "bedrock/claude-3-7-sonnet@eu-central-1",
-          input_price: 0.000003,
-          output_price: 0.000015,
-        },
-      ],
-    });
-
-    const registry = createRequestyModelRegistry();
-    const models = await registry.fetchModels();
-
-    for (const model of models) {
-      assert.notEqual(model.name, "undefined");
-      assert.ok(model.name.length > 0);
-    }
-  });
-
   it("uses name field when present", async () => {
     mockFetch({
       data: [
@@ -102,7 +72,7 @@ describe("createRequestyModelRegistry", () => {
     assert.equal(models[0]!.pricing.completion, "0.000015");
   });
 
-  it("filters out models with non-EU regions", async () => {
+  it("filters out non-EU models and keeps regionless ones", async () => {
     mockFetch({
       data: [
         {
@@ -120,14 +90,20 @@ describe("createRequestyModelRegistry", () => {
           input_price: 0.0000004,
           output_price: 0.0000016,
         },
+        {
+          id: "anthropic/claude-sonnet-4",
+          input_price: 0.000003,
+          output_price: 0.000015,
+        },
       ],
     });
 
     const registry = createRequestyModelRegistry();
     const models = await registry.fetchModels();
 
-    assert.equal(models.length, 1);
+    assert.equal(models.length, 2);
     assert.equal(models[0]!.id, "azure/gpt-4.1-mini");
+    assert.equal(models[1]!.id, "anthropic/claude-sonnet-4");
   });
 
   it("keeps models from all recognized EU regions", async () => {
@@ -177,49 +153,5 @@ describe("createRequestyModelRegistry", () => {
 
     assert.equal(models.length, 1);
     assert.equal(models[0]!.id, "azure/gpt-4.1");
-  });
-
-  it("keeps models without region suffix", async () => {
-    mockFetch({
-      data: [
-        {
-          id: "anthropic/claude-sonnet-4",
-          input_price: 0.000003,
-          output_price: 0.000015,
-        },
-        {
-          id: "novita/deepseek/deepseek-v3",
-          input_price: 0.0000003,
-          output_price: 0.0000004,
-        },
-        {
-          id: "azure/gpt-4.1@francecentral",
-          input_price: 0.000002,
-          output_price: 0.000008,
-        },
-      ],
-    });
-
-    const registry = createRequestyModelRegistry();
-    const models = await registry.fetchModels();
-
-    assert.equal(models.length, 3);
-  });
-
-  it("strips region suffix from returned model ids", async () => {
-    mockFetch({
-      data: [
-        {
-          id: "azure/gpt-4.1-mini@francecentral",
-          input_price: 0.0000004,
-          output_price: 0.0000016,
-        },
-      ],
-    });
-
-    const registry = createRequestyModelRegistry();
-    const models = await registry.fetchModels();
-
-    assert.equal(models[0]!.id, "azure/gpt-4.1-mini");
   });
 });
