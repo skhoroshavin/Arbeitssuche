@@ -11,6 +11,7 @@ electronLanguages:
   - en
   - de
 mac:
+  identity: null
   target:
     - target: dmg
       arch:
