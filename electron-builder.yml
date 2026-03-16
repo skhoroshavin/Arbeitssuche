@@ -10,6 +10,7 @@ files:
 electronLanguages:
   - en
   - de
+afterPack: scripts/ad-hoc-sign.js
 mac:
   identity: null
   target:
