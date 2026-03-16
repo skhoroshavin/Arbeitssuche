@@ -1,3 +1,5 @@
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import type { StatementSync, SQLInputValue } from "node:sqlite";
 import { DatabaseSync } from "node:sqlite";
 
@@ -5,6 +7,7 @@ export class Database {
   private constructor(private readonly inner: DatabaseSync) {}
 
   static open(dbPath: string): Database {
+    mkdirSync(dirname(dbPath), { recursive: true });
     const db = new DatabaseSync(dbPath, { enableForeignKeyConstraints: true });
     db.exec("PRAGMA journal_mode = WAL");
     db.exec("PRAGMA synchronous = NORMAL");
