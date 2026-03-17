@@ -142,6 +142,7 @@ Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each pa
 
 - **Never run the crawler.** Only the user runs `npm run crawl*` commands.
 - **Always use root npm scripts.** Never run `tsc`, `tsx`, or `node` directly.
+- **Bug fixes**: first write a test that reproduces the bug, verify it fails, then fix the code and confirm the test passes.
 - Write only black-box style tests, don't test implementation details.
 - After completing a significant task, run `npm run validate` to verify the full pipeline works before proposing to commit.
 - Always propose to commit changes after completing a task.
