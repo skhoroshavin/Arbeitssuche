@@ -13,12 +13,11 @@ import {
   SectionHeader,
   Loading,
   Textarea,
-  AutoSaveStatus,
   ArrowLeftIcon,
 } from "@/ui/components";
 import { Markdown } from "@/ui/pages/job-search/components/Markdown";
 import { StatusBadge } from "@/ui/pages/job-search/components/StatusBadge";
-import { useLayoutConfig } from "@/ui/layout";
+import { useLayoutConfig, useAutoSaveHeader } from "@/ui/layout";
 import type { ActivityType, VacancyStatus } from "@/models/vacancy/types";
 import { STATUS_LABELS, MATCH_SCORE_LABELS } from "@/ui/constants";
 
@@ -109,6 +108,8 @@ function VacancyCoverLetterSection({
     },
   });
 
+  useAutoSaveHeader(saveStatus);
+
   const onGenerate = () => {
     generateCoverLetter.mutate(undefined, {
       onSuccess: (result) => {
@@ -122,7 +123,6 @@ function VacancyCoverLetterSection({
       <div className="flex items-center justify-between mb-3">
         <SectionHeader>Anschreiben</SectionHeader>
         <div className="flex items-center gap-2">
-          <AutoSaveStatus status={saveStatus} />
           <button
             type="button"
             onClick={onGenerate}

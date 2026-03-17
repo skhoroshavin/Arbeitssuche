@@ -5,13 +5,8 @@ import {
   useGenerateCoverLetter,
 } from "@/ui/data/job-searches";
 import { useAutoSaveForm } from "@/ui/hooks/auto-save-form";
-import {
-  Card,
-  PageHeader,
-  Textarea,
-  AutoSaveStatus,
-  Loading,
-} from "@/ui/components";
+import { Card, PageHeader, Textarea, Loading } from "@/ui/components";
+import { useAutoSaveHeader } from "@/ui/layout";
 
 interface CoverLetterFormValues {
   content: string;
@@ -31,6 +26,8 @@ export default function JobSearchCoverLetter() {
     },
   });
 
+  useAutoSaveHeader(saveStatus);
+
   if (isLoading) return <Loading />;
 
   return (
@@ -39,7 +36,6 @@ export default function JobSearchCoverLetter() {
         title="Anschreiben-Vorlage"
         actions={
           <div className="flex items-center gap-2">
-            <AutoSaveStatus status={saveStatus} />
             <button
               type="button"
               onClick={() => {
