@@ -19,31 +19,22 @@ after(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-function createRepo() {
-  const db = Database.open(path.join(tmpDir, `${counter++}.db`));
+function openDb(pathId: string) {
+  const db = Database.open(path.join(tmpDir, `${pathId}.db`));
   // Create job_searches table and insert parent row so FK constraints are satisfied
   createSqliteJobSearchRepository(db);
-  const insertJs = db.prepare(
+  db.prepare(
     "INSERT OR IGNORE INTO job_searches (id, applicant_id, search_term, data) VALUES (?, '', '', '{}')",
-  );
-  insertJs.run("s1");
-  return {
-    repo: createSqliteVacancyRepository(db),
-    teardown: () => db.close(),
-  };
+  ).run("s1");
+  return { repo: createSqliteVacancyRepository(db), teardown: () => db.close() };
+}
+
+function createRepo() {
+  return openDb(String(counter++));
 }
 
 function createRepoWithId(id: string) {
-  const db = Database.open(path.join(tmpDir, `${id}.db`));
-  createSqliteJobSearchRepository(db);
-  const insertJs = db.prepare(
-    "INSERT OR IGNORE INTO job_searches (id, applicant_id, search_term, data) VALUES (?, '', '', '{}')",
-  );
-  insertJs.run("s1");
-  return {
-    repo: createSqliteVacancyRepository(db),
-    teardown: () => db.close(),
-  };
+  return openDb(id);
 }
 
 vacancyRepositoryTests("SqliteVacancyRepository", { createRepo });

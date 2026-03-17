@@ -1,13 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import type { AppConfig } from "@/models/config/types.js";
 import { createStubConfigRepository } from "./stub.js";
-import { configRepositoryTests } from "./config.test-suite.js";
-
-const SAMPLE_CONFIG: AppConfig = {
-  assessmentModel: "google/gemini-2.5-flash",
-  coverLetterModel: "anthropic/claude-opus-4",
-};
+import { configRepositoryTests, SAMPLE_CONFIG } from "./config.test-suite.js";
 
 configRepositoryTests("StubConfigRepository", {
   createRepo: () => ({
