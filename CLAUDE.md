@@ -31,6 +31,7 @@ npm run test:e2e              # E2E tests (Electron + Playwright)
 npm run test:visual           # Visual snapshot tests
 npm run validate              # Full pipeline: format + lint + check:shared-code + test + integration + build + e2e
 
+npm run bump <dev|major|minor|patch>  # Bump version (stable→dev→release)
 npm run crawl:download        # Download HTML samples for crawler tests
 
 npm run format                # Prettier
@@ -66,7 +67,7 @@ src/
                   #   data/       — shared domain query hooks (React Query over IPC)
                   #   layout/     — app shell (AppLayout, LayoutContext)
                   #   pages/      — page groups, each with own components/, hooks/, views/
-scripts/          # CLI utility scripts (crawl-download, check-shared-code).
+scripts/          # CLI utility scripts (bump-version, crawl-download, check-shared-code).
 e2e/              # E2E tests: fixtures, page objects, tests-flow/, tests-templates/.
 .github/workflows/  # CI (push/PR) and release (v* tags).
 ```
