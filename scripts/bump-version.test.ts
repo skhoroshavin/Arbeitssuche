@@ -27,21 +27,16 @@ describe("parseVersion", () => {
     });
   });
 
-  it("parses an rc version", () => {
-    assert.deepStrictEqual(parseVersion("1.3.0-rc.5"), {
-      major: 1,
-      minor: 3,
-      patch: 0,
-      prerelease: { rc: 5 },
-    });
-  });
-
   it("throws on invalid version", () => {
     assert.throws(() => parseVersion("not-a-version"), /Invalid version/);
   });
 
   it("throws on version with unknown prerelease", () => {
     assert.throws(() => parseVersion("1.2.3-beta.1"), /Invalid version/);
+  });
+
+  it("throws on rc version", () => {
+    assert.throws(() => parseVersion("1.3.0-rc.5"), /Invalid version/);
   });
 });
 
@@ -59,13 +54,6 @@ describe("formatVersion", () => {
       "0.1.2-dev",
     );
   });
-
-  it("formats an rc version", () => {
-    assert.equal(
-      formatVersion({ major: 1, minor: 3, patch: 0, prerelease: { rc: 0 } }),
-      "1.3.0-rc.0",
-    );
-  });
 });
 
 describe("computeNextVersion", () => {
@@ -76,18 +64,6 @@ describe("computeNextVersion", () => {
     prerelease: "dev",
   });
 
-  const rc = (
-    major: number,
-    minor: number,
-    patch: number,
-    n: number,
-  ): ParsedVersion => ({
-    major,
-    minor,
-    patch,
-    prerelease: { rc: n },
-  });
-
   const rel = (major: number, minor: number, patch: number): ParsedVersion => ({
     major,
     minor,
@@ -95,40 +71,17 @@ describe("computeNextVersion", () => {
     prerelease: null,
   });
 
-  describe("no args (auto-detect)", () => {
-    it("dev → strips dev, bumps patch → release", () => {
-      assert.deepStrictEqual(
-        computeNextVersion(dev(1, 2, 4), null, false),
-        rel(1, 2, 5),
-      );
-    });
-
-    it("rc → increments rc number", () => {
-      assert.deepStrictEqual(
-        computeNextVersion(rc(1, 3, 0, 0), null, false),
-        rc(1, 3, 0, 1),
-      );
-    });
-
-    it("release version → throws", () => {
-      assert.throws(
-        () => computeNextVersion(rel(1, 2, 3), null, false),
-        /Cannot auto-detect/,
-      );
-    });
-  });
-
   describe("bump dev", () => {
     it("adds -dev suffix", () => {
       assert.deepStrictEqual(
-        computeNextVersion(rel(1, 2, 3), "dev", false),
+        computeNextVersion(rel(1, 2, 3), "dev"),
         dev(1, 2, 3),
       );
     });
 
     it("throws if already dev", () => {
       assert.throws(
-        () => computeNextVersion(dev(1, 2, 3), "dev", false),
+        () => computeNextVersion(dev(1, 2, 3), "dev"),
         /Already a dev version/,
       );
     });
@@ -137,21 +90,14 @@ describe("computeNextVersion", () => {
   describe("bump major", () => {
     it("bumps major, resets minor+patch", () => {
       assert.deepStrictEqual(
-        computeNextVersion(dev(1, 2, 4), "major", false),
+        computeNextVersion(dev(1, 2, 4), "major"),
         rel(2, 0, 0),
-      );
-    });
-
-    it("with rc flag → adds -rc.0", () => {
-      assert.deepStrictEqual(
-        computeNextVersion(dev(1, 2, 4), "major", true),
-        rc(2, 0, 0, 0),
       );
     });
 
     it("throws if not dev", () => {
       assert.throws(
-        () => computeNextVersion(rel(1, 2, 3), "major", false),
+        () => computeNextVersion(rel(1, 2, 3), "major"),
         /requires a -dev version/,
       );
     });
@@ -160,21 +106,14 @@ describe("computeNextVersion", () => {
   describe("bump minor", () => {
     it("bumps minor, resets patch", () => {
       assert.deepStrictEqual(
-        computeNextVersion(dev(1, 2, 4), "minor", false),
+        computeNextVersion(dev(1, 2, 4), "minor"),
         rel(1, 3, 0),
-      );
-    });
-
-    it("with rc flag → adds -rc.0", () => {
-      assert.deepStrictEqual(
-        computeNextVersion(dev(1, 2, 4), "minor", true),
-        rc(1, 3, 0, 0),
       );
     });
 
     it("throws if not dev", () => {
       assert.throws(
-        () => computeNextVersion(rc(1, 3, 0, 1), "minor", false),
+        () => computeNextVersion(rel(1, 2, 3), "minor"),
         /requires a -dev version/,
       );
     });
@@ -183,38 +122,15 @@ describe("computeNextVersion", () => {
   describe("bump patch", () => {
     it("bumps patch", () => {
       assert.deepStrictEqual(
-        computeNextVersion(dev(1, 2, 4), "patch", false),
+        computeNextVersion(dev(1, 2, 4), "patch"),
         rel(1, 2, 5),
       );
     });
 
-    it("with rc flag → adds -rc.0", () => {
-      assert.deepStrictEqual(
-        computeNextVersion(dev(1, 2, 4), "patch", true),
-        rc(1, 2, 5, 0),
-      );
-    });
-  });
-
-  describe("bump release", () => {
-    it("strips -rc.N", () => {
-      assert.deepStrictEqual(
-        computeNextVersion(rc(1, 3, 0, 2), "release", false),
-        rel(1, 3, 0),
-      );
-    });
-
-    it("throws if not rc", () => {
+    it("throws if not dev", () => {
       assert.throws(
-        () => computeNextVersion(dev(1, 2, 3), "release", false),
-        /requires an -rc.N version/,
-      );
-    });
-
-    it("throws if release version", () => {
-      assert.throws(
-        () => computeNextVersion(rel(1, 2, 3), "release", false),
-        /requires an -rc.N version/,
+        () => computeNextVersion(rel(1, 2, 3), "patch"),
+        /requires a -dev version/,
       );
     });
   });
