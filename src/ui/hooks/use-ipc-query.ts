@@ -65,7 +65,7 @@ export function useIpcQuery<T>(
     }
     fetch();
     return cache.subscribe(queryKey, () => fetch(true));
-  }, [keyStr, enabled]);
+  }, [fetch]);
 
   return {
     data,

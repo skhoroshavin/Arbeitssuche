@@ -38,6 +38,7 @@ export function useScrollRestoration(
     el.scrollTop = saved;
 
     // If content isn't tall enough yet, retry with rAF polling
+    let rafId: number | undefined;
     if (saved > 0 && el.scrollTop !== saved) {
       let frame = 0;
       const maxFrames = 30;
@@ -46,11 +47,15 @@ export function useScrollRestoration(
         el.scrollTop = saved;
         frame++;
         if (el.scrollTop !== saved && frame < maxFrames) {
-          requestAnimationFrame(tryRestore);
+          rafId = requestAnimationFrame(tryRestore);
         }
       };
 
-      requestAnimationFrame(tryRestore);
+      rafId = requestAnimationFrame(tryRestore);
     }
+
+    return () => {
+      if (rafId !== undefined) cancelAnimationFrame(rafId);
+    };
   }, [locationKey, ref]);
 }

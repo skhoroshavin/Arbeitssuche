@@ -30,17 +30,14 @@ export function useAutoSave<T extends FieldValues>({
     pendingBaselineRef.current = true;
   }, []);
 
-  const doSave = useCallback(
-    (data: T) => {
-      baselineRef.current = JSON.stringify(data);
-      setStatus("saving");
-      onSaveRef.current(data).then(
-        () => setStatus("saved"),
-        () => setStatus("error"),
-      );
-    },
-    [setStatus],
-  );
+  const doSave = useCallback((data: T) => {
+    baselineRef.current = JSON.stringify(data);
+    setStatus("saving");
+    onSaveRef.current(data).then(
+      () => setStatus("saved"),
+      () => setStatus("error"),
+    );
+  }, []);
 
   // Detect changes and debounce
   useEffect(() => {
@@ -59,7 +56,7 @@ export function useAutoSave<T extends FieldValues>({
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
-      if (status === "unsaved") setStatus("idle");
+      setStatus((prev) => (prev === "unsaved" ? "idle" : prev));
       return;
     }
 
