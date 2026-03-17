@@ -26,7 +26,10 @@ function openDb(pathId: string) {
   db.prepare(
     "INSERT OR IGNORE INTO job_searches (id, applicant_id, search_term, data) VALUES (?, '', '', '{}')",
   ).run("s1");
-  return { repo: createSqliteVacancyRepository(db), teardown: () => db.close() };
+  return {
+    repo: createSqliteVacancyRepository(db),
+    teardown: () => db.close(),
+  };
 }
 
 function createRepo() {
