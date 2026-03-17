@@ -19,6 +19,8 @@ function navLinkClassName({ isActive }: { isActive: boolean }) {
 
 function Sidebar() {
   const { sidebarTitle, sidebarNavItems } = useLayout();
+  const { pathname, search } = useLocation();
+  const isSettings = pathname.startsWith("/settings");
 
   return (
     <aside className="w-64 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-screen">
@@ -45,7 +47,11 @@ function Sidebar() {
       </nav>
 
       <div className="p-2 border-t border-gray-200 dark:border-gray-700">
-        <NavLink to="/settings" className={navLinkClassName}>
+        <NavLink
+          to="/settings"
+          state={isSettings ? undefined : { returnTo: pathname + search }}
+          className={navLinkClassName}
+        >
           <span className="flex items-center gap-2">
             <CogIcon />
             Einstellungen

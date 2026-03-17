@@ -105,4 +105,63 @@ test.describe("Sidebar Layout", () => {
     await expect(backLink).toBeVisible();
     await expect(backLink.locator("svg")).toBeVisible();
   });
+
+  test("settings back button returns to origin page, not home", async ({
+    applicantListPage,
+    layoutPage,
+    page,
+    api,
+  }) => {
+    const applicantId = await api.createApplicant(
+      `e2e-settings-back-${Date.now()}`,
+    );
+    try {
+      await applicantListPage.goto();
+      await applicantListPage.navigateToApplicant("e2e-settings-back-");
+
+      await layoutPage.sidebarSettingsLink.click();
+      await expect(layoutPage.headerTitle).toHaveText("Einstellungen");
+
+      const backLink = page
+        .locator("header")
+        .getByRole("link", { name: "Zurück" });
+      await backLink.click();
+
+      await expect(layoutPage.headerTitle).toContainText("e2e-settings-back-");
+    } finally {
+      await api.deleteApplicant(applicantId);
+    }
+  });
+
+  test("settings back button preserves returnTo across sub-navigation", async ({
+    applicantListPage,
+    layoutPage,
+    page,
+    api,
+  }) => {
+    const applicantId = await api.createApplicant(
+      `e2e-settings-sub-${Date.now()}`,
+    );
+    try {
+      await applicantListPage.goto();
+      await applicantListPage.navigateToApplicant("e2e-settings-sub-");
+
+      await layoutPage.sidebarSettingsLink.click();
+      await expect(layoutPage.headerTitle).toHaveText("Einstellungen");
+
+      // Navigate to Maps tab within settings
+      await layoutPage.sidebarNavLink("Karten").click();
+      await expect(page).toHaveURL(/\/settings\/maps/);
+
+      // Back button should still return to applicant page
+      const backLink = page
+        .locator("header")
+        .getByRole("link", { name: "Zurück" });
+      await backLink.click();
+
+      await expect(layoutPage.headerTitle).toContainText("e2e-settings-sub-");
+    } finally {
+      await api.deleteApplicant(applicantId);
+    }
+  });
 });

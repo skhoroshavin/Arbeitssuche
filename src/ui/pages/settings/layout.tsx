@@ -1,4 +1,5 @@
-import { Link, Outlet } from "react-router";
+import { useRef } from "react";
+import { Link, Outlet, useLocation } from "react-router";
 import { useLayoutConfig } from "@/ui/layout";
 import { ArrowLeftIcon } from "@/ui/components";
 
@@ -8,6 +9,16 @@ const navItems = [
 ];
 
 export default function SettingsLayout() {
+  const { state } = useLocation();
+  const returnTo = useRef(
+    (state != null &&
+      typeof state === "object" &&
+      "returnTo" in state &&
+      typeof state.returnTo === "string" &&
+      state.returnTo) ||
+      "/",
+  );
+
   useLayoutConfig(
     () => ({
       sidebarTitle: "Einstellungen",
@@ -15,7 +26,7 @@ export default function SettingsLayout() {
       headerTitle: "Einstellungen",
       headerBackLink: (
         <Link
-          to="/"
+          to={returnTo.current}
           aria-label="Zurück"
           className="hover:text-gray-700 dark:hover:text-gray-200"
         >
