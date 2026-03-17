@@ -29,7 +29,7 @@ Diese App arbeitet mit sehr sensiblen Daten — persönliche Informationen und A
 - **Kein eigenes Backend.** Die App hat keinen Server, dem du vertrauen müsstest. Ich habe keine Möglichkeit, irgendetwas zu sammeln, was du eingibst.
 - **Vollständig Open Source.** Der Code kann geprüft werden, und die Binärdateien werden automatisch über CI gebaut — du musst nicht meinem Rechner vertrauen, nur dem Build-Prozess.
 - **API-Schlüssel werden verschlüsselt** über den systemeigenen Verschlüsselungsmechanismus (Electron `safeStorage`) gespeichert.
-- **KI-Datenverarbeitung.** Die App unterstützt zwei KI-Anbieter: [OpenRouter](https://openrouter.ai/) und [Requesty](https://requesty.ai/). Laut den [Nutzungsbedingungen](https://openrouter.ai/terms) von OpenRouter werden keine Daten gespeichert oder protokolliert, die zur KI-Analyse gesendet werden — es sei denn, du aktivierst das ausdrücklich. Requesty bietet darüber hinaus Datenverarbeitung ausschließlich in der EU (Frankfurt, Deutschland) mit garantierter Null-Daten-Speicherung und DSGVO-Konformität.
+- **KI-Datenverarbeitung.** Wenn du einen API-Schlüssel hinterlegst, werden persönliche Daten zur Analyse an den gewählten KI-Anbieter übertragen — [OpenRouter](https://openrouter.ai/) oder [Requesty](https://requesty.ai/). Laut den [Nutzungsbedingungen](https://openrouter.ai/terms) von OpenRouter werden keine Daten gespeichert oder protokolliert, die zur KI-Analyse gesendet werden — es sei denn, du aktivierst das ausdrücklich in deinem Benutzerkonto. Requesty verspricht darüber hinaus Datenverarbeitung ausschließlich in der EU mit garantierter Null-Daten-Speicherung und DSGVO-Konformität.
 
 ## Warum
 
@@ -78,7 +78,7 @@ This app deals with very sensitive data — personal information and API keys. I
 - **No backend.** The app has no server you'd need to trust. I have no means of collecting anything you enter.
 - **Fully open source.** The code can be audited, and binaries are built automatically through CI — you don't have to trust my machine, just the build process.
 - **API keys are stored encrypted** using the OS-level encryption mechanism (Electron `safeStorage`).
-- **AI data processing.** The app supports two AI providers: [OpenRouter](https://openrouter.ai/) and [Requesty](https://requesty.ai/). OpenRouter's [terms of service](https://openrouter.ai/terms) state that they do not log or store any data sent for AI analysis, unless you specifically opt in. Requesty additionally offers EU-only data residency (Frankfurt, Germany) with guaranteed zero data retention and GDPR Article 44 compliance.
+- **AI data processing.** When you provide an API key, personal data is sent to the chosen AI provider for analysis — [OpenRouter](https://openrouter.ai/) or [Requesty](https://requesty.ai/). OpenRouter's [terms of service](https://openrouter.ai/terms) state that they do not log or store any data sent for AI analysis, unless you specifically opt in within your user account. Requesty additionally promises EU-only data residency with guaranteed zero data retention and GDPR Article 44 compliance.
 
 ### Why
 

@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Link, NavLink, Outlet } from "react-router";
+import { useRef, useState } from "react";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
+import { useScrollRestoration } from "@/ui/hooks/use-scroll-restoration";
 import {
   LayoutContext,
   useLayout,
@@ -18,6 +19,8 @@ function navLinkClassName({ isActive }: { isActive: boolean }) {
 
 function Sidebar() {
   const { sidebarTitle, sidebarNavItems } = useLayout();
+  const { pathname, search } = useLocation();
+  const isSettings = pathname.startsWith("/settings");
 
   return (
     <aside className="w-64 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-screen">
@@ -44,7 +47,11 @@ function Sidebar() {
       </nav>
 
       <div className="p-2 border-t border-gray-200 dark:border-gray-700">
-        <NavLink to="/settings" className={navLinkClassName}>
+        <NavLink
+          to="/settings"
+          state={isSettings ? undefined : { returnTo: pathname + search }}
+          className={navLinkClassName}
+        >
           <span className="flex items-center gap-2">
             <CogIcon />
             Einstellungen
@@ -57,6 +64,9 @@ function Sidebar() {
 
 function MainArea() {
   const { headerTitle, headerBackLink, headerExtra } = useLayout();
+  const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
+  useScrollRestoration(mainRef, location.pathname + location.search);
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
@@ -74,7 +84,7 @@ function MainArea() {
         {headerExtra}
       </header>
 
-      <main className="flex-1 overflow-y-auto p-6">
+      <main ref={mainRef} className="flex-1 overflow-y-auto p-6">
         <div className="max-w-3xl mx-auto">
           <Outlet />
         </div>

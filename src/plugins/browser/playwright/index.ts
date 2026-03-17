@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
+import { gzipSync } from "node:zlib";
 import { chromium } from "playwright";
 import type {
   Browser,
@@ -69,20 +70,13 @@ class PlaywrightBrowser implements Browser {
 
     if (this.recordDir && this.recorded.length > 0) {
       mkdirSync(this.recordDir, { recursive: true });
-      const index: Record<string, string> = {};
-      for (let i = 0; i < this.recorded.length; i++) {
-        const file = `${i}.html`;
-        writeFileSync(
-          join(this.recordDir, file),
-          this.recorded[i].html,
-          "utf-8",
-        );
-        index[this.recorded[i].url] = file;
+      const data: Record<string, string> = {};
+      for (const { url, html } of this.recorded) {
+        data[url] = html;
       }
       writeFileSync(
-        join(this.recordDir, "index.json"),
-        JSON.stringify(index, null, 2),
-        "utf-8",
+        join(this.recordDir, "data.json.gz"),
+        gzipSync(Buffer.from(JSON.stringify(data), "utf-8")),
       );
     }
   }

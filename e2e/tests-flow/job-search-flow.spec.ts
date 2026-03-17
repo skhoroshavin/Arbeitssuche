@@ -189,6 +189,89 @@ test.describe("Job Search Flow", () => {
     await expect(jobSearchPage.sourceLink("arbeitsagentur")).toBeVisible();
   });
 
+  test("filter and sort are preserved after navigating back from vacancy detail", async ({
+    jobSearchPage,
+    api,
+  }) => {
+    const jsId = await api.createJobSearch("e2e filter preserve", applicantId);
+
+    const status = await api.seedVacancies(
+      jsId,
+      [
+        {
+          hash: "fp0001",
+          title: "New Vacancy",
+          company: "AlphaCo",
+          urls: ["https://example.com/1"],
+          addresses: ["Berlin"],
+          descriptionChanged: false,
+          activityHistory: [
+            {
+              type: "found",
+              date: "2026-03-10",
+              site: "xing",
+              url: "https://example.com/1",
+            },
+          ],
+          active: true,
+        },
+        {
+          hash: "fp0002",
+          title: "Applied Vacancy",
+          company: "BetaCo",
+          urls: ["https://example.com/2"],
+          addresses: ["Munich"],
+          descriptionChanged: false,
+          activityHistory: [
+            {
+              type: "found",
+              date: "2026-03-10",
+              site: "xing",
+              url: "https://example.com/2",
+            },
+            {
+              type: "applied",
+              date: "2026-03-11",
+            },
+          ],
+          active: true,
+        },
+      ],
+      "2026-03-10",
+    );
+    expect(status).toBe(200);
+
+    await jobSearchPage.gotoVacancies(jsId);
+    await expect(jobSearchPage.vacanciesHeading).toBeVisible();
+
+    // Apply filter "Neu" and sort by "Unternehmen"
+    await jobSearchPage.filterButton("Neu (1)").click();
+    await jobSearchPage.sortUnternehmen.click();
+
+    // Verify URL has query params
+    await expect(jobSearchPage.page).toHaveURL(/filter=new/);
+    await expect(jobSearchPage.page).toHaveURL(/sort=company/);
+
+    // Click vacancy card to go to detail
+    await jobSearchPage.vacancyCard("New Vacancy").click();
+    await expect(jobSearchPage.page.getByText("AlphaCo")).toBeVisible();
+
+    // Click back link
+    await jobSearchPage.backLink.click();
+
+    // Assert URL still contains filter and sort params
+    await expect(jobSearchPage.page).toHaveURL(/filter=new/);
+    await expect(jobSearchPage.page).toHaveURL(/sort=company/);
+
+    // Assert filter button is still active (has bg-blue-600 class)
+    await expect(jobSearchPage.filterButton("Neu (1)")).toHaveClass(
+      /bg-blue-600/,
+    );
+
+    // Assert sort button is still active (has bg-zinc-700 class)
+    await expect(jobSearchPage.sortUnternehmen).toHaveClass(/bg-zinc-700/);
+  });
+
   test("vacancy detail shows source links and contact person", async ({
     jobSearchPage,
     api,

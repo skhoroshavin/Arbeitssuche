@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useLocation } from "react-router";
 import {
   useJobSearchVacancy,
   useAddActivity,
@@ -13,12 +13,11 @@ import {
   SectionHeader,
   Loading,
   Textarea,
-  AutoSaveStatus,
   ArrowLeftIcon,
 } from "@/ui/components";
 import { Markdown } from "@/ui/pages/job-search/components/Markdown";
 import { StatusBadge } from "@/ui/pages/job-search/components/StatusBadge";
-import { useLayoutConfig } from "@/ui/layout";
+import { useLayoutConfig, useAutoSaveHeader } from "@/ui/layout";
 import type { ActivityType, VacancyStatus } from "@/models/vacancy/types";
 import { STATUS_LABELS, MATCH_SCORE_LABELS } from "@/ui/constants";
 
@@ -109,6 +108,8 @@ function VacancyCoverLetterSection({
     },
   });
 
+  useAutoSaveHeader(saveStatus);
+
   const onGenerate = () => {
     generateCoverLetter.mutate(undefined, {
       onSuccess: (result) => {
@@ -122,7 +123,6 @@ function VacancyCoverLetterSection({
       <div className="flex items-center justify-between mb-3">
         <SectionHeader>Anschreiben</SectionHeader>
         <div className="flex items-center gap-2">
-          <AutoSaveStatus status={saveStatus} />
           <button
             type="button"
             onClick={onGenerate}
@@ -147,6 +147,8 @@ function VacancyCoverLetterSection({
 
 export default function JobSearchVacancyDetail() {
   const { id, hash } = useParams<{ id: string; hash: string }>();
+  const location = useLocation();
+  const backSearch: string = location.state?.vacancyListSearch ?? "";
   const { data, isLoading, refetch } = useJobSearchVacancy(id!, hash!);
   const addActivity = useAddActivity(id!);
   const coverLetterQuery = useVacancyCoverLetter(id!, hash!);
@@ -166,14 +168,14 @@ export default function JobSearchVacancyDetail() {
       headerTitle: title,
       headerBackLink: (
         <Link
-          to={`/job-searches/${id}/vacancies`}
+          to={`/job-searches/${id}/vacancies${backSearch}`}
           aria-label="Zurück zu Stellen"
         >
           <ArrowLeftIcon />
         </Link>
       ),
     }),
-    [title, id],
+    [title, id, backSearch],
   );
 
   if (isLoading) return <Loading />;

@@ -49,6 +49,18 @@ export class JobSearchPage {
     this.contactSection = page.getByText("Ansprechpartner");
   }
 
+  filterButton(label: string): Locator {
+    return this.page.getByRole("button", { name: label, exact: true });
+  }
+
+  vacancyCard(title: string): Locator {
+    return this.page.getByRole("link", { name: title });
+  }
+
+  get backLink(): Locator {
+    return this.page.getByRole("link", { name: "Zurück zu Stellen" });
+  }
+
   navLink(name: string): Locator {
     return this.page.locator("aside nav").getByRole("link", { name });
   }

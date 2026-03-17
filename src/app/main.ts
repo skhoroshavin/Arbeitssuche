@@ -1,6 +1,7 @@
 import {
   app,
   BrowserWindow,
+  Menu,
   protocol,
   safeStorage,
   session,
@@ -38,6 +39,7 @@ function createBrowserWindow(): BrowserWindow {
     width: 1080,
     height: 900,
     show: !isTest,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, "../preload/preload.cjs"),
       contextIsolation: true,
@@ -63,6 +65,7 @@ if (!isDev) {
 }
 
 app.whenReady().then(async () => {
+  Menu.setApplicationMenu(null);
   const dataDir = isTest
     ? process.env.ELECTRON_TEST_DATA_DIR || "data"
     : getDataDir();

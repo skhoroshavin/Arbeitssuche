@@ -6,8 +6,9 @@
   "type": "module",
   "main": "out/main/main.cjs",
   "scripts": {
+    "bump": "npx tsx scripts/bump-version.ts",
     "crawl:download": "npx tsx scripts/crawl-download.ts",
-    "test": "node --import tsx --test --test-reporter=spec 'src/**/*.test.ts'",
+    "test": "node --import tsx --test --test-reporter=spec '{src,scripts}/**/*.test.ts'",
     "test:integration": "node --import tsx --test --test-reporter=spec 'src/**/*.integration-test.ts'",
     "test:integration:arbeitsagentur": "node --import tsx --test --test-reporter=spec --test-name-pattern='arbeitsagentur' 'src/**/*.integration-test.ts'",
     "test:integration:xing": "node --import tsx --test --test-reporter=spec --test-name-pattern='xing' 'src/**/*.integration-test.ts'",

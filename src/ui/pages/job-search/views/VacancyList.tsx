@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useParams, Link, useSearchParams } from "react-router";
+import { useParams, Link, useSearchParams, useLocation } from "react-router";
 import { useInvalidate } from "@/ui/hooks";
 import {
   useJobSearchVacancies,
@@ -80,6 +80,7 @@ function commuteMinutes(commute?: Record<string, CommuteInfo>): number {
 
 export default function JobSearchVacancyList() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { data, isLoading } = useJobSearchVacancies(id!);
   const invalidate = useInvalidate();
   const startCrawl = useStartJobSearchCrawl(id!);
@@ -271,7 +272,12 @@ export default function JobSearchVacancyList() {
 
       <div className="space-y-3">
         {filtered.map((v) => (
-          <VacancyCard key={v.hash} vacancy={v} jobSearchId={id!} />
+          <VacancyCard
+            key={v.hash}
+            vacancy={v}
+            jobSearchId={id!}
+            searchString={location.search}
+          />
         ))}
         {filtered.length === 0 && (
           <EmptyState message="Keine Stellen entsprechen dem Filter." />
@@ -284,9 +290,11 @@ export default function JobSearchVacancyList() {
 function VacancyCard({
   vacancy: v,
   jobSearchId,
+  searchString,
 }: {
   vacancy: VacancyWithStatus;
   jobSearchId: string;
+  searchString: string;
 }) {
   const commute = commuteLabel(v.commute);
   const latestDate = latestActivityDate(v) || undefined;
@@ -294,6 +302,7 @@ function VacancyCard({
   return (
     <Link
       to={`/job-searches/${jobSearchId}/vacancies/${v.hash}`}
+      state={{ vacancyListSearch: searchString }}
       className="block bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:shadow-md transition-shadow"
     >
       <div className="flex items-start justify-between">

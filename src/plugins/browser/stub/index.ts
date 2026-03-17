@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
 import { join } from "path";
+import { gunzipSync } from "node:zlib";
 import type {
   Browser,
   Page,
@@ -11,15 +12,9 @@ export interface StubBrowser extends Browser {
 }
 
 function loadData(dir: string): Record<string, string> {
-  const indexPath = join(dir, "index.json");
-  const index: Record<string, string> = JSON.parse(
-    readFileSync(indexPath, "utf-8"),
+  return JSON.parse(
+    gunzipSync(readFileSync(join(dir, "data.json.gz"))).toString("utf-8"),
   );
-  const pages: Record<string, string> = {};
-  for (const [url, file] of Object.entries(index)) {
-    pages[url] = readFileSync(join(dir, file), "utf-8");
-  }
-  return pages;
 }
 
 class StubBrowserImpl implements StubBrowser {

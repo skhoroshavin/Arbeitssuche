@@ -18,10 +18,11 @@ const SELECTORS = {
   jobLink: "a[href*='/jobsuche/jobdetail/']",
   title: "[class*='titel'], h2",
   company: ".firma-lane",
-  address: "[class*='arbeitsort'] li",
+  address: "#detail-kopfbereich-arbeitsort, [class*='arbeitsort'] li",
   contactEmail: "a[href^='mailto:']",
   contactPhone: "a[href^='tel:']",
   description: "jb-detailansicht",
+  ngState: "script#ng-state",
   startDate: "#detail-kopfbereich-eintrittsdatum",
   publishedAt: "#detail-kopfbereich-veroeffentlichungsdatum",
 };
@@ -61,6 +62,42 @@ export function extractLinks(html: string): string[] {
   return [...urls];
 }
 
+interface NgState {
+  jobdetail?: {
+    stellenlokationen?: Array<{
+      adresse?: {
+        strasse?: string;
+        hausnummer?: string;
+        plz?: string;
+        ort?: string;
+      };
+    }>;
+  };
+}
+
+function extractAddressFromNgState($: cheerio.CheerioAPI): string | undefined {
+  try {
+    const json = $(SELECTORS.ngState).text();
+    if (!json) return undefined;
+    const state: NgState = JSON.parse(json);
+    const locations = state.jobdetail?.stellenlokationen;
+    if (!locations?.length) return undefined;
+    return locations
+      .map((loc) => {
+        const a = loc.adresse;
+        if (!a) return "";
+        const street = [a.strasse, a.hausnummer].filter(Boolean).join(" ");
+        return [street, [a.plz, a.ort].filter(Boolean).join(" ")]
+          .filter(Boolean)
+          .join(", ");
+      })
+      .filter(Boolean)
+      .join("; ");
+  } catch {
+    return undefined;
+  }
+}
+
 export function extractVacancy(html: string, url: string): VacancyDetails {
   const $ = cheerio.load(html);
 
@@ -70,11 +107,12 @@ export function extractVacancy(html: string, url: string): VacancyDetails {
   const rawCompany = text(SELECTORS.company);
   const company =
     rawCompany?.replace(/^Arbeitgeber:\s*/i, "").trim() || rawCompany;
-  const addresses = $(SELECTORS.address)
+  const domAddresses = $(SELECTORS.address)
     .map((_i, el) => $(el).text().trim())
     .get()
     .filter(Boolean);
-  const address = addresses.join("; ") || undefined;
+  const address =
+    extractAddressFromNgState($) || domAddresses.join("; ") || undefined;
 
   const descriptionHtml = $(SELECTORS.description).html() || undefined;
   const startDate = text(SELECTORS.startDate);
