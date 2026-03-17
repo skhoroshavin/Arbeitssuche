@@ -7,6 +7,7 @@ This is a running list of things to do.
 - [x] Linux version shouldn't show menu bar
 - [x] Implement automated app version bump process
 - [x] Store html samples for testing crawlers in zipped format
-- [ ] Implement strict automated external calls review
-- [ ] Fix navigation issues (e.g. currently app forgets filter settings and scroll position in vacancies)
+- [x] Fix navigation issues (e.g. currently app forgets filter settings and scroll position in vacancies)
 - [ ] Improve integration tests for crawlers, make them properly test all search modes
+- [ ] Implement hints when trying to use feature that requires an API key, which is missing
+- [ ] Implement strict automated external calls review
