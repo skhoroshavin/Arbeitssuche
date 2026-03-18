@@ -121,6 +121,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BRANCH="chore/bump-dev-v${DEV_VERSION}"
+          if git ls-remote --exit-code origin "refs/heads/$BRANCH" >/dev/null 2>&1; then
+            echo "Branch $BRANCH already exists — skipping dev bump"
+            exit 0
+          fi
           git checkout -b "$BRANCH"
           git add package.json package-lock.json
           git commit -m "Bump version to ${DEV_VERSION}"

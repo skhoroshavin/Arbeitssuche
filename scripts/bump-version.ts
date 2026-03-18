@@ -149,7 +149,7 @@ function main() {
   // Tag if not dev
   const shouldTag = command !== "dev";
   if (shouldTag) {
-    execSync(`git tag v${nextStr}`, { cwd: ROOT, stdio: "inherit" });
+    execSync(`git tag -a v${nextStr} -m "v${nextStr}"`, { cwd: ROOT, stdio: "inherit" });
     console.log(`\nBumped ${currentVersion} → ${nextStr} (tagged v${nextStr})`);
     console.log("Push with: git push && git push --tags");
   } else {
