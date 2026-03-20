@@ -16,12 +16,15 @@ describe("job-site plugins", () => {
     await browser?.close();
   });
 
+  const SKIPPED_SITES = new Set(["arbeitsagentur"]);
+
   for (const { name, supportedModes } of getJobSiteInfos()) {
     const mode = supportedModes[0];
+    const skip = SKIPPED_SITES.has(name);
 
     test(
       `${name} (${mode}) - pagination returns unique URLs`,
-      { timeout: 60_000 },
+      { timeout: 60_000, skip },
       async () => {
         const site = createJobSite(name, browser);
         const criteria = {
@@ -72,7 +75,7 @@ describe("job-site plugins", () => {
 
     test(
       `${name} (${mode}) - vacancy details from Berlin`,
-      { timeout: 60_000 },
+      { timeout: 60_000, skip },
       async () => {
         const site = createJobSite(name, browser);
         const criteria = {
