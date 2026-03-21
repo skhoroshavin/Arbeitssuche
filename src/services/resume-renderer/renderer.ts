@@ -27,6 +27,83 @@ function resolve(obj: unknown, keyPath: string): unknown {
   return cur;
 }
 
+interface TagResult {
+  text: string;
+  nextIndex: number;
+}
+
+function handleIf(
+  source: string,
+  i: number,
+  tag: string,
+  data: unknown,
+): TagResult {
+  const key = tag.slice(4).trim();
+  const endTag = `{{/if}}`;
+  const endIdx = findMatchingEnd(source, i, "if");
+  const block = source.slice(i, endIdx);
+  const nextIndex = endIdx + endTag.length;
+  const val = resolve(data, key);
+  const text =
+    val && (!Array.isArray(val) || val.length > 0)
+      ? renderTemplate(block, data)
+      : "";
+  return { text, nextIndex };
+}
+
+function handleEach(
+  source: string,
+  i: number,
+  tag: string,
+  data: unknown,
+): TagResult {
+  const key = tag.slice(6).trim();
+  const endTag = `{{/each}}`;
+  const endIdx = findMatchingEnd(source, i, "each");
+  const block = source.slice(i, endIdx);
+  const nextIndex = endIdx + endTag.length;
+  const arr = resolve(data, key);
+  let text = "";
+  if (Array.isArray(arr)) {
+    for (const item of arr) {
+      const itemData =
+        typeof item === "object" && item !== null
+          ? { ...item, this: item }
+          : { this: item };
+      text += renderTemplate(block, itemData);
+    }
+  }
+  return { text, nextIndex };
+}
+
+function handleJoin(tag: string, data: unknown): string {
+  const args = tag.slice(5).trim();
+  const match = args.match(/^(\S+)\s+"([^"]*)"$/);
+  if (match) {
+    const arr = resolve(data, match[1]);
+    if (Array.isArray(arr)) {
+      return escapeHtml(arr.join(match[2]));
+    }
+  }
+  return "";
+}
+
+function handleJson(tag: string, data: unknown): string {
+  const key = tag.slice(5).trim();
+  const val = resolve(data, key);
+  return escapeHtml(JSON.stringify(val));
+}
+
+function handleThis(data: unknown): string {
+  const val = isRecord(data) ? data["this"] : undefined;
+  return val != null ? escapeHtml(String(val)) : "";
+}
+
+function handleVariable(tag: string, data: unknown): string {
+  const val = resolve(data, tag);
+  return val != null ? escapeHtml(String(val)) : "";
+}
+
 function renderTemplate(source: string, data: unknown): string {
   let result = "";
   let i = 0;
@@ -48,53 +125,23 @@ function renderTemplate(source: string, data: unknown): string {
     i = close + 2;
 
     if (tag.startsWith("#if ")) {
-      const key = tag.slice(4).trim();
-      const endTag = `{{/if}}`;
-      const endIdx = findMatchingEnd(source, i, "if");
-      const block = source.slice(i, endIdx);
-      i = endIdx + endTag.length;
-      const val = resolve(data, key);
-      if (val && (!Array.isArray(val) || val.length > 0)) {
-        result += renderTemplate(block, data);
-      }
+      const r = handleIf(source, i, tag, data);
+      result += r.text;
+      i = r.nextIndex;
     } else if (tag.startsWith("#each ")) {
-      const key = tag.slice(6).trim();
-      const endTag = `{{/each}}`;
-      const endIdx = findMatchingEnd(source, i, "each");
-      const block = source.slice(i, endIdx);
-      i = endIdx + endTag.length;
-      const arr = resolve(data, key);
-      if (Array.isArray(arr)) {
-        for (const item of arr) {
-          const itemData =
-            typeof item === "object" && item !== null
-              ? { ...item, this: item }
-              : { this: item };
-          result += renderTemplate(block, itemData);
-        }
-      }
+      const r = handleEach(source, i, tag, data);
+      result += r.text;
+      i = r.nextIndex;
     } else if (tag.startsWith("/")) {
       // closing tag — should not reach here
     } else if (tag.startsWith("join ")) {
-      const args = tag.slice(5).trim();
-      const match = args.match(/^(\S+)\s+"([^"]*)"$/);
-      if (match) {
-        const arr = resolve(data, match[1]);
-        if (Array.isArray(arr)) {
-          result += escapeHtml(arr.join(match[2]));
-        }
-      }
+      result += handleJoin(tag, data);
     } else if (tag.startsWith("json ")) {
-      const key = tag.slice(5).trim();
-      const val = resolve(data, key);
-      result += escapeHtml(JSON.stringify(val));
+      result += handleJson(tag, data);
     } else if (tag === "this") {
-      const val = isRecord(data) ? data["this"] : undefined;
-      if (val != null) result += escapeHtml(String(val));
+      result += handleThis(data);
     } else {
-      // Simple variable
-      const val = resolve(data, tag);
-      if (val != null) result += escapeHtml(String(val));
+      result += handleVariable(tag, data);
     }
   }
 

@@ -24,6 +24,49 @@ export interface ProcessOneResult {
   descriptionChanged: boolean;
 }
 
+function mergeUrls(existing: string[], newUrl: string): string[] {
+  return [...new Set([...existing, newUrl])];
+}
+
+function mergeAddresses(existing: string[], newAddress?: string): string[] {
+  return newAddress ? [...new Set([...existing, newAddress])] : existing;
+}
+
+function hasDescriptionChanged(
+  newDesc?: string,
+  existingDesc?: string,
+): boolean {
+  return !!newDesc && !!existingDesc && newDesc !== existingDesc;
+}
+
+function mergeWithExisting(
+  existing: Vacancy,
+  details: VacancyDetails,
+  hash: string,
+  foundActivity: FoundActivity,
+  contact: VacancyContact | undefined,
+  description: string | undefined,
+): ProcessOneResult {
+  const descriptionChanged = hasDescriptionChanged(
+    description,
+    existing.description,
+  );
+
+  const vacancy: Vacancy = {
+    ...existing,
+    urls: mergeUrls(existing.urls, details.url),
+    addresses: mergeAddresses(existing.addresses, details.address),
+    description: description ?? existing.description,
+    descriptionChanged,
+    contact: contact ?? existing.contact,
+    startDate: details.startDate ?? existing.startDate,
+    activityHistory: [...existing.activityHistory, foundActivity],
+    active: true,
+  };
+
+  return { vacancy, hash, isNew: false, descriptionChanged };
+}
+
 export function processOneCrawlResult(
   details: VacancyDetails,
   siteName: string,
@@ -54,29 +97,14 @@ export function processOneCrawlResult(
   const existing = existingByHash.get(hash);
 
   if (existing) {
-    const mergedUrls = [...new Set([...existing.urls, details.url])];
-    const mergedAddresses = details.address
-      ? [...new Set([...existing.addresses, details.address])]
-      : existing.addresses;
-
-    const descriptionChanged =
-      !!description &&
-      !!existing.description &&
-      description !== existing.description;
-
-    const vacancy: Vacancy = {
-      ...existing,
-      urls: mergedUrls,
-      addresses: mergedAddresses,
-      description: description ?? existing.description,
-      descriptionChanged,
-      contact: contact ?? existing.contact,
-      startDate: details.startDate ?? existing.startDate,
-      activityHistory: [...existing.activityHistory, foundActivity],
-      active: true,
-    };
-
-    return { vacancy, hash, isNew: false, descriptionChanged };
+    return mergeWithExisting(
+      existing,
+      details,
+      hash,
+      foundActivity,
+      contact,
+      description,
+    );
   }
 
   const vacancy: Vacancy = {

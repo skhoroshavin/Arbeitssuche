@@ -87,41 +87,49 @@ Regeln:
 - Einzelne Felder in contact dürfen weggelassen werden, wenn nicht vorhanden`;
 }
 
+const trimString = (v: unknown): string | undefined =>
+  typeof v === "string" && v.trim() ? v.trim() : undefined;
+
+function parseAddresses(parsed: object): string[] {
+  if (!("addresses" in parsed) || !Array.isArray(parsed.addresses)) return [];
+
+  const addresses: string[] = [];
+  for (const addr of parsed.addresses) {
+    const trimmed = trimString(addr);
+    if (trimmed) addresses.push(trimmed);
+  }
+  return addresses;
+}
+
+function parseContact(parsed: object): VacancyContact | null {
+  if (
+    !("contact" in parsed) ||
+    !parsed.contact ||
+    typeof parsed.contact !== "object"
+  )
+    return null;
+
+  const c = parsed.contact;
+  const name = trimString("name" in c ? c.name : undefined);
+  const email = trimString("email" in c ? c.email : undefined);
+  const phone = trimString("phone" in c ? c.phone : undefined);
+
+  if (!name && !email && !phone) return null;
+
+  const contact: VacancyContact = {};
+  if (name) contact.name = name;
+  if (email) contact.email = email;
+  if (phone) contact.phone = phone;
+  return contact;
+}
+
 export function parseContactExtractionResult(
   parsed: unknown,
 ): ContactExtractionResult | null {
   if (!parsed || typeof parsed !== "object") return null;
 
-  const addresses: string[] = [];
-  if ("addresses" in parsed && Array.isArray(parsed.addresses)) {
-    for (const addr of parsed.addresses) {
-      if (typeof addr === "string" && addr.trim()) {
-        addresses.push(addr.trim());
-      }
-    }
-  }
-
-  let contact: VacancyContact | null = null;
-  if (
-    "contact" in parsed &&
-    parsed.contact &&
-    typeof parsed.contact === "object"
-  ) {
-    const c = parsed.contact;
-    const trimString = (v: unknown): string | undefined =>
-      typeof v === "string" && v.trim() ? v.trim() : undefined;
-
-    const name = trimString("name" in c ? c.name : undefined);
-    const email = trimString("email" in c ? c.email : undefined);
-    const phone = trimString("phone" in c ? c.phone : undefined);
-
-    if (name || email || phone) {
-      contact = {};
-      if (name) contact.name = name;
-      if (email) contact.email = email;
-      if (phone) contact.phone = phone;
-    }
-  }
+  const addresses = parseAddresses(parsed);
+  const contact = parseContact(parsed);
 
   if (addresses.length === 0 && !contact) return null;
 
