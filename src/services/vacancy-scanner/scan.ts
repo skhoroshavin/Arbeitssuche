@@ -16,6 +16,7 @@ import {
   extractContactInfo,
   mergeContactInfo,
 } from "@/services/vacancy-scanner/extract-contact.js";
+import { formatError } from "@/services/vacancy-scanner/format-error.js";
 
 export type SearchParams = {
   location: string;
@@ -80,7 +81,7 @@ async function enrichVacancy(
     } catch (err) {
       console.error(
         `Failed to compute commute for "${vacancy.title}":`,
-        err instanceof Error ? err.message : String(err),
+        formatError(err),
       );
     }
   }
@@ -96,7 +97,7 @@ async function enrichVacancy(
           ).catch((err) => {
             console.error(
               `Failed to assess "${updated.title}":`,
-              err instanceof Error ? err.message : String(err),
+              formatError(err),
             );
             return null;
           })
@@ -105,7 +106,7 @@ async function enrichVacancy(
         ? extractContactInfo(updated, deps.llmClient).catch((err) => {
             console.error(
               `Failed to extract contact for "${updated.title}":`,
-              err instanceof Error ? err.message : String(err),
+              formatError(err),
             );
             return null;
           })
@@ -190,7 +191,7 @@ export async function scanVacancies(
       } catch (err) {
         console.error(
           `[${site.name}] Failed to fetch search page ${page + 1}:`,
-          err instanceof Error ? err.message : String(err),
+          formatError(err),
         );
         break;
       }
@@ -224,7 +225,7 @@ export async function scanVacancies(
         } catch (err) {
           console.error(
             `[${site.name}] Failed to extract ${url}:`,
-            err instanceof Error ? err.message : String(err),
+            formatError(err),
           );
           continue;
         }

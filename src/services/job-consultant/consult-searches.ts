@@ -6,7 +6,10 @@ import {
 import type { JsonSchema, LlmClient } from "@/plugins/llm/types.js";
 import { formatApplicantSections } from "@/models/applicant/format.js";
 
-const VALID_SEARCH_MODES: readonly string[] = SEARCH_MODES;
+function isValidSearchMode(value: string): boolean {
+  return SEARCH_MODES.some((m) => m === value);
+}
+
 const CONSULT_MAX_TOKENS = 2048;
 
 const CONSULT_SEARCHES_SCHEMA: JsonSchema = {
@@ -55,7 +58,7 @@ export function parseConsultSearchesResult(
       typeof item.searchTerm !== "string" ||
       !item.searchTerm ||
       typeof item.searchMode !== "string" ||
-      !VALID_SEARCH_MODES.includes(item.searchMode) ||
+      !isValidSearchMode(item.searchMode) ||
       typeof item.reason !== "string" ||
       !item.reason
     ) {

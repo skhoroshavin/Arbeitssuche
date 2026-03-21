@@ -1,5 +1,6 @@
 import type { CommuteClient } from "@/plugins/commute/types.js";
 import type { Vacancy } from "@/models/vacancy/types.js";
+import { formatError } from "@/services/vacancy-scanner/format-error.js";
 
 export interface ComputeCommutesInput {
   vacancies: Vacancy[];
@@ -56,7 +57,7 @@ export async function computeCommutes(
       } catch (err) {
         console.error(
           `Commute error for "${vacancy.title}" → "${address}":`,
-          err instanceof Error ? err.message : String(err),
+          formatError(err),
         );
         errorCount++;
       }
