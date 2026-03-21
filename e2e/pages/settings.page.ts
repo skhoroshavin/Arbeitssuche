@@ -17,14 +17,6 @@ export class SettingsPage {
     return this.page.getByRole("link", { name, exact: true });
   }
 
-  maskedText(label: string): Locator {
-    return this.page
-      .locator("div")
-      .filter({ has: this.page.getByText(label, { exact: true }) })
-      .getByRole("generic")
-      .filter({ hasText: /••••••••|Nicht gesetzt/ });
-  }
-
   replaceButton(label: string): Locator {
     return this.page.getByRole("button", { name: `${label} ersetzen` });
   }

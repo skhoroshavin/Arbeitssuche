@@ -9,7 +9,6 @@ export class JobSearchPage {
   readonly ausbildungButton: Locator;
   readonly coverLetterHeading: Locator;
   readonly generateButton: Locator;
-  readonly generatingButton: Locator;
   readonly vacanciesHeading: Locator;
   readonly refreshButton: Locator;
   readonly sortDatum: Locator;
@@ -39,7 +38,6 @@ export class JobSearchPage {
       name: "Anschreiben-Vorlage",
     });
     this.generateButton = page.getByRole("button", { name: "Generieren" });
-    this.generatingButton = page.getByRole("button", { name: "Generiere..." });
     this.vacanciesHeading = page.getByRole("heading", { name: /Stellen/ });
     this.refreshButton = page.getByRole("button", { name: "Aktualisieren" });
     this.sortDatum = page.getByRole("button", { name: "Datum" });
