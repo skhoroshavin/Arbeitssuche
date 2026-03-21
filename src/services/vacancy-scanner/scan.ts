@@ -77,8 +77,11 @@ async function enrichVacancy(
         signal: deps.signal,
       });
       updated = result.vacancies[0];
-    } catch {
-      // Commute error, continue
+    } catch (err) {
+      console.error(
+        `Failed to compute commute for "${vacancy.title}":`,
+        err instanceof Error ? err.message : String(err),
+      );
     }
   }
 
@@ -90,10 +93,22 @@ async function enrichVacancy(
             deps.applicant,
             deps.preferences,
             deps.llmClient,
-          ).catch(() => null)
+          ).catch((err) => {
+            console.error(
+              `Failed to assess "${updated.title}":`,
+              err instanceof Error ? err.message : String(err),
+            );
+            return null;
+          })
         : null,
       needsContactExtraction(updated)
-        ? extractContactInfo(updated, deps.llmClient).catch(() => null)
+        ? extractContactInfo(updated, deps.llmClient).catch((err) => {
+            console.error(
+              `Failed to extract contact for "${updated.title}":`,
+              err instanceof Error ? err.message : String(err),
+            );
+            return null;
+          })
         : null,
     ]);
 

@@ -8,5 +8,4 @@ export type { ScanVacanciesOptions, ScanVacanciesResult } from "./scan.js";
 export { processOneCrawlResult, markUnseenAsGone } from "./unify.js";
 export type { ProcessOneResult, MarkUnseenResult } from "./unify.js";
 export { computeCommutes } from "./commute.js";
-export type { ComputeCommutesInput, ComputeCommutesOutput } from "./commute.js";
 export { vacancyHash } from "./vacancy-hash.js";

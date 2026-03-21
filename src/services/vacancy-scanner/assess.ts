@@ -2,10 +2,7 @@ import type { Applicant } from "@/models/applicant/types.js";
 import type { SearchPreferences } from "@/models/job-search/types.js";
 import type { Vacancy, MatchScore } from "@/models/vacancy/types.js";
 import type { JsonSchema, LlmClient } from "@/plugins/llm/types.js";
-import {
-  formatExperienceLine,
-  formatEducationLine,
-} from "@/models/applicant/format.js";
+import { formatApplicantSections } from "@/models/applicant/format.js";
 
 const VALID_SCORES: MatchScore[] = [
   "very-bad",
@@ -32,22 +29,6 @@ const ASSESS_SCHEMA: JsonSchema = {
   additionalProperties: false,
 };
 
-export interface AssessVacanciesInput {
-  vacancies: Vacancy[];
-  applicant: Applicant;
-  preferences: SearchPreferences;
-  llmClient: LlmClient;
-  signal?: AbortSignal;
-  onProgress?: (message: string, current: number, total: number) => void;
-}
-
-export interface AssessVacanciesOutput {
-  vacancies: Vacancy[];
-  assessedCount: number;
-  skippedCount: number;
-  errorCount: number;
-}
-
 export function needsAssessment(vacancy: Vacancy): boolean {
   return !vacancy.summary || vacancy.descriptionChanged;
 }
@@ -65,19 +46,7 @@ Unternehmen: ${vacancy.company}
 Standort: ${vacancy.addresses.join(", ") || "Nicht angegeben"}
 ${vacancy.description ? `Beschreibung:\n${vacancy.description}` : "Keine Beschreibung vorhanden."}`);
 
-  const expLines = applicant.experience.map(formatExperienceLine);
-  const eduLines = applicant.education.map(formatEducationLine);
-  const skillLines = applicant.skills.map((s) => s.name);
-  const langLines = applicant.languages.map(
-    (l) => `${l.language} (${l.level})`,
-  );
-
-  sections.push(`## Kandidatenprofil
-Name: ${applicant.personal.name}
-${expLines.length ? `Berufserfahrung:\n${expLines.join("\n")}` : ""}
-${eduLines.length ? `Ausbildung:\n${eduLines.join("\n")}` : ""}
-${skillLines.length ? `Kenntnisse: ${skillLines.join(", ")}` : ""}
-${langLines.length ? `Sprachen: ${langLines.join(", ")}` : ""}`);
+  sections.push(...formatApplicantSections(applicant));
 
   if (preferences.freeText.length > 0) {
     sections.push(
@@ -125,73 +94,4 @@ export async function assessVacancy(
     ASSESS_SCHEMA,
   );
   return parseAssessResult(parsed);
-}
-
-export async function assessNewVacancies(
-  input: AssessVacanciesInput,
-): Promise<AssessVacanciesOutput> {
-  const { vacancies, applicant, preferences, llmClient, signal, onProgress } =
-    input;
-
-  const toAssess = vacancies.filter(needsAssessment);
-  const total = toAssess.length;
-
-  if (total === 0) {
-    return {
-      vacancies,
-      assessedCount: 0,
-      skippedCount: vacancies.length,
-      errorCount: 0,
-    };
-  }
-
-  let assessedCount = 0;
-  let errorCount = 0;
-  const updatedByHash = new Map<string, AssessResult>();
-
-  for (let i = 0; i < toAssess.length; i++) {
-    if (signal?.aborted) break;
-
-    const vacancy = toAssess[i];
-    onProgress?.(
-      `Bewerte "${vacancy.title}" bei ${vacancy.company}...`,
-      i + 1,
-      total,
-    );
-
-    try {
-      const result = await assessVacancy(
-        vacancy,
-        applicant,
-        preferences,
-        llmClient,
-      );
-      if (result) {
-        updatedByHash.set(vacancy.hash, result);
-        assessedCount++;
-      } else {
-        errorCount++;
-      }
-    } catch {
-      errorCount++;
-    }
-  }
-
-  const updatedVacancies = vacancies.map((v) => {
-    const assessment = updatedByHash.get(v.hash);
-    if (!assessment) return v;
-    return {
-      ...v,
-      summary: assessment.summary,
-      matchScore: assessment.matchScore,
-      descriptionChanged: false,
-    };
-  });
-
-  return {
-    vacancies: updatedVacancies,
-    assessedCount,
-    skippedCount: vacancies.length - toAssess.length,
-    errorCount,
-  };
 }
