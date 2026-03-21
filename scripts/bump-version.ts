@@ -146,19 +146,8 @@ function main() {
     stdio: "inherit",
   });
 
-  // Tag if not dev
-  const shouldTag = command !== "dev";
-  if (shouldTag) {
-    execSync(`git tag -a v${nextStr} -m "v${nextStr}"`, {
-      cwd: ROOT,
-      stdio: "inherit",
-    });
-    console.log(`\nBumped ${currentVersion} → ${nextStr} (tagged v${nextStr})`);
-    console.log("Push with: git push && git push --tags");
-  } else {
-    console.log(`\nBumped ${currentVersion} → ${nextStr}`);
-    console.log("Push with: git push");
-  }
+  console.log(`\nBumped ${currentVersion} → ${nextStr}`);
+  console.log("Push with: git push");
 }
 
 // Only run when executed directly, not when imported for testing
