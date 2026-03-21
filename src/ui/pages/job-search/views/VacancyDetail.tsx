@@ -81,10 +81,6 @@ const TRANSITIONS: Record<VacancyStatus, StatusAction[]> = {
   ],
 };
 
-interface CoverLetterFormValues {
-  content: string;
-}
-
 function VacancyCoverLetterSection({
   coverLetterQuery,
   updateCoverLetter,
@@ -95,7 +91,7 @@ function VacancyCoverLetterSection({
   generateCoverLetter: ReturnType<typeof useGenerateVacancyCoverLetter>;
 }) {
   const { register, setValue, saveStatus } = useAutoSaveForm<
-    CoverLetterFormValues,
+    { content: string },
     { content: string }
   >({
     queryResult: {

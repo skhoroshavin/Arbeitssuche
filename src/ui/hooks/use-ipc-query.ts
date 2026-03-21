@@ -10,7 +10,6 @@ interface UseIpcQueryOptions<T> {
 interface UseIpcQueryResult<T> {
   data: T | undefined;
   error: Error | null;
-  isPending: boolean;
   isLoading: boolean;
   refetch: () => Promise<void>;
 }
@@ -70,7 +69,6 @@ export function useIpcQuery<T>(
   return {
     data,
     error,
-    isPending,
     isLoading: isPending && !data,
     refetch: () => fetch(true),
   };
