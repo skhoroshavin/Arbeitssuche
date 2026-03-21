@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { ProgressEvent } from "@/models/events.js";
 
-export type { ProgressEvent };
-
 interface ProgressPayload extends ProgressEvent {
   jobSearchId?: string;
 }
