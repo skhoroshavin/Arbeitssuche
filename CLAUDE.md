@@ -89,6 +89,7 @@ Always use `@/` path alias — `../` imports are forbidden.
 | Sub-layer | Allowed imports |
 |-----------|----------------|
 | `hooks/` | _(self-contained, no @/ui imports)_ |
+| `hooks/internal/` | _(private to hooks/, not importable from outside)_ |
 | `components/` | `@/models`, `@/ui/hooks` |
 | `data/` | `@/models`, `@/ui/hooks` |
 | `layout/` | `@/models`, `@/ui/components`, `@/ui/hooks` |
@@ -123,6 +124,8 @@ Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each pa
 - Services and repos throw plain `Error` for validation/not-found errors
 - Interfaces with methods are implemented using classes, not plain objects
 - Commit messages: imperative mood, concise, describe the change
+- Job-site plugin `index.ts` files may only export the factory function (`create*Site`) and `SUPPORTED_MODES`
+- Job-site plugin tests must test only through the `JobSite` public interface
 
 ## Testing
 

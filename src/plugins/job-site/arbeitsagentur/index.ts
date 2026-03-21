@@ -1,4 +1,5 @@
 import type { Browser } from "@/plugins/browser/types.js";
+import type { Fetch } from "@/plugins/fetch/types.js";
 import type {
   VacancyDetails,
   JobSite,
@@ -48,10 +49,7 @@ function modeToAngebotsart(mode: string): string {
   return "1";
 }
 
-export function buildSearchApiUrl(
-  criteria: SearchCriteria,
-  pageId?: string,
-): string {
+function buildSearchApiUrl(criteria: SearchCriteria, pageId?: string): string {
   const qs = new URLSearchParams();
   if (criteria.query) qs.set("was", criteria.query);
   qs.set("wo", criteria.location);
@@ -88,7 +86,7 @@ function refnrToUrl(refnr: string): string {
   return `${SITE_BASE}/jobsuche/jobdetail/${encoded}`;
 }
 
-export function mapSearchResponse(data: ApiSearchResponse): {
+function mapSearchResponse(data: ApiSearchResponse): {
   urls: string[];
   nextPageId: string | undefined;
 } {
@@ -102,10 +100,7 @@ export function mapSearchResponse(data: ApiSearchResponse): {
   return { urls, nextPageId };
 }
 
-export function mapDetailsResponse(
-  data: ApiJobDetails,
-  url: string,
-): VacancyDetails {
+function mapDetailsResponse(data: ApiJobDetails, url: string): VacancyDetails {
   return {
     url,
     title: data.stellenangebotsTitel,
@@ -129,12 +124,15 @@ function assertOk(res: Response, url: string): void {
 class ArbeitsagenturSite implements JobSite {
   readonly name = "arbeitsagentur";
   readonly supportedModes = [...SUPPORTED_MODES];
+  private readonly fetch: Fetch;
 
-  constructor(_browser: Browser) {}
+  constructor(_browser: Browser, fetch?: Fetch) {
+    this.fetch = fetch ?? globalThis.fetch;
+  }
 
   async getVacancyList(criteria: SearchCriteria, pageId?: string) {
     const url = buildSearchApiUrl(criteria, pageId);
-    const res = await fetch(url, { headers: API_HEADERS });
+    const res = await this.fetch(url, { headers: API_HEADERS });
     assertOk(res, url);
     const data: ApiSearchResponse = await res.json();
     return mapSearchResponse(data);
@@ -144,13 +142,16 @@ class ArbeitsagenturSite implements JobSite {
     const encodedRefnr = url.split("/").pop();
     if (!encodedRefnr) throw new Error(`Cannot extract refnr from URL: ${url}`);
     const apiUrl = `${API_BASE}/pc/v3/jobdetails/${encodedRefnr}`;
-    const res = await fetch(apiUrl, { headers: API_HEADERS });
+    const res = await this.fetch(apiUrl, { headers: API_HEADERS });
     assertOk(res, apiUrl);
     const data: ApiJobDetails = await res.json();
     return mapDetailsResponse(data, url);
   }
 }
 
-export function createArbeitsagenturSite(browser: Browser): JobSite {
-  return new ArbeitsagenturSite(browser);
+export function createArbeitsagenturSite(
+  browser: Browser,
+  fetch?: Fetch,
+): JobSite {
+  return new ArbeitsagenturSite(browser, fetch);
 }

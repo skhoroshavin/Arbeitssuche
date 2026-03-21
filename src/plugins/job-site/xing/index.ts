@@ -29,10 +29,7 @@ function modeToCareerLevel(mode: string): string {
   return "";
 }
 
-export function buildSearchUrl(
-  criteria: SearchCriteria,
-  pageId?: string,
-): string {
+function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
   const qs = new URLSearchParams();
   if (criteria.query) qs.set("keywords", criteria.query);
   qs.set("location", criteria.location);
@@ -44,7 +41,7 @@ export function buildSearchUrl(
   return `${BASE_URL}/jobs/search?${qs.toString()}`;
 }
 
-export function extractLinks(html: string): string[] {
+function extractLinks(html: string): string[] {
   const $ = cheerio.load(html);
   const urls = new Set<string>();
   $("a[href*='/jobs/']").each((_i, el) => {
@@ -57,7 +54,7 @@ export function extractLinks(html: string): string[] {
   return [...urls];
 }
 
-export function extractVacancy(html: string, url: string): VacancyDetails {
+function extractVacancy(html: string, url: string): VacancyDetails {
   const $ = cheerio.load(html);
 
   const jsonLd = extractJobPostingFromJsonLd($);

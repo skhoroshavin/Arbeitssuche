@@ -19,17 +19,14 @@ const SELECTORS = {
 
 const SEARCH_READY_SELECTOR = "a[href*='/en/jobs/']";
 
-export function buildSearchUrl(
-  criteria: SearchCriteria,
-  pageId?: string,
-): string {
+function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
   const q = encodeURIComponent(criteria.query);
   const location = encodeURIComponent(criteria.location);
   const offset = Number(pageId ?? "0");
   return `${BASE_URL}/en/jobs?q=${q}&location=${location}&offset=${offset}`;
 }
 
-export function extractLinks(html: string): string[] {
+function extractLinks(html: string): string[] {
   const $ = cheerio.load(html);
   const urls = new Set<string>();
   $(SELECTORS.jobLink).each((_i, el) => {
@@ -42,7 +39,7 @@ export function extractLinks(html: string): string[] {
   return [...urls];
 }
 
-export function extractVacancy(html: string, url: string): VacancyDetails {
+function extractVacancy(html: string, url: string): VacancyDetails {
   const $ = cheerio.load(html);
 
   const title = $(SELECTORS.title).first().text().trim() || undefined;

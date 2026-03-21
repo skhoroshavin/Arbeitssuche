@@ -74,6 +74,8 @@ const uiSubLayerRules = [
     [
       "@/ui/data",
       "@/ui/data/**",
+      "@/ui/hooks/internal",
+      "@/ui/hooks/internal/**",
       "@/ui/layout",
       "@/ui/layout/**",
       "@/ui/pages",
@@ -106,6 +108,8 @@ const uiSubLayerRules = [
     [
       "@/ui/components",
       "@/ui/components/**",
+      "@/ui/hooks/internal",
+      "@/ui/hooks/internal/**",
       "@/ui/layout",
       "@/ui/layout/**",
       "@/ui/pages",
@@ -121,6 +125,8 @@ const uiSubLayerRules = [
     [
       "@/ui/data",
       "@/ui/data/**",
+      "@/ui/hooks/internal",
+      "@/ui/hooks/internal/**",
       "@/ui/pages",
       "@/ui/pages/**",
       "@/ui/constants",
@@ -131,10 +137,14 @@ const uiSubLayerRules = [
   // pages/ — full access within ui, but no cross-layer imports
   // Each page group also gets a rule blocking sibling page groups
   ...PAGE_GROUPS.map((group) => {
-    const siblings = PAGE_GROUPS.filter((g) => g !== group).flatMap((g) => [
-      `@/ui/pages/${g}`,
-      `@/ui/pages/${g}/**`,
-    ]);
+    const siblings = [
+      ...PAGE_GROUPS.filter((g) => g !== group).flatMap((g) => [
+        `@/ui/pages/${g}`,
+        `@/ui/pages/${g}/**`,
+      ]),
+      "@/ui/hooks/internal",
+      "@/ui/hooks/internal/**",
+    ];
     return uiRule(
       [`src/ui/pages/${group}/**/*.{ts,tsx}`],
       siblings,
@@ -187,6 +197,19 @@ export default tseslint.config(
   },
   ...ALL_LAYERS.map(layerRule),
   ...uiSubLayerRules,
+  {
+    files: ["src/plugins/job-site/*/index.ts"],
+    ignores: ["src/plugins/job-site/stub/index.ts"],
+    rules: {
+      "no-restricted-exports": [
+        "error",
+        {
+          restrictedNamedExportsPattern:
+            "^(?!create[A-Z]\\w*Site$|SUPPORTED_MODES$)",
+        },
+      ],
+    },
+  },
   {
     files: ["**/*.ts"],
     plugins: { "check-file": checkFile },

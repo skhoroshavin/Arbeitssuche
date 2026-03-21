@@ -14,7 +14,7 @@ export const SUPPORTED_MODES = ["employment", "apprenticeship"] as const;
 
 const SEARCH_READY_SELECTOR = "a[href*='/job/']";
 
-export function buildSearchUrl(criteria: SearchCriteria): string {
+function buildSearchUrl(criteria: SearchCriteria): string {
   const qs = new URLSearchParams();
   if (criteria.mode === "apprenticeship") {
     qs.set("jobType[0]", "Ausbildung");
@@ -23,7 +23,7 @@ export function buildSearchUrl(criteria: SearchCriteria): string {
   return `${BASE_URL}/job-listing/?${qs}`;
 }
 
-export function extractLinks(html: string): string[] {
+function extractLinks(html: string): string[] {
   const $ = cheerio.load(html);
   const urls = new Set<string>();
   $("a[href*='/job/']").each((_i, el) => {
@@ -36,7 +36,7 @@ export function extractLinks(html: string): string[] {
   return [...urls];
 }
 
-export function extractVacancy(html: string, url: string): VacancyDetails {
+function extractVacancy(html: string, url: string): VacancyDetails {
   const $ = cheerio.load(html);
 
   const jsonLd = extractJobPostingFromJsonLd($);
