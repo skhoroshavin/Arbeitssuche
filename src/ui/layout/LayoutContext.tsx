@@ -7,7 +7,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from "react";
-import type { AutoSaveStatus as AutoSaveStatusType } from "@/ui/hooks/auto-save";
+import type { AutoSaveStatus as AutoSaveStatusType } from "@/ui/hooks/auto-save-form";
 
 const autoSaveConfig: Record<
   Exclude<AutoSaveStatusType, "idle">,

@@ -50,9 +50,6 @@ export function useLlmModels() {
   });
 }
 
-/** @deprecated Use useLlmModels instead */
-export const useOpenRouterModels = useLlmModels;
-
 export function useSaveConfig() {
   const invalidate = useInvalidate();
   return useIpcMutation({

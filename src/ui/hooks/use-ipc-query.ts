@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useIpcCache } from "./ipc-cache";
+import { useIpcCache } from "./internal/ipc-cache";
 
 interface UseIpcQueryOptions<T> {
   queryKey: string[];
