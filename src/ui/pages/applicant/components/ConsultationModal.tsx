@@ -26,41 +26,31 @@ function ModalBody({
   selected: Set<number>;
   onToggleItem: (index: number) => void;
 }) {
+  let content: React.ReactNode;
+
   if (isLoading) {
-    return (
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="flex flex-col items-center justify-center py-12">
-          <Loading />
-          <p className="mt-4 text-gray-500 dark:text-gray-400">
-            Analysiere Bewerberprofil...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex-1 overflow-y-auto p-4">
-        <p className="text-red-600 dark:text-red-400 text-center py-8">
-          {error.message}
+    content = (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loading />
+        <p className="mt-4 text-gray-500 dark:text-gray-400">
+          Analysiere Bewerberprofil...
         </p>
       </div>
     );
-  }
-
-  if (suggestions.length === 0) {
-    return (
-      <div className="flex-1 overflow-y-auto p-4">
-        <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-          Keine Vorschläge verfügbar.
-        </p>
-      </div>
+  } else if (error) {
+    content = (
+      <p className="text-red-600 dark:text-red-400 text-center py-8">
+        {error.message}
+      </p>
     );
-  }
-
-  return (
-    <div className="flex-1 overflow-y-auto p-4">
+  } else if (suggestions.length === 0) {
+    content = (
+      <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+        Keine Vorschläge verfügbar.
+      </p>
+    );
+  } else {
+    content = (
       <div className="space-y-3">
         {suggestions.map((suggestion, index) => (
           <label
@@ -90,8 +80,10 @@ function ModalBody({
           </label>
         ))}
       </div>
-    </div>
-  );
+    );
+  }
+
+  return <div className="flex-1 overflow-y-auto p-4">{content}</div>;
 }
 
 export function ConsultationModal({

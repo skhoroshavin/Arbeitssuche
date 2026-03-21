@@ -32,6 +32,18 @@ interface TagResult {
   nextIndex: number;
 }
 
+function extractBlock(
+  source: string,
+  i: number,
+  type: string,
+): { block: string; nextIndex: number } {
+  const endIdx = findMatchingEnd(source, i, type);
+  return {
+    block: source.slice(i, endIdx),
+    nextIndex: endIdx + `{{/${type}}}`.length,
+  };
+}
+
 function handleIf(
   source: string,
   i: number,
@@ -39,10 +51,7 @@ function handleIf(
   data: unknown,
 ): TagResult {
   const key = tag.slice(4).trim();
-  const endTag = `{{/if}}`;
-  const endIdx = findMatchingEnd(source, i, "if");
-  const block = source.slice(i, endIdx);
-  const nextIndex = endIdx + endTag.length;
+  const { block, nextIndex } = extractBlock(source, i, "if");
   const val = resolve(data, key);
   const text =
     val && (!Array.isArray(val) || val.length > 0)
@@ -58,10 +67,7 @@ function handleEach(
   data: unknown,
 ): TagResult {
   const key = tag.slice(6).trim();
-  const endTag = `{{/each}}`;
-  const endIdx = findMatchingEnd(source, i, "each");
-  const block = source.slice(i, endIdx);
-  const nextIndex = endIdx + endTag.length;
+  const { block, nextIndex } = extractBlock(source, i, "each");
   const arr = resolve(data, key);
   let text = "";
   if (Array.isArray(arr)) {

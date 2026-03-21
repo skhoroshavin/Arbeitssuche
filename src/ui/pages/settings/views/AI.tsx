@@ -44,20 +44,11 @@ const MODEL_OPTIONS: LlmModel[] = [
   },
 ];
 
-const PROVIDERS: { value: LlmProvider; label: string; description: string }[] =
-  [
-    { value: "openrouter", label: "OpenRouter", description: "Global" },
-    {
-      value: "requesty",
-      label: "Requesty",
-      description: "EU-Datenverarbeitung",
-    },
-  ];
-
 const PROVIDER_CONFIG: Record<
   LlmProvider,
   {
     label: string;
+    description: string;
     secretKey: "openrouterApiKey" | "requestyApiKey";
     helpUrl: string;
     helpLabel: string;
@@ -66,6 +57,7 @@ const PROVIDER_CONFIG: Record<
 > = {
   openrouter: {
     label: "OpenRouter",
+    description: "Global",
     secretKey: "openrouterApiKey",
     helpUrl: "https://openrouter.ai/keys",
     helpLabel: "openrouter.ai/keys",
@@ -77,6 +69,7 @@ const PROVIDER_CONFIG: Record<
   },
   requesty: {
     label: "Requesty",
+    description: "EU-Datenverarbeitung",
     secretKey: "requestyApiKey",
     helpUrl: "https://requesty.ai",
     helpLabel: "requesty.ai",
@@ -87,6 +80,14 @@ const PROVIDER_CONFIG: Record<
     ],
   },
 };
+
+const PROVIDER_KEYS: LlmProvider[] = ["openrouter", "requesty"];
+
+const PROVIDERS = PROVIDER_KEYS.map((value) => ({
+  value,
+  label: PROVIDER_CONFIG[value].label,
+  description: PROVIDER_CONFIG[value].description,
+}));
 
 function ProviderSecretSection({
   provider,
