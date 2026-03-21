@@ -138,6 +138,14 @@ Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each pa
 
 **New site:** Create `src/plugins/job-site/<name>/index.ts` exporting a factory function, register in `src/plugins/job-site/index.ts`, add test + HTML samples.
 
+## Release process
+
+1. In the release PR: `npm run bump dev` then `npm run bump patch` (or `minor`/`major`)
+2. Squash-merge to `main`
+3. `auto-tag.yml` detects the stable version on `main`, creates a `v*` tag
+4. The tag triggers `release.yml` which builds and publishes artifacts
+5. The `dev-bump` job in `release.yml` auto-creates a PR for the next `-dev` version
+
 ## Rules
 
 - **Never run the crawler.** Only the user runs `npm run crawl*` commands.
