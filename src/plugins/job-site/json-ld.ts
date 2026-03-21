@@ -1,6 +1,6 @@
 import type { CheerioAPI } from "cheerio/slim";
 
-export interface JobPostingData {
+interface JobPostingData {
   title?: string;
   company?: string;
   address?: string;

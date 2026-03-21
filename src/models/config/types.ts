@@ -23,9 +23,6 @@ export interface LlmModel {
   pricing: { prompt: string; completion: string };
 }
 
-/** @deprecated Use LlmModel instead */
-export type OpenRouterModel = LlmModel;
-
 export const DEFAULT_ASSESSMENT_MODEL = "google/gemini-2.5-flash";
 export const DEFAULT_COVER_LETTER_MODEL = "anthropic/claude-opus-4";
 export const DEFAULT_CONSULTATION_MODEL = "google/gemini-2.5-flash";

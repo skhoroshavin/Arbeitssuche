@@ -9,10 +9,4 @@ export type {
   VacancySource,
   FoundActivity,
   NotFoundActivity,
-  AppliedActivity,
-  InvitedActivity,
-  InterviewedActivity,
-  OfferedActivity,
-  RejectedActivity,
-  NotInterestedActivity,
 } from "./types.js";

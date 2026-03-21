@@ -51,7 +51,6 @@ class SqliteVacancyRepository implements VacancyRepository {
     return {
       generatedAt: meta.generated_at,
       latestCrawl: meta.latest_crawl,
-      count: vacancies.length,
       vacancies,
     };
   }

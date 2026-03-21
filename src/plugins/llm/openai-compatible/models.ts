@@ -1,6 +1,6 @@
 import type { LlmModelInfo, LlmModelRegistry } from "@/plugins/llm/types.js";
 
-export type ModelNormalizer = (raw: Record<string, unknown>) => LlmModelInfo;
+type ModelNormalizer = (raw: Record<string, unknown>) => LlmModelInfo;
 
 class OpenAICompatibleModelRegistry implements LlmModelRegistry {
   constructor(
