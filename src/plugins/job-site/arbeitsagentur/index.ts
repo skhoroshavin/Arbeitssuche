@@ -18,14 +18,6 @@ export const SUPPORTED_MODES = [
 
 interface ApiSearchResult {
   refnr: string;
-  beruf: string;
-  titel: string;
-  arbeitgeber: string;
-  arbeitsort?: {
-    plz?: string;
-    ort?: string;
-    strasse?: string;
-  };
 }
 
 interface ApiSearchResponse {
@@ -96,12 +88,6 @@ function refnrToUrl(refnr: string): string {
   return `${SITE_BASE}/jobsuche/jobdetail/${encoded}`;
 }
 
-function urlToRefnr(url: string): string {
-  const encoded = url.split("/").pop();
-  if (!encoded) throw new Error(`Cannot extract refnr from URL: ${url}`);
-  return atob(encoded);
-}
-
 export function mapSearchResponse(data: ApiSearchResponse): {
   urls: string[];
   nextPageId: string | undefined;
@@ -155,8 +141,8 @@ class ArbeitsagenturSite implements JobSite {
   }
 
   async getVacancyDetails(url: string) {
-    const refnr = urlToRefnr(url);
-    const encodedRefnr = btoa(refnr);
+    const encodedRefnr = url.split("/").pop();
+    if (!encodedRefnr) throw new Error(`Cannot extract refnr from URL: ${url}`);
     const apiUrl = `${API_BASE}/pc/v3/jobdetails/${encodedRefnr}`;
     const res = await fetch(apiUrl, { headers: API_HEADERS });
     assertOk(res, apiUrl);

@@ -75,10 +75,7 @@ describe("arbeitsagentur", () => {
   describe("mapSearchResponse", () => {
     test("maps search results to URLs with base64-encoded refnr", () => {
       const result = mapSearchResponse({
-        stellenangebote: [
-          { refnr: "10000-111", beruf: "Dev", titel: "Dev", arbeitgeber: "Co" },
-          { refnr: "10000-222", beruf: "QA", titel: "QA", arbeitgeber: "Co2" },
-        ],
+        stellenangebote: [{ refnr: "10000-111" }, { refnr: "10000-222" }],
         maxErgebnisse: 100,
         page: 1,
         size: 25,
@@ -91,9 +88,7 @@ describe("arbeitsagentur", () => {
 
     test("returns no nextPageId on last page", () => {
       const result = mapSearchResponse({
-        stellenangebote: [
-          { refnr: "ref", beruf: "Dev", titel: "Dev", arbeitgeber: "Co" },
-        ],
+        stellenangebote: [{ refnr: "ref" }],
         maxErgebnisse: 2,
         page: 1,
         size: 25,
@@ -117,7 +112,8 @@ describe("arbeitsagentur", () => {
         maxErgebnisse: 0,
         page: 1,
         size: 25,
-      } as never);
+        stellenangebote: undefined,
+      });
       assert.deepEqual(result.urls, []);
       assert.equal(result.nextPageId, undefined);
     });
@@ -175,10 +171,7 @@ describe("arbeitsagentur", () => {
   describe("ArbeitsagenturSite class", () => {
     test("getVacancyList fetches search API and returns URLs", async () => {
       const searchResponse = {
-        stellenangebote: [
-          { refnr: "ref1", beruf: "Dev", titel: "Dev", arbeitgeber: "Co" },
-          { refnr: "ref2", beruf: "QA", titel: "QA", arbeitgeber: "Co2" },
-        ],
+        stellenangebote: [{ refnr: "ref1" }, { refnr: "ref2" }],
         maxErgebnisse: 50,
         page: 1,
         size: 25,
