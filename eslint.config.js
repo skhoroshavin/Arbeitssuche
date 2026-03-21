@@ -175,6 +175,7 @@ export default tseslint.config(
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+      complexity: ["error", 20],
       "no-restricted-syntax": [
         "error",
         {

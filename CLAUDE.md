@@ -121,6 +121,7 @@ Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each pa
 - **camelCase** for variables/functions, **PascalCase** for types/components
 - Barrel exports via `index.ts`; tests co-located as `*.test.ts` / `*.integration-test.ts`
 - Tailwind classes for styling; no CSS modules
+- **Cyclomatic complexity limit**: 20 per function (ESLint `complexity` rule). When a function exceeds this, extract helpers, use lookup tables, or decompose React components.
 - Services and repos throw plain `Error` for validation/not-found errors
 - Interfaces with methods are implemented using classes, not plain objects
 - Commit messages: imperative mood, concise, describe the change
