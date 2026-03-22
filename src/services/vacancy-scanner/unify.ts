@@ -25,11 +25,12 @@ interface ProcessOneResult {
 }
 
 function mergeUrls(existing: string[], newUrl: string): string[] {
-  return [...new Set([...existing, newUrl])];
+  return existing.includes(newUrl) ? existing : [...existing, newUrl];
 }
 
 function mergeAddresses(existing: string[], newAddress?: string): string[] {
-  return newAddress ? [...new Set([...existing, newAddress])] : existing;
+  if (!newAddress) return existing;
+  return existing.includes(newAddress) ? existing : [...existing, newAddress];
 }
 
 function hasDescriptionChanged(

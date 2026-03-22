@@ -5,6 +5,7 @@ import {
 } from "@/models/applicant/types.js";
 import type { ApplicantRepository } from "@/repositories/applicant/types.js";
 import { deriveId } from "@/utils/derive-id.js";
+import { createWithUniqueId } from "@/utils/create-with-unique-id.js";
 
 class StubApplicantRepository implements ApplicantRepository {
   private readonly store: Map<string, Applicant>;
@@ -40,18 +41,16 @@ class StubApplicantRepository implements ApplicantRepository {
   }
 
   create(name: string): string {
-    for (let i = 0; i < 5; i++) {
-      const id = deriveId(name);
-      if (!this.store.has(id)) {
-        this.store.set(id, {
-          ...DEFAULT_APPLICANT,
-          id,
-          personal: { name },
-        });
-        return id;
-      }
-    }
-    throw new Error("Failed to generate unique id after 5 attempts");
+    const id = createWithUniqueId(
+      () => deriveId(name),
+      (id) => this.store.has(id),
+    );
+    this.store.set(id, {
+      ...DEFAULT_APPLICANT,
+      id,
+      personal: { name },
+    });
+    return id;
   }
 
   delete(id: string): void {

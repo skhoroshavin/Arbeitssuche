@@ -6,6 +6,7 @@ import type {
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
 import { extractJsonLd } from "@/utils/json-ld.js";
+import { str } from "@/utils/coerce.js";
 
 const BASE_URL = "https://www.xing.com";
 
@@ -22,10 +23,6 @@ const SELECTORS = {
     "[data-testid='job-location'], [class*='location'], [class*='Location']",
   contactEmail: "a[href^='mailto:']",
 };
-
-function str(val: unknown): string | undefined {
-  return typeof val === "string" ? val : undefined;
-}
 
 function modeToCareerLevel(mode: string): string {
   if (mode === "apprenticeship") return "APPRENTICESHIP";
