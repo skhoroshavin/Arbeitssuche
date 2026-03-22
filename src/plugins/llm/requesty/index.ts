@@ -24,11 +24,12 @@ export const requestyProviderInfo: LlmProviderInfo = {
   description: "EU-Datenverarbeitung",
   instructions: [
     "1. Erstelle ein Konto auf [requesty.ai](https://requesty.ai) oder melde dich an",
-    "2. Requesty verarbeitet alle Daten in der EU",
-    "3. Klicke in der Seitenleiste auf \u201EAPI Keys\u201C",
-    "4. Klicke auf \u201ECreate API Key\u201C und gib einen Namen ein",
-    "5. Kopiere den Schl\u00fcssel",
-    "6. F\u00fcge ihn oben ein",
+    "2. Klicke in der Seitenleiste auf \u201E[Billing](https://app.requesty.ai/billing)\u201C",
+    "3. Klicke auf \u201EAdd Credits\u201C und f\u00fcge Guthaben hinzu (ab $5)",
+    "4. Klicke in der Seitenleiste auf \u201E[API Keys](https://app.requesty.ai/api-keys)\u201C",
+    "5. Klicke auf \u201ECreate API Key\u201C und gib einen Namen ein (z.\u202fB. \u201EArbeitssuche\u201C)",
+    "6. Kopiere den Schl\u00fcssel",
+    "7. F\u00fcge ihn oben ein",
   ].join("\n"),
 };
 
