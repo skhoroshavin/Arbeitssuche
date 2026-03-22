@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
-import { useScrollRestoration } from "@/ui/hooks/use-scroll-restoration";
+import { useScrollRestoration } from "./use-scroll-restoration";
 import {
   LayoutContext,
   useLayout,

@@ -1,9 +1,7 @@
-import {
-  useIpcQuery,
-  useIpcMutation,
-  useInvalidate,
-  ipcFetch,
-} from "@/ui/hooks";
+import { useInvalidate } from "@/ui/hooks";
+import { ipcFetch } from "./internal/ipc-client";
+import { useIpcMutation } from "./internal/use-ipc-mutation";
+import { useIpcQuery } from "./internal/use-ipc-query";
 import type {
   Applicant,
   ApplicantInfo,

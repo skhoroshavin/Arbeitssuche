@@ -122,7 +122,7 @@ function testRule(layer) {
 //
 // All UI sub-layers may import @/models. No other backend layers.
 // Each sub-layer declares which OTHER UI sub-layers it may use.
-// hooks/internal/ is private to hooks/ — blocked everywhere else.
+// hooks/internal/ and data/internal/ are private to their parent — blocked elsewhere.
 
 const PAGE_GROUPS = ["applicant", "job-search", "settings"];
 const UI_SUBLAYERS = [
@@ -147,8 +147,10 @@ function uiSubLayerRule(subLayer, allowedUi) {
     (u) => u !== subLayer && !allowedUi.includes(u),
   ).flatMap((u) => [`@/ui/${u}`, `@/ui/${u}/**`]);
 
-  if (subLayer !== "hooks") {
-    blockedUi.push("@/ui/hooks/internal", "@/ui/hooks/internal/**");
+  for (const layer of ["hooks", "data"]) {
+    if (subLayer !== layer) {
+      blockedUi.push(`@/ui/${layer}/internal`, `@/ui/${layer}/internal/**`);
+    }
   }
 
   const allowed = ["@/models", ...allowedUi.map((u) => `@/ui/${u}`)].join(
@@ -199,6 +201,8 @@ const uiRules = [
                 ]),
                 "@/ui/hooks/internal",
                 "@/ui/hooks/internal/**",
+                "@/ui/data/internal",
+                "@/ui/data/internal/**",
               ],
               message: `ui/pages/${group}/ must not import from sibling page groups`,
             },
