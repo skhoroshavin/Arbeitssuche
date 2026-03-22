@@ -11,5 +11,6 @@ export default defineConfig({
   },
   test: {
     include: ["{src,scripts}/**/*.test.{ts,tsx}"],
+    setupFiles: ["./src/ui/test-setup.ts"],
   },
 });
