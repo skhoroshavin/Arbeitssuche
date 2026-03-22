@@ -417,7 +417,7 @@ function checkUtils(srcFiles: SourceFile[]): string[] {
     const sfPath = sf.getFilePath();
     if (sfPath.startsWith(utilsPrefix)) continue;
 
-    const sfRel = relative(SRC_DIR, sfPath);
+    const sfRel = getSrcRelPath(sf);
     const parts = sfRel.split("/");
     const entity = parts.slice(0, Math.min(parts.length - 1, 3)).join("/");
 
@@ -490,7 +490,7 @@ for (const sf of analyzedFiles) {
   if (exports.length > 0) {
     fileExports.push({
       sourceFile: sf,
-      relPath: relative(SRC_DIR, sf.getFilePath()),
+      relPath: getSrcRelPath(sf),
       exports,
     });
   }
@@ -498,12 +498,6 @@ for (const sf of analyzedFiles) {
 
 // Build re-export map
 const reExportMap = buildReExportMap(analyzedFiles);
-
-// Collect all imports from all files
-const allImports: ImportRef[] = [];
-for (const sf of allSourceFiles) {
-  allImports.push(...extractImports(sf));
-}
 
 // Mark exports as used
 const exportsByFile = new Map<string, FileExports>();
@@ -537,12 +531,14 @@ function markAllUsed(targetFile: string): void {
   }
 }
 
-for (const imp of allImports) {
-  if (imp.isNamespace) {
-    markAllUsed(imp.targetFile);
-  } else {
-    for (const name of imp.names) {
-      markUsed(imp.targetFile, name);
+for (const sf of allSourceFiles) {
+  for (const imp of extractImports(sf)) {
+    if (imp.isNamespace) {
+      markAllUsed(imp.targetFile);
+    } else {
+      for (const name of imp.names) {
+        markUsed(imp.targetFile, name);
+      }
     }
   }
 }
@@ -579,9 +575,7 @@ for (const fe of fileExports) {
 const unusedUnexportedValues: UnusedSymbol[] = [];
 const unusedUnexportedTypes: UnusedSymbol[] = [];
 
-for (const sf of srcFiles) {
-  const path = sf.getFilePath();
-  if (isTestFile(path) || isEntryPoint(path)) continue;
+for (const sf of analyzedFiles) {
   const symbols = findUnusedUnexported(sf);
   for (const sym of symbols) {
     if (sym.kind === "value") {
