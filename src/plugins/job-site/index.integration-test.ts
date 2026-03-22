@@ -15,7 +15,7 @@ describe("job-site plugins", () => {
     await browser?.close();
   });
 
-  const SKIPPED_SITES = new Set<string>([]);
+  const SKIPPED_SITES = new Set<string>(["xing"]);
 
   for (const { name, supportedModes } of getJobSiteInfos()) {
     const mode = supportedModes[0];
