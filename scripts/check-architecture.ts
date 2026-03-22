@@ -440,6 +440,11 @@ function setupModules(
   const barrelMaps = new Map<string, Map<string, string>>();
   const dirPrefixes: string[] = [];
 
+  const srcFilesByPath = new Map<string, SourceFile>();
+  for (const sf of srcFiles) {
+    srcFilesByPath.set(sf.getFilePath(), sf);
+  }
+
   for (const config of configs) {
     const absDir = join(SRC_DIR, config.dir);
     const modules = listModules(absDir);
@@ -457,7 +462,7 @@ function setupModules(
     }
 
     const barrelPath = join(absDir, "index.ts");
-    const barrelSf = srcFiles.find((sf) => sf.getFilePath() === barrelPath);
+    const barrelSf = srcFilesByPath.get(barrelPath);
     if (barrelSf) {
       barrelMaps.set(barrelPath, buildBarrelMap(barrelSf));
     }
@@ -468,9 +473,7 @@ function setupModules(
 
 function countConsumers(
   srcFiles: SourceFile[],
-  modulesByFile: Map<string, ModuleInfo>,
-  barrelMaps: Map<string, Map<string, string>>,
-  dirPrefixes: string[],
+  { modulesByFile, barrelMaps, dirPrefixes }: SetupResult,
 ): void {
   for (const sf of srcFiles) {
     const sfPath = sf.getFilePath();
@@ -544,11 +547,9 @@ function reportErrors(modulesByFile: Map<string, ModuleInfo>): string[] {
 }
 
 function checkDirs(configs: DirConfig[], srcFiles: SourceFile[]): string[] {
-  const { modulesByFile, barrelMaps, dirPrefixes } = setupModules(
-    configs,
-    srcFiles,
-  );
-  countConsumers(srcFiles, modulesByFile, barrelMaps, dirPrefixes);
+  const setup = setupModules(configs, srcFiles);
+  countConsumers(srcFiles, setup);
+  const { modulesByFile } = setup;
   return reportErrors(modulesByFile);
 }
 
@@ -756,7 +757,15 @@ for (const fe of fileExports) {
   exportsByFile.set(fe.sourceFile.getFilePath(), fe);
 }
 
-function markUsed(targetFile: string, name: string): void {
+function markUsed(
+  targetFile: string,
+  name: string,
+  visited = new Set<string>(),
+): void {
+  const key = `${targetFile}::${name}`;
+  if (visited.has(key)) return;
+  visited.add(key);
+
   const fe = exportsByFile.get(targetFile);
   if (!fe) return;
 
@@ -764,20 +773,20 @@ function markUsed(targetFile: string, name: string): void {
   if (entry) entry.used = true;
 
   // Propagate through re-exports
-  const reExport = reExportMap.get(`${targetFile}::${name}`);
+  const reExport = reExportMap.get(key);
   if (reExport) {
-    markUsed(reExport.sourceFile, reExport.originalName);
+    markUsed(reExport.sourceFile, reExport.originalName, visited);
   }
 }
 
-function markAllUsed(targetFile: string): void {
+function markAllUsed(targetFile: string, visited = new Set<string>()): void {
   const fe = exportsByFile.get(targetFile);
   if (!fe) return;
   for (const entry of fe.exports) {
     entry.used = true;
     const reExport = reExportMap.get(`${targetFile}::${entry.name}`);
     if (reExport) {
-      markUsed(reExport.sourceFile, reExport.originalName);
+      markUsed(reExport.sourceFile, reExport.originalName, visited);
     }
   }
 }
@@ -848,47 +857,44 @@ for (const sf of analyzedFiles) {
   }
 }
 
+function reportSection(title: string, items: string[]): boolean {
+  if (items.length === 0) return false;
+  console.error(`\n${title}:\n`);
+  for (const item of items) {
+    console.error(`  ${item}`);
+  }
+  return true;
+}
+
 let hasErrors = false;
 
-if (fullyUnused.length > 0) {
-  console.error("\nFully unused files (all exports unused):\n");
-  for (const f of fullyUnused) {
-    console.error(`  ${f}`);
-  }
-  hasErrors = true;
-}
+hasErrors =
+  reportSection("Fully unused files (all exports unused)", fullyUnused) ||
+  hasErrors;
 
-if (unusedValues.length > 0) {
-  console.error("\nUnused value exports:\n");
-  for (const { relPath, names } of unusedValues) {
-    console.error(`  ${relPath}: ${names.join(", ")}`);
-  }
-  hasErrors = true;
-}
+hasErrors =
+  reportSection(
+    "Unused value exports",
+    unusedValues.map(({ relPath, names }) => `${relPath}: ${names.join(", ")}`),
+  ) || hasErrors;
 
-if (unusedTypes.length > 0) {
-  console.error("\nUnused type exports:\n");
-  for (const { relPath, names } of unusedTypes) {
-    console.error(`  ${relPath}: ${names.join(", ")}`);
-  }
-  hasErrors = true;
-}
+hasErrors =
+  reportSection(
+    "Unused type exports",
+    unusedTypes.map(({ relPath, names }) => `${relPath}: ${names.join(", ")}`),
+  ) || hasErrors;
 
-if (unusedUnexportedValues.length > 0) {
-  console.error("\nUnused unexported symbols:\n");
-  for (const { relPath, name } of unusedUnexportedValues) {
-    console.error(`  ${relPath}: ${name}`);
-  }
-  hasErrors = true;
-}
+hasErrors =
+  reportSection(
+    "Unused unexported symbols",
+    unusedUnexportedValues.map(({ relPath, name }) => `${relPath}: ${name}`),
+  ) || hasErrors;
 
-if (unusedUnexportedTypes.length > 0) {
-  console.error("\nUnused unexported types:\n");
-  for (const { relPath, name } of unusedUnexportedTypes) {
-    console.error(`  ${relPath}: ${name}`);
-  }
-  hasErrors = true;
-}
+hasErrors =
+  reportSection(
+    "Unused unexported types",
+    unusedUnexportedTypes.map(({ relPath, name }) => `${relPath}: ${name}`),
+  ) || hasErrors;
 
 // --- Shared code analysis ---
 
@@ -896,37 +902,19 @@ const expandedConfigs = expandWildcardDirs(CHECKED_DIRS);
 const sharedConfigs = expandedConfigs.filter((c) => c.shared || c.requireTests);
 const dirErrors = checkDirs(sharedConfigs, srcFiles);
 
-if (dirErrors.length > 0) {
-  console.error("\nShared code violations:\n");
-  for (const msg of dirErrors) {
-    console.error(`  ${msg}\n`);
-  }
-  hasErrors = true;
-}
+hasErrors = reportSection("Shared code violations", dirErrors) || hasErrors;
 
 // --- Import rules ---
 
 const importErrors = checkImportRules(srcFiles, expandedConfigs);
 
-if (importErrors.length > 0) {
-  console.error("\nImport violations:\n");
-  for (const msg of importErrors) {
-    console.error(`  ${msg}`);
-  }
-  hasErrors = true;
-}
+hasErrors = reportSection("Import violations", importErrors) || hasErrors;
 
 // --- Export rules ---
 
 const exportErrors = checkExportRules(srcFiles, expandedConfigs);
 
-if (exportErrors.length > 0) {
-  console.error("\nExport violations:\n");
-  for (const msg of exportErrors) {
-    console.error(`  ${msg}`);
-  }
-  hasErrors = true;
-}
+hasErrors = reportSection("Export violations", exportErrors) || hasErrors;
 
 // --- Result ---
 

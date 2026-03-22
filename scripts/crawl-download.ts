@@ -2,7 +2,8 @@ import { join } from "path";
 import { parseArgs } from "node:util";
 import { createPlaywrightBrowser } from "@/plugins/browser/playwright/index.js";
 import { createJobSite, getJobSiteNames } from "@/plugins/job-site/index.js";
-import type { SearchMode } from "@/plugins/job-site/types.js";
+import { SEARCH_MODES } from "@/models/job-search/types.js";
+import type { SearchMode } from "@/models/job-search/types.js";
 
 const { values } = parseArgs({
   options: {
@@ -14,11 +15,6 @@ const { values } = parseArgs({
   },
 });
 
-const SEARCH_MODES: SearchMode[] = [
-  "employment",
-  "entry-level",
-  "apprenticeship",
-];
 function isSearchMode(value: string | undefined): value is SearchMode {
   return value !== undefined && SEARCH_MODES.some((m) => m === value);
 }
@@ -34,12 +30,13 @@ const location = values.location!;
 const query = values.query!;
 const outDir = values["out-dir"]!;
 
-const sitesToRun = values.site ? [values.site] : getJobSiteNames();
+const allSiteNames = getJobSiteNames();
+const sitesToRun = values.site ? [values.site] : allSiteNames;
 
-const unknown = sitesToRun.filter((s) => !getJobSiteNames().includes(s));
+const unknown = sitesToRun.filter((s) => !allSiteNames.includes(s));
 if (unknown.length) {
   console.error(`Unknown sites: ${unknown.join(", ")}`);
-  console.error(`Available: ${getJobSiteNames().join(", ")}`);
+  console.error(`Available: ${allSiteNames.join(", ")}`);
   process.exit(1);
 }
 

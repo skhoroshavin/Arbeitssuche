@@ -72,8 +72,7 @@ export function computeNextVersion(
 
 // --- CLI ---
 
-function bumpFiles(nextVersion: string): void {
-  const pkg: { version: string } = JSON.parse(readFileSync(PKG_PATH, "utf-8"));
+function bumpFiles(pkg: Record<string, unknown>, nextVersion: string): void {
   pkg.version = nextVersion;
   writeFileSync(PKG_PATH, JSON.stringify(pkg, null, 2) + "\n");
 
@@ -119,7 +118,7 @@ function main() {
   }
 
   // Read current version
-  const pkg: { version: string } = JSON.parse(readFileSync(PKG_PATH, "utf-8"));
+  const pkg = JSON.parse(readFileSync(PKG_PATH, "utf-8"));
   const currentVersion = pkg.version;
   const parsed = parseVersion(currentVersion);
 
@@ -128,7 +127,7 @@ function main() {
   const nextStr = formatVersion(next);
 
   // Update files
-  bumpFiles(nextStr);
+  bumpFiles(pkg, nextStr);
 
   if (noGit) {
     // Output version for CI consumption
