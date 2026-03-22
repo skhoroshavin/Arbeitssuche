@@ -33,8 +33,8 @@ function buildConsultSearchesPrompt(applicant: Applicant): string {
 
 Jeder Vorschlag soll enthalten:
 - "searchTerm": ein prägnanter Suchbegriff für deutsche Jobbörsen (z.B. "React Entwickler", "Senior Java Backend", "DevOps Engineer")
-- "searchMode": einer der folgenden Werte: "employment" (Festanstellung), "entry-level" (Berufseinsteiger), "apprenticeship" (Ausbildung) -- w\u00e4hlen Sie passend zum Erfahrungsniveau
-- "reason": 1-2 S\u00e4tze auf Deutsch, warum dieser Suchbegriff zum Profil passt
+- "searchMode": einer der folgenden Werte: "employment" (Festanstellung), "entry-level" (Berufseinsteiger), "apprenticeship" (Ausbildung) - wählen Sie passend zum Erfahrungsniveau
+- "reason": 1-2 Sätze auf Deutsch, warum dieser Suchbegriff zum Profil passt
 
 Bieten Sie Vielfalt: direkte Treffer basierend auf bisheriger Erfahrung, angrenzende Rollen, und ggf. aufstrebende Karrieremöglichkeiten.
 

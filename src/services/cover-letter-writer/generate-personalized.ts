@@ -47,9 +47,9 @@ Instructions:
 - Personalize the letter for this specific vacancy: use the company name, position title, and contact person (if available)
 - Highlight the applicant's skills and qualities that match the job description
 - Write in the language of the job description (German job description → German letter, English → English)
-- Return ONLY the letter body text (no address, date, or subject line -- those are formatted separately)
+- Return ONLY the letter body text (no address, date, or subject line - those are formatted separately)
 - Do not mention politics directly, even if referenced in personal notes
-- Do not overuse "ich" -- keep the tone professional and concise
+- Do not overuse "ich" - keep the tone professional and concise
 - Do not make the letter sound AI-generated
 - Do not use language that exceeds the applicant's stated proficiency level
 

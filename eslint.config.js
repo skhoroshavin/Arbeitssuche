@@ -17,6 +17,8 @@ const BANNED_CHARS = new Map([
   ["\u2026", "horizontal ellipsis"],
 ]);
 
+const UNICODE_ESCAPE_RE = /\\u[0-9a-fA-F]{4}/;
+
 const noSpecialUnicode = {
   rules: {
     "no-special-unicode": {
@@ -33,6 +35,23 @@ const noSpecialUnicode = {
             if (raw.includes(char)) {
               context.report({ node, message: `String contains ${name} (U+${char.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")}). Use the ASCII equivalent.` });
             }
+          }
+        }
+        return { Literal: check, TemplateLiteral: check };
+      },
+    },
+    "no-unicode-escape": {
+      meta: { type: "suggestion" },
+      create(context) {
+        function check(node) {
+          const raw = node.type === "TemplateLiteral"
+            ? node.quasis.map((q) => q.value.raw).join("")
+            : typeof node.value === "string"
+              ? node.raw
+              : null;
+          if (raw === null) return;
+          if (UNICODE_ESCAPE_RE.test(raw)) {
+            context.report({ node, message: "Use the actual character instead of a \\uXXXX escape sequence." });
           }
         }
         return { Literal: check, TemplateLiteral: check };
@@ -64,6 +83,7 @@ export default tseslint.config(
     plugins: { custom: noSpecialUnicode },
     rules: {
       "custom/no-special-unicode": "error",
+      "custom/no-unicode-escape": "error",
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
