@@ -418,7 +418,7 @@ export default function ApplicantOverview() {
             <button
               key={opt.value}
               type="button"
-              title={`${opt.label} — ${opt.description}`}
+              title={`${opt.label} - ${opt.description}`}
               disabled={downloadResume.isPending}
               onClick={() => downloadResume.mutate(opt.value)}
               className="flex flex-col items-center rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-95 transition-colors disabled:opacity-50"

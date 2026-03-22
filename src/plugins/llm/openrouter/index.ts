@@ -42,10 +42,10 @@ export const openrouterProviderInfo: LlmProviderInfo = {
   instructions: [
     "1. Erstelle ein Konto auf [openrouter.ai](https://openrouter.ai) oder melde dich an",
     "2. Gehe zu [Credits](https://openrouter.ai/credits)",
-    "3. Klicke auf \u201EBuy Credits\u201C und f\u00fcge Guthaben hinzu (ab $5)",
-    "4. Gehe zu [Keys](https://openrouter.ai/keys) \u2192 klicke auf \u201ECreate Key\u201C",
-    "5. Gib dem Schl\u00fcssel einen Namen (z.\u202fB. \u201EArbeitssuche\u201C) und klicke auf \u201ECreate\u201C",
-    "6. Kopiere den Schl\u00fcssel \u2014 er beginnt mit `sk-or-\u2026`",
+    '3. Klicke auf "Buy Credits" und f\u00fcge Guthaben hinzu (ab $5)',
+    '4. Gehe zu [Keys](https://openrouter.ai/keys) \u2192 klicke auf "Create Key"',
+    '5. Gib dem Schl\u00fcssel einen Namen (z.\u202fB. "Arbeitssuche") und klicke auf "Create"',
+    "6. Kopiere den Schl\u00fcssel -- er beginnt mit `sk-or-...`",
     "7. F\u00fcge ihn oben ein",
   ].join("\n"),
 };

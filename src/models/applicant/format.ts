@@ -15,7 +15,7 @@ function formatHighlights(
 
 function formatExperienceLine(e: ApplicantExperience): string {
   const hl = formatHighlights(e.highlights);
-  return `- ${e.role} bei ${e.company} (${e.startDate}–${e.endDate})${hl ? ": " + hl : ""}`;
+  return `- ${e.role} bei ${e.company} (${e.startDate}-${e.endDate})${hl ? ": " + hl : ""}`;
 }
 
 function formatEducationLine(e: ApplicantEducation): string {

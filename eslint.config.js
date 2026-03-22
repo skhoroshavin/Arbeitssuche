@@ -3,6 +3,45 @@ import tseslint from "typescript-eslint";
 import checkFile from "eslint-plugin-check-file";
 
 // =============================================================================
+// Custom plugins
+// =============================================================================
+
+const BANNED_CHARS = new Map([
+  ["\u201C", "left double quotation mark"],
+  ["\u201D", "right double quotation mark"],
+  ["\u2018", "left single quotation mark"],
+  ["\u2019", "right single quotation mark"],
+  ["\u00A0", "non-breaking space"],
+  ["\u2013", "en dash"],
+  ["\u2014", "em dash"],
+  ["\u2026", "horizontal ellipsis"],
+]);
+
+const noSpecialUnicode = {
+  rules: {
+    "no-special-unicode": {
+      meta: { type: "problem" },
+      create(context) {
+        function check(node) {
+          const raw = node.type === "TemplateLiteral"
+            ? node.quasis.map((q) => q.value.raw).join("")
+            : typeof node.value === "string"
+              ? node.value
+              : null;
+          if (raw === null) return;
+          for (const [char, name] of BANNED_CHARS) {
+            if (raw.includes(char)) {
+              context.report({ node, message: `String contains ${name} (U+${char.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")}). Use the ASCII equivalent.` });
+            }
+          }
+        }
+        return { Literal: check, TemplateLiteral: check };
+      },
+    },
+  },
+};
+
+// =============================================================================
 // Config
 // =============================================================================
 
@@ -22,7 +61,9 @@ export default tseslint.config(
   },
   {
     files: ["**/*.{ts,tsx}"],
+    plugins: { custom: noSpecialUnicode },
     rules: {
+      "custom/no-special-unicode": "error",
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
