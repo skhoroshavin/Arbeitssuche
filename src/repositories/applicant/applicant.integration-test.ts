@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createSqliteApplicantRepository } from "./index.js";
-import { Database } from "@/repositories/database.js";
+import { Database } from "@/utils/database.js";
 import {
   applicantRepositoryTests,
   makeSampleApplicant,

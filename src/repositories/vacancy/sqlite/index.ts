@@ -1,4 +1,4 @@
-import { Database, queryRow, queryRows } from "@/repositories/database.js";
+import { Database, queryRow, queryRows } from "@/utils/database.js";
 import type { Vacancy, Activity } from "@/models/vacancy/types.js";
 import {
   createVacancyListOutput,

@@ -217,6 +217,62 @@ if (violations.length > 0) {
     }
     console.error();
   }
+}
+
+// --- Utils shared code check ---
+
+const SRC_DIR = join(import.meta.dirname, "..", "src");
+const UTILS_DIR = join(SRC_DIR, "utils");
+
+function collectUtilsFiles(): string[] {
+  return readdirSync(UTILS_DIR)
+    .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
+    .map((f) => f.replace(/\.ts$/, ""));
+}
+
+function findUtilsImporters(moduleName: string): string[] {
+  const importPath = `@/utils/${moduleName}`;
+  const srcFiles = collectFiles(SRC_DIR, [".ts", ".tsx"]);
+  const dirs = new Set<string>();
+  for (const file of srcFiles) {
+    const relToSrc = relative(SRC_DIR, file.path);
+    if (relToSrc.startsWith("utils/")) continue;
+    if (!file.content.includes(importPath)) continue;
+    // Entity = the directory containing the importing file, relative to src/
+    const parts = relToSrc.split("/");
+    // Use up to 3 levels of depth for entity identity (e.g. plugins/job-site/dm)
+    const entity = parts.slice(0, Math.min(parts.length - 1, 3)).join("/");
+    dirs.add(entity);
+  }
+  return [...dirs];
+}
+
+const utilsFiles = collectUtilsFiles();
+const utilsViolations: { file: string; importers: string[] }[] = [];
+
+for (const moduleName of utilsFiles) {
+  const importers = findUtilsImporters(moduleName);
+  if (importers.length < 2) {
+    utilsViolations.push({ file: moduleName, importers });
+  }
+}
+
+if (utilsViolations.length > 0) {
+  console.error("\nUtils shared code violations:\n");
+  for (const v of utilsViolations) {
+    if (v.importers.length === 0) {
+      console.error(`  utils/${v.file}.ts is not imported by any entity`);
+    } else {
+      console.error(
+        `  utils/${v.file}.ts is only imported by: ${v.importers.join(", ")}`,
+      );
+    }
+    console.error(`    → Must be used by at least 2 different entities\n`);
+  }
+}
+
+const totalViolations = violations.length + utilsViolations.length;
+if (totalViolations > 0) {
   process.exit(1);
 } else {
   console.log("Shared code placement: OK");

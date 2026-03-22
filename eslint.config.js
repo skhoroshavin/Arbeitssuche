@@ -2,15 +2,23 @@ import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import checkFile from "eslint-plugin-check-file";
 
-const ALL_LAYERS = ["plugins", "models", "repositories", "services", "app"];
+const ALL_LAYERS = [
+  "plugins",
+  "models",
+  "repositories",
+  "services",
+  "app",
+  "utils",
+];
 const BACKEND_LAYERS = ["plugins", "repositories", "services"];
 
 const ALLOWED_IMPORTS = {
-  plugins: ["plugins"],
+  utils: ["utils"],
+  plugins: ["plugins", "utils"],
   models: ["models"],
-  repositories: ["models", "repositories"],
-  services: ["models", "plugins", "repositories", "services"],
-  app: ["models", "plugins", "repositories", "services", "app"],
+  repositories: ["models", "repositories", "utils"],
+  services: ["models", "plugins", "repositories", "services", "utils"],
+  app: ["models", "plugins", "repositories", "services", "app", "utils"],
 };
 
 const NO_RELATIVE_PARENT = {
@@ -262,10 +270,7 @@ export default tseslint.config(
   ...uiSubLayerRules,
   {
     files: ["src/plugins/job-site/*/index.ts"],
-    ignores: [
-      "src/plugins/job-site/stub/index.ts",
-      "src/plugins/job-site/json-ld/index.ts",
-    ],
+    ignores: ["src/plugins/job-site/stub/index.ts"],
     rules: {
       "no-restricted-exports": [
         "error",

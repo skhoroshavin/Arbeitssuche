@@ -1,4 +1,4 @@
-import type { Database } from "@/repositories/database.js";
+import type { Database } from "@/utils/database.js";
 import type { ApplicantRepository } from "@/repositories/applicant/types.js";
 import { createSqliteApplicantRepository } from "@/repositories/applicant/index.js";
 import type { JobSearchRepository } from "@/repositories/job-search/types.js";

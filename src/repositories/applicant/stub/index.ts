@@ -4,7 +4,7 @@ import {
   type ApplicantInfo,
 } from "@/models/applicant/types.js";
 import type { ApplicantRepository } from "@/repositories/applicant/types.js";
-import { deriveId } from "@/repositories/derive-id.js";
+import { deriveId } from "@/utils/derive-id.js";
 
 class StubApplicantRepository implements ApplicantRepository {
   private readonly store: Map<string, Applicant>;

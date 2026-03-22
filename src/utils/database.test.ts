@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Database } from "@/repositories/database";
+import { Database } from "@/utils/database";
 
 describe("Database", () => {
   const testDir = join(tmpdir(), `db-test-${Date.now()}`);

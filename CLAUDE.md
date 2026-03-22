@@ -44,23 +44,28 @@ npm run check:shared-code     # Verify ui/components & ui/hooks are genuinely sh
 
 ```
 src/
+  utils/          # Shared utilities used by 2+ different entity implementations.
+                  #   Self-contained: no @/ imports from other layers.
+                  #   Enforced by check-shared-code script.
   plugins/        # External service interfaces (browser, commute, job-site, llm, pdf-renderer).
                   #   Each has types.ts + real impl + stub/ for testing.
-                  #   NO imports from other layers.
+                  #   Subfolders are implementations only, never utilities.
+                  #   Imports: plugins, utils.
   models/         # Pure domain type definitions + constants + simple self-contained helpers.
                   #   NO imports from other layers.
   repositories/   # Repository interfaces + impls (stub + sqlite) for domain entities.
-                  #   Imports: models.
+                  #   Subfolders are implementations only, never utilities.
+                  #   Imports: models, utils.
   services/       # Business logic as DI service classes.
                   #   resume-renderer/  — PDF generation
                   #   job-consultant/   — job search suggestions from LLM
                   #   vacancy-scanner/  — crawl and analyse (extract contacts, estimate commute time, etc) vacancies
                   #   cover-letter-writer/ — generic + personalized cover letters from LLM
-                  #   Imports: models, plugins, repositories, services.
+                  #   Imports: models, plugins, repositories, services, utils.
   app/            # Electron main process (IPC handlers, protocol, background tasks).
                   #   app/config/ — config repository (electron-store + stub).
                   #   app/secrets/ — secrets repository (encrypted + stub).
-                  #   Imports: all lower layers.
+                  #   Imports: all lower layers + utils.
   ui/             # Renderer process (React SPA).
                   #   components/ — shared presentational components (must be used by 2+ page groups)
                   #   hooks/      — shared custom hooks (self-contained, no @/ui imports)
@@ -78,10 +83,11 @@ Always use `@/` path alias for cross-module imports — `../` imports are forbid
 
 | Layer | Allowed `@/` imports |
 |-------|---------------------|
-| `plugins/` | `@/plugins` |
+| `utils/` | `@/utils` |
+| `plugins/` | `@/plugins`, `@/utils` |
 | `models/` | `@/models` |
-| `repositories/` | `@/models`, `@/repositories` |
-| `services/` | `@/models`, `@/plugins`, `@/repositories`, `@/services` |
+| `repositories/` | `@/models`, `@/repositories`, `@/utils` |
+| `services/` | `@/models`, `@/plugins`, `@/repositories`, `@/services`, `@/utils` |
 | `app/` | all lower layers + `@/app` |
 
 **Module boundary rules (backend layers: plugins, repositories, services)**
