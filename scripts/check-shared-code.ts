@@ -1,11 +1,19 @@
-import { readFileSync, readdirSync } from "fs";
+import { existsSync, readFileSync, readdirSync } from "fs";
 import { join, relative } from "path";
 
-const UI_DIR = join(import.meta.dirname, "..", "src", "ui");
+const ROOT = join(import.meta.dirname, "..");
+const SRC_DIR = join(ROOT, "src");
+const UI_DIR = join(SRC_DIR, "ui");
+const UTILS_DIR = join(SRC_DIR, "utils");
+
 const PAGE_GROUPS: Zone[] = ["applicant", "job-search", "settings"];
 
 /** Source modules excluded from placement checks (always considered shared). */
 const EXCLUDED_MODULES = new Set(["Icons"]);
+
+// =============================================================================
+// File collection
+// =============================================================================
 
 type Zone =
   | "components"
@@ -36,14 +44,14 @@ function classifyFile(relPath: string): Zone | null {
   return null;
 }
 
-function collectFiles(dir: string, ext: string[]): FileInfo[] {
+function collectFiles(dir: string, baseDir: string, ext: string[]): FileInfo[] {
   const results: FileInfo[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      results.push(...collectFiles(full, ext));
+      results.push(...collectFiles(full, baseDir, ext));
     } else if (ext.some((e) => entry.name.endsWith(e))) {
-      const relPath = relative(UI_DIR, full);
+      const relPath = relative(baseDir, full);
       results.push({
         path: full,
         relPath,
@@ -54,6 +62,14 @@ function collectFiles(dir: string, ext: string[]): FileInfo[] {
   }
   return results;
 }
+
+// =============================================================================
+// UI shared code check
+// =============================================================================
+//
+// Exports in ui/components/ and ui/hooks/ must be genuinely shared:
+// used by 2+ page groups, layout + a page group, or a sibling in the same dir.
+// Single-page-group-only code belongs in pages/<group>/components/ or hooks/.
 
 interface SharedExport {
   name: string;
@@ -83,22 +99,6 @@ function parseBarrel(
   return exports;
 }
 
-/** Check if a shared module is imported by a sibling file in the same directory (via relative import). */
-function isImportedBySibling(
-  sharedExport: SharedExport,
-  allFiles: FileInfo[],
-): boolean {
-  const relImport = `./${sharedExport.sourceModule}`;
-  for (const file of allFiles) {
-    if (!file.relPath.startsWith(`${sharedExport.kind}/`)) continue;
-    const basename = file.path.replace(/\.[^.]+$/, "");
-    if (basename.endsWith(`/${sharedExport.sourceModule}`)) continue;
-    if (file.path.endsWith("index.ts")) continue;
-    if (file.content.includes(`from "${relImport}"`)) return true;
-  }
-  return false;
-}
-
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 }
@@ -120,10 +120,7 @@ function findImporters(
       `from\\s+["']${escapeRegExp(directImportPath)}["']`,
     );
     if (directImportRe.test(file.content)) {
-      results.push({
-        file: relative(join(UI_DIR, ".."), file.path),
-        zone: file.zone,
-      });
+      results.push({ file: file.relPath, zone: file.zone });
       continue;
     }
 
@@ -141,146 +138,140 @@ function findImporters(
         .trim(),
     );
     if (importedNames.includes(sharedExport.name)) {
-      results.push({
-        file: relative(join(UI_DIR, ".."), file.path),
-        zone: file.zone,
-      });
+      results.push({ file: file.relPath, zone: file.zone });
     }
   }
   return results;
 }
 
-function isValid(
+/** Check if a shared module is imported by a sibling file in the same directory. */
+function isImportedBySibling(
+  sharedExport: SharedExport,
+  allFiles: FileInfo[],
+): boolean {
+  const relImport = `./${sharedExport.sourceModule}`;
+  for (const file of allFiles) {
+    if (!file.relPath.startsWith(`${sharedExport.kind}/`)) continue;
+    const basename = file.path.replace(/\.[^.]+$/, "");
+    if (basename.endsWith(`/${sharedExport.sourceModule}`)) continue;
+    if (file.path.endsWith("index.ts")) continue;
+    if (file.content.includes(`from "${relImport}"`)) return true;
+  }
+  return false;
+}
+
+function isGenuinelyShared(
   sharedExport: SharedExport,
   importers: { file: string; zone: Zone }[],
   allFiles: FileInfo[],
 ): boolean {
-  if (importers.length === 0) return true; // unused exports are fine (caught by TS/eslint)
+  if (importers.length === 0) return true; // unused — caught by TS/eslint
 
   const zones = new Set(importers.map((i) => i.zone));
   const pageGroups = PAGE_GROUPS.filter((g) => zones.has(g));
 
-  // Rule 1: Imported by another file in the same shared directory (via relative import)
   if (isImportedBySibling(sharedExport, allFiles)) return true;
-
-  // Rule 2: Imported by 2+ distinct page groups
   if (pageGroups.length >= 2) return true;
-
-  // Rule 3: Imported by layout + at least 1 page group
   if (zones.has("layout") && pageGroups.length >= 1) return true;
-
-  // For hooks: imports from data/ count as shared (data hooks serve all pages)
   if (sharedExport.kind === "hooks" && zones.has("data")) return true;
 
   return false;
 }
 
-// --- Main ---
+function checkUiSharedCode(): string[] {
+  const errors: string[] = [];
+  const uiFiles = collectFiles(UI_DIR, UI_DIR, [".ts", ".tsx"]);
 
-const componentsBarrel = join(UI_DIR, "components", "index.ts");
-const hooksBarrel = join(UI_DIR, "hooks", "index.ts");
+  const sharedExports = [
+    ...parseBarrel(join(UI_DIR, "components", "index.ts"), "components"),
+    ...parseBarrel(join(UI_DIR, "hooks", "index.ts"), "hooks"),
+  ];
 
-const sharedExports = [
-  ...parseBarrel(componentsBarrel, "components"),
-  ...parseBarrel(hooksBarrel, "hooks"),
-];
-
-const allFiles = collectFiles(UI_DIR, [".ts", ".tsx"]);
-const violations: {
-  export: SharedExport;
-  importers: { file: string; zone: Zone }[];
-}[] = [];
-
-for (const exp of sharedExports) {
-  if (EXCLUDED_MODULES.has(exp.sourceModule)) continue;
-  const importers = findImporters(allFiles, exp);
-  if (!isValid(exp, importers, allFiles)) {
-    violations.push({ export: exp, importers });
-  }
-}
-
-if (violations.length > 0) {
-  console.error("\nShared code placement violations:\n");
-  for (const v of violations) {
-    const dir = v.export.kind;
-    const zones = [...new Set(v.importers.map((i) => i.zone))];
-    const targetGroup = zones[0];
-    console.error(
-      `  ui/${dir}/${v.export.sourceModule}.tsx exports "${v.export.name}" but is only used by page "${targetGroup}"`,
-    );
-    console.error(
-      `    → Move to src/ui/pages/${targetGroup}/${dir}/${v.export.sourceModule}.tsx`,
-    );
-    console.error(`    Imported by:`);
-    for (const imp of v.importers) {
-      console.error(`      ${imp.file}`);
+  for (const exp of sharedExports) {
+    if (EXCLUDED_MODULES.has(exp.sourceModule)) continue;
+    const importers = findImporters(uiFiles, exp);
+    if (!isGenuinelyShared(exp, importers, uiFiles)) {
+      const zones = [...new Set(importers.map((i) => i.zone))];
+      const target = zones[0];
+      const dir = exp.kind;
+      errors.push(
+        `ui/${dir}/${exp.sourceModule}.tsx exports "${exp.name}" but is only used by "${target}"` +
+          `\n    → Move to src/ui/pages/${target}/${dir}/${exp.sourceModule}.tsx` +
+          `\n    Imported by:\n${importers.map((i) => `      ${i.file}`).join("\n")}`,
+      );
     }
-    console.error();
   }
+
+  return errors;
 }
 
-// --- Utils shared code check ---
+// =============================================================================
+// Utils shared code check
+// =============================================================================
+//
+// Each file in src/utils/ must be:
+// 1. Imported by 2+ different entities (e.g. plugins/job-site/dm + plugins/job-site/xing)
+// 2. Accompanied by a test file (e.g. database.ts → database.test.ts)
 
-const SRC_DIR = join(import.meta.dirname, "..", "src");
-const UTILS_DIR = join(SRC_DIR, "utils");
-
-function collectUtilsFiles(): string[] {
-  return readdirSync(UTILS_DIR)
+function checkUtils(): string[] {
+  const errors: string[] = [];
+  const srcFiles = collectFiles(SRC_DIR, SRC_DIR, [".ts", ".tsx"]);
+  const utilsModules = readdirSync(UTILS_DIR)
     .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
     .map((f) => f.replace(/\.ts$/, ""));
-}
 
-function findUtilsImporters(moduleName: string): string[] {
-  const importPath = `@/utils/${moduleName}`;
-  const srcFiles = collectFiles(SRC_DIR, [".ts", ".tsx"]);
-  const dirs = new Set<string>();
-  for (const file of srcFiles) {
-    const relToSrc = relative(SRC_DIR, file.path);
-    if (relToSrc.startsWith("utils/")) continue;
-    if (!file.content.includes(importPath)) continue;
-    // Entity = the directory containing the importing file, relative to src/
-    const parts = relToSrc.split("/");
-    // Use up to 3 levels of depth for entity identity (e.g. plugins/job-site/dm)
-    const entity = parts.slice(0, Math.min(parts.length - 1, 3)).join("/");
-    dirs.add(entity);
-  }
-  return [...dirs];
-}
+  for (const name of utilsModules) {
+    if (!existsSync(join(UTILS_DIR, `${name}.test.ts`))) {
+      errors.push(
+        `utils/${name}.ts has no test → Create utils/${name}.test.ts`,
+      );
+    }
 
-const utilsFiles = collectUtilsFiles();
-const utilsViolations: string[] = [];
+    // Find distinct entities that import this util.
+    // Entity = up to 3 directory levels, e.g. "plugins/job-site/dm".
+    const importStr = `@/utils/${name}`;
+    const entities = new Set<string>();
+    for (const file of srcFiles) {
+      if (file.relPath.startsWith("utils/")) continue;
+      if (!file.content.includes(importStr)) continue;
+      const parts = file.relPath.split("/");
+      entities.add(parts.slice(0, Math.min(parts.length - 1, 3)).join("/"));
+    }
 
-for (const moduleName of utilsFiles) {
-  const importers = findUtilsImporters(moduleName);
-  if (importers.length < 2) {
-    const detail =
-      importers.length === 0
-        ? "not imported by any entity"
-        : `only imported by: ${importers.join(", ")}`;
-    utilsViolations.push(
-      `  utils/${moduleName}.ts ${detail}\n    → Must be used by at least 2 different entities`,
-    );
+    if (entities.size < 2) {
+      const detail =
+        entities.size === 0
+          ? "not imported by any entity"
+          : `only used by: ${[...entities].join(", ")}`;
+      errors.push(`utils/${name}.ts ${detail} → Must be used by 2+ entities`);
+    }
   }
 
-  const testFile = join(UTILS_DIR, `${moduleName}.test.ts`);
-  try {
-    readFileSync(testFile);
-  } catch {
-    utilsViolations.push(
-      `  utils/${moduleName}.ts has no corresponding test file\n    → Create utils/${moduleName}.test.ts`,
-    );
+  return errors;
+}
+
+// =============================================================================
+// Main
+// =============================================================================
+
+const uiErrors = checkUiSharedCode();
+const utilsErrors = checkUtils();
+
+if (uiErrors.length > 0) {
+  console.error("\nUI shared code violations:\n");
+  for (const msg of uiErrors) {
+    console.error(`  ${msg}\n`);
   }
 }
 
-if (utilsViolations.length > 0) {
+if (utilsErrors.length > 0) {
   console.error("\nUtils violations:\n");
-  for (const msg of utilsViolations) {
-    console.error(msg + "\n");
+  for (const msg of utilsErrors) {
+    console.error(`  ${msg}\n`);
   }
 }
 
-const totalViolations = violations.length + utilsViolations.length;
-if (totalViolations > 0) {
+if (uiErrors.length + utilsErrors.length > 0) {
   process.exit(1);
 } else {
   console.log("Shared code placement: OK");
