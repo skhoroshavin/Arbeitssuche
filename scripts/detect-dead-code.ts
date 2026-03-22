@@ -1,15 +1,19 @@
-import { readFileSync, readdirSync } from "fs";
-import { join, relative, resolve, dirname } from "path";
-
-const ROOT = join(import.meta.dirname, "..");
-const SRC_DIR = join(ROOT, "src");
+import { relative } from "path";
+import { SyntaxKind, type SourceFile, Node } from "ts-morph";
+import {
+  createProject,
+  SRC_DIR,
+  isTestFile,
+  isEntryPoint,
+  getSrcRelPath,
+} from "./lib/project.js";
 
 // =============================================================================
 // Types
 // =============================================================================
 
 interface FileExports {
-  path: string;
+  sourceFile: SourceFile;
   relPath: string;
   exports: ExportEntry[];
 }
@@ -20,115 +24,26 @@ interface ExportEntry {
   used: boolean;
 }
 
-interface ReExport {
-  sourceFile: string;
-  originalName: string;
-}
-
-// =============================================================================
-// File collection
-// =============================================================================
-
-function collectFiles(dir: string, ext: string[]): string[] {
-  const results: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === "node_modules" || entry.name === "out") continue;
-      results.push(...collectFiles(full, ext));
-    } else if (ext.some((e) => entry.name.endsWith(e))) {
-      results.push(full);
-    }
-  }
-  return results;
-}
-
 // =============================================================================
 // Export extraction
 // =============================================================================
 
-function extractExports(
-  content: string,
-): { name: string; kind: "value" | "type" }[] {
-  const exports: { name: string; kind: "value" | "type" }[] = [];
+const TYPE_KINDS = new Set([
+  SyntaxKind.InterfaceDeclaration,
+  SyntaxKind.TypeAliasDeclaration,
+]);
 
-  // export (const|let|function|class|enum|abstract class) NAME
-  const declRe =
-    /^export\s+(?:abstract\s+)?(?:async\s+)?(const|let|function|class|enum)\s+(\w+)/gm;
-  let m: RegExpExecArray | null;
-  while ((m = declRe.exec(content)) !== null) {
-    exports.push({ name: m[2], kind: "value" });
+function extractExports(sourceFile: SourceFile): ExportEntry[] {
+  const entries: ExportEntry[] = [];
+  const exportedDecls = sourceFile.getExportedDeclarations();
+
+  for (const [name, declarations] of exportedDecls) {
+    const decl = declarations[0];
+    const kind = TYPE_KINDS.has(decl.getKind()) ? "type" : "value";
+    entries.push({ name, kind, used: false });
   }
 
-  // export (type|interface) NAME
-  const typeRe = /^export\s+(type|interface)\s+(\w+)/gm;
-  while ((m = typeRe.exec(content)) !== null) {
-    exports.push({ name: m[2], kind: "type" });
-  }
-
-  // export default
-  if (/^export\s+default\s/m.test(content)) {
-    exports.push({ name: "default", kind: "value" });
-  }
-
-  // export (type)? { names } (from "path")?
-  const braceRe = /^export\s+(?:type\s+)?\{([^}]+)\}/gm;
-  while ((m = braceRe.exec(content)) !== null) {
-    const isTypeExport = /^export\s+type\s+\{/.test(m[0]);
-    const names = m[1].split(",").map((n) => n.trim());
-    for (const raw of names) {
-      if (!raw) continue;
-      const aliasMatch = raw.match(/(?:\w+)\s+as\s+(\w+)/);
-      const typePrefix = raw.startsWith("type ");
-      const name = aliasMatch
-        ? aliasMatch[1]
-        : typePrefix
-          ? raw.replace(/^type\s+/, "")
-          : raw;
-      const kind = isTypeExport || typePrefix ? "type" : "value";
-      exports.push({ name, kind });
-    }
-  }
-
-  return exports;
-}
-
-// =============================================================================
-// Re-export tracking
-// =============================================================================
-
-/** Map from "file::exportedName" → { sourceFile, originalName } */
-type ReExportMap = Map<string, ReExport>;
-
-function buildReExportMap(files: Map<string, string>): ReExportMap {
-  const map: ReExportMap = new Map();
-  const reExportRe =
-    /^export\s+(?:type\s+)?\{([^}]+)\}\s+from\s+["']([^"']+)["']/gm;
-
-  for (const [filePath, content] of files) {
-    let m: RegExpExecArray | null;
-    while ((m = reExportRe.exec(content)) !== null) {
-      const names = m[1].split(",").map((n) => n.trim());
-      const importPath = m[2];
-      const resolved = resolveImportPath(importPath, dirname(filePath));
-      if (!resolved) continue;
-
-      for (const raw of names) {
-        if (!raw) continue;
-        const aliasMatch = raw.match(/(\w+)\s+as\s+(\w+)/);
-        const originalName = aliasMatch
-          ? aliasMatch[1].replace(/^type\s+/, "")
-          : raw.replace(/^type\s+/, "");
-        const exportedName = aliasMatch ? aliasMatch[2] : originalName;
-        map.set(`${filePath}::${exportedName}`, {
-          sourceFile: resolved,
-          originalName,
-        });
-      }
-    }
-  }
-
-  return map;
+  return entries;
 }
 
 // =============================================================================
@@ -136,171 +51,181 @@ function buildReExportMap(files: Map<string, string>): ReExportMap {
 // =============================================================================
 
 interface ImportRef {
-  importerPath: string;
   targetFile: string;
   names: string[];
   isNamespace: boolean;
 }
 
-function extractImports(filePath: string, content: string): ImportRef[] {
+function extractImports(sourceFile: SourceFile): ImportRef[] {
   const imports: ImportRef[] = [];
-  const importerDir = dirname(filePath);
 
-  // import { names } from "path"  /  import type { names } from "path"
-  const namedRe =
-    /^import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+["']([^"']+)["']/gm;
-  let m: RegExpExecArray | null;
-  while ((m = namedRe.exec(content)) !== null) {
-    const resolved = resolveImportPath(m[2], importerDir);
-    if (!resolved) continue;
-    const names = m[1]
-      .split(",")
-      .map((n) => {
-        const trimmed = n.trim().replace(/^type\s+/, "");
-        const aliasMatch = trimmed.match(/(\w+)\s+as\s+\w+/);
-        return aliasMatch ? aliasMatch[1] : trimmed;
-      })
-      .filter(Boolean);
-    imports.push({
-      importerPath: filePath,
-      targetFile: resolved,
-      names,
-      isNamespace: false,
-    });
-  }
+  for (const importDecl of sourceFile.getImportDeclarations()) {
+    const targetFile = importDecl.getModuleSpecifierSourceFile();
+    if (!targetFile) continue;
 
-  // import Name from "path"
-  const defaultRe = /^import\s+(\w+)\s+from\s+["']([^"']+)["']/gm;
-  while ((m = defaultRe.exec(content)) !== null) {
-    // Skip if it looks like "import type" or a named import
-    if (m[1] === "type") continue;
-    const resolved = resolveImportPath(m[2], importerDir);
-    if (!resolved) continue;
-    imports.push({
-      importerPath: filePath,
-      targetFile: resolved,
-      names: ["default"],
-      isNamespace: false,
-    });
-  }
+    const targetPath = targetFile.getFilePath();
+    const namedImports = importDecl.getNamedImports();
+    const defaultImport = importDecl.getDefaultImport();
+    const namespaceImport = importDecl.getNamespaceImport();
 
-  // import * as Name from "path"
-  const nsRe = /^import\s+\*\s+as\s+\w+\s+from\s+["']([^"']+)["']/gm;
-  while ((m = nsRe.exec(content)) !== null) {
-    const resolved = resolveImportPath(m[1], importerDir);
-    if (!resolved) continue;
-    imports.push({
-      importerPath: filePath,
-      targetFile: resolved,
-      names: [],
-      isNamespace: true,
-    });
+    if (namespaceImport) {
+      imports.push({ targetFile: targetPath, names: [], isNamespace: true });
+    } else {
+      const names: string[] = [];
+      if (defaultImport) names.push("default");
+      for (const named of namedImports) {
+        names.push(named.getName());
+      }
+      if (names.length > 0) {
+        imports.push({ targetFile: targetPath, names, isNamespace: false });
+      }
+    }
   }
 
   return imports;
 }
 
 // =============================================================================
-// Path resolution
+// Unused unexported symbol detection
 // =============================================================================
 
-function resolveImportPath(
-  importPath: string,
-  importerDir: string,
-): string | null {
-  let basePath: string;
+interface UnusedSymbol {
+  relPath: string;
+  name: string;
+  kind: "value" | "type";
+}
 
-  if (importPath.startsWith("@/")) {
-    basePath = join(SRC_DIR, importPath.slice(2).replace(/\.js$/, ""));
-  } else if (importPath.startsWith("./") || importPath.startsWith("../")) {
-    basePath = resolve(importerDir, importPath.replace(/\.js$/, ""));
-  } else {
-    return null; // bare specifier (node_modules)
+const DECLARATION_KINDS = new Set([
+  SyntaxKind.FunctionDeclaration,
+  SyntaxKind.VariableStatement,
+  SyntaxKind.ClassDeclaration,
+  SyntaxKind.InterfaceDeclaration,
+  SyntaxKind.TypeAliasDeclaration,
+  SyntaxKind.EnumDeclaration,
+]);
+
+function findUnusedUnexported(sourceFile: SourceFile): UnusedSymbol[] {
+  const unused: UnusedSymbol[] = [];
+  const relPath = getSrcRelPath(sourceFile);
+
+  for (const statement of sourceFile.getStatements()) {
+    if (!DECLARATION_KINDS.has(statement.getKind())) continue;
+
+    // VariableStatement may contain multiple declarations
+    if (Node.isVariableStatement(statement)) {
+      if (statement.isExported()) continue;
+      for (const decl of statement.getDeclarations()) {
+        const name = decl.getName();
+        if (name.startsWith("_")) continue;
+        const refs = decl.findReferencesAsNodes();
+        if (refs.length === 0) {
+          unused.push({ relPath, name, kind: "value" });
+        }
+      }
+      continue;
+    }
+
+    if (
+      Node.isFunctionDeclaration(statement) ||
+      Node.isClassDeclaration(statement) ||
+      Node.isEnumDeclaration(statement) ||
+      Node.isInterfaceDeclaration(statement) ||
+      Node.isTypeAliasDeclaration(statement)
+    ) {
+      if (statement.isExported()) continue;
+      const name = statement.getName();
+      if (!name || name.startsWith("_")) continue;
+      const refs = statement.findReferencesAsNodes();
+      if (refs.length === 0) {
+        const kind = TYPE_KINDS.has(statement.getKind()) ? "type" : "value";
+        unused.push({ relPath, name, kind });
+      }
+    }
   }
 
-  const candidates = [
-    `${basePath}.ts`,
-    `${basePath}.tsx`,
-    join(basePath, "index.ts"),
-    join(basePath, "index.tsx"),
-  ];
-
-  for (const c of candidates) {
-    if (allFilePaths.has(c)) return c;
-  }
-  return null;
+  return unused;
 }
 
 // =============================================================================
-// Entry point detection
+// Re-export map
 // =============================================================================
 
-function isEntryPoint(filePath: string): boolean {
-  const rel = relative(SRC_DIR, filePath);
-  if (
-    rel === "app/main.ts" ||
-    rel === "app/preload.ts" ||
-    rel === "ui/main.tsx"
-  ) {
-    return true;
-  }
-  return false;
-}
+/** Map from "file::exportedName" → { sourceFile, originalName } */
+type ReExportMap = Map<string, { sourceFile: string; originalName: string }>;
 
-function isTestFile(filePath: string): boolean {
-  return (
-    filePath.endsWith(".test.ts") ||
-    filePath.endsWith(".integration-test.ts") ||
-    filePath.endsWith(".test-suite.ts")
-  );
+function buildReExportMap(srcSourceFiles: SourceFile[]): ReExportMap {
+  const map: ReExportMap = new Map();
+
+  for (const sf of srcSourceFiles) {
+    const filePath = sf.getFilePath();
+    const exportedDecls = sf.getExportedDeclarations();
+
+    for (const [name, declarations] of exportedDecls) {
+      const decl = declarations[0];
+      const declSourceFile = decl.getSourceFile();
+      const declFilePath = declSourceFile.getFilePath();
+      if (declFilePath === filePath) continue;
+
+      // Find the original export name in the source file
+      let originalName = name;
+      const origExports = declSourceFile.getExportedDeclarations();
+      for (const [origName, origDecls] of origExports) {
+        if (origDecls.some((d) => d === decl)) {
+          originalName = origName;
+          break;
+        }
+      }
+
+      map.set(`${filePath}::${name}`, {
+        sourceFile: declFilePath,
+        originalName,
+      });
+    }
+  }
+
+  return map;
 }
 
 // =============================================================================
 // Main
 // =============================================================================
 
-// Collect all files
-const srcFiles = collectFiles(SRC_DIR, [".ts", ".tsx"]);
-const scriptFiles = collectFiles(join(ROOT, "scripts"), [".ts"]);
-const e2eFiles = collectFiles(join(ROOT, "e2e"), [".ts"]);
+const project = createProject();
 
-const allFiles = [...srcFiles, ...scriptFiles, ...e2eFiles];
-const allFilePaths = new Set(allFiles);
-
-// Read file contents
-const fileContents = new Map<string, string>();
-for (const f of allFiles) {
-  fileContents.set(f, readFileSync(f, "utf-8"));
-}
+const allSourceFiles = project.getSourceFiles();
+const srcFiles = allSourceFiles.filter((sf) =>
+  sf.getFilePath().startsWith(SRC_DIR + "/"),
+);
 
 // Extract exports from src/ files (excluding test files and entry points)
+const analyzedFiles = srcFiles.filter(
+  (sf) => !isTestFile(sf.getFilePath()) && !isEntryPoint(sf.getFilePath()),
+);
 const fileExports: FileExports[] = [];
-for (const f of srcFiles) {
-  if (isTestFile(f) || isEntryPoint(f)) continue;
-  const content = fileContents.get(f)!;
-  const exports = extractExports(content);
+for (const sf of analyzedFiles) {
+  const exports = extractExports(sf);
   if (exports.length > 0) {
     fileExports.push({
-      path: f,
-      relPath: relative(SRC_DIR, f),
-      exports: exports.map((e) => ({ ...e, used: false })),
+      sourceFile: sf,
+      relPath: relative(SRC_DIR, sf.getFilePath()),
+      exports,
     });
   }
 }
 
 // Build re-export map
-const reExportMap = buildReExportMap(fileContents);
+const reExportMap = buildReExportMap(analyzedFiles);
 
 // Collect all imports from all files
 const allImports: ImportRef[] = [];
-for (const [filePath, content] of fileContents) {
-  allImports.push(...extractImports(filePath, content));
+for (const sf of allSourceFiles) {
+  allImports.push(...extractImports(sf));
 }
 
 // Mark exports as used
 const exportsByFile = new Map<string, FileExports>();
 for (const fe of fileExports) {
-  exportsByFile.set(fe.path, fe);
+  exportsByFile.set(fe.sourceFile.getFilePath(), fe);
 }
 
 function markUsed(targetFile: string, name: string): void {
@@ -367,6 +292,23 @@ for (const fe of fileExports) {
   }
 }
 
+// Find unused unexported symbols
+const unusedUnexportedValues: UnusedSymbol[] = [];
+const unusedUnexportedTypes: UnusedSymbol[] = [];
+
+for (const sf of srcFiles) {
+  const path = sf.getFilePath();
+  if (isTestFile(path) || isEntryPoint(path)) continue;
+  const symbols = findUnusedUnexported(sf);
+  for (const sym of symbols) {
+    if (sym.kind === "value") {
+      unusedUnexportedValues.push(sym);
+    } else {
+      unusedUnexportedTypes.push(sym);
+    }
+  }
+}
+
 // Output
 let hasFindings = false;
 
@@ -390,6 +332,21 @@ if (unusedTypes.length > 0) {
   console.log("\nUnused type exports (informational):\n");
   for (const { relPath, names } of unusedTypes) {
     console.log(`  ${relPath}: ${names.join(", ")}`);
+  }
+}
+
+if (unusedUnexportedValues.length > 0) {
+  console.error("\nUnused unexported symbols:\n");
+  for (const { relPath, name } of unusedUnexportedValues) {
+    console.error(`  ${relPath}: ${name}`);
+  }
+  hasFindings = true;
+}
+
+if (unusedUnexportedTypes.length > 0) {
+  console.log("\nUnused unexported types (informational):\n");
+  for (const { relPath, name } of unusedUnexportedTypes) {
+    console.log(`  ${relPath}: ${name}`);
   }
 }
 

@@ -1,8 +1,8 @@
-import { existsSync, readFileSync, readdirSync } from "fs";
+import { existsSync, readdirSync } from "fs";
 import { join, relative } from "path";
+import { type SourceFile } from "ts-morph";
+import { createProject, SRC_DIR } from "./lib/project.js";
 
-const ROOT = join(import.meta.dirname, "..");
-const SRC_DIR = join(ROOT, "src");
 const UI_DIR = join(SRC_DIR, "ui");
 const UTILS_DIR = join(SRC_DIR, "utils");
 
@@ -12,7 +12,7 @@ const PAGE_GROUPS: Zone[] = ["applicant", "job-search", "settings"];
 const EXCLUDED_MODULES = new Set(["Icons"]);
 
 // =============================================================================
-// File collection
+// Zone classification
 // =============================================================================
 
 type Zone =
@@ -23,13 +23,6 @@ type Zone =
   | "applicant"
   | "job-search"
   | "settings";
-
-interface FileInfo {
-  path: string;
-  relPath: string;
-  zone: Zone | null;
-  content: string;
-}
 
 function classifyFile(relPath: string): Zone | null {
   if (relPath.startsWith("pages/")) {
@@ -44,32 +37,9 @@ function classifyFile(relPath: string): Zone | null {
   return null;
 }
 
-function collectFiles(dir: string, baseDir: string, ext: string[]): FileInfo[] {
-  const results: FileInfo[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      results.push(...collectFiles(full, baseDir, ext));
-    } else if (ext.some((e) => entry.name.endsWith(e))) {
-      const relPath = relative(baseDir, full);
-      results.push({
-        path: full,
-        relPath,
-        zone: classifyFile(relPath),
-        content: readFileSync(full, "utf-8"),
-      });
-    }
-  }
-  return results;
-}
-
 // =============================================================================
 // UI shared code check
 // =============================================================================
-//
-// Exports in ui/components/ and ui/hooks/ must be genuinely shared:
-// used by 2+ page groups, layout + a page group, or a sibling in the same dir.
-// Single-page-group-only code belongs in pages/<group>/components/ or hooks/.
 
 interface SharedExport {
   name: string;
@@ -78,84 +48,92 @@ interface SharedExport {
 }
 
 function parseBarrel(
-  barrelPath: string,
+  barrelFile: SourceFile,
   kind: "components" | "hooks",
 ): SharedExport[] {
-  const content = readFileSync(barrelPath, "utf-8");
   const exports: SharedExport[] = [];
-  const re = /export\s+\{([^}]+)\}\s+from\s+"\.\/([^"]+)"/g;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(content)) !== null) {
-    const names = match[1]
-      .split(",")
-      .map((n: string) => n.replace(/\s+as\s+\w+/, "").trim());
-    const sourceModule = match[2];
-    for (const name of names) {
-      if (name && !name.startsWith("type ")) {
-        exports.push({ name, sourceModule, kind });
-      }
+
+  for (const exportDecl of barrelFile.getExportDeclarations()) {
+    const moduleSpecifier = exportDecl.getModuleSpecifierValue();
+    if (!moduleSpecifier?.startsWith("./")) continue;
+
+    const sourceModule = moduleSpecifier.replace("./", "").replace(/\.js$/, "");
+
+    if (exportDecl.isTypeOnly()) continue;
+
+    for (const named of exportDecl.getNamedExports()) {
+      if (named.isTypeOnly()) continue;
+      const name = named.getName();
+      exports.push({ name, sourceModule, kind });
     }
   }
+
   return exports;
 }
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
-}
-
 function findImporters(
-  files: FileInfo[],
+  uiFiles: SourceFile[],
   sharedExport: SharedExport,
 ): { file: string; zone: Zone }[] {
-  const importPath =
-    sharedExport.kind === "components" ? `@/ui/components` : `@/ui/hooks`;
-
   const results: { file: string; zone: Zone }[] = [];
-  for (const file of files) {
-    if (!file.zone || file.zone === sharedExport.kind) continue;
 
-    // Check direct file import (e.g. @/ui/components/AutoSaveStatus)
-    const directImportPath = `${importPath}/${sharedExport.sourceModule}`;
-    const directImportRe = new RegExp(
-      `from\\s+["']${escapeRegExp(directImportPath)}["']`,
-    );
-    if (directImportRe.test(file.content)) {
-      results.push({ file: file.relPath, zone: file.zone });
-      continue;
-    }
+  for (const sf of uiFiles) {
+    const relPath = relative(UI_DIR, sf.getFilePath());
+    const zone = classifyFile(relPath);
+    if (!zone || zone === sharedExport.kind) continue;
 
-    // Check barrel import (e.g. @/ui/components)
-    const importLineRe = new RegExp(
-      `import\\s+(?:type\\s+)?\\{([^}]+)\\}\\s+from\\s+["']${escapeRegExp(importPath)}["']`,
-    );
-    const importMatch = importLineRe.exec(file.content);
-    if (!importMatch) continue;
+    for (const importDecl of sf.getImportDeclarations()) {
+      const targetFile = importDecl.getModuleSpecifierSourceFile();
+      if (!targetFile) continue;
 
-    const importedNames = importMatch[1].split(",").map((n) =>
-      n
-        .replace(/\s+as\s+\w+/, "")
-        .replace(/^type\s+/, "")
-        .trim(),
-    );
-    if (importedNames.includes(sharedExport.name)) {
-      results.push({ file: file.relPath, zone: file.zone });
+      const targetRel = relative(UI_DIR, targetFile.getFilePath());
+
+      // Direct file import (e.g. @/ui/components/AutoSaveStatus)
+      if (
+        targetRel === `${sharedExport.kind}/${sharedExport.sourceModule}.tsx`
+      ) {
+        results.push({ file: relPath, zone });
+        break;
+      }
+
+      // Barrel import (e.g. @/ui/components)
+      if (targetRel === `${sharedExport.kind}/index.ts`) {
+        const namedImports = importDecl.getNamedImports();
+        const importedNames = namedImports.map((n) => n.getName());
+        if (importedNames.includes(sharedExport.name)) {
+          results.push({ file: relPath, zone });
+          break;
+        }
+      }
     }
   }
   return results;
 }
 
-/** Check if a shared module is imported by a sibling file in the same directory. */
 function isImportedBySibling(
   sharedExport: SharedExport,
-  allFiles: FileInfo[],
+  uiFiles: SourceFile[],
 ): boolean {
-  const relImport = `./${sharedExport.sourceModule}`;
-  for (const file of allFiles) {
-    if (!file.relPath.startsWith(`${sharedExport.kind}/`)) continue;
-    const basename = file.path.replace(/\.[^.]+$/, "");
-    if (basename.endsWith(`/${sharedExport.sourceModule}`)) continue;
-    if (file.path.endsWith("index.ts")) continue;
-    if (file.content.includes(`from "${relImport}"`)) return true;
+  const targetModulePath = join(
+    UI_DIR,
+    sharedExport.kind,
+    `${sharedExport.sourceModule}.tsx`,
+  );
+
+  for (const sf of uiFiles) {
+    const filePath = sf.getFilePath();
+    const relPath = relative(UI_DIR, filePath);
+    if (!relPath.startsWith(`${sharedExport.kind}/`)) continue;
+    if (filePath.endsWith("index.ts")) continue;
+    const baseName = filePath.replace(/\.[^.]+$/, "");
+    if (baseName.endsWith(`/${sharedExport.sourceModule}`)) continue;
+
+    for (const importDecl of sf.getImportDeclarations()) {
+      const targetFile = importDecl.getModuleSpecifierSourceFile();
+      if (targetFile && targetFile.getFilePath() === targetModulePath) {
+        return true;
+      }
+    }
   }
   return false;
 }
@@ -163,14 +141,14 @@ function isImportedBySibling(
 function isGenuinelyShared(
   sharedExport: SharedExport,
   importers: { file: string; zone: Zone }[],
-  allFiles: FileInfo[],
+  uiFiles: SourceFile[],
 ): boolean {
   if (importers.length === 0) return true; // unused — caught by TS/eslint
 
   const zones = new Set(importers.map((i) => i.zone));
   const pageGroups = PAGE_GROUPS.filter((g) => zones.has(g));
 
-  if (isImportedBySibling(sharedExport, allFiles)) return true;
+  if (isImportedBySibling(sharedExport, uiFiles)) return true;
   if (pageGroups.length >= 2) return true;
   if (zones.has("layout") && pageGroups.length >= 1) return true;
   if (sharedExport.kind === "hooks" && zones.has("data")) return true;
@@ -180,12 +158,24 @@ function isGenuinelyShared(
 
 function checkUiSharedCode(): string[] {
   const errors: string[] = [];
-  const uiFiles = collectFiles(UI_DIR, UI_DIR, [".ts", ".tsx"]);
+  const project = createProject();
 
-  const sharedExports = [
-    ...parseBarrel(join(UI_DIR, "components", "index.ts"), "components"),
-    ...parseBarrel(join(UI_DIR, "hooks", "index.ts"), "hooks"),
-  ];
+  const uiFiles = project
+    .getSourceFiles()
+    .filter((sf) => sf.getFilePath().startsWith(UI_DIR + "/"));
+
+  const componentsBarrel = project.getSourceFile(
+    join(UI_DIR, "components", "index.ts"),
+  );
+  const hooksBarrel = project.getSourceFile(join(UI_DIR, "hooks", "index.ts"));
+
+  const sharedExports: SharedExport[] = [];
+  if (componentsBarrel) {
+    sharedExports.push(...parseBarrel(componentsBarrel, "components"));
+  }
+  if (hooksBarrel) {
+    sharedExports.push(...parseBarrel(hooksBarrel, "hooks"));
+  }
 
   for (const exp of sharedExports) {
     if (EXCLUDED_MODULES.has(exp.sourceModule)) continue;
@@ -208,14 +198,15 @@ function checkUiSharedCode(): string[] {
 // =============================================================================
 // Utils shared code check
 // =============================================================================
-//
-// Each file in src/utils/ must be:
-// 1. Imported by 2+ different entities (e.g. plugins/job-site/dm + plugins/job-site/xing)
-// 2. Accompanied by a test file (e.g. database.ts → database.test.ts)
 
 function checkUtils(): string[] {
   const errors: string[] = [];
-  const srcFiles = collectFiles(SRC_DIR, SRC_DIR, [".ts", ".tsx"]);
+  const project = createProject();
+
+  const srcFiles = project
+    .getSourceFiles()
+    .filter((sf) => sf.getFilePath().startsWith(SRC_DIR + "/"));
+
   const utilsModules = readdirSync(UTILS_DIR)
     .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
     .map((f) => f.replace(/\.ts$/, ""));
@@ -228,14 +219,21 @@ function checkUtils(): string[] {
     }
 
     // Find distinct entities that import this util.
-    // Entity = up to 3 directory levels, e.g. "plugins/job-site/dm".
-    const importStr = `@/utils/${name}`;
+    const utilFilePath = join(UTILS_DIR, `${name}.ts`);
     const entities = new Set<string>();
-    for (const file of srcFiles) {
-      if (file.relPath.startsWith("utils/")) continue;
-      if (!file.content.includes(importStr)) continue;
-      const parts = file.relPath.split("/");
-      entities.add(parts.slice(0, Math.min(parts.length - 1, 3)).join("/"));
+
+    for (const sf of srcFiles) {
+      const sfRel = relative(SRC_DIR, sf.getFilePath());
+      if (sfRel.startsWith("utils/")) continue;
+
+      for (const importDecl of sf.getImportDeclarations()) {
+        const targetFile = importDecl.getModuleSpecifierSourceFile();
+        if (targetFile && targetFile.getFilePath() === utilFilePath) {
+          const parts = sfRel.split("/");
+          entities.add(parts.slice(0, Math.min(parts.length - 1, 3)).join("/"));
+          break;
+        }
+      }
     }
 
     if (entities.size < 2) {
