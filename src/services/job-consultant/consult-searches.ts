@@ -26,7 +26,7 @@ const CONSULT_SEARCHES_SCHEMA: JsonSchema = {
   },
 };
 
-export function buildConsultSearchesPrompt(applicant: Applicant): string {
+function buildConsultSearchesPrompt(applicant: Applicant): string {
   const sections = formatApplicantSections(applicant);
 
   return `Sie sind ein erfahrener Karriereberater. Analysieren Sie das folgende Bewerberprofil und schlagen Sie 5–10 konkrete Suchbegriffe für Jobbörsen vor.
@@ -44,7 +44,7 @@ Geben Sie NUR ein JSON-Array zurück (keine Markdown-Fences, kein zusätzlicher 
 ${sections.join("\n\n")}`;
 }
 
-export function parseConsultSearchesResult(
+function parseConsultSearchesResult(
   parsed: unknown,
 ): ConsultationSuggestion[] | null {
   if (!Array.isArray(parsed) || parsed.length === 0) return null;

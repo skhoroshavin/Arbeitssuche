@@ -47,7 +47,7 @@ export function needsContactExtraction(vacancy: Vacancy): boolean {
   return hasEmptyAddresses || hasPartialContact;
 }
 
-export function buildContactExtractionPrompt(vacancy: Vacancy): string {
+function buildContactExtractionPrompt(vacancy: Vacancy): string {
   const existingAddresses =
     vacancy.addresses.length > 0
       ? vacancy.addresses.join(", ")
@@ -123,7 +123,7 @@ function parseContact(parsed: object): VacancyContact | null {
   return contact;
 }
 
-export function parseContactExtractionResult(
+function parseContactExtractionResult(
   parsed: unknown,
 ): ContactExtractionResult | null {
   if (!parsed || typeof parsed !== "object") return null;

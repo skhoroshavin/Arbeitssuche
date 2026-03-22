@@ -33,7 +33,7 @@ export function needsAssessment(vacancy: Vacancy): boolean {
   return !vacancy.summary || vacancy.descriptionChanged;
 }
 
-export function buildAssessPrompt(
+function buildAssessPrompt(
   vacancy: Vacancy,
   applicant: Applicant,
   preferences: SearchPreferences,
@@ -68,7 +68,7 @@ function isMatchScore(s: string): s is MatchScore {
   return VALID_SCORES.some((v) => v === s);
 }
 
-export function parseAssessResult(parsed: unknown): AssessResult | null {
+function parseAssessResult(parsed: unknown): AssessResult | null {
   if (!parsed || typeof parsed !== "object") return null;
   if (!("summary" in parsed) || typeof parsed.summary !== "string") return null;
   if (!("matchScore" in parsed) || typeof parsed.matchScore !== "string")
