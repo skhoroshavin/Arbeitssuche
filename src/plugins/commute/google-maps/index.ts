@@ -62,15 +62,20 @@ async function fetchDuration(
   }
 
   const element = data.rows[0]?.elements[0];
-  if (!element || element.status !== "OK") {
+  if (
+    !element ||
+    element.status !== "OK" ||
+    !element.distance ||
+    !element.duration
+  ) {
     throw new Error(
       `No route found for "${destination}": ${element?.status ?? "no data"}`,
     );
   }
 
   return {
-    distance: element.distance!.text,
-    durationMinutes: Math.round(element.duration!.value / 60),
+    distance: element.distance.text,
+    durationMinutes: Math.round(element.duration.value / 60),
   };
 }
 
@@ -82,26 +87,18 @@ class GoogleMapsCommuteClient implements CommuteClient {
     destination: string,
   ): Promise<CommuteResult> {
     const nextWeekday = getNextWeekday();
+    const atHour = (hour: number) =>
+      fetchDuration(
+        origin,
+        destination,
+        this.apiKey,
+        departureTimestamp(nextWeekday, hour),
+      );
 
     const [morning, day, evening] = await Promise.all([
-      fetchDuration(
-        origin,
-        destination,
-        this.apiKey,
-        departureTimestamp(nextWeekday, 8),
-      ),
-      fetchDuration(
-        origin,
-        destination,
-        this.apiKey,
-        departureTimestamp(nextWeekday, 12),
-      ),
-      fetchDuration(
-        origin,
-        destination,
-        this.apiKey,
-        departureTimestamp(nextWeekday, 18),
-      ),
+      atHour(8),
+      atHour(12),
+      atHour(18),
     ]);
 
     return {

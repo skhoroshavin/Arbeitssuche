@@ -178,44 +178,39 @@ function expandWildcardDirs(configs: DirConfig[]): DirConfig[] {
   return expanded;
 }
 
-/** Find most specific DirConfig matching a srcRelPath. */
-function matchDir(
-  srcRelPath: string,
-  configs: DirConfig[],
-): DirConfig | undefined {
-  let best: DirConfig | undefined;
-
-  for (const config of configs) {
-    if (!isInDir(srcRelPath, config.dir)) continue;
-    if (!best || config.dir.length > best.dir.length) best = config;
-  }
-
-  return best;
-}
-
-/**
- * Find most specific DirConfig matching a srcRelPath that has the given
- * property defined. Falls back through ancestors if the most specific
- * match lacks the property.
- */
-function matchDirWith<K extends keyof DirConfig>(
-  srcRelPath: string,
-  configs: DirConfig[],
-  prop: K,
-): DirConfig | undefined {
-  const matches = configs
-    .filter((c) => c[prop] !== undefined && isInDir(srcRelPath, c.dir))
-    .sort((a, b) => b.dir.length - a.dir.length);
-
-  return matches[0];
-}
-
 /** Check if srcRelPath is within a dir (or IS the file for single-file modules). */
 function isInDir(srcRelPath: string, dir: string): boolean {
   return (
     srcRelPath.startsWith(dir + "/") ||
     srcRelPath === dir + ".ts" ||
     srcRelPath === dir + ".tsx"
+  );
+}
+
+/**
+ * Pre-sorted config index for O(n) lookups instead of repeated filter+sort.
+ * Configs are sorted longest-first so linear scan finds most-specific match.
+ */
+function buildConfigIndex(configs: DirConfig[]): DirConfig[] {
+  return [...configs].sort((a, b) => b.dir.length - a.dir.length);
+}
+
+/** Find most specific DirConfig matching a srcRelPath. */
+function matchDir(
+  srcRelPath: string,
+  sorted: DirConfig[],
+): DirConfig | undefined {
+  return sorted.find((c) => isInDir(srcRelPath, c.dir));
+}
+
+/** Find most specific config with a given property defined. */
+function matchDirWith<K extends keyof DirConfig>(
+  srcRelPath: string,
+  sorted: DirConfig[],
+  prop: K,
+): DirConfig | undefined {
+  return sorted.find(
+    (c) => c[prop] !== undefined && isInDir(srcRelPath, c.dir),
   );
 }
 
@@ -227,21 +222,14 @@ function isInDir(srcRelPath: string, dir: string): boolean {
  */
 function findImportConfig(
   srcRelPath: string,
-  configs: DirConfig[],
+  sorted: DirConfig[],
 ): DirConfig | undefined {
-  const matches = configs
-    .filter((c) => isInDir(srcRelPath, c.dir))
-    .sort((a, b) => b.dir.length - a.dir.length);
-
-  if (matches.length === 0) return undefined;
-
-  // Walk up to find nearest ancestor with allowedImports
-  for (const config of matches) {
-    if (config.allowedImports) return config;
-  }
+  const config = matchDirWith(srcRelPath, sorted, "allowedImports");
+  if (config) return config;
 
   // No ancestor has allowedImports → self-imports only
-  return { ...matches[0], allowedImports: [] };
+  const closest = matchDir(srcRelPath, sorted);
+  return closest ? { ...closest, allowedImports: [] } : undefined;
 }
 
 // =============================================================================
@@ -573,15 +561,16 @@ function checkImportRules(
   configs: DirConfig[],
 ): string[] {
   const errors: string[] = [];
+  const sorted = buildConfigIndex(configs);
 
   for (const sf of srcFiles) {
     const filePath = sf.getFilePath();
     const srcRelPath = getSrcRelPath(sf);
     const isTest = isTestFile(filePath);
 
-    const importConfig = findImportConfig(srcRelPath, configs);
+    const importConfig = findImportConfig(srcRelPath, sorted);
     const testExposedConfig = isTest
-      ? matchDirWith(srcRelPath, configs, "exposedFiles")
+      ? matchDirWith(srcRelPath, sorted, "exposedFiles")
       : undefined;
 
     for (const importDecl of sf.getImportDeclarations()) {
@@ -618,7 +607,7 @@ function checkImportRules(
         // Check exposedFiles on target dir
         const targetExposed = matchDirWith(
           targetRelPath,
-          configs,
+          sorted,
           "exposedFiles",
         );
         if (targetExposed) {
@@ -631,7 +620,7 @@ function checkImportRules(
         }
 
         // Check private dirs
-        const targetConfig = matchDir(targetRelPath, configs);
+        const targetConfig = matchDir(targetRelPath, sorted);
         if (targetConfig?.private) {
           const parentDir = targetConfig.dir.split("/").slice(0, -1).join("/");
           if (!srcRelPath.startsWith(parentDir + "/")) {
@@ -668,23 +657,27 @@ function checkExportRules(
 ): string[] {
   const errors: string[] = [];
 
+  // Pre-index source files by relPath for O(1) lookup
+  const sfByRelPath = new Map<string, SourceFile>();
+  for (const sf of srcFiles) {
+    if (!isTestFile(sf.getFilePath())) {
+      sfByRelPath.set(getSrcRelPath(sf), sf);
+    }
+  }
+
   for (const config of configs) {
     if (!config.allowedExports) continue;
-
-    const dirParts = config.dir.split("/");
 
     if (config.allowedExports instanceof RegExp) {
       // Naming convention: check {dir}/*/index.ts (sub-module index files)
       const pattern = config.allowedExports;
+      const dirParts = config.dir.split("/");
+      const depth = dirParts.length + 2;
 
-      for (const sf of srcFiles) {
-        if (isTestFile(sf.getFilePath())) continue;
-
-        const rel = getSrcRelPath(sf);
+      for (const [rel, sf] of sfByRelPath) {
         const parts = rel.split("/");
-
         if (
-          parts.length === dirParts.length + 2 &&
+          parts.length === depth &&
           parts[parts.length - 1] === "index.ts" &&
           rel.startsWith(config.dir + "/")
         ) {
@@ -699,19 +692,16 @@ function checkExportRules(
       }
     } else {
       // Explicit list: check {dir}/index.ts
+      const rel = config.dir + "/index.ts";
+      const sf = sfByRelPath.get(rel);
+      if (!sf) continue;
+
       const allowedList = config.allowedExports;
-
-      for (const sf of srcFiles) {
-        const rel = getSrcRelPath(sf);
-        if (rel !== config.dir + "/index.ts") continue;
-        if (isTestFile(sf.getFilePath())) continue;
-
-        for (const [name] of sf.getExportedDeclarations()) {
-          if (!allowedList.includes(name)) {
-            errors.push(
-              `${rel}: export "${name}" is not allowed (allowed: ${allowedList.join(", ")})`,
-            );
-          }
+      for (const [name] of sf.getExportedDeclarations()) {
+        if (!allowedList.includes(name)) {
+          errors.push(
+            `${rel}: export "${name}" is not allowed (allowed: ${allowedList.join(", ")})`,
+          );
         }
       }
     }
