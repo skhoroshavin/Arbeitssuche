@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+/** Derive a URL-safe ID from text: slugified prefix (max 30 chars) + 4-char random hex suffix. */
 export function deriveId(text: string): string {
   const slug = text
     .toLowerCase()

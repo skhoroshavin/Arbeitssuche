@@ -1,6 +1,6 @@
 import type { CheerioAPI } from "cheerio/slim";
 
-interface JobPostingData {
+export interface JobPostingData {
   title?: string;
   company?: string;
   address?: string;
@@ -8,6 +8,7 @@ interface JobPostingData {
   publishedAt?: string;
 }
 
+/** Extract JobPosting structured data from JSON-LD script tags in a parsed HTML document. */
 export function extractJobPostingFromJsonLd(
   $: CheerioAPI,
 ): JobPostingData | null {

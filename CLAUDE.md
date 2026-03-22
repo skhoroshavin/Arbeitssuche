@@ -129,6 +129,14 @@ Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each pa
 
 **Service**: Four service classes receive dependencies via constructor injection, instantiated in `app/index.ts` and rebuilt when settings change. IPC handlers call repos directly for CRUD, services for business logic.
 
+**Utils**: Flat directory of self-contained utilities shared by 2+ entity implementations. Rules:
+- Each file must be self-contained (no `@/` imports from other layers) and have JSDoc on all exports
+- Each file must have a corresponding `.test.ts` file
+- Filename must correspond to what is exported (e.g. `database.ts` exports `Database`, `queryRow`, `queryRows`)
+- Keep interfaces simple — if a utility needs extensive documentation, simplify the interface
+- Max 80 lines per file (excluding blanks/comments), max complexity 10 per function (ESLint-enforced)
+- `check-shared-code` verifies each utility is imported by 2+ distinct entities and has tests
+
 ## Code conventions
 
 - **TypeScript strict mode**, ES2022 target, path alias `@/*` → `./src/*`

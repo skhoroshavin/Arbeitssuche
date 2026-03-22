@@ -299,6 +299,14 @@ export default tseslint.config(
     },
   },
   {
+    files: ["src/utils/*.ts"],
+    ignores: ["src/utils/*.test.ts"],
+    rules: {
+      complexity: ["error", 10],
+      "max-lines": ["error", { max: 80, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
     files: ["**/*.ts"],
     plugins: { "check-file": checkFile },
     rules: {

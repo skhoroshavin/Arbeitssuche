@@ -248,26 +248,34 @@ function findUtilsImporters(moduleName: string): string[] {
 }
 
 const utilsFiles = collectUtilsFiles();
-const utilsViolations: { file: string; importers: string[] }[] = [];
+const utilsViolations: string[] = [];
 
 for (const moduleName of utilsFiles) {
   const importers = findUtilsImporters(moduleName);
   if (importers.length < 2) {
-    utilsViolations.push({ file: moduleName, importers });
+    const detail =
+      importers.length === 0
+        ? "not imported by any entity"
+        : `only imported by: ${importers.join(", ")}`;
+    utilsViolations.push(
+      `  utils/${moduleName}.ts ${detail}\n    → Must be used by at least 2 different entities`,
+    );
+  }
+
+  const testFile = join(UTILS_DIR, `${moduleName}.test.ts`);
+  try {
+    readFileSync(testFile);
+  } catch {
+    utilsViolations.push(
+      `  utils/${moduleName}.ts has no corresponding test file\n    → Create utils/${moduleName}.test.ts`,
+    );
   }
 }
 
 if (utilsViolations.length > 0) {
-  console.error("\nUtils shared code violations:\n");
-  for (const v of utilsViolations) {
-    if (v.importers.length === 0) {
-      console.error(`  utils/${v.file}.ts is not imported by any entity`);
-    } else {
-      console.error(
-        `  utils/${v.file}.ts is only imported by: ${v.importers.join(", ")}`,
-      );
-    }
-    console.error(`    → Must be used by at least 2 different entities\n`);
+  console.error("\nUtils violations:\n");
+  for (const msg of utilsViolations) {
+    console.error(msg + "\n");
   }
 }
 
