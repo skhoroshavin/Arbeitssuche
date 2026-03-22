@@ -7,6 +7,13 @@ updates:
       interval: weekly
     commit-message:
       prefix: "deps"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    open-pull-requests-limit: 5
 
   - package-ecosystem: github-actions
     directory: /
@@ -14,3 +21,7 @@ updates:
       interval: weekly
     commit-message:
       prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]
+    open-pull-requests-limit: 5
