@@ -44,15 +44,93 @@ const MODEL_OPTIONS: LlmModel[] = [
   },
 ];
 
-const PROVIDERS: { value: LlmProvider; label: string; description: string }[] =
-  [
-    { value: "openrouter", label: "OpenRouter", description: "Global" },
-    {
-      value: "requesty",
-      label: "Requesty",
-      description: "EU-Datenverarbeitung",
-    },
-  ];
+const PROVIDER_CONFIG: Record<
+  LlmProvider,
+  {
+    label: string;
+    description: string;
+    secretKey: "openrouterApiKey" | "requestyApiKey";
+    helpUrl: string;
+    helpLabel: string;
+    helpSteps: string[];
+  }
+> = {
+  openrouter: {
+    label: "OpenRouter",
+    description: "Global",
+    secretKey: "openrouterApiKey",
+    helpUrl: "https://openrouter.ai/keys",
+    helpLabel: "openrouter.ai/keys",
+    helpSteps: [
+      "Erstelle ein Konto oder melde dich an",
+      'Klicke auf „Create Key" und kopiere den Schlüssel',
+      "Füge ihn oben ein",
+    ],
+  },
+  requesty: {
+    label: "Requesty",
+    description: "EU-Datenverarbeitung",
+    secretKey: "requestyApiKey",
+    helpUrl: "https://requesty.ai",
+    helpLabel: "requesty.ai",
+    helpSteps: [
+      "Erstelle ein Konto oder melde dich an",
+      "Erstelle einen API-Schlüssel und kopiere ihn",
+      "Füge ihn oben ein",
+    ],
+  },
+};
+
+const PROVIDER_KEYS: LlmProvider[] = ["openrouter", "requesty"];
+
+const PROVIDERS = PROVIDER_KEYS.map((value) => ({
+  value,
+  label: PROVIDER_CONFIG[value].label,
+  description: PROVIDER_CONFIG[value].description,
+}));
+
+function ProviderSecretSection({
+  provider,
+  secrets,
+}: {
+  provider: LlmProvider;
+  secrets: ReturnType<typeof useSecrets>["data"];
+}) {
+  const cfg = PROVIDER_CONFIG[provider];
+  const secret = secrets?.[cfg.secretKey];
+
+  return (
+    <Card className="p-6 mt-4">
+      <SectionHeader>{cfg.label} API-Schlüssel</SectionHeader>
+      <div className="mt-4">
+        <SecretField
+          label={`${cfg.label} API-Schlüssel`}
+          secretKey={cfg.secretKey}
+          masked={secret?.masked ?? ""}
+          isSet={secret?.isSet ?? false}
+        />
+        <Disclosure title="Wie bekomme ich einen API-Schlüssel?">
+          <p>
+            1. Gehe zu{" "}
+            <a
+              href={cfg.helpUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-blue-600 dark:text-blue-400 underline"
+            >
+              {cfg.helpLabel}
+            </a>
+          </p>
+          {cfg.helpSteps.map((step, i) => (
+            <p key={i}>
+              {i + 2}. {step}
+            </p>
+          ))}
+        </Disclosure>
+      </div>
+    </Card>
+  );
+}
 
 export default function SettingsAI() {
   const { data: secrets, isLoading: secretsLoading } = useSecrets();
@@ -100,65 +178,7 @@ export default function SettingsAI() {
           ))}
         </div>
       </Card>
-      <Card className="p-6 mt-4">
-        {provider === "openrouter" ? (
-          <>
-            <SectionHeader>OpenRouter API-Schlüssel</SectionHeader>
-            <div className="mt-4">
-              <SecretField
-                label="OpenRouter API-Schlüssel"
-                secretKey="openrouterApiKey"
-                masked={secrets?.openrouterApiKey?.masked ?? ""}
-                isSet={secrets?.openrouterApiKey?.isSet ?? false}
-              />
-              <Disclosure title="Wie bekomme ich einen API-Schlüssel?">
-                <p>
-                  1. Gehe zu{" "}
-                  <a
-                    href="https://openrouter.ai/keys"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 dark:text-blue-400 underline"
-                  >
-                    openrouter.ai/keys
-                  </a>
-                </p>
-                <p>2. Erstelle ein Konto oder melde dich an</p>
-                <p>3. Klicke auf „Create Key" und kopiere den Schlüssel</p>
-                <p>4. Füge ihn oben ein</p>
-              </Disclosure>
-            </div>
-          </>
-        ) : (
-          <>
-            <SectionHeader>Requesty API-Schlüssel</SectionHeader>
-            <div className="mt-4">
-              <SecretField
-                label="Requesty API-Schlüssel"
-                secretKey="requestyApiKey"
-                masked={secrets?.requestyApiKey?.masked ?? ""}
-                isSet={secrets?.requestyApiKey?.isSet ?? false}
-              />
-              <Disclosure title="Wie bekomme ich einen API-Schlüssel?">
-                <p>
-                  1. Gehe zu{" "}
-                  <a
-                    href="https://requesty.ai"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 dark:text-blue-400 underline"
-                  >
-                    requesty.ai
-                  </a>
-                </p>
-                <p>2. Erstelle ein Konto oder melde dich an</p>
-                <p>3. Erstelle einen API-Schlüssel und kopiere ihn</p>
-                <p>4. Füge ihn oben ein</p>
-              </Disclosure>
-            </div>
-          </>
-        )}
-      </Card>
+      <ProviderSecretSection provider={provider} secrets={secrets} />
       <Card className="p-6 mt-4">
         <SectionHeader>Modelle</SectionHeader>
         <div className="space-y-4 mt-4">

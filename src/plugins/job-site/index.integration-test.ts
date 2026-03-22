@@ -16,7 +16,7 @@ describe("job-site plugins", () => {
     await browser?.close();
   });
 
-  const SKIPPED_SITES = new Set(["arbeitsagentur"]);
+  const SKIPPED_SITES = new Set<string>([]);
 
   for (const { name, supportedModes } of getJobSiteInfos()) {
     const mode = supportedModes[0];

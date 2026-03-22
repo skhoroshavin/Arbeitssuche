@@ -1,6 +1,6 @@
 import { describe, it, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
-import { createOpenAICompatibleClient } from "./client.js";
+import { createOpenAICompatibleClient } from "./index.js";
 
 describe("OpenAICompatibleClient", () => {
   const originalFetch = globalThis.fetch;
@@ -72,6 +72,24 @@ describe("OpenAICompatibleClient", () => {
   });
 
   describe("completeJSON", () => {
+    it("returns null on truncated JSON", async () => {
+      mockFetch({
+        choices: [{ message: { content: '{"score": 42, "trun' } }],
+      });
+
+      const client = createOpenAICompatibleClient(
+        "https://example.com/v1",
+        "test-key",
+        "test/model",
+        "TestProvider",
+      );
+      const result = await client.completeJSON("prompt", 100, {
+        type: "object",
+        properties: { score: { type: "number" } },
+      });
+      assert.equal(result, null);
+    });
+
     it("parses JSON from response content", async () => {
       mockFetch({
         choices: [{ message: { content: JSON.stringify({ score: 42 }) } }],

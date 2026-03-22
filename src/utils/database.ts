@@ -3,9 +3,11 @@ import { dirname } from "node:path";
 import type { StatementSync, SQLInputValue } from "node:sqlite";
 import { DatabaseSync } from "node:sqlite";
 
+/** SQLite database wrapper with WAL mode, foreign keys, and transaction support. */
 export class Database {
   private constructor(private readonly inner: DatabaseSync) {}
 
+  /** Open (or create) a database at the given path, creating parent directories as needed. */
   static open(dbPath: string): Database {
     mkdirSync(dirname(dbPath), { recursive: true });
     const db = new DatabaseSync(dbPath, { enableForeignKeyConstraints: true });
@@ -40,6 +42,7 @@ export class Database {
   }
 }
 
+/** Execute a prepared statement and return the first row, or undefined. */
 export function queryRow<T>(
   stmt: StatementSync,
   ...params: SQLInputValue[]
@@ -48,6 +51,7 @@ export function queryRow<T>(
   return stmt.get(...params) as T | undefined;
 }
 
+/** Execute a prepared statement and return all matching rows. */
 export function queryRows<T>(
   stmt: StatementSync,
   ...params: SQLInputValue[]

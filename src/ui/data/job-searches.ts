@@ -1,19 +1,15 @@
-import {
-  useIpcQuery,
-  useIpcMutation,
-  useInvalidate,
-  ipcFetch,
-} from "@/ui/hooks";
+import { useInvalidate } from "@/ui/hooks";
+import { ipcFetch } from "./internal/ipc-client";
+import { useIpcMutation } from "./internal/use-ipc-mutation";
+import { useIpcQuery } from "./internal/use-ipc-query";
 import type { JobSearch, JobSearchInfo } from "@/models/job-search/types";
 import type {
-  Vacancy,
+  VacancyDTO,
   VacancySource,
   VacancyStatus,
 } from "@/models/vacancy/types";
 
-export type { VacancySource };
-
-export type VacancyWithStatus = Vacancy & {
+export type VacancyWithStatus = VacancyDTO & {
   status: VacancyStatus;
   sources: VacancySource[];
 };

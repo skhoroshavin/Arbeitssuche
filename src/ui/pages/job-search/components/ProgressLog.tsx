@@ -2,11 +2,9 @@ import type { ProgressEvent } from "@/models/events.js";
 
 export function ProgressLog({
   events,
-  done,
   scrollable,
 }: {
   events: ProgressEvent[];
-  done?: boolean;
   scrollable?: boolean;
 }) {
   return (
@@ -16,7 +14,6 @@ export function ProgressLog({
       {events.map((e, i) => (
         <div key={i}>{e.message}</div>
       ))}
-      {done && <div className="text-green-600">Fertig</div>}
     </div>
   );
 }

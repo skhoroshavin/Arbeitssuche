@@ -26,6 +26,7 @@ import {
   MATCH_SCORE_ORDER,
 } from "@/ui/constants";
 import type { CommuteInfo } from "@/models/vacancy/types";
+import type { ProgressEvent as CrawlEvent } from "@/models/events";
 
 const FILTER_ORDER = [
   "all",
@@ -59,7 +60,9 @@ function commuteLabel(
 ): string | undefined {
   if (!commute) return undefined;
   const first = Object.values(commute)[0];
-  return first ? `${first.durations.morning} (${first.distance})` : undefined;
+  return first
+    ? `${first.durations.morning} min (${first.distance})`
+    : undefined;
 }
 
 function latestActivityDate(v: VacancyWithStatus): string {
@@ -72,10 +75,67 @@ function commuteMinutes(commute?: Record<string, CommuteInfo>): number {
   if (!commute) return Infinity;
   const first = Object.values(commute)[0];
   if (!first) return Infinity;
-  const t = first.durations.morning;
-  const hours = t.match(/(\d+)\s*hour/)?.[1];
-  const mins = t.match(/(\d+)\s*min/)?.[1];
-  return (hours ? parseInt(hours) * 60 : 0) + (mins ? parseInt(mins) : 0);
+  return first.durations.morning;
+}
+
+function compareVacancies(
+  sortBy: SortKey,
+  a: VacancyWithStatus,
+  b: VacancyWithStatus,
+): number {
+  switch (sortBy) {
+    case "company":
+      return a.company.localeCompare(b.company);
+    case "commute":
+      return commuteMinutes(a.commute) - commuteMinutes(b.commute);
+    case "score": {
+      const sa = a.matchScore ? MATCH_SCORE_ORDER.indexOf(a.matchScore) : 99;
+      const sb = b.matchScore ? MATCH_SCORE_ORDER.indexOf(b.matchScore) : 99;
+      return sa - sb;
+    }
+    default:
+      return latestActivityDate(b).localeCompare(latestActivityDate(a));
+  }
+}
+
+function CrawlProgressCard({
+  events,
+  done,
+  onAbort,
+  onClose,
+}: {
+  events: CrawlEvent[];
+  done: boolean;
+  onAbort: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-2">
+        <SectionHeader>Crawl-Fortschritt</SectionHeader>
+        {!done && (
+          <button
+            onClick={onAbort}
+            className="px-3 py-1 text-sm text-red-600 border border-red-300 dark:border-red-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            Abbrechen
+          </button>
+        )}
+        {done && (
+          <span className="text-sm text-green-600 font-medium">Fertig</span>
+        )}
+      </div>
+      <ProgressLog events={events} scrollable />
+      {done && (
+        <button
+          onClick={onClose}
+          className="mt-3 text-sm text-blue-600 hover:underline"
+        >
+          Schließen
+        </button>
+      )}
+    </Card>
+  );
 }
 
 export default function JobSearchVacancyList() {
@@ -156,21 +216,7 @@ export default function JobSearchVacancyList() {
       filter === "all"
         ? vacancies.filter((v) => v.status !== "not-interested")
         : vacancies.filter((v) => v.status === filter);
-    return [...list].sort((a, b) => {
-      if (sortBy === "company") return a.company.localeCompare(b.company);
-      if (sortBy === "commute") {
-        return commuteMinutes(a.commute) - commuteMinutes(b.commute);
-      }
-      if (sortBy === "score") {
-        const sa = a.matchScore ? MATCH_SCORE_ORDER.indexOf(a.matchScore) : 99;
-        const sb = b.matchScore ? MATCH_SCORE_ORDER.indexOf(b.matchScore) : 99;
-        return sa - sb;
-      }
-      // Sort by most recent activity date
-      const dateA = latestActivityDate(a);
-      const dateB = latestActivityDate(b);
-      return dateB.localeCompare(dateA);
-    });
+    return [...list].sort((a, b) => compareVacancies(sortBy, a, b));
   }, [vacancies, filter, sortBy]);
 
   const isCrawling = !!(progressJobId && !crawlDone);
@@ -200,34 +246,15 @@ export default function JobSearchVacancyList() {
       />
 
       {progressJobId && crawlEvents.length > 0 && (
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <SectionHeader>Crawl-Fortschritt</SectionHeader>
-            {!crawlDone && (
-              <button
-                onClick={() => abortCrawl.mutate()}
-                className="px-3 py-1 text-sm text-red-600 border border-red-300 dark:border-red-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
-              >
-                Abbrechen
-              </button>
-            )}
-            {crawlDone && (
-              <span className="text-sm text-green-600 font-medium">Fertig</span>
-            )}
-          </div>
-          <ProgressLog events={crawlEvents} scrollable />
-          {crawlDone && (
-            <button
-              onClick={() => {
-                setProgressJobId(undefined);
-                invalidate(["job-search-vacancies", id!]);
-              }}
-              className="mt-3 text-sm text-blue-600 hover:underline"
-            >
-              Schließen
-            </button>
-          )}
-        </Card>
+        <CrawlProgressCard
+          events={crawlEvents}
+          done={crawlDone}
+          onAbort={() => abortCrawl.mutate()}
+          onClose={() => {
+            setProgressJobId(undefined);
+            invalidate(["job-search-vacancies", id!]);
+          }}
+        />
       )}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">

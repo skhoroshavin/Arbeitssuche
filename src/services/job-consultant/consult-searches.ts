@@ -6,8 +6,11 @@ import {
 import type { JsonSchema, LlmClient } from "@/plugins/llm/types.js";
 import { formatApplicantSections } from "@/models/applicant/format.js";
 
-const VALID_SEARCH_MODES: readonly string[] = SEARCH_MODES;
-const CONSULT_MAX_TOKENS = 2048;
+function isValidSearchMode(value: string): boolean {
+  return SEARCH_MODES.some((m) => m === value);
+}
+
+const CONSULT_MAX_TOKENS = 4096;
 
 const CONSULT_SEARCHES_SCHEMA: JsonSchema = {
   type: "array",
@@ -23,7 +26,7 @@ const CONSULT_SEARCHES_SCHEMA: JsonSchema = {
   },
 };
 
-export function buildConsultSearchesPrompt(applicant: Applicant): string {
+function buildConsultSearchesPrompt(applicant: Applicant): string {
   const sections = formatApplicantSections(applicant);
 
   return `Sie sind ein erfahrener Karriereberater. Analysieren Sie das folgende Bewerberprofil und schlagen Sie 5–10 konkrete Suchbegriffe für Jobbörsen vor.
@@ -41,7 +44,7 @@ Geben Sie NUR ein JSON-Array zurück (keine Markdown-Fences, kein zusätzlicher 
 ${sections.join("\n\n")}`;
 }
 
-export function parseConsultSearchesResult(
+function parseConsultSearchesResult(
   parsed: unknown,
 ): ConsultationSuggestion[] | null {
   if (!Array.isArray(parsed) || parsed.length === 0) return null;
@@ -55,7 +58,7 @@ export function parseConsultSearchesResult(
       typeof item.searchTerm !== "string" ||
       !item.searchTerm ||
       typeof item.searchMode !== "string" ||
-      !VALID_SEARCH_MODES.includes(item.searchMode) ||
+      !isValidSearchMode(item.searchMode) ||
       typeof item.reason !== "string" ||
       !item.reason
     ) {

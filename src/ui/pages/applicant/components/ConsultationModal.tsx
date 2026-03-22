@@ -13,6 +13,79 @@ interface ConsultationModalProps {
   isCreating: boolean;
 }
 
+function ModalBody({
+  isLoading,
+  error,
+  suggestions,
+  selected,
+  onToggleItem,
+}: {
+  isLoading: boolean;
+  error?: Error | null;
+  suggestions: ConsultationSuggestion[];
+  selected: Set<number>;
+  onToggleItem: (index: number) => void;
+}) {
+  let content: React.ReactNode;
+
+  if (isLoading) {
+    content = (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loading />
+        <p className="mt-4 text-gray-500 dark:text-gray-400">
+          Analysiere Bewerberprofil...
+        </p>
+      </div>
+    );
+  } else if (error) {
+    content = (
+      <p className="text-red-600 dark:text-red-400 text-center py-8">
+        {error.message}
+      </p>
+    );
+  } else if (suggestions.length === 0) {
+    content = (
+      <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+        Keine Vorschläge verfügbar.
+      </p>
+    );
+  } else {
+    content = (
+      <div className="space-y-3">
+        {suggestions.map((suggestion, index) => (
+          <label
+            key={index}
+            className="flex gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              checked={selected.has(index)}
+              onChange={() => onToggleItem(index)}
+              className="mt-1 shrink-0"
+            />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  {suggestion.searchTerm}
+                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                  {SEARCH_MODE_LABELS[suggestion.searchMode] ??
+                    suggestion.searchMode}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                {suggestion.reason}
+              </p>
+            </div>
+          </label>
+        ))}
+      </div>
+    );
+  }
+
+  return <div className="flex-1 overflow-y-auto p-4">{content}</div>;
+}
+
 export function ConsultationModal({
   suggestions,
   isLoading,
@@ -87,60 +160,13 @@ export function ConsultationModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
-          {isLoading && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Loading />
-              <p className="mt-4 text-gray-500 dark:text-gray-400">
-                Analysiere Bewerberprofil...
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <p className="text-red-600 dark:text-red-400 text-center py-8">
-              {error.message}
-            </p>
-          )}
-
-          {!isLoading && !error && suggestions.length === 0 && (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-              Keine Vorschläge verfügbar.
-            </p>
-          )}
-
-          {!isLoading && suggestions.length > 0 && (
-            <div className="space-y-3">
-              {suggestions.map((suggestion, index) => (
-                <label
-                  key={index}
-                  className="flex gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected.has(index)}
-                    onChange={() => toggleItem(index)}
-                    className="mt-1 shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        {suggestion.searchTerm}
-                      </span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-                        {SEARCH_MODE_LABELS[suggestion.searchMode] ??
-                          suggestion.searchMode}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                      {suggestion.reason}
-                    </p>
-                  </div>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
+        <ModalBody
+          isLoading={isLoading}
+          error={error}
+          suggestions={suggestions}
+          selected={selected}
+          onToggleItem={toggleItem}
+        />
 
         {!isLoading && suggestions.length > 0 && (
           <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-700">

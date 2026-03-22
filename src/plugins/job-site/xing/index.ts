@@ -5,7 +5,7 @@ import type {
   JobSite,
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
-import { extractJobPostingFromJsonLd } from "@/plugins/job-site/json-ld.js";
+import { extractJsonLd } from "@/utils/json-ld.js";
 
 const BASE_URL = "https://www.xing.com";
 
@@ -23,16 +23,17 @@ const SELECTORS = {
   contactEmail: "a[href^='mailto:']",
 };
 
+function str(val: unknown): string | undefined {
+  return typeof val === "string" ? val : undefined;
+}
+
 function modeToCareerLevel(mode: string): string {
   if (mode === "apprenticeship") return "APPRENTICESHIP";
   if (mode === "entry-level") return "ENTRY_LEVEL";
   return "";
 }
 
-export function buildSearchUrl(
-  criteria: SearchCriteria,
-  pageId?: string,
-): string {
+function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
   const qs = new URLSearchParams();
   if (criteria.query) qs.set("keywords", criteria.query);
   qs.set("location", criteria.location);
@@ -44,7 +45,7 @@ export function buildSearchUrl(
   return `${BASE_URL}/jobs/search?${qs.toString()}`;
 }
 
-export function extractLinks(html: string): string[] {
+function extractLinks(html: string): string[] {
   const $ = cheerio.load(html);
   const urls = new Set<string>();
   $("a[href*='/jobs/']").each((_i, el) => {
@@ -57,13 +58,34 @@ export function extractLinks(html: string): string[] {
   return [...urls];
 }
 
-export function extractVacancy(html: string, url: string): VacancyDetails {
+function extractJobPostingAddress(
+  data: Record<string, unknown>,
+): string | undefined {
+  const loc = Array.isArray(data.jobLocation)
+    ? data.jobLocation[0]
+    : data.jobLocation;
+  if (!loc || typeof loc !== "object" || !("address" in loc)) return undefined;
+  const addr = loc.address;
+  if (!addr || typeof addr !== "object") return undefined;
+  const a: Record<string, unknown> = Object.assign({}, addr);
+  return (
+    [str(a.streetAddress), str(a.postalCode), str(a.addressLocality)]
+      .filter(Boolean)
+      .join(", ") || undefined
+  );
+}
+
+function extractVacancy(html: string, url: string): VacancyDetails {
   const $ = cheerio.load(html);
 
-  const jsonLd = extractJobPostingFromJsonLd($);
-  let { title, company, address } = jsonLd ?? {};
-  const descriptionHtml = jsonLd?.descriptionHtml;
-  const publishedAt = jsonLd?.publishedAt;
+  const jsonLd = extractJsonLd($, "JobPosting");
+  const org = jsonLd?.hiringOrganization;
+  let title = str(jsonLd?.title);
+  let company =
+    org && typeof org === "object" && "name" in org ? str(org.name) : undefined;
+  let address = jsonLd ? extractJobPostingAddress(jsonLd) : undefined;
+  const descriptionHtml = str(jsonLd?.description);
+  const publishedAt = str(jsonLd?.datePosted);
 
   const text = (sel: string) => $(sel).first().text().trim() || undefined;
   if (!title) title = text("h1");

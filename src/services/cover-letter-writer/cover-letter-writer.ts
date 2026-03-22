@@ -2,8 +2,8 @@ import type { JobSearchRepository } from "@/repositories/job-search/types.js";
 import type { ApplicantRepository } from "@/repositories/applicant/types.js";
 import type { VacancyRepository } from "@/repositories/vacancy/types.js";
 import type { LlmClient } from "@/plugins/llm/types.js";
-import { generateCoverLetter } from "@/services/cover-letter-writer/generate.js";
-import { generatePersonalizedCoverLetter } from "@/services/cover-letter-writer/generate-personalized.js";
+import { generateCoverLetter } from "./generate.js";
+import { generatePersonalizedCoverLetter } from "./generate-personalized.js";
 
 export class CoverLetterWriter {
   constructor(

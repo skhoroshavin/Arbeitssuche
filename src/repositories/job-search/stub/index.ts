@@ -6,7 +6,7 @@ import {
   type SearchMode,
 } from "@/models/job-search/types.js";
 import type { JobSearchRepository } from "@/repositories/job-search/types.js";
-import { deriveId } from "@/repositories/derive-id.js";
+import { deriveId } from "@/utils/derive-id.js";
 
 interface StubData {
   jobSearch: JobSearch;

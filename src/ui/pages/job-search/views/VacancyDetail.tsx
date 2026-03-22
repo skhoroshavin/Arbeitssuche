@@ -18,7 +18,12 @@ import {
 import { Markdown } from "@/ui/pages/job-search/components/Markdown";
 import { StatusBadge } from "@/ui/pages/job-search/components/StatusBadge";
 import { useLayoutConfig, useAutoSaveHeader } from "@/ui/layout";
-import type { ActivityType, VacancyStatus } from "@/models/vacancy/types";
+import type {
+  ActivityType,
+  VacancyStatus,
+  VacancyContact,
+  CommuteInfo,
+} from "@/models/vacancy/types";
 import { STATUS_LABELS, MATCH_SCORE_LABELS } from "@/ui/constants";
 
 function today() {
@@ -81,8 +86,144 @@ const TRANSITIONS: Record<VacancyStatus, StatusAction[]> = {
   ],
 };
 
-interface CoverLetterFormValues {
-  content: string;
+function VacancyCommuteSection({
+  commute,
+}: {
+  commute?: Record<string, CommuteInfo>;
+}) {
+  if (!commute || Object.keys(commute).length === 0) return null;
+
+  return (
+    <div className="mt-4">
+      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Fahrtweg
+      </h3>
+      <div className="grid grid-cols-4 gap-2 text-xs text-gray-600 dark:text-gray-400">
+        <div className="font-medium">Adresse</div>
+        <div className="font-medium">Morgens</div>
+        <div className="font-medium">Tagsüber</div>
+        <div className="font-medium">Entfernung</div>
+        {Object.entries(commute).map(([addr, info]) => (
+          <div key={addr} className="contents">
+            <div>{addr}</div>
+            <div>{info.durations.morning} min</div>
+            <div>{info.durations.day} min</div>
+            <div>{info.distance}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VacancyContactSection({ contact }: { contact?: VacancyContact }) {
+  if (!contact || (!contact.name && !contact.email && !contact.phone))
+    return null;
+
+  return (
+    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Ansprechpartner
+      </h3>
+      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-0.5">
+        {contact.name && <div>{contact.name}</div>}
+        {contact.email && (
+          <div>
+            <a
+              href={`mailto:${contact.email}`}
+              className="text-blue-600 hover:underline"
+            >
+              {contact.email}
+            </a>
+          </div>
+        )}
+        {contact.phone && (
+          <div>
+            <a
+              href={`tel:${contact.phone}`}
+              className="text-blue-600 hover:underline"
+            >
+              {contact.phone}
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function VacancyActivityForm({
+  allowedActions,
+  eventForm,
+  onSelectAction,
+  onConfirm,
+}: {
+  allowedActions: StatusAction[];
+  eventForm: { type: ActivityType; extra: Record<string, string> } | null;
+  onSelectAction: (
+    form: { type: ActivityType; extra: Record<string, string> } | null,
+  ) => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Card className="p-4">
+      <SectionHeader className="mb-3">Aktionen</SectionHeader>
+      <div className="flex flex-wrap gap-2">
+        {allowedActions.map((action) => {
+          let extra: Record<string, string> = {};
+          if (action.type === "invited") {
+            extra = { interviewDate: "" };
+          } else if (action.type === "interviewed") {
+            extra = { outcome: "completed" };
+          }
+          return (
+            <button
+              key={action.type}
+              onClick={() => onSelectAction({ type: action.type, extra })}
+              className={`px-3 py-1.5 text-sm text-white rounded-lg ${action.color}`}
+            >
+              {action.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {eventForm && (
+        <div className="mt-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg space-y-2">
+          <p className="text-sm font-medium dark:text-gray-200">
+            Eintrag: {eventForm.type}
+          </p>
+          {eventForm.type === "invited" && (
+            <input
+              type="date"
+              placeholder="Vorstellungstermin"
+              onChange={(e) =>
+                onSelectAction({
+                  ...eventForm,
+                  extra: { interviewDate: e.target.value },
+                })
+              }
+              className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={onConfirm}
+              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg"
+            >
+              Bestätigen
+            </button>
+            <button
+              onClick={() => onSelectAction(null)}
+              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:text-gray-200"
+            >
+              Abbrechen
+            </button>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
 }
 
 function VacancyCoverLetterSection({
@@ -95,7 +236,7 @@ function VacancyCoverLetterSection({
   generateCoverLetter: ReturnType<typeof useGenerateVacancyCoverLetter>;
 }) {
   const { register, setValue, saveStatus } = useAutoSaveForm<
-    CoverLetterFormValues,
+    { content: string },
     { content: string }
   >({
     queryResult: {
@@ -246,59 +387,8 @@ export default function JobSearchVacancyDetail() {
           </div>
         )}
 
-        {data.commute && Object.keys(data.commute).length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Fahrtweg
-            </h3>
-            <div className="grid grid-cols-4 gap-2 text-xs text-gray-600 dark:text-gray-400">
-              <div className="font-medium">Adresse</div>
-              <div className="font-medium">Morgens</div>
-              <div className="font-medium">Tagsüber</div>
-              <div className="font-medium">Entfernung</div>
-              {Object.entries(data.commute).map(([addr, info]) => (
-                <div key={addr} className="contents">
-                  <div>{addr}</div>
-                  <div>{info.durations.morning}</div>
-                  <div>{info.durations.day}</div>
-                  <div>{info.distance}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {data.contact &&
-          (data.contact.name || data.contact.email || data.contact.phone) && (
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Ansprechpartner
-              </h3>
-              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-0.5">
-                {data.contact.name && <div>{data.contact.name}</div>}
-                {data.contact.email && (
-                  <div>
-                    <a
-                      href={`mailto:${data.contact.email}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {data.contact.email}
-                    </a>
-                  </div>
-                )}
-                {data.contact.phone && (
-                  <div>
-                    <a
-                      href={`tel:${data.contact.phone}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {data.contact.phone}
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+        <VacancyCommuteSection commute={data.commute} />
+        <VacancyContactSection contact={data.contact} />
 
         {data.summary && (
           <div className="mt-4">
@@ -331,63 +421,12 @@ export default function JobSearchVacancyDetail() {
       />
 
       {/* Actions */}
-      <Card className="p-4">
-        <SectionHeader className="mb-3">Aktionen</SectionHeader>
-        <div className="flex flex-wrap gap-2">
-          {allowedActions.map((action) => {
-            let extra: Record<string, string> = {};
-            if (action.type === "invited") {
-              extra = { interviewDate: "" };
-            } else if (action.type === "interviewed") {
-              extra = { outcome: "completed" };
-            }
-            return (
-              <button
-                key={action.type}
-                onClick={() => setEventForm({ type: action.type, extra })}
-                className={`px-3 py-1.5 text-sm text-white rounded-lg ${action.color}`}
-              >
-                {action.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {eventForm && (
-          <div className="mt-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg space-y-2">
-            <p className="text-sm font-medium dark:text-gray-200">
-              Eintrag: {eventForm.type}
-            </p>
-            {eventForm.type === "invited" && (
-              <input
-                type="date"
-                placeholder="Vorstellungstermin"
-                onChange={(e) =>
-                  setEventForm({
-                    ...eventForm,
-                    extra: { interviewDate: e.target.value },
-                  })
-                }
-                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              />
-            )}
-            <div className="flex gap-2">
-              <button
-                onClick={handleRecordActivity}
-                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg"
-              >
-                Bestätigen
-              </button>
-              <button
-                onClick={() => setEventForm(null)}
-                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:text-gray-200"
-              >
-                Abbrechen
-              </button>
-            </div>
-          </div>
-        )}
-      </Card>
+      <VacancyActivityForm
+        allowedActions={allowedActions}
+        eventForm={eventForm}
+        onSelectAction={setEventForm}
+        onConfirm={handleRecordActivity}
+      />
 
       {/* Activity History */}
       {data.activityHistory.length > 0 && (

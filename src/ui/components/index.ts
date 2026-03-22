@@ -4,4 +4,4 @@ export { Input, Textarea } from "./FormField";
 export { SectionHeader } from "./SectionHeader";
 export { EmptyState } from "./EmptyState";
 export { Loading } from "./Loading";
-export { HomeIcon, ArrowLeftIcon, CogIcon, ChevronRightIcon } from "./Icons";
+export { HomeIcon, ArrowLeftIcon, ChevronRightIcon } from "./Icons";

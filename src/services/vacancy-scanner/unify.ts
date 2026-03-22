@@ -1,12 +1,12 @@
 import type { VacancyDetails } from "@/plugins/job-site/types.js";
+import { Vacancy } from "@/models/vacancy/vacancy.js";
 import type {
-  Vacancy,
   FoundActivity,
   NotFoundActivity,
   VacancyContact,
 } from "@/models/vacancy/types.js";
-import { vacancyHash } from "@/services/vacancy-scanner/vacancy-hash.js";
-import { htmlToMarkdown } from "@/services/vacancy-scanner/markdown.js";
+import { vacancyHash } from "./vacancy-hash.js";
+import { htmlToMarkdown } from "./markdown.js";
 
 function contactFromDetails(
   details: VacancyDetails,
@@ -17,11 +17,53 @@ function contactFromDetails(
   return { name, email, phone };
 }
 
-export interface ProcessOneResult {
+interface ProcessOneResult {
   vacancy: Vacancy;
   hash: string;
   isNew: boolean;
   descriptionChanged: boolean;
+}
+
+function mergeUrls(existing: string[], newUrl: string): string[] {
+  return [...new Set([...existing, newUrl])];
+}
+
+function mergeAddresses(existing: string[], newAddress?: string): string[] {
+  return newAddress ? [...new Set([...existing, newAddress])] : existing;
+}
+
+function hasDescriptionChanged(
+  newDesc?: string,
+  existingDesc?: string,
+): boolean {
+  return !!newDesc && !!existingDesc && newDesc !== existingDesc;
+}
+
+function mergeWithExisting(
+  existing: Vacancy,
+  details: VacancyDetails,
+  hash: string,
+  foundActivity: FoundActivity,
+  contact: VacancyContact | undefined,
+  description: string | undefined,
+): ProcessOneResult {
+  const descriptionChanged = hasDescriptionChanged(
+    description,
+    existing.description,
+  );
+
+  const vacancy = existing.with({
+    urls: mergeUrls(existing.urls, details.url),
+    addresses: mergeAddresses(existing.addresses, details.address),
+    description: description ?? existing.description,
+    descriptionChanged,
+    contact: contact ?? existing.contact,
+    startDate: details.startDate ?? existing.startDate,
+    activityHistory: [...existing.activityHistory, foundActivity],
+    active: true,
+  });
+
+  return { vacancy, hash, isNew: false, descriptionChanged };
 }
 
 export function processOneCrawlResult(
@@ -54,32 +96,17 @@ export function processOneCrawlResult(
   const existing = existingByHash.get(hash);
 
   if (existing) {
-    const mergedUrls = [...new Set([...existing.urls, details.url])];
-    const mergedAddresses = details.address
-      ? [...new Set([...existing.addresses, details.address])]
-      : existing.addresses;
-
-    const descriptionChanged =
-      !!description &&
-      !!existing.description &&
-      description !== existing.description;
-
-    const vacancy: Vacancy = {
-      ...existing,
-      urls: mergedUrls,
-      addresses: mergedAddresses,
-      description: description ?? existing.description,
-      descriptionChanged,
-      contact: contact ?? existing.contact,
-      startDate: details.startDate ?? existing.startDate,
-      activityHistory: [...existing.activityHistory, foundActivity],
-      active: true,
-    };
-
-    return { vacancy, hash, isNew: false, descriptionChanged };
+    return mergeWithExisting(
+      existing,
+      details,
+      hash,
+      foundActivity,
+      contact,
+      description,
+    );
   }
 
-  const vacancy: Vacancy = {
+  const vacancy = new Vacancy({
     hash,
     title: details.title ?? "",
     company: details.company ?? "",
@@ -91,12 +118,12 @@ export function processOneCrawlResult(
     descriptionChanged: false,
     activityHistory: [foundActivity],
     active: true,
-  };
+  });
 
   return { vacancy, hash, isNew: true, descriptionChanged: false };
 }
 
-export interface MarkUnseenResult {
+interface MarkUnseenResult {
   vacancies: Vacancy[];
   goneCount: number;
 }
@@ -116,11 +143,10 @@ export function markUnseenAsGone(
       date: crawlDate,
       site: "all",
     };
-    return {
-      ...v,
+    return v.with({
       active: false,
       activityHistory: [...v.activityHistory, notFoundActivity],
-    };
+    });
   });
 
   return { vacancies, goneCount };

@@ -32,31 +32,31 @@ export interface NotFoundActivity extends BaseActivity {
   site: string;
 }
 
-export interface AppliedActivity extends BaseActivity {
+interface AppliedActivity extends BaseActivity {
   type: "applied";
 }
 
-export interface InvitedActivity extends BaseActivity {
+interface InvitedActivity extends BaseActivity {
   type: "invited";
   interviewDate: string;
 }
 
-export interface InterviewedActivity extends BaseActivity {
+interface InterviewedActivity extends BaseActivity {
   type: "interviewed";
   outcome: "completed" | "cancelled";
 }
 
-export interface OfferedActivity extends BaseActivity {
+interface OfferedActivity extends BaseActivity {
   type: "offered";
   startDate?: string;
   salary?: string;
 }
 
-export interface RejectedActivity extends BaseActivity {
+interface RejectedActivity extends BaseActivity {
   type: "rejected";
 }
 
-export interface NotInterestedActivity extends BaseActivity {
+interface NotInterestedActivity extends BaseActivity {
   type: "not-interested";
 }
 
@@ -85,9 +85,9 @@ export type VacancyStatus =
   | "not-interested";
 
 interface CommuteDurations {
-  morning: string;
-  day: string;
-  evening: string;
+  morning: number;
+  day: number;
+  evening: number;
 }
 
 export interface CommuteInfo {
@@ -101,7 +101,7 @@ export interface VacancySource {
   url: string;
 }
 
-export interface Vacancy {
+export interface VacancyDTO {
   hash: string;
   title: string;
   company: string;

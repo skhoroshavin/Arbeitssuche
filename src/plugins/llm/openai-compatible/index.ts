@@ -1,4 +1,9 @@
-import type { JsonSchema, LlmClient } from "@/plugins/llm/types.js";
+import type {
+  JsonSchema,
+  LlmClient,
+  LlmModelInfo,
+  LlmModelRegistry,
+} from "@/plugins/llm/types.js";
 
 class OpenAICompatibleClient implements LlmClient {
   constructor(
@@ -23,7 +28,11 @@ class OpenAICompatibleClient implements LlmClient {
         json_schema: { name: "response", strict: true, schema },
       },
     });
-    return JSON.parse(content);
+    try {
+      return JSON.parse(content);
+    } catch {
+      return null;
+    }
   }
 
   private async fetchCompletion(
@@ -71,4 +80,33 @@ export function createOpenAICompatibleClient(
   providerName: string,
 ): LlmClient {
   return new OpenAICompatibleClient(baseUrl, apiKey, model, providerName);
+}
+
+type ModelNormalizer = (raw: Record<string, unknown>) => LlmModelInfo;
+
+class OpenAICompatibleModelRegistry implements LlmModelRegistry {
+  constructor(
+    private readonly url: string,
+    private readonly normalize: ModelNormalizer,
+  ) {}
+
+  async fetchModels(): Promise<LlmModelInfo[]> {
+    try {
+      const response = await fetch(this.url, {
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!response.ok) return [];
+      const data: { data: Record<string, unknown>[] } = await response.json();
+      return data.data.map(this.normalize);
+    } catch {
+      return [];
+    }
+  }
+}
+
+export function createModelRegistry(
+  url: string,
+  normalize: ModelNormalizer,
+): LlmModelRegistry {
+  return new OpenAICompatibleModelRegistry(url, normalize);
 }

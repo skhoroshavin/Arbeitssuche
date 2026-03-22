@@ -7,7 +7,7 @@ import type {
   OpenPageOptions,
 } from "@/plugins/browser/types.js";
 
-export interface StubBrowser extends Browser {
+interface StubBrowser extends Browser {
   visitedUrls: string[];
 }
 

@@ -3,7 +3,7 @@ import type { JobSearch } from "@/models/job-search/types.js";
 import type { LlmClient } from "@/plugins/llm/types.js";
 import { formatApplicantSections } from "@/models/applicant/format.js";
 
-export function buildCoverLetterPrompt(
+function buildCoverLetterPrompt(
   applicant: Applicant,
   jobSearch: JobSearch,
 ): string {

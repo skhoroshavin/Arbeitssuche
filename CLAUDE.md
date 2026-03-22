@@ -29,7 +29,7 @@ npm test                      # Unit tests (*.test.ts)
 npm run test:integration      # Integration tests (*.integration-test.ts)
 npm run test:e2e              # E2E tests (Electron + Playwright)
 npm run test:visual           # Visual snapshot tests
-npm run validate              # Full pipeline: format + lint + check:shared-code + test + integration + build + e2e
+npm run validate              # Full pipeline: format + check + lint + test + integration + build + e2e
 
 npm run bump <dev|major|minor|patch>  # Bump version (stable→dev→release)
 npm run crawl:download        # Download HTML samples for crawler tests
@@ -37,58 +37,74 @@ npm run crawl:download        # Download HTML samples for crawler tests
 npm run format                # Prettier
 npm run lint                  # ESLint
 npm run lint:fix              # ESLint --fix
-npm run check:shared-code     # Verify ui/components & ui/hooks are genuinely shared
+npm run check                 # Architecture checks (dead code, shared code, imports, exports)
 ```
 
 ## Architecture
 
 ```
 src/
+  utils/          # Shared utilities used by 2+ different entity implementations.
+                  #   Self-contained: no @/ imports from other layers.
+                  #   Enforced by check-architecture script.
   plugins/        # External service interfaces (browser, commute, job-site, llm, pdf-renderer).
                   #   Each has types.ts + real impl + stub/ for testing.
-                  #   NO imports from other layers.
+                  #   Subfolders are implementations only, never utilities.
+                  #   Imports: plugins, utils.
   models/         # Pure domain type definitions + constants + simple self-contained helpers.
                   #   NO imports from other layers.
   repositories/   # Repository interfaces + impls (stub + sqlite) for domain entities.
-                  #   Imports: models.
+                  #   Subfolders are implementations only, never utilities.
+                  #   Imports: models, utils.
   services/       # Business logic as DI service classes.
                   #   resume-renderer/  — PDF generation
                   #   job-consultant/   — job search suggestions from LLM
                   #   vacancy-scanner/  — crawl and analyse (extract contacts, estimate commute time, etc) vacancies
                   #   cover-letter-writer/ — generic + personalized cover letters from LLM
-                  #   Imports: models, plugins, repositories, services.
+                  #   Imports: models, plugins, repositories, services, utils.
   app/            # Electron main process (IPC handlers, protocol, background tasks).
                   #   app/config/ — config repository (electron-store + stub).
                   #   app/secrets/ — secrets repository (encrypted + stub).
-                  #   Imports: all lower layers.
+                  #   Imports: all lower layers + utils.
   ui/             # Renderer process (React SPA).
                   #   components/ — shared presentational components (must be used by 2+ page groups)
                   #   hooks/      — shared custom hooks (self-contained, no @/ui imports)
                   #   data/       — shared domain query hooks (React Query over IPC)
                   #   layout/     — app shell (AppLayout, LayoutContext)
                   #   pages/      — page groups, each with own components/, hooks/, views/
-scripts/          # CLI utility scripts (bump-version, crawl-download, check-shared-code).
+scripts/          # CLI utility scripts (bump-version, crawl-download, check-architecture).
 e2e/              # E2E tests: fixtures, page objects, tests-flow/, tests-templates/.
 .github/workflows/  # CI (push/PR) and release (v* tags).
 ```
 
 ### Import rules (ESLint-enforced)
 
-Always use `@/` path alias — `../` imports are forbidden.
+Always use `@/` path alias for cross-module imports — `../` imports are forbidden. Within-module sibling imports use `./` relative paths.
 
 | Layer | Allowed `@/` imports |
 |-------|---------------------|
-| `plugins/` | `@/plugins` |
+| `utils/` | `@/utils` |
+| `plugins/` | `@/plugins`, `@/utils` |
 | `models/` | `@/models` |
-| `repositories/` | `@/models`, `@/repositories` |
-| `services/` | `@/models`, `@/plugins`, `@/repositories`, `@/services` |
+| `repositories/` | `@/models`, `@/repositories`, `@/utils` |
+| `services/` | `@/models`, `@/plugins`, `@/repositories`, `@/services`, `@/utils` |
 | `app/` | all lower layers + `@/app` |
+
+**Module boundary rules (backend layers: plugins, repositories, services)**
+
+- External imports only from `index.ts` and `types.ts` — at any depth (implementation `index.ts` files are valid targets, e.g. `@/plugins/llm/openrouter/index.js`)
+- Non-index/non-types file imports across module boundaries are ESLint-forbidden
+- Within-module files use `./` relative imports for siblings (e.g. `./scan.js`, not `@/services/vacancy-scanner/scan.js`)
+- `index.ts` exports restricted to: `create*`, `derive*`, `get*`, PascalCase names
+- Tests are black-box: import only from `index.js`, `types.js`, and `.test-suite.js` helpers
+- Implementation tests import from their sub-module's `index.ts`; integration tests from the parent module's `index.ts`
 
 **UI sub-layers**
 
 | Sub-layer | Allowed imports |
 |-----------|----------------|
 | `hooks/` | _(self-contained, no @/ui imports)_ |
+| `hooks/internal/` | _(private to hooks/, not importable from outside)_ |
 | `components/` | `@/models`, `@/ui/hooks` |
 | `data/` | `@/models`, `@/ui/hooks` |
 | `layout/` | `@/models`, `@/ui/components`, `@/ui/hooks` |
@@ -99,7 +115,7 @@ Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each pa
 
 ### Shared code placement
 
-`check-shared-code` (run via `npm run check:shared-code`) enforces that exports in `ui/components/` and `ui/hooks/` are genuinely shared — used by 2+ page groups, by layout + a page group, or by sibling files in the same directory. Single-page-group-only code must live in `pages/<group>/components/` or `pages/<group>/hooks/`.
+`check-architecture` (run via `npm run check`) enforces that exports in `ui/components/` and `ui/hooks/` are genuinely shared — used by 2+ page groups, by layout + a page group, or by sibling files in the same directory. Single-page-group-only code must live in `pages/<group>/components/` or `pages/<group>/hooks/`.
 
 ### Key patterns
 
@@ -113,6 +129,14 @@ Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each pa
 
 **Service**: Four service classes receive dependencies via constructor injection, instantiated in `app/index.ts` and rebuilt when settings change. IPC handlers call repos directly for CRUD, services for business logic.
 
+**Utils**: Flat directory of self-contained utilities shared by 2+ entity implementations. Rules:
+- Each file must be self-contained (no `@/` imports from other layers) and have JSDoc on all exports
+- Each file must have a corresponding `.test.ts` file
+- Filename must correspond to what is exported (e.g. `database.ts` exports `Database`, `queryRow`, `queryRows`)
+- Keep interfaces simple — if a utility needs extensive documentation, simplify the interface
+- Max 80 lines per file (excluding blanks/comments), max complexity 10 per function (ESLint-enforced)
+- `check-architecture` verifies each utility is imported by 2+ distinct entities and has tests
+
 ## Code conventions
 
 - **TypeScript strict mode**, ES2022 target, path alias `@/*` → `./src/*`
@@ -120,9 +144,12 @@ Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each pa
 - **camelCase** for variables/functions, **PascalCase** for types/components
 - Barrel exports via `index.ts`; tests co-located as `*.test.ts` / `*.integration-test.ts`
 - Tailwind classes for styling; no CSS modules
+- **Cyclomatic complexity limit**: 20 per function (ESLint `complexity` rule). When a function exceeds this, extract helpers, use lookup tables, or decompose React components.
 - Services and repos throw plain `Error` for validation/not-found errors
 - Interfaces with methods are implemented using classes, not plain objects
 - Commit messages: imperative mood, concise, describe the change
+- Job-site plugin `index.ts` files may only export the factory function (`create*Site`) and `SUPPORTED_MODES`
+- Job-site plugin tests must test only through the `JobSite` public interface
 
 ## Testing
 

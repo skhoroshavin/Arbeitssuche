@@ -1,11 +1,8 @@
 import type { ApplicantRepository } from "@/repositories/applicant/types.js";
 import type { PdfRenderer } from "@/plugins/pdf-renderer/types.js";
 import { RESUME_TEMPLATES } from "@/models/applicant/types.js";
-import { prepareResumeData } from "@/services/resume-renderer/prepare-resume-data.js";
-import {
-  renderHTML,
-  templatesDir,
-} from "@/services/resume-renderer/renderer.js";
+import { prepareResumeData } from "./prepare-resume-data.js";
+import { renderHTML, templatesDir } from "./renderer.js";
 
 export class ResumeRenderer {
   constructor(

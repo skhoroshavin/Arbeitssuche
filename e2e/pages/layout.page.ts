@@ -2,11 +2,10 @@ import type { Locator, Page } from "@playwright/test";
 
 export class LayoutPage {
   readonly page: Page;
-  readonly sidebar: Locator;
+  private readonly sidebar: Locator;
   readonly sidebarTitle: Locator;
   readonly sidebarSettingsLink: Locator;
   readonly headerTitle: Locator;
-  readonly headerBackLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -19,11 +18,6 @@ export class LayoutPage {
       name: "Einstellungen",
     });
     this.headerTitle = page.locator("header h2");
-    this.headerBackLink = page.locator("header").locator("a, button").first();
-  }
-
-  async getSidebarTitleText(): Promise<string> {
-    return this.sidebarTitle.innerText();
   }
 
   sidebarNavLink(name: string): Locator {

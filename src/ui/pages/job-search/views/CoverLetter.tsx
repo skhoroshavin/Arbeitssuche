@@ -8,20 +8,19 @@ import { useAutoSaveForm } from "@/ui/hooks/auto-save-form";
 import { Card, PageHeader, Textarea, Loading } from "@/ui/components";
 import { useAutoSaveHeader } from "@/ui/layout";
 
-interface CoverLetterFormValues {
-  content: string;
-}
-
 export default function JobSearchCoverLetter() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading } = useJobSearchCoverLetter(id!);
   const update = useUpdateJobSearchCoverLetter(id!);
   const generate = useGenerateCoverLetter(id!);
 
-  const { register, setValue, saveStatus } = useAutoSaveForm({
+  const { register, setValue, saveStatus } = useAutoSaveForm<
+    { content: string },
+    { content: string }
+  >({
     queryResult: { data, isLoading },
-    toFormValues: (d): CoverLetterFormValues => ({ content: d.content ?? "" }),
-    onSave: async (form: CoverLetterFormValues) => {
+    toFormValues: (d) => ({ content: d.content ?? "" }),
+    onSave: async (form) => {
       await update.mutateAsync(form.content);
     },
   });

@@ -39,7 +39,7 @@ export function getJobSiteNames(): string[] {
   return Object.keys(REGISTRY);
 }
 
-export interface JobSiteInfo {
+interface JobSiteInfo {
   name: string;
   supportedModes: readonly SearchMode[];
 }

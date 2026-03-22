@@ -5,7 +5,9 @@ import {
   type UseFormReturn,
   type FieldValues,
 } from "react-hook-form";
-import { useAutoSave, type AutoSaveStatus } from "./auto-save";
+import { useAutoSave, type AutoSaveStatus } from "./internal/auto-save";
+
+export type { AutoSaveStatus };
 
 interface UseAutoSaveFormOptions<TForm extends FieldValues, TData> {
   queryResult: { data: TData | undefined; isLoading: boolean };

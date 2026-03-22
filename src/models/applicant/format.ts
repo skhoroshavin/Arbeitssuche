@@ -13,12 +13,12 @@ function formatHighlights(
   return highlights.join(separator);
 }
 
-export function formatExperienceLine(e: ApplicantExperience): string {
+function formatExperienceLine(e: ApplicantExperience): string {
   const hl = formatHighlights(e.highlights);
   return `- ${e.role} bei ${e.company} (${e.startDate}–${e.endDate})${hl ? ": " + hl : ""}`;
 }
 
-export function formatEducationLine(e: ApplicantEducation): string {
+function formatEducationLine(e: ApplicantEducation): string {
   const hl = formatHighlights(e.highlights);
   return `- ${e.course} an ${e.institution}${e.endDate ? ` (${e.endDate})` : ""}${hl ? ": " + hl : ""}`;
 }

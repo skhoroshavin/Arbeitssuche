@@ -1,10 +1,10 @@
 import type { Applicant } from "@/models/applicant/types.js";
 import type { JobSearch } from "@/models/job-search/types.js";
-import type { Vacancy } from "@/models/vacancy/types.js";
+import type { Vacancy } from "@/models/vacancy/vacancy.js";
 import type { LlmClient } from "@/plugins/llm/types.js";
 import { formatApplicantSections } from "@/models/applicant/format.js";
 
-export function buildPersonalizedCoverLetterPrompt(
+function buildPersonalizedCoverLetterPrompt(
   applicant: Applicant,
   vacancy: Vacancy,
   templateCoverLetter: string | undefined,

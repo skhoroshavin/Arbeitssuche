@@ -6,8 +6,8 @@ import {
   type SearchMode,
 } from "@/models/job-search/types.js";
 import type { JobSearchRepository } from "@/repositories/job-search/types.js";
-import { deriveId } from "@/repositories/derive-id.js";
-import { Database, queryRow, queryRows } from "@/repositories/database.js";
+import { deriveId } from "@/utils/derive-id.js";
+import { Database, queryRow, queryRows } from "@/utils/database.js";
 
 type JobSearchRow = { id: string; applicant_id: string; search_term: string };
 

@@ -7,7 +7,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from "react";
-import type { AutoSaveStatus as AutoSaveStatusType } from "@/ui/hooks/auto-save";
+import type { AutoSaveStatus as AutoSaveStatusType } from "@/ui/hooks/auto-save-form";
 
 const autoSaveConfig: Record<
   Exclude<AutoSaveStatusType, "idle">,
@@ -37,7 +37,7 @@ function AutoSaveStatus({ status }: { status: AutoSaveStatusType }) {
   return <span className={`text-sm ${className}`}>{text}</span>;
 }
 
-export interface NavItem {
+interface NavItem {
   to: string;
   label: string;
   end?: boolean;
@@ -87,7 +87,7 @@ export function useLayoutConfig(
   }, [setConfig, ...deps]);
 }
 
-export function useSetHeaderExtra(extra: ReactNode, deps: DependencyList) {
+function useSetHeaderExtra(extra: ReactNode, deps: DependencyList) {
   const setConfig = useSetLayout();
   useEffect(() => {
     setConfig((prev) => ({ ...prev, headerExtra: extra }));

@@ -1,10 +1,11 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import type { Vacancy, Activity } from "@/models/vacancy/types.js";
+import { Vacancy } from "@/models/vacancy/vacancy.js";
+import type { VacancyDTO, Activity } from "@/models/vacancy/types.js";
 import type { VacancyRepository } from "./types.js";
 
-export function makeVacancy(overrides: Partial<Vacancy> = {}): Vacancy {
-  return {
+export function makeVacancy(overrides: Partial<VacancyDTO> = {}): Vacancy {
+  return new Vacancy({
     hash: "abc123",
     title: "Developer",
     company: "ACME",
@@ -14,7 +15,7 @@ export function makeVacancy(overrides: Partial<Vacancy> = {}): Vacancy {
     activityHistory: [],
     active: true,
     ...overrides,
-  };
+  });
 }
 
 interface RepoFactory {
@@ -79,7 +80,7 @@ export function vacancyRepositoryTests(name: string, factory: RepoFactory) {
       const a = repo.loadAll("s1")!;
       const b = repo.loadAll("s1")!;
       assert.notEqual(a, b);
-      a.vacancies[0].title = "mutated";
+      Object.assign(a.vacancies[0], { title: "mutated" });
       assert.equal(repo.loadAll("s1")!.vacancies[0].title, "Developer");
       teardown();
     });

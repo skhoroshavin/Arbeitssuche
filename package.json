@@ -26,8 +26,8 @@
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "check:shared-code": "npx tsx scripts/check-shared-code.ts",
-    "validate": "npm run format && npm run check:shared-code && npm run lint && npm test && npm run test:integration && npm run electron:build && npm run test:e2e"
+    "check": "npx tsx scripts/check-architecture.ts",
+    "validate": "npm run format && npm run check && npm run lint && npm test && npm run test:integration && npm run electron:build && npm run test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -53,6 +53,7 @@
     "react-markdown": "^10.1.0",
     "react-router": "^7.13.1",
     "tailwindcss": "^4.2.1",
+    "ts-morph": "^27.0.2",
     "tsx": "^4.19.0",
     "typescript-eslint": "^8.57.0",
     "vite": "^7.3.1"

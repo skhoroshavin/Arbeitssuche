@@ -1,6 +1,6 @@
 import type { Applicant } from "@/models/applicant/types.js";
 import type { JobSearch } from "@/models/job-search/types.js";
-import type { SearchParams } from "@/services/vacancy-scanner/scan.js";
+import type { SearchParams } from "./scan.js";
 
 export function resolveSearchParams(
   jobSearch: JobSearch,

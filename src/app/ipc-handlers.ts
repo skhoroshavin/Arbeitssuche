@@ -2,14 +2,11 @@ import { ipcMain, type WebContents } from "electron";
 import type { AppServices } from "./index.js";
 import type { Applicant } from "@/models/applicant/types.js";
 import type { JobSearch, SearchMode } from "@/models/job-search/types.js";
-import type { Activity, Vacancy } from "@/models/vacancy/types.js";
+import type { Activity } from "@/models/vacancy/types.js";
+import type { Vacancy } from "@/models/vacancy/vacancy.js";
 import type { Secrets, SecretKey } from "@/models/secrets/types.js";
 import type { ConfigKey } from "@/models/config/types.js";
 import { resolveConfig } from "@/models/config/resolve.js";
-import {
-  deriveStatus,
-  deriveSources,
-} from "@/services/vacancy-scanner/index.js";
 import { getJobSiteInfos } from "@/plugins/job-site/index.js";
 import { startCrawl, abortCrawl } from "./crawl-manager.js";
 
@@ -118,8 +115,8 @@ export function registerIpcHandlers(options: IpcHandlerOptions): void {
     }
     const vacancies = output.vacancies.map((v) => ({
       ...v,
-      status: deriveStatus(v),
-      sources: deriveSources(v),
+      status: v.deriveStatus(),
+      sources: v.deriveSources(),
     }));
     return {
       vacancies,
@@ -146,8 +143,8 @@ export function registerIpcHandlers(options: IpcHandlerOptions): void {
     }
     return {
       ...vacancy,
-      status: deriveStatus(vacancy),
-      sources: deriveSources(vacancy),
+      status: vacancy.deriveStatus(),
+      sources: vacancy.deriveSources(),
     };
   });
   handle(

@@ -1,7 +1,11 @@
-import { createOpenRouterClient } from "./openrouter/index.js";
-import { createOpenRouterModelRegistry } from "./openrouter/models.js";
-import { createRequestyClient } from "./requesty/index.js";
-import { createRequestyModelRegistry } from "./requesty/models.js";
+import {
+  createOpenRouterClient,
+  createOpenRouterModelRegistry,
+} from "./openrouter/index.js";
+import {
+  createRequestyClient,
+  createRequestyModelRegistry,
+} from "./requesty/index.js";
 import type { LlmClient, LlmModelRegistry } from "./types.js";
 
 export type { LlmClient, JsonSchema } from "./types.js";

@@ -5,7 +5,7 @@ interface DistanceMatrixResponse {
     elements: {
       status: string;
       distance?: { text: string };
-      duration?: { text: string };
+      duration?: { value: number };
     }[];
   }[];
   status: string;
@@ -15,13 +15,10 @@ function getNextWeekday(): Date {
   const now = new Date();
   const day = now.getDay();
 
-  // Days until next Monday-Thursday (always a working day)
   let daysUntil = 1;
-  if (day === 0)
-    daysUntil = 1; // Sun -> Mon
-  else if (day === 5)
-    daysUntil = 3; // Fri -> Mon
-  else if (day === 6) daysUntil = 2; // Sat -> Mon
+  if (day === 0) daysUntil = 1;
+  else if (day === 5) daysUntil = 3;
+  else if (day === 6) daysUntil = 2;
 
   const next = new Date(now);
   next.setDate(now.getDate() + daysUntil);
@@ -40,7 +37,7 @@ async function fetchDuration(
   destination: string,
   apiKey: string,
   departureTime: number,
-): Promise<{ distance: string; duration: string }> {
+): Promise<{ distance: string; durationMinutes: number }> {
   const params = new URLSearchParams({
     origins: origin,
     destinations: destination,
@@ -65,15 +62,20 @@ async function fetchDuration(
   }
 
   const element = data.rows[0]?.elements[0];
-  if (!element || element.status !== "OK") {
+  if (
+    !element ||
+    element.status !== "OK" ||
+    !element.distance ||
+    !element.duration
+  ) {
     throw new Error(
       `No route found for "${destination}": ${element?.status ?? "no data"}`,
     );
   }
 
   return {
-    distance: element.distance!.text,
-    duration: element.duration!.text,
+    distance: element.distance.text,
+    durationMinutes: Math.round(element.duration.value / 60),
   };
 }
 
@@ -85,34 +87,26 @@ class GoogleMapsCommuteClient implements CommuteClient {
     destination: string,
   ): Promise<CommuteResult> {
     const nextWeekday = getNextWeekday();
+    const atHour = (hour: number) =>
+      fetchDuration(
+        origin,
+        destination,
+        this.apiKey,
+        departureTimestamp(nextWeekday, hour),
+      );
 
     const [morning, day, evening] = await Promise.all([
-      fetchDuration(
-        origin,
-        destination,
-        this.apiKey,
-        departureTimestamp(nextWeekday, 8),
-      ),
-      fetchDuration(
-        origin,
-        destination,
-        this.apiKey,
-        departureTimestamp(nextWeekday, 12),
-      ),
-      fetchDuration(
-        origin,
-        destination,
-        this.apiKey,
-        departureTimestamp(nextWeekday, 18),
-      ),
+      atHour(8),
+      atHour(12),
+      atHour(18),
     ]);
 
     return {
       distance: morning.distance,
       durations: {
-        morning: morning.duration,
-        day: day.duration,
-        evening: evening.duration,
+        morning: morning.durationMinutes,
+        day: day.durationMinutes,
+        evening: evening.durationMinutes,
       },
       fetchedAt: new Date().toISOString(),
     };

@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { createStubPdfRenderer } from "./stub/index.js";
+import { createStubPdfRenderer } from "@/plugins/pdf-renderer/stub/index.js";
 
 describe("StubPdfRenderer", () => {
   test("returns default buffer", async () => {

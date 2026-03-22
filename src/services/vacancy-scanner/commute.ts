@@ -1,7 +1,8 @@
 import type { CommuteClient } from "@/plugins/commute/types.js";
-import type { Vacancy } from "@/models/vacancy/types.js";
+import type { Vacancy } from "@/models/vacancy/vacancy.js";
+import { formatError } from "./format-error.js";
 
-export interface ComputeCommutesInput {
+interface ComputeCommutesInput {
   vacancies: Vacancy[];
   origin: string;
   commuteClient: CommuteClient;
@@ -9,7 +10,7 @@ export interface ComputeCommutesInput {
   onProgress?: (message: string, current: number, total: number) => void;
 }
 
-export interface ComputeCommutesOutput {
+interface ComputeCommutesOutput {
   vacancies: Vacancy[];
   computedCount: number;
   skippedCount: number;
@@ -56,14 +57,14 @@ export async function computeCommutes(
       } catch (err) {
         console.error(
           `Commute error for "${vacancy.title}" → "${address}":`,
-          err instanceof Error ? err.message : String(err),
+          formatError(err),
         );
         errorCount++;
       }
     }
 
     if (computed) {
-      updatedMap.set(vacancy.hash, { ...vacancy, commute });
+      updatedMap.set(vacancy.hash, vacancy.with({ commute }));
       computedCount++;
     }
   }

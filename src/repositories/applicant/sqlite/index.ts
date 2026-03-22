@@ -4,8 +4,8 @@ import {
   type ApplicantInfo,
 } from "@/models/applicant/types.js";
 import type { ApplicantRepository } from "@/repositories/applicant/types.js";
-import { deriveId } from "@/repositories/derive-id.js";
-import { Database, queryRow, queryRows } from "@/repositories/database.js";
+import { deriveId } from "@/utils/derive-id.js";
+import { Database, queryRow, queryRows } from "@/utils/database.js";
 
 class SqliteApplicantRepository implements ApplicantRepository {
   private readonly listStmt;

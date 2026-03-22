@@ -20,7 +20,7 @@ interface FormPersonal extends Omit<ApplicantPersonal, "hobbies"> {
   hobbies?: string;
 }
 
-export interface ApplicantFormValues extends Omit<
+interface ApplicantFormValues extends Omit<
   Applicant,
   "experience" | "education" | "personal" | "personalNotes"
 > {
