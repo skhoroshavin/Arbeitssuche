@@ -35,8 +35,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Check shared code
-        run: npm run check:shared-code
+      - name: Check code
+        run: npm run check
 
       - name: Unit tests
         run: npm test
