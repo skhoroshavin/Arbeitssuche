@@ -1,6 +1,6 @@
 import { describe, it, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
-import { createOpenRouterModelRegistry } from "./models.js";
+import { createOpenRouterModelRegistry } from "./index.js";
 
 describe("createOpenRouterModelRegistry", () => {
   const originalFetch = globalThis.fetch;

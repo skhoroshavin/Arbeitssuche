@@ -7,9 +7,9 @@ import type { JobSite } from "@/plugins/job-site/types.js";
 import type { Vacancy } from "@/models/vacancy/types.js";
 import type { ProgressEvent } from "@/models/events.js";
 import { getJobSiteNames } from "@/plugins/job-site/index.js";
-import { resolveSearchParams } from "@/services/vacancy-scanner/resolve-search-params.js";
-import { scanVacancies } from "@/services/vacancy-scanner/scan.js";
-import { markUnseenAsGone } from "@/services/vacancy-scanner/unify.js";
+import { resolveSearchParams } from "./resolve-search-params.js";
+import { scanVacancies } from "./scan.js";
+import { markUnseenAsGone } from "./unify.js";
 
 export type JobSiteFactory = (name: string) => JobSite;
 export type OnProgress = (event: ProgressEvent) => void;

@@ -74,7 +74,7 @@ e2e/              # E2E tests: fixtures, page objects, tests-flow/, tests-templa
 
 ### Import rules (ESLint-enforced)
 
-Always use `@/` path alias — `../` imports are forbidden.
+Always use `@/` path alias for cross-module imports — `../` imports are forbidden. Within-module sibling imports use `./` relative paths.
 
 | Layer | Allowed `@/` imports |
 |-------|---------------------|
@@ -83,6 +83,15 @@ Always use `@/` path alias — `../` imports are forbidden.
 | `repositories/` | `@/models`, `@/repositories` |
 | `services/` | `@/models`, `@/plugins`, `@/repositories`, `@/services` |
 | `app/` | all lower layers + `@/app` |
+
+**Module boundary rules (backend layers: plugins, repositories, services)**
+
+- External imports only from `index.ts` and `types.ts` — at any depth (implementation `index.ts` files are valid targets, e.g. `@/plugins/llm/openrouter/index.js`)
+- Non-index/non-types file imports across module boundaries are ESLint-forbidden
+- Within-module files use `./` relative imports for siblings (e.g. `./scan.js`, not `@/services/vacancy-scanner/scan.js`)
+- `index.ts` exports restricted to: `create*`, `derive*`, `get*`, PascalCase names
+- Tests are black-box: import only from `index.js`, `types.js`, and `.test-suite.js` helpers
+- Implementation tests import from their sub-module's `index.ts`; integration tests from the parent module's `index.ts`
 
 **UI sub-layers**
 

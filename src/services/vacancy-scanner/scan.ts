@@ -5,18 +5,15 @@ import type { Applicant } from "@/models/applicant/types.js";
 import type { SearchPreferences } from "@/models/job-search/types.js";
 import type { Vacancy } from "@/models/vacancy/types.js";
 import type { ProgressEvent } from "@/models/events.js";
-import { processOneCrawlResult } from "@/services/vacancy-scanner/unify.js";
-import { computeCommutes } from "@/services/vacancy-scanner/commute.js";
-import {
-  assessVacancy,
-  needsAssessment,
-} from "@/services/vacancy-scanner/assess.js";
+import { processOneCrawlResult } from "./unify.js";
+import { computeCommutes } from "./commute.js";
+import { assessVacancy, needsAssessment } from "./assess.js";
 import {
   needsContactExtraction,
   extractContactInfo,
   mergeContactInfo,
-} from "@/services/vacancy-scanner/extract-contact.js";
-import { formatError } from "@/services/vacancy-scanner/format-error.js";
+} from "./extract-contact.js";
+import { formatError } from "./format-error.js";
 
 export type SearchParams = {
   location: string;

@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { deriveStatus } from "./status.js";
+import { deriveStatus } from "./index.js";
 import type { Vacancy } from "@/models/vacancy/types.js";
 
 function makeVacancy(overrides: Partial<Vacancy> = {}): Vacancy {

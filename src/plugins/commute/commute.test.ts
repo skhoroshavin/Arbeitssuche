@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { createStubCommuteClient } from "./stub/index.js";
+import { createStubCommuteClient } from "@/plugins/commute/stub/index.js";
 
 describe("StubCommuteClient", () => {
   test("returns default result", async () => {

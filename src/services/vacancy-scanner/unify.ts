@@ -5,8 +5,8 @@ import type {
   NotFoundActivity,
   VacancyContact,
 } from "@/models/vacancy/types.js";
-import { vacancyHash } from "@/services/vacancy-scanner/vacancy-hash.js";
-import { htmlToMarkdown } from "@/services/vacancy-scanner/markdown.js";
+import { vacancyHash } from "./vacancy-hash.js";
+import { htmlToMarkdown } from "./markdown.js";
 
 function contactFromDetails(
   details: VacancyDetails,

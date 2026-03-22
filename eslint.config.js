@@ -3,6 +3,7 @@ import tseslint from "typescript-eslint";
 import checkFile from "eslint-plugin-check-file";
 
 const ALL_LAYERS = ["plugins", "models", "repositories", "services", "app"];
+const BACKEND_LAYERS = ["plugins", "repositories", "services"];
 
 const ALLOWED_IMPORTS = {
   plugins: ["plugins"],
@@ -17,7 +18,7 @@ const NO_RELATIVE_PARENT = {
   message: "Use @/ path alias instead of relative ../ imports",
 };
 
-function layerRule(layer) {
+function getBasePatterns(layer) {
   const allowed = ALLOWED_IMPORTS[layer];
   const forbidden = ALL_LAYERS.filter((l) => !allowed.includes(l));
   const patterns = [NO_RELATIVE_PARENT];
@@ -33,11 +34,71 @@ function layerRule(layer) {
     });
   }
 
+  const restrictedBackend = allowed.filter((l) => BACKEND_LAYERS.includes(l));
+  if (restrictedBackend.length > 0) {
+    // Use *.js to match only files (not directories) — the `ignore` package
+    // follows gitignore semantics where a matched directory also matches all
+    // its contents, making negation impossible for files inside it.
+    patterns.push({
+      group: [
+        ...restrictedBackend.flatMap((l) => [
+          `@/${l}/*/*.js`,
+          `@/${l}/*/*/*.js`,
+        ]),
+        ...restrictedBackend.flatMap((l) => [
+          `!@/${l}/*/index.js`,
+          `!@/${l}/*/types.js`,
+          `!@/${l}/*/*/index.js`,
+          `!@/${l}/*/*/types.js`,
+        ]),
+      ],
+      message: "Import from index.js or types.js only",
+    });
+  }
+
+  return patterns;
+}
+
+function layerRule(layer) {
   return {
     files: [`src/${layer}/**/*.{ts,tsx}`],
     rules: {
-      "no-restricted-imports": ["error", { patterns }],
+      "no-restricted-imports": ["error", { patterns: getBasePatterns(layer) }],
     },
+  };
+}
+
+function testRule(layer) {
+  const patterns = [
+    ...getBasePatterns(layer),
+    // Forbid relative internal imports (allow index, types, test-suite)
+    {
+      group: ["./**", "!./index.js", "!./types.js", "!./*.test-suite.js"],
+      message: "Tests must import only from index.js or types.js",
+    },
+    // Forbid @/ non-index/non-types in ALL backend layers
+    {
+      group: [
+        ...BACKEND_LAYERS.flatMap((l) => [
+          `@/${l}/*/*.js`,
+          `@/${l}/*/*/*.js`,
+        ]),
+        ...BACKEND_LAYERS.flatMap((l) => [
+          `!@/${l}/*/index.js`,
+          `!@/${l}/*/types.js`,
+          `!@/${l}/*/*/index.js`,
+          `!@/${l}/*/*/types.js`,
+        ]),
+      ],
+      message: "Tests must import only from index.js or types.js",
+    },
+  ];
+  return {
+    files: [
+      `src/${layer}/**/*.test.ts`,
+      `src/${layer}/**/*.integration-test.ts`,
+    ],
+    rules: { "no-restricted-imports": ["error", { patterns }] },
   };
 }
 
@@ -197,16 +258,37 @@ export default tseslint.config(
     },
   },
   ...ALL_LAYERS.map(layerRule),
+  ...BACKEND_LAYERS.map(testRule),
   ...uiSubLayerRules,
   {
     files: ["src/plugins/job-site/*/index.ts"],
-    ignores: ["src/plugins/job-site/stub/index.ts"],
+    ignores: [
+      "src/plugins/job-site/stub/index.ts",
+      "src/plugins/job-site/json-ld/index.ts",
+    ],
     rules: {
       "no-restricted-exports": [
         "error",
         {
           restrictedNamedExportsPattern:
             "^(?!create[A-Z]\\w*Site$|SUPPORTED_MODES$)",
+        },
+      ],
+    },
+  },
+  {
+    files: [
+      "src/plugins/*/index.ts",
+      "src/repositories/*/index.ts",
+      "src/services/*/index.ts",
+    ],
+    ignores: ["src/plugins/job-site/stub/index.ts"],
+    rules: {
+      "no-restricted-exports": [
+        "error",
+        {
+          restrictedNamedExportsPattern:
+            "^(?!create[A-Z]|derive[A-Z]|get[A-Z]|[A-Z])",
         },
       ],
     },

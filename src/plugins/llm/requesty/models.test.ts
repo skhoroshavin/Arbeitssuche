@@ -1,6 +1,6 @@
 import { describe, it, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
-import { createRequestyModelRegistry } from "./models.js";
+import { createRequestyModelRegistry } from "./index.js";
 
 describe("createRequestyModelRegistry", () => {
   const originalFetch = globalThis.fetch;

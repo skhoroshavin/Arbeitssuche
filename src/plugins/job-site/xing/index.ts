@@ -5,7 +5,7 @@ import type {
   JobSite,
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
-import { extractJobPostingFromJsonLd } from "@/plugins/job-site/json-ld.js";
+import { extractJobPostingFromJsonLd } from "@/plugins/job-site/json-ld/index.js";
 
 const BASE_URL = "https://www.xing.com";
 

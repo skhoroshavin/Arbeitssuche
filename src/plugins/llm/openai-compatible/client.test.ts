@@ -1,6 +1,6 @@
 import { describe, it, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
-import { createOpenAICompatibleClient } from "./client.js";
+import { createOpenAICompatibleClient } from "./index.js";
 
 describe("OpenAICompatibleClient", () => {
   const originalFetch = globalThis.fetch;
