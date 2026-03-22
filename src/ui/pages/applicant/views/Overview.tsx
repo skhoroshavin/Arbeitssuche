@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate, Link } from "react-router";
+import { useParams, useNavigate, useLocation, Link } from "react-router";
 import {
   useApplicant,
   useDownloadResume,
@@ -367,6 +367,7 @@ export default function ApplicantOverview() {
   const createJobSearch = useCreateJobSearch();
   const deleteJobSearch = useDeleteJobSearch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const downloadResume = useDownloadResume(id!, data?.personal?.name ?? "");
   const consultSearches = useConsultSearches(id!);
@@ -462,7 +463,11 @@ export default function ApplicantOverview() {
             {!hasLlmKey && (
               <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                 KI-Schlüssel erforderlich.{" "}
-                <Link to="/settings" className="underline hover:no-underline">
+                <Link
+                  to="/settings"
+                  state={{ returnTo: location.pathname }}
+                  className="underline hover:no-underline"
+                >
                   Zu den Einstellungen
                 </Link>
               </p>

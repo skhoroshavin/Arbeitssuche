@@ -11,6 +11,20 @@ import { getJobSiteInfos } from "@/plugins/job-site/index.js";
 import { getLlmSecretKeyInfo, googleMapsKeyInfo } from "./secret-key-infos.js";
 import { startCrawl, abortCrawl } from "./crawl-manager.js";
 
+async function testBearerKey(
+  url: string,
+  apiKey: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    signal: AbortSignal.timeout(10_000),
+  });
+  await res.text();
+  if (!res.ok)
+    return { ok: false, error: `HTTP ${res.status}: ${res.statusText}` };
+  return { ok: true };
+}
+
 function maskToken(token: string | undefined): string {
   if (!token) return "";
   if (token.length <= 8)
@@ -272,40 +286,25 @@ export function registerIpcHandlers(options: IpcHandlerOptions): void {
     }
     try {
       switch (key) {
-        case "openrouterApiKey": {
-          const res = await fetch("https://openrouter.ai/api/v1/auth/key", {
-            headers: { Authorization: `Bearer ${value}` },
-            signal: AbortSignal.timeout(10_000),
-          });
-          if (!res.ok)
-            return {
-              ok: false,
-              error: `HTTP ${res.status}: ${res.statusText}`,
-            };
-          return { ok: true };
-        }
-        case "requestyApiKey": {
-          const res = await fetch("https://router.eu.requesty.ai/v1/models", {
-            headers: { Authorization: `Bearer ${value}` },
-            signal: AbortSignal.timeout(10_000),
-          });
-          if (!res.ok)
-            return {
-              ok: false,
-              error: `HTTP ${res.status}: ${res.statusText}`,
-            };
-          return { ok: true };
-        }
+        case "openrouterApiKey":
+          return testBearerKey("https://openrouter.ai/api/v1/auth/key", value);
+        case "requestyApiKey":
+          return testBearerKey(
+            "https://router.eu.requesty.ai/v1/models",
+            value,
+          );
         case "googleMapsApiKey": {
           const url = `https://maps.googleapis.com/maps/api/directions/json?origin=Berlin&destination=Berlin&mode=transit&key=${value}`;
           const res = await fetch(url, {
             signal: AbortSignal.timeout(10_000),
           });
-          if (!res.ok)
+          if (!res.ok) {
+            await res.text();
             return {
               ok: false,
               error: `HTTP ${res.status}: ${res.statusText}`,
             };
+          }
           const data: { status: string } = await res.json();
           if (data.status !== "OK")
             return { ok: false, error: `API-Status: ${data.status}` };
