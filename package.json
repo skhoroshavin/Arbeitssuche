@@ -26,7 +26,7 @@
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "check": "npx tsx scripts/detect-dead-code.ts && npx tsx scripts/check-shared-code.ts",
+    "check": "npx tsx scripts/check-code.ts",
     "validate": "npm run format && npm run check && npm run lint && npm test && npm run test:integration && npm run electron:build && npm run test:e2e"
   },
   "devDependencies": {
