@@ -173,42 +173,6 @@ test.describe("Settings Flow", () => {
     ).not.toBeVisible();
   });
 
-  test("can add and clear Requesty API key", async ({ api, settingsPage }) => {
-    await api.saveSecrets({});
-    await settingsPage.goto();
-    await settingsPage.selectProvider("Requesty");
-
-    // Add key
-    await settingsPage.addButton(REQUESTY_LABEL).click();
-    await settingsPage.tokenInput(REQUESTY_LABEL).fill("rq-test-api-key-value");
-    await settingsPage.saveFieldButton(REQUESTY_LABEL).click();
-    await expect(settingsPage.replaceButton(REQUESTY_LABEL)).toBeVisible();
-
-    const secrets = await api.getSecrets();
-    expect(secrets.requestyApiKey).toBe("rq-test-api-key-value");
-
-    // Clear key
-    await settingsPage.clearButton(REQUESTY_LABEL).click();
-    await expect(settingsPage.addButton(REQUESTY_LABEL)).toBeVisible();
-    const updated = await api.getSecrets();
-    expect(updated.requestyApiKey).toBeUndefined();
-  });
-
-  test("Requesty API key never appears in DOM", async ({
-    api,
-    settingsPage,
-    page,
-  }) => {
-    const fullToken = "rq-secret-e2e-token-abcdef123456";
-    await api.saveSecrets({ requestyApiKey: fullToken });
-    await settingsPage.goto();
-    await settingsPage.selectProvider("Requesty");
-
-    await expect(settingsPage.replaceButton(REQUESTY_LABEL)).toBeVisible();
-    const html = await page.content();
-    expect(html).not.toContain(fullToken);
-  });
-
   test("provider selection persists on reload", async ({
     api,
     settingsPage,

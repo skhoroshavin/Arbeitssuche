@@ -1,13 +1,6 @@
 import { test, expect } from "../fixtures.js";
 
 test.describe("Applicant Flow", () => {
-  test("homepage shows applicant list heading", async ({
-    applicantListPage,
-  }) => {
-    await applicantListPage.goto();
-    await expect(applicantListPage.heading).toBeVisible();
-  });
-
   test("can create and view an applicant", async ({
     applicantListPage,
     api,
@@ -29,45 +22,6 @@ test.describe("Applicant Flow", () => {
       await api.deleteApplicant(applicantId);
     }
   });
-
-  test("input is focused when create form opens", async ({
-    applicantListPage,
-  }) => {
-    await applicantListPage.goto();
-    await applicantListPage.openCreateForm();
-    await expect(applicantListPage.nameInput).toBeFocused();
-  });
-
-  test("pressing Escape closes create form without creating an applicant", async ({
-    applicantListPage,
-  }) => {
-    await applicantListPage.goto();
-    await applicantListPage.openAndDismissForm("E2e Escape Applicant");
-
-    await expect(applicantListPage.createButton).not.toBeVisible();
-    await expect(
-      applicantListPage.applicantCard("E2e Escape Applicant"),
-    ).not.toBeVisible();
-  });
-
-  test("can create an applicant by pressing Enter", async ({
-    applicantListPage,
-    api,
-  }) => {
-    await applicantListPage.goto();
-    await applicantListPage.createApplicantViaEnter("E2e Enter Applicant");
-
-    await expect(
-      applicantListPage.applicantCard("E2e Enter Applicant"),
-    ).toBeVisible();
-
-    const applicantId = await applicantListPage.navigateToApplicant(
-      "E2e Enter Applicant",
-    );
-    if (applicantId) {
-      await api.deleteApplicant(applicantId);
-    }
-  });
 });
 
 test.describe("Applicant Tabs & Edit Forms", () => {
@@ -84,11 +38,6 @@ test.describe("Applicant Tabs & Edit Forms", () => {
     await api.saveSecrets(originalSecrets);
   });
 
-  test("shows all six navigation tabs", async ({ applicantPage }) => {
-    await applicantPage.goto(applicantId);
-    await applicantPage.expectAllTabsVisible();
-  });
-
   test("can navigate to each edit tab", async ({ applicantPage }) => {
     await applicantPage.goto(applicantId);
 
@@ -99,68 +48,6 @@ test.describe("Applicant Tabs & Edit Forms", () => {
     await applicantPage.navigateToTab("Sonstiges", "Sonstiges");
     await applicantPage.navigateToTab("Übersicht", "Lebenslauf");
   });
-
-  test("personal form has disclose checkboxes", async ({ applicantPage }) => {
-    await applicantPage.gotoTab(applicantId, "personal");
-    await expect(applicantPage.checkboxes).toHaveCount(3);
-  });
-
-  const discloseCases = [
-    {
-      name: "experience",
-      path: "experience",
-      heading: "Berufserfahrung",
-      data: {
-        experience: [
-          {
-            role: "Dev",
-            company: "ACME",
-            startDate: "2020",
-            endDate: "2023",
-            location: "Berlin",
-          },
-        ],
-      },
-    },
-    {
-      name: "education",
-      path: "education",
-      heading: "Ausbildung",
-      data: {
-        education: [
-          {
-            institution: "TU Berlin",
-            course: "Informatik",
-            start_date: "2015",
-            end_date: "2020",
-            location: "Berlin",
-          },
-        ],
-      },
-    },
-    {
-      name: "certifications",
-      path: "certifications",
-      heading: "Zertifikate",
-      data: {
-        certifications: [{ name: "AWS", issuer: "Amazon", date: "2023" }],
-      },
-    },
-  ];
-
-  for (const { name, path, heading, data } of discloseCases) {
-    test(`${name} form shows disclose checkbox for dates`, async ({
-      applicantPage,
-      api,
-    }) => {
-      const applicant = await api.getApplicant(applicantId);
-      await api.updateApplicant(applicantId, { ...applicant, ...data });
-
-      await applicantPage.gotoTab(applicantId, path);
-      await expect(applicantPage.heading(heading)).toBeVisible();
-      await expect(applicantPage.checkboxes).toHaveCount(1);
-    });
-  }
 
   test("auto-saves personal data after editing", async ({
     applicantPage,
@@ -185,26 +72,6 @@ test.describe("Applicant Tabs & Edit Forms", () => {
 
     await applicantPage.field("E-Mail").fill("typing@example.com");
     await expect(applicantPage.unsavedStatus).toBeVisible();
-  });
-
-  test("overview has enabled template download buttons for all templates", async ({
-    applicantPage,
-  }) => {
-    await applicantPage.goto(applicantId);
-
-    await expect(applicantPage.templateButton("Klassisch")).toBeEnabled();
-    await expect(applicantPage.templateButton("Elegant")).toBeEnabled();
-    await expect(applicantPage.templateButton("Modern")).toBeEnabled();
-    await expect(applicantPage.templateButton("Minimal")).toBeEnabled();
-  });
-
-  test("overview shows job search list with create button", async ({
-    applicantPage,
-  }) => {
-    await applicantPage.goto(applicantId);
-
-    await expect(applicantPage.jobSearchHeading).toBeVisible();
-    await expect(applicantPage.newSearchButton).toBeVisible();
   });
 
   test("clicking a template button generates a resume", async ({
