@@ -1,7 +1,16 @@
-import { render, screen } from "@testing-library/react";
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { EntityList } from "./EntityList";
+
+// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+window.electronAPI = { invoke: async () => undefined } as never;
+
+afterEach(() => {
+  cleanup();
+});
 
 type Props = Parameters<typeof EntityList>[0];
 

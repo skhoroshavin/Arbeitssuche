@@ -1,6 +1,5 @@
-import { describe, it, afterEach, mock } from "node:test";
-import assert from "node:assert/strict";
-import { createRequestyModelRegistry } from "./index.js";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { createRequestyModelRegistry } from "./index";
 
 describe("createRequestyModelRegistry", () => {
   const originalFetch = globalThis.fetch;
@@ -10,7 +9,7 @@ describe("createRequestyModelRegistry", () => {
   });
 
   function mockFetch(body: unknown) {
-    globalThis.fetch = mock.fn(async () => ({
+    globalThis.fetch = vi.fn(async () => ({
       ok: true,
       status: 200,
       json: async () => body,
@@ -32,8 +31,8 @@ describe("createRequestyModelRegistry", () => {
     const registry = createRequestyModelRegistry();
     const models = await registry.fetchModels();
 
-    assert.equal(models[0]!.name, "Claude 3.7 Sonnet");
-    assert.notEqual(models[0]!.name, "undefined");
+    expect(models[0]!.name).toBe("Claude 3.7 Sonnet");
+    expect(models[0]!.name).not.toBe("undefined");
   });
 
   it("uses name field when present", async () => {
@@ -51,7 +50,7 @@ describe("createRequestyModelRegistry", () => {
     const registry = createRequestyModelRegistry();
     const models = await registry.fetchModels();
 
-    assert.equal(models[0]!.name, "Claude Sonnet 4");
+    expect(models[0]!.name).toBe("Claude Sonnet 4");
   });
 
   it("maps input_price/output_price to pricing fields", async () => {
@@ -68,8 +67,8 @@ describe("createRequestyModelRegistry", () => {
     const registry = createRequestyModelRegistry();
     const models = await registry.fetchModels();
 
-    assert.equal(models[0]!.pricing.prompt, "0.000003");
-    assert.equal(models[0]!.pricing.completion, "0.000015");
+    expect(models[0]!.pricing.prompt).toBe("0.000003");
+    expect(models[0]!.pricing.completion).toBe("0.000015");
   });
 
   it("filters out non-EU models and keeps regionless ones", async () => {
@@ -101,9 +100,9 @@ describe("createRequestyModelRegistry", () => {
     const registry = createRequestyModelRegistry();
     const models = await registry.fetchModels();
 
-    assert.equal(models.length, 2);
-    assert.equal(models[0]!.id, "azure/gpt-4.1-mini");
-    assert.equal(models[1]!.id, "anthropic/claude-sonnet-4");
+    expect(models.length).toBe(2);
+    expect(models[0]!.id).toBe("azure/gpt-4.1-mini");
+    expect(models[1]!.id).toBe("anthropic/claude-sonnet-4");
   });
 
   it("keeps models from all recognized EU regions", async () => {
@@ -124,7 +123,7 @@ describe("createRequestyModelRegistry", () => {
     const registry = createRequestyModelRegistry();
     const models = await registry.fetchModels();
 
-    assert.equal(models.length, 5);
+    expect(models.length).toBe(5);
   });
 
   it("deduplicates regional variants keeping the first EU match", async () => {
@@ -151,7 +150,7 @@ describe("createRequestyModelRegistry", () => {
     const registry = createRequestyModelRegistry();
     const models = await registry.fetchModels();
 
-    assert.equal(models.length, 1);
-    assert.equal(models[0]!.id, "azure/gpt-4.1");
+    expect(models.length).toBe(1);
+    expect(models[0]!.id).toBe("azure/gpt-4.1");
   });
 });

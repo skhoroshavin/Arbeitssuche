@@ -1,6 +1,5 @@
-import { describe, it, afterEach, mock } from "node:test";
-import assert from "node:assert/strict";
-import { createOpenAICompatibleClient } from "./index.js";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { createOpenAICompatibleClient } from "./index";
 
 describe("OpenAICompatibleClient", () => {
   const originalFetch = globalThis.fetch;
@@ -10,7 +9,7 @@ describe("OpenAICompatibleClient", () => {
   });
 
   function mockFetch(body: unknown, status = 200) {
-    globalThis.fetch = mock.fn(async () => ({
+    globalThis.fetch = vi.fn(async () => ({
       ok: status >= 200 && status < 300,
       status,
       json: async () => body,
@@ -31,7 +30,7 @@ describe("OpenAICompatibleClient", () => {
         "TestProvider",
       );
       const result = await client.complete("prompt", 100);
-      assert.equal(result, "Hello world");
+      expect(result).toBe("Hello world");
     });
 
     it("throws on non-OK status", async () => {
@@ -43,12 +42,8 @@ describe("OpenAICompatibleClient", () => {
         "test/model",
         "TestProvider",
       );
-      await assert.rejects(
-        () => client.complete("prompt", 100),
-        (err: Error) => {
-          assert.match(err.message, /TestProvider API error \(400\)/);
-          return true;
-        },
+      await expect(() => client.complete("prompt", 100)).rejects.toThrow(
+        /TestProvider API error \(400\)/,
       );
     });
 
@@ -61,12 +56,8 @@ describe("OpenAICompatibleClient", () => {
         "test/model",
         "TestProvider",
       );
-      await assert.rejects(
-        () => client.complete("prompt", 100),
-        (err: Error) => {
-          assert.match(err.message, /TestProvider returned empty response/);
-          return true;
-        },
+      await expect(() => client.complete("prompt", 100)).rejects.toThrow(
+        /TestProvider returned empty response/,
       );
     });
   });
@@ -87,7 +78,7 @@ describe("OpenAICompatibleClient", () => {
         type: "object",
         properties: { score: { type: "number" } },
       });
-      assert.equal(result, null);
+      expect(result).toBe(null);
     });
 
     it("parses JSON from response content", async () => {
@@ -106,7 +97,7 @@ describe("OpenAICompatibleClient", () => {
         100,
         { type: "object", properties: { score: { type: "number" } } },
       );
-      assert.deepEqual(result, { score: 42 });
+      expect(result).toEqual({ score: 42 });
     });
   });
 
@@ -124,25 +115,19 @@ describe("OpenAICompatibleClient", () => {
       );
       await client.complete("test prompt", 200);
 
-      const fetchMock = globalThis.fetch as unknown as ReturnType<
-        typeof mock.fn
-      >;
-      assert.equal(fetchMock.mock.calls.length, 1);
+      const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
+      expect(fetchMock.mock.calls.length).toBe(1);
 
-      const [url, options] = fetchMock.mock.calls[0]!.arguments as [
-        string,
-        RequestInit,
-      ];
-      assert.equal(url, "https://example.com/v1/chat/completions");
-      assert.equal(
-        (options.headers as Record<string, string>)["Authorization"],
+      const [url, options] = fetchMock.mock.calls[0]! as [string, RequestInit];
+      expect(url).toBe("https://example.com/v1/chat/completions");
+      expect((options.headers as Record<string, string>)["Authorization"]).toBe(
         "Bearer my-api-key",
       );
 
       const body = JSON.parse(options.body as string);
-      assert.equal(body.model, "my/model");
-      assert.equal(body.messages[0].content, "test prompt");
-      assert.equal(body.max_tokens, 200);
+      expect(body.model).toBe("my/model");
+      expect(body.messages[0].content).toBe("test prompt");
+      expect(body.max_tokens).toBe(200);
     });
   });
 });

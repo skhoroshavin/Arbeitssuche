@@ -1,7 +1,6 @@
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
-import type { Applicant } from "@/models/applicant/types.js";
-import type { ApplicantRepository } from "./types.js";
+import { test, describe, expect } from "vitest";
+import type { Applicant } from "@/models/applicant/types";
+import type { ApplicantRepository } from "./types";
 
 export function makeSampleApplicant(id: string): Applicant {
   return {
@@ -46,20 +45,20 @@ export function applicantRepositoryTests(name: string, factory: RepoFactory) {
   describe(name, () => {
     test("returns empty list initially", () => {
       const { repo, teardown } = factory.createRepo();
-      assert.deepEqual(repo.list(), []);
+      expect(repo.list()).toEqual([]);
       teardown();
     });
 
     test("create returns id + exists + load", () => {
       const { repo, teardown } = factory.createRepo();
       const id = repo.create("John Doe");
-      assert.equal(typeof id, "string");
-      assert.ok(id.length > 0);
-      assert.equal(repo.exists(id), true);
-      assert.equal(repo.exists("nobody"), false);
+      expect(typeof id).toBe("string");
+      expect(id.length > 0).toBeTruthy();
+      expect(repo.exists(id)).toBe(true);
+      expect(repo.exists("nobody")).toBe(false);
       const loaded = repo.load(id);
-      assert.equal(loaded.id, id);
-      assert.equal(loaded.personal.name, "John Doe");
+      expect(loaded.id).toBe(id);
+      expect(loaded.personal.name).toBe("John Doe");
       teardown();
     });
 
@@ -69,7 +68,7 @@ export function applicantRepositoryTests(name: string, factory: RepoFactory) {
       const sample = makeSampleApplicant(id);
       await repo.save(id, sample);
       const loaded = repo.load(id);
-      assert.deepEqual(loaded, sample);
+      expect(loaded).toEqual(sample);
       teardown();
     });
 
@@ -80,26 +79,26 @@ export function applicantRepositoryTests(name: string, factory: RepoFactory) {
       await repo.save(id, sample);
       const a = repo.load(id);
       const b = repo.load(id);
-      assert.notEqual(a, b);
+      expect(a).not.toBe(b);
       a.personal.name = "mutated";
-      assert.equal(repo.load(id).personal.name, "John Doe");
+      expect(repo.load(id).personal.name).toBe("John Doe");
       teardown();
     });
 
     test("save throws for non-existent applicant", async () => {
       const { repo, teardown } = factory.createRepo();
-      await assert.rejects(() =>
+      await expect(() =>
         repo.save("nope", makeSampleApplicant("nope")),
-      );
+      ).rejects.toThrow();
       teardown();
     });
 
     test("delete removes applicant", () => {
       const { repo, teardown } = factory.createRepo();
       const id = repo.create("John Doe");
-      assert.equal(repo.exists(id), true);
+      expect(repo.exists(id)).toBe(true);
       repo.delete(id);
-      assert.equal(repo.exists(id), false);
+      expect(repo.exists(id)).toBe(false);
       teardown();
     });
 
@@ -108,7 +107,7 @@ export function applicantRepositoryTests(name: string, factory: RepoFactory) {
       const id1 = repo.create("Alice");
       const id2 = repo.create("Bob");
       const ids = repo.list().map((a: { id: string }) => a.id);
-      assert.deepEqual(ids.sort(), [id1, id2].sort());
+      expect(ids.sort()).toEqual([id1, id2].sort());
       teardown();
     });
 
@@ -119,8 +118,8 @@ export function applicantRepositoryTests(name: string, factory: RepoFactory) {
       data.personal.name = "John Updated";
       await repo.save(id, data);
       const infos = repo.list();
-      assert.equal(infos.length, 1);
-      assert.equal(infos[0].name, "John Updated");
+      expect(infos.length).toBe(1);
+      expect(infos[0].name).toBe("John Updated");
       teardown();
     });
   });

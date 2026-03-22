@@ -1,7 +1,6 @@
-import { describe, it, test } from "node:test";
-import assert from "node:assert/strict";
-import { Vacancy } from "./vacancy.js";
-import type { VacancyDTO } from "./types.js";
+import { describe, it, test, expect } from "vitest";
+import { Vacancy } from "./vacancy";
+import type { VacancyDTO } from "./types";
 
 function makeVacancy(overrides: Partial<VacancyDTO> = {}): Vacancy {
   return new Vacancy({
@@ -19,15 +18,15 @@ function makeVacancy(overrides: Partial<VacancyDTO> = {}): Vacancy {
 
 describe("deriveStatus", () => {
   it("returns 'new' for active vacancy with no history", () => {
-    assert.equal(makeVacancy().deriveStatus(), "new");
+    expect(makeVacancy().deriveStatus()).toBe("new");
   });
 
   it("returns 'gone' for inactive vacancy with no user activities", () => {
-    assert.equal(makeVacancy({ active: false }).deriveStatus(), "gone");
+    expect(makeVacancy({ active: false }).deriveStatus()).toBe("gone");
   });
 
   it("returns 'renewed' for active vacancy that was previously not-found", () => {
-    assert.equal(
+    expect(
       makeVacancy({
         activityHistory: [
           { type: "found", date: "2025-01-01", site: "s", url: "u" },
@@ -35,31 +34,28 @@ describe("deriveStatus", () => {
           { type: "found", date: "2025-01-03", site: "s", url: "u" },
         ],
       }).deriveStatus(),
-      "renewed",
-    );
+    ).toBe("renewed");
   });
 
   it("returns 'applied' for active vacancy with applied activity", () => {
-    assert.equal(
+    expect(
       makeVacancy({
         activityHistory: [{ type: "applied", date: "2025-01-01" }],
       }).deriveStatus(),
-      "applied",
-    );
+    ).toBe("applied");
   });
 
   it("returns 'ignored' for inactive vacancy with applied activity", () => {
-    assert.equal(
+    expect(
       makeVacancy({
         active: false,
         activityHistory: [{ type: "applied", date: "2025-01-01" }],
       }).deriveStatus(),
-      "ignored",
-    );
+    ).toBe("ignored");
   });
 
   it("returns 'invited' when invited activity exists", () => {
-    assert.equal(
+    expect(
       makeVacancy({
         activityHistory: [
           { type: "applied", date: "2025-01-01" },
@@ -70,33 +66,30 @@ describe("deriveStatus", () => {
           },
         ],
       }).deriveStatus(),
-      "invited",
-    );
+    ).toBe("invited");
   });
 
   it("returns 'interviewed' when interviewed activity exists", () => {
-    assert.equal(
+    expect(
       makeVacancy({
         activityHistory: [
           { type: "applied", date: "2025-01-01" },
           { type: "interviewed", date: "2025-01-05", outcome: "completed" },
         ],
       }).deriveStatus(),
-      "interviewed",
-    );
+    ).toBe("interviewed");
   });
 
   it("returns 'offered' when offered activity exists", () => {
-    assert.equal(
+    expect(
       makeVacancy({
         activityHistory: [{ type: "offered", date: "2025-01-01" }],
       }).deriveStatus(),
-      "offered",
-    );
+    ).toBe("offered");
   });
 
   it("returns 'rejected' when rejected activity exists (highest priority)", () => {
-    assert.equal(
+    expect(
       makeVacancy({
         activityHistory: [
           { type: "applied", date: "2025-01-01" },
@@ -104,35 +97,32 @@ describe("deriveStatus", () => {
           { type: "rejected", date: "2025-01-03" },
         ],
       }).deriveStatus(),
-      "rejected",
-    );
+    ).toBe("rejected");
   });
 
   it("returns 'not-interested' when not-interested activity exists", () => {
-    assert.equal(
+    expect(
       makeVacancy({
         activityHistory: [{ type: "not-interested", date: "2025-01-01" }],
       }).deriveStatus(),
-      "not-interested",
-    );
+    ).toBe("not-interested");
   });
 
   it("returns 'applied' over 'not-interested' when both exist", () => {
-    assert.equal(
+    expect(
       makeVacancy({
         activityHistory: [
           { type: "not-interested", date: "2025-01-01" },
           { type: "applied", date: "2025-01-02" },
         ],
       }).deriveStatus(),
-      "applied",
-    );
+    ).toBe("applied");
   });
 });
 
 describe("deriveSources", () => {
   test("empty history returns empty sources", () => {
-    assert.deepEqual(makeVacancy().deriveSources(), []);
+    expect(makeVacancy().deriveSources()).toEqual([]);
   });
 
   test("single found activity returns one source", () => {
@@ -146,7 +136,7 @@ describe("deriveSources", () => {
         },
       ],
     }).deriveSources();
-    assert.deepEqual(result, [{ site: "xing", url: "https://xing.com/job/1" }]);
+    expect(result).toEqual([{ site: "xing", url: "https://xing.com/job/1" }]);
   });
 
   test("repeated same site+url is deduplicated", () => {
@@ -166,8 +156,8 @@ describe("deriveSources", () => {
         },
       ],
     }).deriveSources();
-    assert.equal(result.length, 1);
-    assert.deepEqual(result[0], {
+    expect(result.length).toBe(1);
+    expect(result[0]).toEqual({
       site: "xing",
       url: "https://xing.com/job/1",
     });
@@ -190,7 +180,7 @@ describe("deriveSources", () => {
         },
       ],
     }).deriveSources();
-    assert.equal(result.length, 2);
+    expect(result.length).toBe(2);
   });
 
   test("multiple sites return one entry per unique pair", () => {
@@ -210,9 +200,9 @@ describe("deriveSources", () => {
         },
       ],
     }).deriveSources();
-    assert.equal(result.length, 2);
-    assert.equal(result[0].site, "xing");
-    assert.equal(result[1].site, "arbeitsagentur");
+    expect(result.length).toBe(2);
+    expect(result[0].site).toBe("xing");
+    expect(result[1].site).toBe("arbeitsagentur");
   });
 
   test("non-found activities are ignored", () => {
@@ -228,21 +218,18 @@ describe("deriveSources", () => {
         { type: "not-found", date: "2026-01-03", site: "xing" },
       ],
     }).deriveSources();
-    assert.equal(result.length, 1);
-    assert.equal(result[0].site, "xing");
+    expect(result.length).toBe(1);
+    expect(result[0].site).toBe("xing");
   });
 });
 
 describe("getMinCommuteMinutes", () => {
   test("returns undefined when no commute data", () => {
-    assert.equal(makeVacancy().getMinCommuteMinutes(), undefined);
+    expect(makeVacancy().getMinCommuteMinutes()).toBe(undefined);
   });
 
   test("returns undefined for empty commute record", () => {
-    assert.equal(
-      makeVacancy({ commute: {} }).getMinCommuteMinutes(),
-      undefined,
-    );
+    expect(makeVacancy({ commute: {} }).getMinCommuteMinutes()).toBe(undefined);
   });
 
   test("returns morning minutes for single address", () => {
@@ -255,7 +242,7 @@ describe("getMinCommuteMinutes", () => {
         },
       },
     });
-    assert.equal(v.getMinCommuteMinutes(), 25);
+    expect(v.getMinCommuteMinutes()).toBe(25);
   });
 
   test("returns minimum morning across multiple addresses", () => {
@@ -273,13 +260,13 @@ describe("getMinCommuteMinutes", () => {
         },
       },
     });
-    assert.equal(v.getMinCommuteMinutes(), 15);
+    expect(v.getMinCommuteMinutes()).toBe(15);
   });
 });
 
 describe("getLatestActivityDate", () => {
   test("returns empty string for no activities", () => {
-    assert.equal(makeVacancy().getLatestActivityDate(), "");
+    expect(makeVacancy().getLatestActivityDate()).toBe("");
   });
 
   test("returns last activity date", () => {
@@ -289,7 +276,7 @@ describe("getLatestActivityDate", () => {
         { type: "applied", date: "2026-01-15" },
       ],
     });
-    assert.equal(v.getLatestActivityDate(), "2026-01-15");
+    expect(v.getLatestActivityDate()).toBe("2026-01-15");
   });
 });
 
@@ -297,15 +284,15 @@ describe("with", () => {
   test("returns new instance with overridden fields", () => {
     const v = makeVacancy({ title: "Original" });
     const v2 = v.with({ title: "Updated" });
-    assert.equal(v2.title, "Updated");
-    assert.equal(v.title, "Original");
-    assert.ok(v2 instanceof Vacancy);
+    expect(v2.title).toBe("Updated");
+    expect(v.title).toBe("Original");
+    expect(v2 instanceof Vacancy).toBeTruthy();
   });
 
   test("preserves non-overridden fields", () => {
     const v = makeVacancy({ company: "ACME", title: "Dev" });
     const v2 = v.with({ title: "Senior Dev" });
-    assert.equal(v2.company, "ACME");
+    expect(v2.company).toBe("ACME");
   });
 });
 
@@ -320,7 +307,7 @@ describe("constructor validation", () => {
       descriptionChanged: false,
       active: true,
     } as VacancyDTO);
-    assert.deepEqual(v.activityHistory, []);
+    expect(v.activityHistory).toEqual([]);
   });
 
   test("defaults active to true when missing", () => {
@@ -333,7 +320,7 @@ describe("constructor validation", () => {
       descriptionChanged: false,
       activityHistory: [],
     } as VacancyDTO);
-    assert.equal(v.active, true);
+    expect(v.active).toBe(true);
   });
 
   test("defaults descriptionChanged to false when missing", () => {
@@ -346,6 +333,6 @@ describe("constructor validation", () => {
       activityHistory: [],
       active: true,
     } as VacancyDTO);
-    assert.equal(v.descriptionChanged, false);
+    expect(v.descriptionChanged).toBe(false);
   });
 });

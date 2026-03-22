@@ -1,25 +1,24 @@
-import { test, before, after } from "node:test";
-import assert from "node:assert/strict";
+import { test, beforeAll, afterAll, expect } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createSqliteJobSearchRepository } from "./index.js";
-import { Database } from "@/utils/database.js";
+import { createSqliteJobSearchRepository } from "./index";
+import { Database } from "@/utils/database";
 import {
   jobSearchRepositoryTests,
   makeSampleJobSearch,
-} from "./job-search.test-suite.js";
+} from "./job-search.test-suite";
 
 let tmpDir: string;
 let counter = 0;
 
-before(() => {
+beforeAll(() => {
   tmpDir = fs.mkdtempSync(
     path.join(os.tmpdir(), "job-search-integration-test-"),
   );
 });
 
-after(() => {
+afterAll(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
@@ -52,7 +51,7 @@ test("saved job search survives new repository instance", async () => {
   t1();
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(dbId);
-  assert.deepEqual(repo2.load(id), sample);
+  expect(repo2.load(id)).toEqual(sample);
   t2();
 });
 
@@ -65,7 +64,7 @@ test("cover letter persists across instances", async () => {
   t1();
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(dbId);
-  assert.equal(repo2.loadCoverLetter(id), letter);
+  expect(repo2.loadCoverLetter(id)).toBe(letter);
   t2();
 });
 
@@ -78,7 +77,7 @@ test("application cover letter persists across instances", async () => {
   t1();
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(dbId);
-  assert.equal(repo2.loadApplicationCoverLetter(id, "hash1"), content);
+  expect(repo2.loadApplicationCoverLetter(id, "hash1")).toBe(content);
   t2();
 });
 
@@ -92,7 +91,7 @@ test("delete persists across instances", async () => {
   t1();
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(dbId);
-  assert.equal(repo2.exists(id), false);
+  expect(repo2.exists(id)).toBe(false);
   t2();
 });
 
@@ -106,9 +105,8 @@ test("listByApplicant works across instances", async () => {
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(dbId);
   const johns = repo2.listByApplicant("john");
-  assert.equal(johns.length, 2);
-  assert.deepEqual(
-    johns.map((j: { id: string }) => j.id).sort(),
+  expect(johns.length).toBe(2);
+  expect(johns.map((j: { id: string }) => j.id).sort()).toEqual(
     [id1, id3].sort(),
   );
   t2();

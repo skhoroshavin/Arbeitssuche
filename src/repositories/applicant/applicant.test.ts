@@ -1,10 +1,9 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { createStubApplicantRepository } from "./index.js";
+import { test, expect } from "vitest";
+import { createStubApplicantRepository } from "./index";
 import {
   applicantRepositoryTests,
   makeSampleApplicant,
-} from "./applicant.test-suite.js";
+} from "./applicant.test-suite";
 
 applicantRepositoryTests("StubApplicantRepository", {
   createRepo: () => ({
@@ -18,6 +17,6 @@ applicantRepositoryTests("StubApplicantRepository", {
 test("StubApplicantRepository initializes from provided data", () => {
   const sample = makeSampleApplicant("john");
   const repo = createStubApplicantRepository({ john: sample });
-  assert.equal(repo.exists("john"), true);
-  assert.equal(repo.load("john").personal.name, "John Doe");
+  expect(repo.exists("john")).toBe(true);
+  expect(repo.load("john").personal.name).toBe("John Doe");
 });

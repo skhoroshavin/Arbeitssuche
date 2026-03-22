@@ -1,19 +1,20 @@
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
-import { createStubPdfRenderer } from "@/plugins/pdf-renderer/stub/index.js";
+import { test, describe, expect } from "vitest";
+import { createStubPdfRenderer } from "@/plugins/pdf-renderer/stub/index";
 
 describe("StubPdfRenderer", () => {
   test("returns default buffer", async () => {
     const renderer = createStubPdfRenderer();
     const result = await renderer.htmlToPdf("<h1>Test</h1>");
-    assert.ok(result instanceof Buffer || result instanceof Uint8Array);
-    assert.ok(result.length > 0);
+    expect(
+      result instanceof Buffer || result instanceof Uint8Array,
+    ).toBeTruthy();
+    expect(result.length > 0).toBeTruthy();
   });
 
   test("returns configured buffer", async () => {
     const custom = Buffer.from("custom pdf content");
     const renderer = createStubPdfRenderer(custom);
     const result = await renderer.htmlToPdf("<h1>Test</h1>");
-    assert.deepEqual(result, custom);
+    expect(result).toEqual(custom);
   });
 });

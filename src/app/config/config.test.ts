@@ -1,7 +1,6 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { createStubConfigRepository } from "./stub.js";
-import { configRepositoryTests, SAMPLE_CONFIG } from "./config.test-suite.js";
+import { test, expect } from "vitest";
+import { createStubConfigRepository } from "./stub";
+import { configRepositoryTests, SAMPLE_CONFIG } from "./config.test-suite";
 
 configRepositoryTests("StubConfigRepository", {
   createRepo: () => ({
@@ -14,5 +13,5 @@ configRepositoryTests("StubConfigRepository", {
 
 test("StubConfigRepository initializes from provided data", () => {
   const repo = createStubConfigRepository(SAMPLE_CONFIG);
-  assert.deepEqual(repo.load(), SAMPLE_CONFIG);
+  expect(repo.load()).toEqual(SAMPLE_CONFIG);
 });

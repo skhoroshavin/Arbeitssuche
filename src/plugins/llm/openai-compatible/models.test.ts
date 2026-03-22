@@ -1,6 +1,5 @@
-import { describe, it, afterEach, mock } from "node:test";
-import assert from "node:assert/strict";
-import { createModelRegistry } from "./index.js";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { createModelRegistry } from "./index";
 
 describe("createModelRegistry", () => {
   const originalFetch = globalThis.fetch;
@@ -10,7 +9,7 @@ describe("createModelRegistry", () => {
   });
 
   function mockFetch(body: unknown, status = 200) {
-    globalThis.fetch = mock.fn(async () => ({
+    globalThis.fetch = vi.fn(async () => ({
       ok: status >= 200 && status < 300,
       status,
       json: async () => body,
@@ -47,10 +46,10 @@ describe("createModelRegistry", () => {
     );
 
     const models = await registry.fetchModels();
-    assert.equal(models.length, 1);
-    assert.equal(models[0]!.id, "anthropic/claude-sonnet-4");
-    assert.equal(models[0]!.pricing.prompt, "0.000003");
-    assert.equal(models[0]!.pricing.completion, "0.000015");
+    expect(models.length).toBe(1);
+    expect(models[0]!.id).toBe("anthropic/claude-sonnet-4");
+    expect(models[0]!.pricing.prompt).toBe("0.000003");
+    expect(models[0]!.pricing.completion).toBe("0.000015");
   });
 
   it("normalizes Requesty-style pricing (input_price/output_price)", async () => {
@@ -77,14 +76,14 @@ describe("createModelRegistry", () => {
     );
 
     const models = await registry.fetchModels();
-    assert.equal(models.length, 1);
-    assert.equal(models[0]!.id, "anthropic/claude-sonnet-4");
-    assert.equal(models[0]!.pricing.prompt, "0.000003");
-    assert.equal(models[0]!.pricing.completion, "0.000015");
+    expect(models.length).toBe(1);
+    expect(models[0]!.id).toBe("anthropic/claude-sonnet-4");
+    expect(models[0]!.pricing.prompt).toBe("0.000003");
+    expect(models[0]!.pricing.completion).toBe("0.000015");
   });
 
   it("returns empty array on network error", async () => {
-    globalThis.fetch = mock.fn(async () => {
+    globalThis.fetch = vi.fn(async () => {
       throw new Error("Network error");
     }) as unknown as typeof fetch;
 
@@ -95,7 +94,7 @@ describe("createModelRegistry", () => {
     }));
 
     const models = await registry.fetchModels();
-    assert.deepEqual(models, []);
+    expect(models).toEqual([]);
   });
 
   it("returns empty array on non-OK response", async () => {
@@ -108,6 +107,6 @@ describe("createModelRegistry", () => {
     }));
 
     const models = await registry.fetchModels();
-    assert.deepEqual(models, []);
+    expect(models).toEqual([]);
   });
 });

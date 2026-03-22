@@ -1,6 +1,5 @@
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
-import { createGoogleMapsCommuteClient } from "./index.js";
+import { test, describe, expect } from "vitest";
+import { createGoogleMapsCommuteClient } from "./index";
 
 const API_PATTERN = "maps.googleapis.com/maps/api/distancematrix";
 
@@ -44,11 +43,11 @@ describe("GoogleMapsCommuteClient", () => {
       const client = createGoogleMapsCommuteClient("test-api-key");
       const result = await client.getCommute("Berlin", "Potsdam");
 
-      assert.equal(result.distance, "15.3 km");
-      assert.equal(result.durations.morning, 32);
-      assert.equal(result.durations.day, 32);
-      assert.equal(result.durations.evening, 32);
-      assert.ok(result.fetchedAt);
+      expect(result.distance).toBe("15.3 km");
+      expect(result.durations.morning).toBe(32);
+      expect(result.durations.day).toBe(32);
+      expect(result.durations.evening).toBe(32);
+      expect(result.fetchedAt).toBeTruthy();
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -64,11 +63,11 @@ describe("GoogleMapsCommuteClient", () => {
       const client = createGoogleMapsCommuteClient("test-key");
       await client.getCommute("A", "B");
 
-      assert.equal(requestedUrls.length, 3);
+      expect(requestedUrls.length).toBe(3);
       for (const url of requestedUrls) {
-        assert.ok(url.includes(API_PATTERN));
-        assert.ok(url.includes("key=test-key"));
-        assert.ok(url.includes("mode=transit"));
+        expect(url).toMatch(new RegExp(API_PATTERN));
+        expect(url).toMatch(/key=test-key/);
+        expect(url).toMatch(/mode=transit/);
       }
     } finally {
       globalThis.fetch = originalFetch;
@@ -83,9 +82,9 @@ describe("GoogleMapsCommuteClient", () => {
 
     try {
       const client = createGoogleMapsCommuteClient("bad-key");
-      await assert.rejects(() => client.getCommute("A", "B"), {
-        message: /Distance Matrix API status: REQUEST_DENIED/,
-      });
+      await expect(() => client.getCommute("A", "B")).rejects.toThrow(
+        /Distance Matrix API status: REQUEST_DENIED/,
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -102,9 +101,9 @@ describe("GoogleMapsCommuteClient", () => {
 
     try {
       const client = createGoogleMapsCommuteClient("test-key");
-      await assert.rejects(() => client.getCommute("A", "Nowhere"), {
-        message: /No route found for "Nowhere"/,
-      });
+      await expect(() => client.getCommute("A", "Nowhere")).rejects.toThrow(
+        /No route found for "Nowhere"/,
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }

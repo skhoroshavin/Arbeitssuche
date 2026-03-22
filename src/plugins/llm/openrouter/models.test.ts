@@ -1,6 +1,5 @@
-import { describe, it, afterEach, mock } from "node:test";
-import assert from "node:assert/strict";
-import { createOpenRouterModelRegistry } from "./index.js";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { createOpenRouterModelRegistry } from "./index";
 
 describe("createOpenRouterModelRegistry", () => {
   const originalFetch = globalThis.fetch;
@@ -10,7 +9,7 @@ describe("createOpenRouterModelRegistry", () => {
   });
 
   function mockFetch(body: unknown) {
-    globalThis.fetch = mock.fn(async () => ({
+    globalThis.fetch = vi.fn(async () => ({
       ok: true,
       status: 200,
       json: async () => body,
@@ -38,8 +37,8 @@ describe("createOpenRouterModelRegistry", () => {
     const models = await registry.fetchModels();
 
     for (const model of models) {
-      assert.notEqual(model.name, "undefined");
-      assert.ok(model.name.length > 0);
+      expect(model.name).not.toBe("undefined");
+      expect(model.name.length > 0).toBeTruthy();
     }
   });
 
@@ -57,8 +56,8 @@ describe("createOpenRouterModelRegistry", () => {
     const registry = createOpenRouterModelRegistry();
     const models = await registry.fetchModels();
 
-    assert.equal(models[0]!.pricing.prompt, "0.000003");
-    assert.equal(models[0]!.pricing.completion, "0.000015");
+    expect(models[0]!.pricing.prompt).toBe("0.000003");
+    expect(models[0]!.pricing.completion).toBe("0.000015");
   });
 
   it("defaults pricing to 0 when missing", async () => {
@@ -69,7 +68,7 @@ describe("createOpenRouterModelRegistry", () => {
     const registry = createOpenRouterModelRegistry();
     const models = await registry.fetchModels();
 
-    assert.equal(models[0]!.pricing.prompt, "0");
-    assert.equal(models[0]!.pricing.completion, "0");
+    expect(models[0]!.pricing.prompt).toBe("0");
+    expect(models[0]!.pricing.completion).toBe("0");
   });
 });

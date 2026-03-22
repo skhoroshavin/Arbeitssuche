@@ -8,13 +8,12 @@
   "scripts": {
     "bump": "npx tsx scripts/bump-version.ts",
     "crawl:download": "npx tsx scripts/crawl-download.ts",
-    "test": "node --import tsx --test --test-reporter=spec '{src,scripts}/**/*.test.ts'",
-    "test:components": "vitest run",
-    "test:integration": "node --import tsx --test --test-reporter=spec 'src/**/*.integration-test.ts'",
-    "test:integration:arbeitsagentur": "node --import tsx --test --test-reporter=spec --test-name-pattern='arbeitsagentur' 'src/**/*.integration-test.ts'",
-    "test:integration:xing": "node --import tsx --test --test-reporter=spec --test-name-pattern='xing' 'src/**/*.integration-test.ts'",
-    "test:integration:zalando": "node --import tsx --test --test-reporter=spec --test-name-pattern='zalando' 'src/**/*.integration-test.ts'",
-    "test:integration:dm": "node --import tsx --test --test-reporter=spec --test-name-pattern='dm' 'src/**/*.integration-test.ts'",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration:arbeitsagentur": "vitest run --config vitest.integration.config.ts -t 'arbeitsagentur'",
+    "test:integration:xing": "vitest run --config vitest.integration.config.ts -t 'xing'",
+    "test:integration:zalando": "vitest run --config vitest.integration.config.ts -t 'zalando'",
+    "test:integration:dm": "vitest run --config vitest.integration.config.ts -t 'dm'",
     "electron:dev": "electron-vite dev",
     "electron:build": "electron-vite build",
     "electron:dist:mac:arm64": "electron-vite build && electron-builder --mac --arm64 --publish never",
@@ -28,7 +27,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "check": "npx tsx scripts/check-architecture.ts",
-    "validate": "npm run format && npm run check && npm run lint && npm test && npm run test:components && npm run test:integration && npm run electron:build && npm run test:e2e"
+    "validate": "npm run format && npm run check && npm run lint && npm test && npm run test:integration && npm run electron:build && npm run test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

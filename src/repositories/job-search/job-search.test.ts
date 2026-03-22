@@ -1,10 +1,9 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { createStubJobSearchRepository } from "./index.js";
+import { test, expect } from "vitest";
+import { createStubJobSearchRepository } from "./index";
 import {
   jobSearchRepositoryTests,
   makeSampleJobSearch,
-} from "./job-search.test-suite.js";
+} from "./job-search.test-suite";
 
 jobSearchRepositoryTests("StubJobSearchRepository", {
   createRepo: () => ({
@@ -20,6 +19,6 @@ test("StubJobSearchRepository initializes from provided data", () => {
   const repo = createStubJobSearchRepository({
     s1: { jobSearch: sample },
   });
-  assert.equal(repo.exists("s1"), true);
-  assert.equal(repo.load("s1").params.searchTerm, "Software Engineer");
+  expect(repo.exists("s1")).toBe(true);
+  expect(repo.load("s1").params.searchTerm).toBe("Software Engineer");
 });

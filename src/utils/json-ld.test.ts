@@ -1,7 +1,6 @@
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
+import { test, describe, expect } from "vitest";
 import * as cheerio from "cheerio/slim";
-import { extractJsonLd } from "./json-ld.js";
+import { extractJsonLd } from "./json-ld";
 
 function html(jsonLd: object): ReturnType<typeof cheerio.load> {
   return cheerio.load(
@@ -13,17 +12,17 @@ describe("extractJsonLd", () => {
   test("extracts object matching the requested @type", () => {
     const $ = html({ "@type": "Person", name: "Alice" });
     const result = extractJsonLd($, "Person");
-    assert.equal(result?.["name"], "Alice");
+    expect(result?.["name"]).toBe("Alice");
   });
 
   test("returns null when @type does not match", () => {
     const $ = html({ "@type": "Organization", name: "Acme" });
-    assert.equal(extractJsonLd($, "Person"), null);
+    expect(extractJsonLd($, "Person")).toBe(null);
   });
 
   test("returns null when no JSON-LD is present", () => {
     const $ = cheerio.load("<html><body>No JSON-LD</body></html>");
-    assert.equal(extractJsonLd($, "Person"), null);
+    expect(extractJsonLd($, "Person")).toBe(null);
   });
 
   test("returns the first match when multiple JSON-LD blocks exist", () => {
@@ -32,7 +31,7 @@ describe("extractJsonLd", () => {
       <script type="application/ld+json">{"@type":"Item","id":2}</script>
     </head></html>`);
     const result = extractJsonLd($, "Item");
-    assert.equal(result?.["id"], 1);
+    expect(result?.["id"]).toBe(1);
   });
 
   test("skips invalid JSON gracefully", () => {
@@ -41,6 +40,6 @@ describe("extractJsonLd", () => {
       <script type="application/ld+json">{"@type":"Valid","ok":true}</script>
     </head></html>`);
     const result = extractJsonLd($, "Valid");
-    assert.equal(result?.["ok"], true);
+    expect(result?.["ok"]).toBe(true);
   });
 });
