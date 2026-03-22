@@ -9,10 +9,87 @@ import { Project, SyntaxKind, type SourceFile, Node } from "ts-morph";
 const ROOT = join(import.meta.dirname, "..");
 const SRC_DIR = join(ROOT, "src");
 
-const CHECKED_DIRS = [
-  { dir: "ui/components", shared: true, requireTests: false },
-  { dir: "ui/hooks", shared: true, requireTests: false },
+interface DirConfig {
+  dir: string;
+  allowedImports?: string[];
+  exposedFiles?: string[];
+  allowedExports?: RegExp | string[];
+  shared?: boolean;
+  requireTests?: boolean;
+  requireIntegrationTests?: boolean;
+  private?: boolean;
+}
+
+const EXPORT_CONVENTION = /^(?:create[A-Z]|derive[A-Z]|get[A-Z]|[A-Z])/;
+
+const CHECKED_DIRS: DirConfig[] = [
+  // Backend layers (self-imports are implicit — only list OTHER allowed dirs)
   { dir: "utils", shared: true, requireTests: true },
+  { dir: "models" },
+  {
+    dir: "plugins",
+    allowedImports: ["utils"],
+    exposedFiles: ["index.ts", "types.ts"],
+    allowedExports: EXPORT_CONVENTION,
+  },
+  {
+    dir: "repositories",
+    allowedImports: ["models", "utils"],
+    exposedFiles: ["index.ts", "types.ts"],
+    allowedExports: EXPORT_CONVENTION,
+  },
+  {
+    dir: "services",
+    allowedImports: ["models", "plugins", "repositories", "utils"],
+    exposedFiles: ["index.ts", "types.ts"],
+    allowedExports: EXPORT_CONVENTION,
+  },
+  {
+    dir: "app",
+    allowedImports: ["models", "plugins", "repositories", "services", "utils"],
+  },
+
+  // UI sub-layers (self-imports implicit)
+  { dir: "ui/hooks", allowedImports: ["models"], shared: true },
+  { dir: "ui/hooks/internal", private: true },
+  { dir: "ui/data", allowedImports: ["models", "ui/hooks"] },
+  { dir: "ui/data/internal", private: true },
+  {
+    dir: "ui/components",
+    allowedImports: ["models", "ui/hooks"],
+    shared: true,
+  },
+  { dir: "ui/layout", allowedImports: ["models", "ui/components", "ui/hooks"] },
+  { dir: "ui/constants", allowedImports: ["models"] },
+  {
+    dir: "ui/pages/*",
+    allowedImports: [
+      "models",
+      "ui/components",
+      "ui/hooks",
+      "ui/data",
+      "ui/layout",
+      "ui/constants",
+    ],
+  },
+
+  // Job-site plugin exports (explicit per site)
+  {
+    dir: "plugins/job-site/arbeitsagentur",
+    allowedExports: ["createArbeitsagenturSite", "SUPPORTED_MODES"],
+  },
+  {
+    dir: "plugins/job-site/dm",
+    allowedExports: ["createDmSite", "SUPPORTED_MODES"],
+  },
+  {
+    dir: "plugins/job-site/xing",
+    allowedExports: ["createXingSite", "SUPPORTED_MODES"],
+  },
+  {
+    dir: "plugins/job-site/zalando",
+    allowedExports: ["createZalandoSite", "SUPPORTED_MODES"],
+  },
 ];
 
 // Modules excluded from all checks.
@@ -70,6 +147,101 @@ function isEntryPoint(filePath: string): boolean {
 
 function getSrcRelPath(sourceFile: SourceFile): string {
   return relative(SRC_DIR, sourceFile.getFilePath());
+}
+
+// =============================================================================
+// Import/export helpers
+// =============================================================================
+
+/** Expand wildcard `*` in dir paths (e.g. `ui/pages/*`) to actual subdirs. */
+function expandWildcardDirs(configs: DirConfig[]): DirConfig[] {
+  const expanded: DirConfig[] = [];
+
+  for (const config of configs) {
+    if (config.dir.endsWith("/*")) {
+      const parentDir = join(SRC_DIR, config.dir.slice(0, -2));
+      if (!existsSync(parentDir)) continue;
+
+      for (const entry of readdirSync(parentDir, { withFileTypes: true })) {
+        if (entry.isDirectory()) {
+          expanded.push({
+            ...config,
+            dir: config.dir.slice(0, -1) + entry.name,
+          });
+        }
+      }
+    } else {
+      expanded.push(config);
+    }
+  }
+
+  return expanded;
+}
+
+/** Find most specific DirConfig matching a srcRelPath. */
+function matchDir(
+  srcRelPath: string,
+  configs: DirConfig[],
+): DirConfig | undefined {
+  let best: DirConfig | undefined;
+
+  for (const config of configs) {
+    if (!isInDir(srcRelPath, config.dir)) continue;
+    if (!best || config.dir.length > best.dir.length) best = config;
+  }
+
+  return best;
+}
+
+/**
+ * Find most specific DirConfig matching a srcRelPath that has the given
+ * property defined. Falls back through ancestors if the most specific
+ * match lacks the property.
+ */
+function matchDirWith<K extends keyof DirConfig>(
+  srcRelPath: string,
+  configs: DirConfig[],
+  prop: K,
+): DirConfig | undefined {
+  const matches = configs
+    .filter((c) => c[prop] !== undefined && isInDir(srcRelPath, c.dir))
+    .sort((a, b) => b.dir.length - a.dir.length);
+
+  return matches[0];
+}
+
+/** Check if srcRelPath is within a dir (or IS the file for single-file modules). */
+function isInDir(srcRelPath: string, dir: string): boolean {
+  return (
+    srcRelPath.startsWith(dir + "/") ||
+    srcRelPath === dir + ".ts" ||
+    srcRelPath === dir + ".tsx"
+  );
+}
+
+/**
+ * Find the effective import config for a file. Walks up the config hierarchy
+ * to find the nearest ancestor with `allowedImports`. If none has it,
+ * returns the most specific config with allowedImports defaulting to []
+ * (self-imports only).
+ */
+function findImportConfig(
+  srcRelPath: string,
+  configs: DirConfig[],
+): DirConfig | undefined {
+  const matches = configs
+    .filter((c) => isInDir(srcRelPath, c.dir))
+    .sort((a, b) => b.dir.length - a.dir.length);
+
+  if (matches.length === 0) return undefined;
+
+  // Walk up to find nearest ancestor with allowedImports
+  for (const config of matches) {
+    if (config.allowedImports) return config;
+  }
+
+  // No ancestor has allowedImports → self-imports only
+  return { ...matches[0], allowedImports: [] };
 }
 
 // =============================================================================
@@ -273,7 +445,7 @@ interface SetupResult {
 }
 
 function setupModules(
-  configs: typeof CHECKED_DIRS,
+  configs: DirConfig[],
   srcFiles: SourceFile[],
 ): SetupResult {
   const modulesByFile = new Map<string, ModuleInfo>();
@@ -291,8 +463,8 @@ function setupModules(
         dir: config.dir,
         name: mod.name,
         consumers: new Set(),
-        shared: config.shared,
-        requireTests: config.requireTests,
+        shared: config.shared ?? false,
+        requireTests: config.requireTests ?? false,
       });
     }
 
@@ -383,16 +555,169 @@ function reportErrors(modulesByFile: Map<string, ModuleInfo>): string[] {
   return errors;
 }
 
-function checkDirs(
-  configs: typeof CHECKED_DIRS,
-  srcFiles: SourceFile[],
-): string[] {
+function checkDirs(configs: DirConfig[], srcFiles: SourceFile[]): string[] {
   const { modulesByFile, barrelMaps, dirPrefixes } = setupModules(
     configs,
     srcFiles,
   );
   countConsumers(srcFiles, modulesByFile, barrelMaps, dirPrefixes);
   return reportErrors(modulesByFile);
+}
+
+// =============================================================================
+// Import rules
+// =============================================================================
+
+function checkImportRules(
+  srcFiles: SourceFile[],
+  configs: DirConfig[],
+): string[] {
+  const errors: string[] = [];
+
+  for (const sf of srcFiles) {
+    const filePath = sf.getFilePath();
+    const srcRelPath = getSrcRelPath(sf);
+    const isTest = isTestFile(filePath);
+
+    const importConfig = findImportConfig(srcRelPath, configs);
+    const testExposedConfig = isTest
+      ? matchDirWith(srcRelPath, configs, "exposedFiles")
+      : undefined;
+
+    for (const importDecl of sf.getImportDeclarations()) {
+      const specifier = importDecl.getModuleSpecifierValue();
+
+      if (specifier.startsWith("@/")) {
+        if (!importConfig) continue;
+
+        const resolvedFile = importDecl.getModuleSpecifierSourceFile();
+        if (!resolvedFile) continue;
+
+        const targetRelPath = getSrcRelPath(resolvedFile);
+        const isSelfImport = isInDir(targetRelPath, importConfig.dir);
+
+        // Check allowedImports (self-imports always allowed)
+        if (!isSelfImport) {
+          const allowed = importConfig.allowedImports!;
+          const isAllowed = allowed.some((prefix) =>
+            isInDir(targetRelPath, prefix),
+          );
+
+          if (!isAllowed) {
+            const targetDir = targetRelPath.split("/").slice(0, 2).join("/");
+            const selfAndAllowed = [importConfig.dir, ...allowed]
+              .map((d) => `@/${d}`)
+              .join(", ");
+            errors.push(
+              `${srcRelPath}: @/${targetDir} is not allowed (from: ${selfAndAllowed})`,
+            );
+            continue;
+          }
+        }
+
+        // Check exposedFiles on target dir
+        const targetExposed = matchDirWith(
+          targetRelPath,
+          configs,
+          "exposedFiles",
+        );
+        if (targetExposed) {
+          const filename = targetRelPath.split("/").pop()!;
+          if (!targetExposed.exposedFiles!.includes(filename)) {
+            errors.push(
+              `${srcRelPath}: ${filename} is not importable from @/${targetExposed.dir}/ (only ${targetExposed.exposedFiles!.join(", ")})`,
+            );
+          }
+        }
+
+        // Check private dirs
+        const targetConfig = matchDir(targetRelPath, configs);
+        if (targetConfig?.private) {
+          const parentDir = targetConfig.dir.split("/").slice(0, -1).join("/");
+          if (!srcRelPath.startsWith(parentDir + "/")) {
+            errors.push(
+              `${srcRelPath}: @/${targetConfig.dir}/ is private to ${parentDir}/`,
+            );
+          }
+        }
+      } else if (specifier.startsWith("./") && isTest && testExposedConfig) {
+        // Black-box test rule: relative imports restricted
+        if (
+          specifier !== "./index.js" &&
+          specifier !== "./types.js" &&
+          !/^\.\/[\w-]+\.test-suite\.js$/.test(specifier)
+        ) {
+          errors.push(
+            `${srcRelPath}: test must import from ./index.js, ./types.js, or ./*.test-suite.js`,
+          );
+        }
+      }
+    }
+  }
+
+  return errors;
+}
+
+// =============================================================================
+// Export rules
+// =============================================================================
+
+function checkExportRules(
+  srcFiles: SourceFile[],
+  configs: DirConfig[],
+): string[] {
+  const errors: string[] = [];
+
+  for (const config of configs) {
+    if (!config.allowedExports) continue;
+
+    const dirParts = config.dir.split("/");
+
+    if (config.allowedExports instanceof RegExp) {
+      // Naming convention: check {dir}/*/index.ts (sub-module index files)
+      const pattern = config.allowedExports;
+
+      for (const sf of srcFiles) {
+        if (isTestFile(sf.getFilePath())) continue;
+
+        const rel = getSrcRelPath(sf);
+        const parts = rel.split("/");
+
+        if (
+          parts.length === dirParts.length + 2 &&
+          parts[parts.length - 1] === "index.ts" &&
+          rel.startsWith(config.dir + "/")
+        ) {
+          for (const [name] of sf.getExportedDeclarations()) {
+            if (!pattern.test(name)) {
+              errors.push(
+                `${rel}: export "${name}" does not match convention ${pattern}`,
+              );
+            }
+          }
+        }
+      }
+    } else {
+      // Explicit list: check {dir}/index.ts
+      const allowedList = config.allowedExports;
+
+      for (const sf of srcFiles) {
+        const rel = getSrcRelPath(sf);
+        if (rel !== config.dir + "/index.ts") continue;
+        if (isTestFile(sf.getFilePath())) continue;
+
+        for (const [name] of sf.getExportedDeclarations()) {
+          if (!allowedList.includes(name)) {
+            errors.push(
+              `${rel}: export "${name}" is not allowed (allowed: ${allowedList.join(", ")})`,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  return errors;
 }
 
 // =============================================================================
@@ -564,12 +889,38 @@ if (unusedUnexportedTypes.length > 0) {
 
 // --- Shared code analysis ---
 
-const dirErrors = checkDirs(CHECKED_DIRS, srcFiles);
+const expandedConfigs = expandWildcardDirs(CHECKED_DIRS);
+const sharedConfigs = expandedConfigs.filter((c) => c.shared || c.requireTests);
+const dirErrors = checkDirs(sharedConfigs, srcFiles);
 
 if (dirErrors.length > 0) {
   console.error("\nShared code violations:\n");
   for (const msg of dirErrors) {
     console.error(`  ${msg}\n`);
+  }
+  hasErrors = true;
+}
+
+// --- Import rules ---
+
+const importErrors = checkImportRules(srcFiles, expandedConfigs);
+
+if (importErrors.length > 0) {
+  console.error("\nImport violations:\n");
+  for (const msg of importErrors) {
+    console.error(`  ${msg}`);
+  }
+  hasErrors = true;
+}
+
+// --- Export rules ---
+
+const exportErrors = checkExportRules(srcFiles, expandedConfigs);
+
+if (exportErrors.length > 0) {
+  console.error("\nExport violations:\n");
+  for (const msg of exportErrors) {
+    console.error(`  ${msg}`);
   }
   hasErrors = true;
 }
@@ -581,4 +932,6 @@ if (hasErrors) {
 } else {
   console.log("Dead code detection: OK");
   console.log("Shared code placement: OK");
+  console.log("Import rules: OK");
+  console.log("Export rules: OK");
 }
