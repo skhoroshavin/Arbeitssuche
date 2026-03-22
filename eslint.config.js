@@ -12,12 +12,33 @@ const BANNED_CHARS = new Map([
   ["\u2018", "left single quotation mark"],
   ["\u2019", "right single quotation mark"],
   ["\u00A0", "non-breaking space"],
+  ["\u202F", "narrow no-break space"],
+  ["\u2007", "figure space"],
+  ["\u2008", "punctuation space"],
+  ["\u2009", "thin space"],
+  ["\u200A", "hair space"],
+  ["\u200B", "zero-width space"],
+  ["\u2002", "en space"],
+  ["\u2003", "em space"],
+  ["\u205F", "medium mathematical space"],
+  ["\u3000", "ideographic space"],
+  ["\uFEFF", "zero-width no-break space"],
   ["\u2013", "en dash"],
   ["\u2014", "em dash"],
   ["\u2026", "horizontal ellipsis"],
 ]);
-
+const BANNED_CHARS_RE = new RegExp([...BANNED_CHARS.keys()].join("|"));
 const UNICODE_ESCAPE_RE = /\\u[0-9a-fA-F]{4}/;
+
+// Extracts the string text from a Literal or TemplateLiteral AST node.
+// `useRaw` returns the source representation (preserving \uXXXX escapes);
+// otherwise returns the decoded JS value.
+function getStringValue(node, useRaw) {
+  if (node.type === "TemplateLiteral") {
+    return node.quasis.map((q) => q.value.raw).join("");
+  }
+  return typeof node.value === "string" ? (useRaw ? node.raw : node.value) : null;
+}
 
 const noSpecialUnicode = {
   rules: {
@@ -25,14 +46,10 @@ const noSpecialUnicode = {
       meta: { type: "problem" },
       create(context) {
         function check(node) {
-          const raw = node.type === "TemplateLiteral"
-            ? node.quasis.map((q) => q.value.raw).join("")
-            : typeof node.value === "string"
-              ? node.value
-              : null;
-          if (raw === null) return;
+          const text = getStringValue(node, false);
+          if (text === null || !BANNED_CHARS_RE.test(text)) return;
           for (const [char, name] of BANNED_CHARS) {
-            if (raw.includes(char)) {
+            if (text.includes(char)) {
               context.report({ node, message: `String contains ${name} (U+${char.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")}). Use the ASCII equivalent.` });
             }
           }
@@ -44,13 +61,9 @@ const noSpecialUnicode = {
       meta: { type: "suggestion" },
       create(context) {
         function check(node) {
-          const raw = node.type === "TemplateLiteral"
-            ? node.quasis.map((q) => q.value.raw).join("")
-            : typeof node.value === "string"
-              ? node.raw
-              : null;
-          if (raw === null) return;
-          if (UNICODE_ESCAPE_RE.test(raw)) {
+          const text = getStringValue(node, true);
+          if (text === null) return;
+          if (UNICODE_ESCAPE_RE.test(text)) {
             context.report({ node, message: "Use the actual character instead of a \\uXXXX escape sequence." });
           }
         }

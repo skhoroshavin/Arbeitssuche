@@ -26,7 +26,7 @@ export const requestyProviderInfo: LlmProviderInfo = {
     "1. Erstelle ein Konto auf [requesty.ai](https://requesty.ai) oder melde dich an",
     '2. Gehe zu [Settings](https://app.requesty.ai/settings) → klicke auf "Add Credits" und füge Guthaben hinzu',
     '3. Klicke in der Seitenleiste auf "[API Keys](https://app.requesty.ai/api-keys)"',
-    '4. Klicke auf "Create API Key" und gib einen Namen ein (z. B. "Arbeitssuche")',
+    '4. Klicke auf "Create API Key" und gib einen Namen ein (z.B. "Arbeitssuche")',
     "5. Kopiere den Schlüssel",
     "6. Füge ihn oben ein",
   ].join("\n"),
