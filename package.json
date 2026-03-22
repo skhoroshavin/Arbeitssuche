@@ -26,8 +26,8 @@
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "check:shared-code": "npx tsx scripts/check-shared-code.ts",
-    "validate": "npm run format && npm run check:shared-code && npm run lint && npm test && npm run test:integration && npm run electron:build && npm run test:e2e"
+    "check": "npx tsx scripts/detect-dead-code.ts && npx tsx scripts/check-shared-code.ts",
+    "validate": "npm run format && npm run check && npm run lint && npm test && npm run test:integration && npm run electron:build && npm run test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

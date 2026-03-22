@@ -29,7 +29,7 @@ npm test                      # Unit tests (*.test.ts)
 npm run test:integration      # Integration tests (*.integration-test.ts)
 npm run test:e2e              # E2E tests (Electron + Playwright)
 npm run test:visual           # Visual snapshot tests
-npm run validate              # Full pipeline: format + lint + check:shared-code + test + integration + build + e2e
+npm run validate              # Full pipeline: format + check + lint + test + integration + build + e2e
 
 npm run bump <dev|major|minor|patch>  # Bump version (stable→dev→release)
 npm run crawl:download        # Download HTML samples for crawler tests
@@ -37,7 +37,7 @@ npm run crawl:download        # Download HTML samples for crawler tests
 npm run format                # Prettier
 npm run lint                  # ESLint
 npm run lint:fix              # ESLint --fix
-npm run check:shared-code     # Verify ui/components & ui/hooks are genuinely shared
+npm run check                 # Dead code detection + shared code placement
 ```
 
 ## Architecture
@@ -115,7 +115,7 @@ Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each pa
 
 ### Shared code placement
 
-`check-shared-code` (run via `npm run check:shared-code`) enforces that exports in `ui/components/` and `ui/hooks/` are genuinely shared — used by 2+ page groups, by layout + a page group, or by sibling files in the same directory. Single-page-group-only code must live in `pages/<group>/components/` or `pages/<group>/hooks/`.
+`check-shared-code` (run via `npm run check`) enforces that exports in `ui/components/` and `ui/hooks/` are genuinely shared — used by 2+ page groups, by layout + a page group, or by sibling files in the same directory. Single-page-group-only code must live in `pages/<group>/components/` or `pages/<group>/hooks/`.
 
 ### Key patterns
 
