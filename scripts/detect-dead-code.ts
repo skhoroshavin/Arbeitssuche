@@ -100,9 +100,7 @@ function extractExports(
 /** Map from "file::exportedName" → { sourceFile, originalName } */
 type ReExportMap = Map<string, ReExport>;
 
-function buildReExportMap(
-  files: Map<string, string>,
-): ReExportMap {
+function buildReExportMap(files: Map<string, string>): ReExportMap {
   const map: ReExportMap = new Map();
   const reExportRe =
     /^export\s+(?:type\s+)?\{([^}]+)\}\s+from\s+["']([^"']+)["']/gm;
@@ -144,10 +142,7 @@ interface ImportRef {
   isNamespace: boolean;
 }
 
-function extractImports(
-  filePath: string,
-  content: string,
-): ImportRef[] {
+function extractImports(filePath: string, content: string): ImportRef[] {
   const imports: ImportRef[] = [];
   const importerDir = dirname(filePath);
 
@@ -166,12 +161,16 @@ function extractImports(
         return aliasMatch ? aliasMatch[1] : trimmed;
       })
       .filter(Boolean);
-    imports.push({ importerPath: filePath, targetFile: resolved, names, isNamespace: false });
+    imports.push({
+      importerPath: filePath,
+      targetFile: resolved,
+      names,
+      isNamespace: false,
+    });
   }
 
   // import Name from "path"
-  const defaultRe =
-    /^import\s+(\w+)\s+from\s+["']([^"']+)["']/gm;
+  const defaultRe = /^import\s+(\w+)\s+from\s+["']([^"']+)["']/gm;
   while ((m = defaultRe.exec(content)) !== null) {
     // Skip if it looks like "import type" or a named import
     if (m[1] === "type") continue;
@@ -238,7 +237,11 @@ function resolveImportPath(
 
 function isEntryPoint(filePath: string): boolean {
   const rel = relative(SRC_DIR, filePath);
-  if (rel === "app/main.ts" || rel === "app/preload.ts" || rel === "ui/main.tsx") {
+  if (
+    rel === "app/main.ts" ||
+    rel === "app/preload.ts" ||
+    rel === "ui/main.tsx"
+  ) {
     return true;
   }
   return false;
@@ -351,10 +354,16 @@ for (const fe of fileExports) {
   }
 
   if (unusedV.length > 0) {
-    unusedValues.push({ relPath: fe.relPath, names: unusedV.map((e) => e.name) });
+    unusedValues.push({
+      relPath: fe.relPath,
+      names: unusedV.map((e) => e.name),
+    });
   }
   if (unusedT.length > 0) {
-    unusedTypes.push({ relPath: fe.relPath, names: unusedT.map((e) => e.name) });
+    unusedTypes.push({
+      relPath: fe.relPath,
+      names: unusedT.map((e) => e.name),
+    });
   }
 }
 
