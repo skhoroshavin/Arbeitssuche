@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useSaveSecret, useClearSecret } from "@/ui/data/settings";
+import { useEscapeKey } from "@/ui/hooks";
 import type { SecretKey } from "@/models/secrets/types";
 
 interface SecretFieldProps {
@@ -41,19 +42,7 @@ export function SecretField({
     setMode("editing");
   };
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") handleCancel();
-    },
-    [handleCancel],
-  );
-
-  useEffect(() => {
-    if (mode === "editing") {
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [mode, handleKeyDown]);
+  useEscapeKey(handleCancel);
 
   return (
     <div>
