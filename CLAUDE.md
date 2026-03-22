@@ -181,4 +181,5 @@ Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each pa
 - Write only black-box style tests, don't test implementation details.
 - After completing a significant task, run `npm run validate` to verify the full pipeline works before proposing to commit.
 - Always propose to commit changes after completing a task.
-- **PRs**: concise title describing the main focus; body is a short bullet-list summarising all commit descriptions in the branch; no heading, no extra sections. 
+- **PRs**: concise title describing the main focus; body is a short bullet-list summarising all commit descriptions in the branch; no heading, no extra sections.
+- **PR workflow**: always create a new branch, fetch origin, merge `main` into it, then push before opening the PR.
