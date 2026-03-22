@@ -156,18 +156,19 @@ function isGenuinelyShared(
   return false;
 }
 
-function checkUiSharedCode(): string[] {
+function checkUiSharedCode(srcFiles: SourceFile[]): string[] {
   const errors: string[] = [];
-  const project = createProject();
 
-  const uiFiles = project
-    .getSourceFiles()
-    .filter((sf) => sf.getFilePath().startsWith(UI_DIR + "/"));
-
-  const componentsBarrel = project.getSourceFile(
-    join(UI_DIR, "components", "index.ts"),
+  const uiFiles = srcFiles.filter((sf) =>
+    sf.getFilePath().startsWith(UI_DIR + "/"),
   );
-  const hooksBarrel = project.getSourceFile(join(UI_DIR, "hooks", "index.ts"));
+
+  const componentsBarrel = uiFiles.find((sf) =>
+    sf.getFilePath().endsWith("/components/index.ts"),
+  );
+  const hooksBarrel = uiFiles.find((sf) =>
+    sf.getFilePath().endsWith("/hooks/index.ts"),
+  );
 
   const sharedExports: SharedExport[] = [];
   if (componentsBarrel) {
@@ -199,17 +200,39 @@ function checkUiSharedCode(): string[] {
 // Utils shared code check
 // =============================================================================
 
-function checkUtils(): string[] {
+function checkUtils(srcFiles: SourceFile[]): string[] {
   const errors: string[] = [];
-  const project = createProject();
-
-  const srcFiles = project
-    .getSourceFiles()
-    .filter((sf) => sf.getFilePath().startsWith(SRC_DIR + "/"));
 
   const utilsModules = readdirSync(UTILS_DIR)
     .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
     .map((f) => f.replace(/\.ts$/, ""));
+
+  // Single pass: build utilFilePath → entities map
+  const utilsPrefix = UTILS_DIR + "/";
+  const entitiesByUtil = new Map<string, Set<string>>();
+
+  for (const sf of srcFiles) {
+    const sfPath = sf.getFilePath();
+    if (sfPath.startsWith(utilsPrefix)) continue;
+
+    const sfRel = relative(SRC_DIR, sfPath);
+    const parts = sfRel.split("/");
+    const entity = parts.slice(0, Math.min(parts.length - 1, 3)).join("/");
+
+    for (const importDecl of sf.getImportDeclarations()) {
+      const targetFile = importDecl.getModuleSpecifierSourceFile();
+      if (!targetFile) continue;
+      const targetPath = targetFile.getFilePath();
+      if (!targetPath.startsWith(utilsPrefix)) continue;
+
+      let entities = entitiesByUtil.get(targetPath);
+      if (!entities) {
+        entities = new Set();
+        entitiesByUtil.set(targetPath, entities);
+      }
+      entities.add(entity);
+    }
+  }
 
   for (const name of utilsModules) {
     if (!existsSync(join(UTILS_DIR, `${name}.test.ts`))) {
@@ -218,29 +241,15 @@ function checkUtils(): string[] {
       );
     }
 
-    // Find distinct entities that import this util.
     const utilFilePath = join(UTILS_DIR, `${name}.ts`);
-    const entities = new Set<string>();
+    const entities = entitiesByUtil.get(utilFilePath);
+    const count = entities?.size ?? 0;
 
-    for (const sf of srcFiles) {
-      const sfRel = relative(SRC_DIR, sf.getFilePath());
-      if (sfRel.startsWith("utils/")) continue;
-
-      for (const importDecl of sf.getImportDeclarations()) {
-        const targetFile = importDecl.getModuleSpecifierSourceFile();
-        if (targetFile && targetFile.getFilePath() === utilFilePath) {
-          const parts = sfRel.split("/");
-          entities.add(parts.slice(0, Math.min(parts.length - 1, 3)).join("/"));
-          break;
-        }
-      }
-    }
-
-    if (entities.size < 2) {
+    if (count < 2) {
       const detail =
-        entities.size === 0
+        count === 0
           ? "not imported by any entity"
-          : `only used by: ${[...entities].join(", ")}`;
+          : `only used by: ${[...entities!].join(", ")}`;
       errors.push(`utils/${name}.ts ${detail} → Must be used by 2+ entities`);
     }
   }
@@ -252,8 +261,13 @@ function checkUtils(): string[] {
 // Main
 // =============================================================================
 
-const uiErrors = checkUiSharedCode();
-const utilsErrors = checkUtils();
+const project = createProject();
+const srcFiles = project
+  .getSourceFiles()
+  .filter((sf) => sf.getFilePath().startsWith(SRC_DIR + "/"));
+
+const uiErrors = checkUiSharedCode(srcFiles);
+const utilsErrors = checkUtils(srcFiles);
 
 if (uiErrors.length > 0) {
   console.error("\nUI shared code violations:\n");

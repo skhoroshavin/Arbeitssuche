@@ -155,30 +155,35 @@ type ReExportMap = Map<string, { sourceFile: string; originalName: string }>;
 
 function buildReExportMap(srcSourceFiles: SourceFile[]): ReExportMap {
   const map: ReExportMap = new Map();
+  // Cache: declaration node → export name (avoids repeated getExportedDeclarations)
+  const declNameCache = new Map<Node, string>();
+
+  function getOriginalName(decl: Node, declSourceFile: SourceFile): string {
+    const cached = declNameCache.get(decl);
+    if (cached !== undefined) return cached;
+
+    // Populate cache for all exports in this source file at once
+    for (const [origName, origDecls] of declSourceFile.getExportedDeclarations()) {
+      for (const d of origDecls) {
+        if (!declNameCache.has(d)) declNameCache.set(d, origName);
+      }
+    }
+
+    return declNameCache.get(decl) ?? decl.getSourceFile().getBaseName();
+  }
 
   for (const sf of srcSourceFiles) {
     const filePath = sf.getFilePath();
-    const exportedDecls = sf.getExportedDeclarations();
 
-    for (const [name, declarations] of exportedDecls) {
+    for (const [name, declarations] of sf.getExportedDeclarations()) {
       const decl = declarations[0];
       const declSourceFile = decl.getSourceFile();
       const declFilePath = declSourceFile.getFilePath();
       if (declFilePath === filePath) continue;
 
-      // Find the original export name in the source file
-      let originalName = name;
-      const origExports = declSourceFile.getExportedDeclarations();
-      for (const [origName, origDecls] of origExports) {
-        if (origDecls.some((d) => d === decl)) {
-          originalName = origName;
-          break;
-        }
-      }
-
       map.set(`${filePath}::${name}`, {
         sourceFile: declFilePath,
-        originalName,
+        originalName: getOriginalName(decl, declSourceFile),
       });
     }
   }
