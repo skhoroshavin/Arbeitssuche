@@ -1,46 +1,21 @@
 import type { CheerioAPI } from "cheerio/slim";
 
-export interface JobPostingData {
-  title?: string;
-  company?: string;
-  address?: string;
-  descriptionHtml?: string;
-  publishedAt?: string;
-}
-
-/** Extract JobPosting structured data from JSON-LD script tags in a parsed HTML document. */
-export function extractJobPostingFromJsonLd(
+/** Extract the first JSON-LD object matching the given `@type` from a parsed HTML document. */
+export function extractJsonLd(
   $: CheerioAPI,
-): JobPostingData | null {
-  let result: JobPostingData | null = null;
+  type: string,
+): Record<string, unknown> | null {
+  let result: Record<string, unknown> | null = null;
 
   $('script[type="application/ld+json"]').each((_i, el) => {
+    if (result) return;
     try {
       const data = JSON.parse($(el).html() || "");
-      if (data["@type"] !== "JobPosting") return;
-
-      const posting: JobPostingData = {};
-      posting.title = data.title;
-      posting.company = data.hiringOrganization?.name;
-
-      const loc = Array.isArray(data.jobLocation)
-        ? data.jobLocation[0]
-        : data.jobLocation;
-      if (loc?.address) {
-        const a = loc.address;
-        posting.address = [a.streetAddress, a.postalCode, a.addressLocality]
-          .filter(Boolean)
-          .join(", ");
+      if (data["@type"] === type) {
+        result = data;
       }
-
-      if (data.description) {
-        posting.descriptionHtml = data.description;
-      }
-      if (data.datePosted) posting.publishedAt = data.datePosted;
-
-      result = posting;
     } catch {
-      // JSON-LD parse failed — fall through to DOM selectors
+      // invalid JSON — skip
     }
   });
 

@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import * as cheerio from "cheerio/slim";
-import { extractJobPostingFromJsonLd } from "./json-ld.js";
+import { extractJsonLd } from "./json-ld.js";
 
 function html(jsonLd: object): ReturnType<typeof cheerio.load> {
   return cheerio.load(
@@ -9,66 +9,38 @@ function html(jsonLd: object): ReturnType<typeof cheerio.load> {
   );
 }
 
-describe("extractJobPostingFromJsonLd", () => {
-  test("extracts title and company from JobPosting", () => {
-    const $ = html({
-      "@type": "JobPosting",
-      title: "Developer",
-      hiringOrganization: { name: "Acme" },
-    });
-    const result = extractJobPostingFromJsonLd($);
-    assert.equal(result?.title, "Developer");
-    assert.equal(result?.company, "Acme");
+describe("extractJsonLd", () => {
+  test("extracts object matching the requested @type", () => {
+    const $ = html({ "@type": "Person", name: "Alice" });
+    const result = extractJsonLd($, "Person");
+    assert.equal(result?.["name"], "Alice");
   });
 
-  test("extracts address from jobLocation", () => {
-    const $ = html({
-      "@type": "JobPosting",
-      title: "Dev",
-      jobLocation: {
-        address: {
-          streetAddress: "Main St 1",
-          postalCode: "12345",
-          addressLocality: "Berlin",
-        },
-      },
-    });
-    const result = extractJobPostingFromJsonLd($);
-    assert.equal(result?.address, "Main St 1, 12345, Berlin");
-  });
-
-  test("extracts description and datePosted", () => {
-    const $ = html({
-      "@type": "JobPosting",
-      title: "Dev",
-      description: "<p>Job desc</p>",
-      datePosted: "2026-01-15",
-    });
-    const result = extractJobPostingFromJsonLd($);
-    assert.equal(result?.descriptionHtml, "<p>Job desc</p>");
-    assert.equal(result?.publishedAt, "2026-01-15");
-  });
-
-  test("returns null when no JobPosting found", () => {
-    const $ = cheerio.load("<html><body>No JSON-LD</body></html>");
-    assert.equal(extractJobPostingFromJsonLd($), null);
-  });
-
-  test("returns null for non-JobPosting JSON-LD", () => {
+  test("returns null when @type does not match", () => {
     const $ = html({ "@type": "Organization", name: "Acme" });
-    assert.equal(extractJobPostingFromJsonLd($), null);
+    assert.equal(extractJsonLd($, "Person"), null);
   });
 
-  test("handles array jobLocation", () => {
-    const $ = html({
-      "@type": "JobPosting",
-      title: "Dev",
-      jobLocation: [
-        { address: { addressLocality: "Berlin" } },
-        { address: { addressLocality: "Munich" } },
-      ],
-    });
-    const result = extractJobPostingFromJsonLd($);
-    assert.equal(result?.address, "Berlin");
+  test("returns null when no JSON-LD is present", () => {
+    const $ = cheerio.load("<html><body>No JSON-LD</body></html>");
+    assert.equal(extractJsonLd($, "Person"), null);
+  });
+
+  test("returns the first match when multiple JSON-LD blocks exist", () => {
+    const $ = cheerio.load(`<html><head>
+      <script type="application/ld+json">{"@type":"Item","id":1}</script>
+      <script type="application/ld+json">{"@type":"Item","id":2}</script>
+    </head></html>`);
+    const result = extractJsonLd($, "Item");
+    assert.equal(result?.["id"], 1);
+  });
+
+  test("skips invalid JSON gracefully", () => {
+    const $ = cheerio.load(`<html><head>
+      <script type="application/ld+json">not valid json</script>
+      <script type="application/ld+json">{"@type":"Valid","ok":true}</script>
+    </head></html>`);
+    const result = extractJsonLd($, "Valid");
+    assert.equal(result?.["ok"], true);
   });
 });

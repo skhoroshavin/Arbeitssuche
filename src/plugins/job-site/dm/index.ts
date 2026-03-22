@@ -5,7 +5,7 @@ import type {
   JobSite,
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
-import { extractJobPostingFromJsonLd } from "@/utils/json-ld.js";
+import { extractJsonLd } from "@/utils/json-ld.js";
 
 const BASE_URL = "https://www.dm-jobs.de";
 const BLOCK_PATTERNS = [/usercentrics\.eu/];
@@ -36,12 +36,38 @@ function extractLinks(html: string): string[] {
   return [...urls];
 }
 
+function str(val: unknown): string | undefined {
+  return typeof val === "string" ? val : undefined;
+}
+
+function extractJobPostingAddress(
+  data: Record<string, unknown>,
+): string | undefined {
+  const loc = Array.isArray(data.jobLocation)
+    ? data.jobLocation[0]
+    : data.jobLocation;
+  if (!loc || typeof loc !== "object" || !("address" in loc)) return undefined;
+  const addr = loc.address;
+  if (!addr || typeof addr !== "object") return undefined;
+  const a: Record<string, unknown> = Object.assign({}, addr);
+  return (
+    [str(a.streetAddress), str(a.postalCode), str(a.addressLocality)]
+      .filter(Boolean)
+      .join(", ") || undefined
+  );
+}
+
 function extractVacancy(html: string, url: string): VacancyDetails {
   const $ = cheerio.load(html);
 
-  const jsonLd = extractJobPostingFromJsonLd($);
-  let { title, company, address, descriptionHtml } = jsonLd ?? {};
-  const publishedAt = jsonLd?.publishedAt;
+  const jsonLd = extractJsonLd($, "JobPosting");
+  const org = jsonLd?.hiringOrganization;
+  let title = str(jsonLd?.title);
+  let company =
+    org && typeof org === "object" && "name" in org ? str(org.name) : undefined;
+  let address = jsonLd ? extractJobPostingAddress(jsonLd) : undefined;
+  let descriptionHtml = str(jsonLd?.description);
+  const publishedAt = str(jsonLd?.datePosted);
 
   if (!title) title = $("h1").first().text().trim() || undefined;
   if (!company) company = "dm";
