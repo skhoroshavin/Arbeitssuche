@@ -8,33 +8,15 @@ import { Project, SyntaxKind, type SourceFile, Node } from "ts-morph";
 
 const ROOT = join(import.meta.dirname, "..");
 const SRC_DIR = join(ROOT, "src");
-const UI_DIR = join(SRC_DIR, "ui");
-const UTILS_DIR = join(SRC_DIR, "utils");
 
-// UI sub-layer directories (non-page zones used for classifying importers)
-const UI_ZONES = ["components", "hooks", "layout", "data"] as const;
+const CHECKED_DIRS = [
+  { dir: "ui/components", shared: true, requireTests: false },
+  { dir: "ui/hooks", shared: true, requireTests: false },
+  { dir: "utils", shared: true, requireTests: true },
+];
 
-// Which of those zones have barrel exports checked for shared-code placement.
-// Each export must be used by 2+ page groups, layout + a page group,
-// a sibling in the same directory, or an extra consumer listed below.
-const SHARED_UI_DIRS = ["components", "hooks"] as const;
-
-// Independent page groups under ui/pages/. Cannot cross-import.
-const PAGE_GROUPS = ["applicant", "job-search", "settings"] as const;
-
-// Extra consumer zones that make a shared dir's export count as shared.
-// Example: hooks used only by data/ are still considered shared.
-const EXTRA_SHARED_CONSUMERS: Partial<
-  Record<(typeof SHARED_UI_DIRS)[number], readonly Zone[]>
-> = {
-  hooks: ["data"],
-};
-
-// Modules always excluded from shared-code placement checks.
+// Modules excluded from all checks.
 const EXCLUDED_MODULES = new Set(["Icons"]);
-
-// src/utils/: each module must be imported by at least this many distinct entities.
-const MIN_UTIL_CONSUMERS = 2;
 
 // =============================================================================
 // Types
@@ -66,15 +48,6 @@ interface UnusedSymbol {
 
 /** Map from "file::exportedName" → { sourceFile, originalName } */
 type ReExportMap = Map<string, { sourceFile: string; originalName: string }>;
-
-type Zone = (typeof UI_ZONES)[number] | (typeof PAGE_GROUPS)[number];
-type SharedDir = (typeof SHARED_UI_DIRS)[number];
-
-interface SharedExport {
-  name: string;
-  sourceModule: string;
-  kind: SharedDir;
-}
 
 // =============================================================================
 // Helpers
@@ -246,217 +219,180 @@ function buildReExportMap(srcSourceFiles: SourceFile[]): ReExportMap {
 // Shared-code functions
 // =============================================================================
 
-function classifyFile(relPath: string): Zone | null {
-  if (relPath.startsWith("pages/")) {
-    for (const group of PAGE_GROUPS) {
-      if (relPath.startsWith(`pages/${group}/`)) return group;
-    }
-    return null;
-  }
-  for (const zone of UI_ZONES) {
-    if (relPath.startsWith(`${zone}/`)) return zone;
-  }
-  return null;
+function deriveEntity(srcRelPath: string): string {
+  const parts = srcRelPath.split("/");
+  return parts.slice(0, Math.min(parts.length - 1, 3)).join("/");
 }
 
-function parseBarrel(barrelFile: SourceFile, kind: SharedDir): SharedExport[] {
-  const exports: SharedExport[] = [];
+function listModules(absDirPath: string): { name: string; filePath: string }[] {
+  return readdirSync(absDirPath, { withFileTypes: true })
+    .filter(
+      (e) =>
+        e.isFile() &&
+        (e.name.endsWith(".ts") || e.name.endsWith(".tsx")) &&
+        !isTestFile(e.name) &&
+        e.name !== "index.ts",
+    )
+    .map((e) => ({
+      name: e.name.replace(/\.[^.]+$/, ""),
+      filePath: join(absDirPath, e.name),
+    }));
+}
+
+function buildBarrelMap(barrelFile: SourceFile): Map<string, string> {
+  const map = new Map<string, string>();
 
   for (const exportDecl of barrelFile.getExportDeclarations()) {
-    const moduleSpecifier = exportDecl.getModuleSpecifierValue();
-    if (!moduleSpecifier?.startsWith("./")) continue;
-
-    const sourceModule = moduleSpecifier.replace("./", "").replace(/\.js$/, "");
-
     if (exportDecl.isTypeOnly()) continue;
+
+    const targetSf = exportDecl.getModuleSpecifierSourceFile();
+    if (!targetSf) continue;
+    const targetPath = targetSf.getFilePath();
 
     for (const named of exportDecl.getNamedExports()) {
       if (named.isTypeOnly()) continue;
-      const name = named.getName();
-      exports.push({ name, sourceModule, kind });
+      map.set(named.getName(), targetPath);
     }
   }
 
-  return exports;
+  return map;
 }
 
-function findImporters(
-  uiFiles: SourceFile[],
-  sharedExport: SharedExport,
-): { file: string; zone: Zone }[] {
-  const results: { file: string; zone: Zone }[] = [];
+interface ModuleInfo {
+  dir: string;
+  name: string;
+  consumers: Set<string>;
+  shared: boolean;
+  requireTests: boolean;
+}
 
-  for (const sf of uiFiles) {
-    const relPath = relative(UI_DIR, sf.getFilePath());
-    const zone = classifyFile(relPath);
-    if (!zone || zone === sharedExport.kind) continue;
+interface SetupResult {
+  modulesByFile: Map<string, ModuleInfo>;
+  barrelMaps: Map<string, Map<string, string>>;
+  dirPrefixes: string[];
+}
 
-    for (const importDecl of sf.getImportDeclarations()) {
-      const targetFile = importDecl.getModuleSpecifierSourceFile();
-      if (!targetFile) continue;
+function setupModules(
+  configs: typeof CHECKED_DIRS,
+  srcFiles: SourceFile[],
+): SetupResult {
+  const modulesByFile = new Map<string, ModuleInfo>();
+  const barrelMaps = new Map<string, Map<string, string>>();
+  const dirPrefixes: string[] = [];
 
-      const targetRel = relative(UI_DIR, targetFile.getFilePath());
+  for (const config of configs) {
+    const absDir = join(SRC_DIR, config.dir);
+    const modules = listModules(absDir);
+    const dirPrefix = absDir + "/";
+    dirPrefixes.push(dirPrefix);
 
-      // Direct file import (e.g. @/ui/components/AutoSaveStatus)
-      if (
-        targetRel === `${sharedExport.kind}/${sharedExport.sourceModule}.tsx`
-      ) {
-        results.push({ file: relPath, zone });
-        break;
-      }
-
-      // Barrel import (e.g. @/ui/components)
-      if (targetRel === `${sharedExport.kind}/index.ts`) {
-        const namedImports = importDecl.getNamedImports();
-        const importedNames = namedImports.map((n) => n.getName());
-        if (importedNames.includes(sharedExport.name)) {
-          results.push({ file: relPath, zone });
-          break;
-        }
-      }
+    for (const mod of modules) {
+      modulesByFile.set(mod.filePath, {
+        dir: config.dir,
+        name: mod.name,
+        consumers: new Set(),
+        shared: config.shared,
+        requireTests: config.requireTests,
+      });
     }
-  }
-  return results;
-}
 
-function isImportedBySibling(
-  sharedExport: SharedExport,
-  uiFiles: SourceFile[],
-): boolean {
-  const targetModulePath = join(
-    UI_DIR,
-    sharedExport.kind,
-    `${sharedExport.sourceModule}.tsx`,
-  );
-
-  for (const sf of uiFiles) {
-    const filePath = sf.getFilePath();
-    const relPath = relative(UI_DIR, filePath);
-    if (!relPath.startsWith(`${sharedExport.kind}/`)) continue;
-    if (filePath.endsWith("index.ts")) continue;
-    const baseName = filePath.replace(/\.[^.]+$/, "");
-    if (baseName.endsWith(`/${sharedExport.sourceModule}`)) continue;
-
-    for (const importDecl of sf.getImportDeclarations()) {
-      const targetFile = importDecl.getModuleSpecifierSourceFile();
-      if (targetFile && targetFile.getFilePath() === targetModulePath) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-function isGenuinelyShared(
-  sharedExport: SharedExport,
-  importers: { file: string; zone: Zone }[],
-  uiFiles: SourceFile[],
-): boolean {
-  if (importers.length === 0) return true; // unused — caught by TS/eslint
-
-  const zones = new Set(importers.map((i) => i.zone));
-  const pageGroups = PAGE_GROUPS.filter((g) => zones.has(g));
-
-  if (isImportedBySibling(sharedExport, uiFiles)) return true;
-  if (pageGroups.length >= 2) return true;
-  if (zones.has("layout") && pageGroups.length >= 1) return true;
-
-  const extra = EXTRA_SHARED_CONSUMERS[sharedExport.kind];
-  if (extra?.some((z) => zones.has(z))) return true;
-
-  return false;
-}
-
-function checkUiSharedCode(srcFiles: SourceFile[]): string[] {
-  const errors: string[] = [];
-
-  const uiFiles = srcFiles.filter((sf) =>
-    sf.getFilePath().startsWith(UI_DIR + "/"),
-  );
-
-  const sharedExports: SharedExport[] = [];
-  for (const dir of SHARED_UI_DIRS) {
-    const barrel = uiFiles.find((sf) =>
-      sf.getFilePath().endsWith(`/${dir}/index.ts`),
-    );
-    if (barrel) sharedExports.push(...parseBarrel(barrel, dir));
-  }
-
-  for (const exp of sharedExports) {
-    if (EXCLUDED_MODULES.has(exp.sourceModule)) continue;
-    const importers = findImporters(uiFiles, exp);
-    if (!isGenuinelyShared(exp, importers, uiFiles)) {
-      const zones = [...new Set(importers.map((i) => i.zone))];
-      const target = zones[0];
-      const dir = exp.kind;
-      errors.push(
-        `ui/${dir}/${exp.sourceModule}.tsx exports "${exp.name}" but is only used by "${target}"` +
-          `\n    → Move to src/ui/pages/${target}/${dir}/${exp.sourceModule}.tsx` +
-          `\n    Imported by:\n${importers.map((i) => `      ${i.file}`).join("\n")}`,
-      );
+    const barrelPath = join(absDir, "index.ts");
+    const barrelSf = srcFiles.find((sf) => sf.getFilePath() === barrelPath);
+    if (barrelSf) {
+      barrelMaps.set(barrelPath, buildBarrelMap(barrelSf));
     }
   }
 
-  return errors;
+  return { modulesByFile, barrelMaps, dirPrefixes };
 }
 
-function checkUtils(srcFiles: SourceFile[]): string[] {
-  const errors: string[] = [];
-
-  const utilsModules = readdirSync(UTILS_DIR)
-    .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
-    .map((f) => f.replace(/\.ts$/, ""));
-
-  // Single pass: build utilFilePath → entities map
-  const utilsPrefix = UTILS_DIR + "/";
-  const entitiesByUtil = new Map<string, Set<string>>();
-
+function countConsumers(
+  srcFiles: SourceFile[],
+  modulesByFile: Map<string, ModuleInfo>,
+  barrelMaps: Map<string, Map<string, string>>,
+  dirPrefixes: string[],
+): void {
   for (const sf of srcFiles) {
     const sfPath = sf.getFilePath();
-    if (sfPath.startsWith(utilsPrefix)) continue;
+    if (dirPrefixes.some((p) => sfPath.startsWith(p))) continue;
 
-    const sfRel = getSrcRelPath(sf);
-    const parts = sfRel.split("/");
-    const entity = parts.slice(0, Math.min(parts.length - 1, 3)).join("/");
+    const entity = deriveEntity(getSrcRelPath(sf));
 
     for (const importDecl of sf.getImportDeclarations()) {
       const targetFile = importDecl.getModuleSpecifierSourceFile();
       if (!targetFile) continue;
       const targetPath = targetFile.getFilePath();
-      if (!targetPath.startsWith(utilsPrefix)) continue;
 
-      let entities = entitiesByUtil.get(targetPath);
-      if (!entities) {
-        entities = new Set();
-        entitiesByUtil.set(targetPath, entities);
+      // Direct module import
+      const modInfo = modulesByFile.get(targetPath);
+      if (modInfo) {
+        modInfo.consumers.add(entity);
+        continue;
       }
-      entities.add(entity);
+
+      // Barrel import — resolve named imports to module files
+      const barrelMap = barrelMaps.get(targetPath);
+      if (!barrelMap) continue;
+
+      const namedImports = importDecl.getNamedImports();
+      for (const named of namedImports) {
+        const moduleFilePath = barrelMap.get(named.getName());
+        if (moduleFilePath) {
+          const info = modulesByFile.get(moduleFilePath);
+          if (info) info.consumers.add(entity);
+        }
+      }
+
+      // Namespace import — count for all modules in the barrel
+      if (importDecl.getNamespaceImport()) {
+        for (const moduleFilePath of barrelMap.values()) {
+          const info = modulesByFile.get(moduleFilePath);
+          if (info) info.consumers.add(entity);
+        }
+      }
     }
   }
+}
 
-  for (const name of utilsModules) {
-    if (!existsSync(join(UTILS_DIR, `${name}.test.ts`))) {
-      errors.push(
-        `utils/${name}.ts has no test → Create utils/${name}.test.ts`,
-      );
+function reportErrors(modulesByFile: Map<string, ModuleInfo>): string[] {
+  const errors: string[] = [];
+
+  for (const [filePath, info] of modulesByFile) {
+    if (EXCLUDED_MODULES.has(info.name)) continue;
+
+    if (info.requireTests) {
+      const testPath = filePath.replace(/\.[^.]+$/, ".test.ts");
+      if (!existsSync(testPath)) {
+        errors.push(
+          `${info.dir}/${info.name}.ts has no test → Create ${info.dir}/${info.name}.test.ts`,
+        );
+      }
     }
 
-    const utilFilePath = join(UTILS_DIR, `${name}.ts`);
-    const entities = entitiesByUtil.get(utilFilePath);
-    const count = entities?.size ?? 0;
-
-    if (count < MIN_UTIL_CONSUMERS) {
+    if (info.shared && info.consumers.size < 2) {
       const detail =
-        count === 0
+        info.consumers.size === 0
           ? "not imported by any entity"
-          : `only used by: ${[...entities!].join(", ")}`;
+          : `only used by: ${[...info.consumers].join(", ")}`;
       errors.push(
-        `utils/${name}.ts ${detail} → Must be used by ${MIN_UTIL_CONSUMERS}+ entities`,
+        `${info.dir}/${info.name} ${detail} → Must be used by 2+ entities`,
       );
     }
   }
 
   return errors;
+}
+
+function checkDirs(
+  configs: typeof CHECKED_DIRS,
+  srcFiles: SourceFile[],
+): string[] {
+  const { modulesByFile, barrelMaps, dirPrefixes } = setupModules(
+    configs,
+    srcFiles,
+  );
+  countConsumers(srcFiles, modulesByFile, barrelMaps, dirPrefixes);
+  return reportErrors(modulesByFile);
 }
 
 // =============================================================================
@@ -628,20 +564,11 @@ if (unusedUnexportedTypes.length > 0) {
 
 // --- Shared code analysis ---
 
-const uiErrors = checkUiSharedCode(srcFiles);
-const utilsErrors = checkUtils(srcFiles);
+const dirErrors = checkDirs(CHECKED_DIRS, srcFiles);
 
-if (uiErrors.length > 0) {
-  console.error("\nUI shared code violations:\n");
-  for (const msg of uiErrors) {
-    console.error(`  ${msg}\n`);
-  }
-  hasErrors = true;
-}
-
-if (utilsErrors.length > 0) {
-  console.error("\nUtils violations:\n");
-  for (const msg of utilsErrors) {
+if (dirErrors.length > 0) {
+  console.error("\nShared code violations:\n");
+  for (const msg of dirErrors) {
     console.error(`  ${msg}\n`);
   }
   hasErrors = true;
