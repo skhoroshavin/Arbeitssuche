@@ -42,7 +42,7 @@ export const openrouterProviderInfo: LlmProviderInfo = {
   instructions: [
     "1. Erstelle ein Konto auf [openrouter.ai](https://openrouter.ai) oder melde dich an",
     "2. Gehe zu [Credits](https://openrouter.ai/credits)",
-    '3. Klicke auf "Buy Credits" und füge Guthaben hinzu (ab $5)',
+    '3. Klicke auf "Buy Credits" und füge Guthaben hinzu',
     '4. Gehe zu [Keys](https://openrouter.ai/keys) → klicke auf "Create Key"',
     '5. Gib dem Schlüssel einen Namen (z. B. "Arbeitssuche") und klicke auf "Create"',
     "6. Kopiere den Schlüssel - er beginnt mit `sk-or-...`",
