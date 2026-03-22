@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { ConsultationSuggestion } from "@/models/job-search/types";
 import { Loading } from "@/ui/components";
+import { useEscapeKey } from "@/ui/hooks";
 import { SEARCH_MODE_LABELS } from "@/ui/constants";
 
 interface ConsultationModalProps {
@@ -100,17 +101,7 @@ export function ConsultationModal({
     setSelected(new Set());
   }, [suggestions]);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    },
-    [onClose],
-  );
-
-  useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+  useEscapeKey(onClose);
 
   const toggleItem = (index: number) => {
     setSelected((prev) => {

@@ -7,6 +7,7 @@ import {
 } from "@/models/job-search/types.js";
 import type { JobSearchRepository } from "@/repositories/job-search/types.js";
 import { deriveId } from "@/utils/derive-id.js";
+import { createWithUniqueId } from "@/utils/create-with-unique-id.js";
 import { Database, queryRow, queryRows } from "@/utils/database.js";
 
 type JobSearchRow = { id: string; applicant_id: string; search_term: string };
@@ -85,22 +86,20 @@ class SqliteJobSearchRepository implements JobSearchRepository {
     applicantId: string,
     searchMode?: SearchMode,
   ): string {
-    for (let i = 0; i < 5; i++) {
-      const id = deriveId(searchTerm);
-      if (!this.exists(id)) {
-        const params = { ...DEFAULT_SEARCH_PARAMS, searchTerm };
-        if (searchMode) params.searchMode = searchMode;
-        const data: JobSearch = {
-          id,
-          applicantId,
-          params,
-          preferences: { ...DEFAULT_PREFERENCES },
-        };
-        this.insertStmt.run(id, applicantId, searchTerm, JSON.stringify(data));
-        return id;
-      }
-    }
-    throw new Error("Failed to generate unique id after 5 attempts");
+    const id = createWithUniqueId(
+      () => deriveId(searchTerm),
+      (id) => this.exists(id),
+    );
+    const params = { ...DEFAULT_SEARCH_PARAMS, searchTerm };
+    if (searchMode) params.searchMode = searchMode;
+    const data: JobSearch = {
+      id,
+      applicantId,
+      params,
+      preferences: { ...DEFAULT_PREFERENCES },
+    };
+    this.insertStmt.run(id, applicantId, searchTerm, JSON.stringify(data));
+    return id;
   }
 
   delete(id: string): void {

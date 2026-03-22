@@ -12,7 +12,7 @@ Arbeitssuche — an Electron desktop app for crawling German job boards, trackin
 - **LLM**: OpenRouter (pluggable via factory pattern)
 - **Data**: SQLite (via `Database` class wrapping `node:sqlite`), encrypted secrets via Electron `safeStorage`
 - **Build**: electron-vite (main + preload + renderer), TypeScript strict mode
-- **Test**: Node.js native test runner, Playwright (e2e with `_electron.launch()`)
+- **Test**: Node.js native test runner (`node:test` + `node:assert/strict`), Playwright (e2e)
 - **CI/CD**: GitHub Actions (CI on push/PR, release via workflow_dispatch)
 
 ## Commands
@@ -42,122 +42,45 @@ npm run check                 # Architecture checks (dead code, shared code, imp
 
 ## Architecture
 
+Layered architecture enforced by `npm run check` and ESLint. Run these to see detailed violation messages.
+
 ```
 src/
-  utils/          # Shared utilities used by 2+ different entity implementations.
-                  #   Self-contained: no @/ imports from other layers.
-                  #   Enforced by check-architecture script.
+  models/         # Pure domain types + constants. No imports from other layers.
+  utils/          # Shared self-contained utilities (used by 2+ entities).
   plugins/        # External service interfaces (browser, commute, job-site, llm, pdf-renderer).
                   #   Each has types.ts + real impl + stub/ for testing.
-                  #   Subfolders are implementations only, never utilities.
-                  #   Imports: plugins, utils.
-  models/         # Pure domain type definitions + constants + simple self-contained helpers.
-                  #   NO imports from other layers.
-  repositories/   # Repository interfaces + impls (stub + sqlite) for domain entities.
-                  #   Subfolders are implementations only, never utilities.
-                  #   Imports: models, utils.
-  services/       # Business logic as DI service classes.
-                  #   resume-renderer/  — PDF generation
-                  #   job-consultant/   — job search suggestions from LLM
-                  #   vacancy-scanner/  — crawl and analyse (extract contacts, estimate commute time, etc) vacancies
-                  #   cover-letter-writer/ — generic + personalized cover letters from LLM
-                  #   Imports: models, plugins, repositories, services, utils.
-  app/            # Electron main process (IPC handlers, protocol, background tasks).
-                  #   app/config/ — config repository (electron-store + stub).
-                  #   app/secrets/ — secrets repository (encrypted + stub).
-                  #   Imports: all lower layers + utils.
-  ui/             # Renderer process (React SPA).
-                  #   components/ — shared presentational components (must be used by 2+ page groups)
-                  #   hooks/      — shared custom hooks (self-contained, no @/ui imports)
-                  #   data/       — shared domain query hooks (React Query over IPC)
-                  #   layout/     — app shell (AppLayout, LayoutContext)
-                  #   pages/      — page groups, each with own components/, hooks/, views/
-scripts/          # CLI utility scripts (bump-version, crawl-download, check-architecture).
+  repositories/   # Domain entity persistence (applicant, job-search, vacancy).
+                  #   Interface in types.ts, sqlite/ and stub/ implementations.
+  services/       # Business logic (resume-renderer, job-consultant, vacancy-scanner, cover-letter-writer).
+                  #   DI service classes, instantiated in app/index.ts.
+  app/            # Electron main process (IPC handlers, protocol, config, secrets).
+  ui/             # Renderer (React SPA).
+                  #   components/, hooks/ — shared (must be used by 2+ page groups)
+                  #   data/   — React Query hooks over IPC
+                  #   layout/ — app shell
+                  #   pages/  — isolated page groups (applicant, job-search, settings),
+                  #             each with own components/, hooks/, views/
+scripts/          # CLI utilities (bump-version, crawl-download, check-architecture).
 e2e/              # E2E tests: fixtures, page objects, tests-flow/, tests-templates/.
 .github/workflows/  # CI (push/PR) and release (workflow_dispatch).
 ```
 
-### Import rules (ESLint-enforced)
-
-Always use `@/` path alias for cross-module imports — `../` imports are forbidden. Within-module sibling imports use `./` relative paths.
-
-| Layer | Allowed `@/` imports |
-|-------|---------------------|
-| `utils/` | `@/utils` |
-| `plugins/` | `@/plugins`, `@/utils` |
-| `models/` | `@/models` |
-| `repositories/` | `@/models`, `@/repositories`, `@/utils` |
-| `services/` | `@/models`, `@/plugins`, `@/repositories`, `@/services`, `@/utils` |
-| `app/` | all lower layers + `@/app` |
-
-**Module boundary rules (backend layers: plugins, repositories, services)**
-
-- External imports only from `index.ts` and `types.ts` — at any depth (implementation `index.ts` files are valid targets, e.g. `@/plugins/llm/openrouter/index.js`)
-- Non-index/non-types file imports across module boundaries are ESLint-forbidden
-- Within-module files use `./` relative imports for siblings (e.g. `./scan.js`, not `@/services/vacancy-scanner/scan.js`)
-- `index.ts` exports restricted to: `create*`, `derive*`, `get*`, PascalCase names
-- Tests are black-box: import only from `index.js`, `types.js`, and `.test-suite.js` helpers
-- Implementation tests import from their sub-module's `index.ts`; integration tests from the parent module's `index.ts`
-
-**UI sub-layers**
-
-| Sub-layer | Allowed imports |
-|-----------|----------------|
-| `hooks/` | _(self-contained, no @/ui imports)_ |
-| `hooks/internal/` | _(private to hooks/, not importable from outside)_ |
-| `components/` | `@/models`, `@/ui/hooks` |
-| `data/` | `@/models`, `@/ui/hooks` |
-| `layout/` | `@/models`, `@/ui/components`, `@/ui/hooks` |
-| `pages/<group>/` | `@/models`, `@/ui/components`, `@/ui/hooks`, `@/ui/data`, `@/ui/layout`, `@/ui/constants`, `@/ui/pages/<same-group>` |
-| Root (`ui/*.tsx`) | `@/models`, all `@/ui/*` |
-
-Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each page group has its own `components/`, `hooks/`, and `views/` subdirectories for group-specific code.
-
-### Shared code placement
-
-`check-architecture` (run via `npm run check`) enforces that exports in `ui/components/` and `ui/hooks/` are genuinely shared — used by 2+ page groups, by layout + a page group, or by sibling files in the same directory. Single-page-group-only code must live in `pages/<group>/components/` or `pages/<group>/hooks/`.
-
 ### Key patterns
 
-**IPC**: Renderer calls `window.electronAPI.invoke(channel, ...args)` via preload. Main process handles via `ipcMain.handle()`. IPC client in `src/ui/hooks/ipc-client.ts`.
+**IPC**: Renderer calls `window.electronAPI.invoke(channel, ...args)` via preload. Main process handles via `ipcMain.handle()`. IPC handlers call repos directly for CRUD, services for business logic.
 
-**Repository**: Domain entities (applicant, job-search, vacancy) have interfaces in `repositories/<entity>/types.ts` with `sqlite/` and `stub/` implementations. `Database` class wraps `DatabaseSync`. Each SQLite repo creates its own tables — no central schema.
+**Repository**: Each SQLite repo creates its own tables — no central schema.
 
-**Config & secrets**: `app/config/` (electron-store) and `app/secrets/` (safeStorage + `secrets.enc`). Both have stub implementations.
+**Service**: Constructor injection, rebuilt when settings change (`app/index.ts`).
 
-**Plugin**: External integrations define interfaces in `types.ts` with real and `stub/` implementations.
-
-**Service**: Four service classes receive dependencies via constructor injection, instantiated in `app/index.ts` and rebuilt when settings change. IPC handlers call repos directly for CRUD, services for business logic.
-
-**Utils**: Flat directory of self-contained utilities shared by 2+ entity implementations. Rules:
-- Each file must be self-contained (no `@/` imports from other layers) and have JSDoc on all exports
-- Each file must have a corresponding `.test.ts` file
-- Filename must correspond to what is exported (e.g. `database.ts` exports `Database`, `queryRow`, `queryRows`)
-- Keep interfaces simple — if a utility needs extensive documentation, simplify the interface
-- Max 80 lines per file (excluding blanks/comments), max complexity 10 per function (ESLint-enforced)
-- `check-architecture` verifies each utility is imported by 2+ distinct entities and has tests
+**Plugin**: Interface in `types.ts`, real + `stub/` implementations.
 
 ## Code conventions
 
-- **TypeScript strict mode**, ES2022 target, path alias `@/*` → `./src/*`
-- **File naming**: `.ts` files use kebab-case, `.tsx` files use PascalCase (exceptions: `main.tsx`, `layout.tsx`)
-- **camelCase** for variables/functions, **PascalCase** for types/components
-- Barrel exports via `index.ts`; tests co-located as `*.test.ts` / `*.integration-test.ts`
-- Tailwind classes for styling; no CSS modules
-- **Cyclomatic complexity limit**: 20 per function (ESLint `complexity` rule). When a function exceeds this, extract helpers, use lookup tables, or decompose React components.
 - Services and repos throw plain `Error` for validation/not-found errors
 - Interfaces with methods are implemented using classes, not plain objects
 - Commit messages: imperative mood, concise, describe the change
-- Job-site plugin `index.ts` files may only export the factory function (`create*Site`) and `SUPPORTED_MODES`
-- Job-site plugin tests must test only through the `JobSite` public interface
-
-## Testing
-
-- Unit tests use `node:test` and `node:assert/strict` (no Jest)
-- Integration tests may require external connections (for example to job boards)
-- E2E tests use Playwright with Electron (`_electron.launch()`)
-- Visual snapshot tests compare PDF renders against reference PNGs
-- Always run `npm run validate` before considering work complete
 
 ## Debugging & Extending job-site crawlers
 
@@ -181,4 +104,5 @@ Between releases, `main` always has a `-dev` version (e.g. `0.1.9-dev`). Version
 - Write only black-box style tests, don't test implementation details.
 - After completing a significant task, run `npm run validate` to verify the full pipeline works before proposing to commit.
 - Always propose to commit changes after completing a task.
-- **PRs**: concise title describing the main focus; body is a short bullet-list summarising all commit descriptions in the branch; no heading, no extra sections. 
+- **PRs**: concise title describing the main focus; body is a short bullet-list summarising all commit descriptions in the branch; no heading, no extra sections.
+- **PR workflow**: always create a new branch, fetch origin, merge `main` into it, then push before opening the PR.

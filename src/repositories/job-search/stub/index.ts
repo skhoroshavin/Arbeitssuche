@@ -7,6 +7,7 @@ import {
 } from "@/models/job-search/types.js";
 import type { JobSearchRepository } from "@/repositories/job-search/types.js";
 import { deriveId } from "@/utils/derive-id.js";
+import { createWithUniqueId } from "@/utils/create-with-unique-id.js";
 
 interface StubData {
   jobSearch: JobSearch;
@@ -73,23 +74,21 @@ class StubJobSearchRepository implements JobSearchRepository {
     applicantId: string,
     searchMode?: SearchMode,
   ): string {
-    for (let i = 0; i < 5; i++) {
-      const id = deriveId(searchTerm);
-      if (!this.store.has(id)) {
-        const params = { ...DEFAULT_SEARCH_PARAMS, searchTerm };
-        if (searchMode) params.searchMode = searchMode;
-        this.store.set(id, {
-          jobSearch: {
-            id,
-            applicantId,
-            params,
-            preferences: { ...DEFAULT_PREFERENCES },
-          },
-        });
-        return id;
-      }
-    }
-    throw new Error("Failed to generate unique id after 5 attempts");
+    const id = createWithUniqueId(
+      () => deriveId(searchTerm),
+      (id) => this.store.has(id),
+    );
+    const params = { ...DEFAULT_SEARCH_PARAMS, searchTerm };
+    if (searchMode) params.searchMode = searchMode;
+    this.store.set(id, {
+      jobSearch: {
+        id,
+        applicantId,
+        params,
+        preferences: { ...DEFAULT_PREFERENCES },
+      },
+    });
+    return id;
   }
 
   delete(id: string): void {

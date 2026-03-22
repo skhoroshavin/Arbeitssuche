@@ -6,6 +6,7 @@ import type {
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
 import { extractJsonLd } from "@/utils/json-ld.js";
+import { str } from "@/utils/coerce.js";
 
 const BASE_URL = "https://www.dm-jobs.de";
 const BLOCK_PATTERNS = [/usercentrics\.eu/];
@@ -34,10 +35,6 @@ function extractLinks(html: string): string[] {
     urls.add(full);
   });
   return [...urls];
-}
-
-function str(val: unknown): string | undefined {
-  return typeof val === "string" ? val : undefined;
 }
 
 function extractJobPostingAddress(
