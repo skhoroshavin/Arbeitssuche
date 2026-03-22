@@ -286,7 +286,6 @@ export default tseslint.config(
       "src/repositories/*/index.ts",
       "src/services/*/index.ts",
     ],
-    ignores: ["src/plugins/job-site/stub/index.ts"],
     rules: {
       "no-restricted-exports": [
         "error",
