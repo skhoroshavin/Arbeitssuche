@@ -28,7 +28,11 @@ class OpenAICompatibleClient implements LlmClient {
         json_schema: { name: "response", strict: true, schema },
       },
     });
-    return JSON.parse(content);
+    try {
+      return JSON.parse(content);
+    } catch {
+      return null;
+    }
   }
 
   private async fetchCompletion(

@@ -10,7 +10,7 @@ function isValidSearchMode(value: string): boolean {
   return SEARCH_MODES.some((m) => m === value);
 }
 
-const CONSULT_MAX_TOKENS = 2048;
+const CONSULT_MAX_TOKENS = 4096;
 
 const CONSULT_SEARCHES_SCHEMA: JsonSchema = {
   type: "array",

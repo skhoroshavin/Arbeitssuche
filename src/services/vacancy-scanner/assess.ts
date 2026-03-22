@@ -18,7 +18,7 @@ export interface AssessResult {
   matchScore: MatchScore;
 }
 
-const ASSESS_MAX_TOKENS = 1024;
+const ASSESS_MAX_TOKENS = 2048;
 
 const ASSESS_SCHEMA: JsonSchema = {
   type: "object",
