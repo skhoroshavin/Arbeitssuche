@@ -11,8 +11,8 @@ import { resolveSearchParams } from "./resolve-search-params.js";
 import { scanVacancies } from "./scan.js";
 import { markUnseenAsGone } from "./unify.js";
 
-export type JobSiteFactory = (name: string) => JobSite;
-export type OnProgress = (event: ProgressEvent) => void;
+type JobSiteFactory = (name: string) => JobSite;
+type OnProgress = (event: ProgressEvent) => void;
 
 export class VacancyScanner {
   constructor(

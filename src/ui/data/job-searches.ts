@@ -9,8 +9,6 @@ import type {
   VacancyStatus,
 } from "@/models/vacancy/types";
 
-export type { VacancySource };
-
 export type VacancyWithStatus = VacancyDTO & {
   status: VacancyStatus;
   sources: VacancySource[];

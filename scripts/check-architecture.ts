@@ -794,14 +794,25 @@ for (const sf of allSourceFiles) {
   }
 }
 
+// Types in types.ts files are public API contracts — exclude from unused checks.
+function isPublicApiType(filePath: string, name: string): boolean {
+  if (filePath.endsWith("/types.ts")) return true;
+  // Re-exports originating from types.ts are also public API
+  const reExport = reExportMap.get(`${filePath}::${name}`);
+  return reExport?.sourceFile.endsWith("/types.ts") ?? false;
+}
+
 // Report unused exports
 const unusedValues: { relPath: string; names: string[] }[] = [];
 const unusedTypes: { relPath: string; names: string[] }[] = [];
 const fullyUnused: string[] = [];
 
 for (const fe of fileExports) {
+  const filePath = fe.sourceFile.getFilePath();
   const unusedV = fe.exports.filter((e) => !e.used && e.kind === "value");
-  const unusedT = fe.exports.filter((e) => !e.used && e.kind === "type");
+  const unusedT = fe.exports.filter(
+    (e) => !e.used && e.kind === "type" && !isPublicApiType(filePath, e.name),
+  );
   const allUnused = fe.exports.every((e) => !e.used);
 
   if (allUnused && fe.exports.length > 0) {
@@ -856,10 +867,11 @@ if (unusedValues.length > 0) {
 }
 
 if (unusedTypes.length > 0) {
-  console.log("\nUnused type exports (informational):\n");
+  console.error("\nUnused type exports:\n");
   for (const { relPath, names } of unusedTypes) {
-    console.log(`  ${relPath}: ${names.join(", ")}`);
+    console.error(`  ${relPath}: ${names.join(", ")}`);
   }
+  hasErrors = true;
 }
 
 if (unusedUnexportedValues.length > 0) {
@@ -871,10 +883,11 @@ if (unusedUnexportedValues.length > 0) {
 }
 
 if (unusedUnexportedTypes.length > 0) {
-  console.log("\nUnused unexported types (informational):\n");
+  console.error("\nUnused unexported types:\n");
   for (const { relPath, name } of unusedUnexportedTypes) {
-    console.log(`  ${relPath}: ${name}`);
+    console.error(`  ${relPath}: ${name}`);
   }
+  hasErrors = true;
 }
 
 // --- Shared code analysis ---

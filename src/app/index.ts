@@ -20,7 +20,7 @@ import { VacancyScanner } from "@/services/vacancy-scanner/index.js";
 import { CoverLetterWriter } from "@/services/cover-letter-writer/index.js";
 import type { LlmClientFactory } from "./llm-factory.js";
 
-export interface ServiceContext {
+interface ServiceContext {
   applicantRepo: ApplicantRepository;
   jobSearchRepo: JobSearchRepository;
   secretsRepo: SecretsRepository;

@@ -2,7 +2,7 @@ import type { Vacancy } from "@/models/vacancy/vacancy.js";
 import type { VacancyContact } from "@/models/vacancy/types.js";
 import type { JsonSchema, LlmClient } from "@/plugins/llm/types.js";
 
-export interface ContactExtractionResult {
+interface ContactExtractionResult {
   addresses: string[];
   contact: VacancyContact | null;
 }

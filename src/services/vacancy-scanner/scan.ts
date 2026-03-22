@@ -23,7 +23,7 @@ export type SearchParams = {
 
 const MAX_PAGES = 20;
 
-export interface ScanVacanciesOptions {
+interface ScanVacanciesOptions {
   sites: JobSite[];
   searchParams: SearchParams;
   mode: SearchMode;
@@ -40,7 +40,7 @@ export interface ScanVacanciesOptions {
   onVacancyProcessed?: (vacancy: Vacancy, hash: string, isNew: boolean) => void;
 }
 
-export interface ScanVacanciesResult {
+interface ScanVacanciesResult {
   seenHashes: Set<string>;
   newCount: number;
   updatedCount: number;

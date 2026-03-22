@@ -17,7 +17,7 @@ function contactFromDetails(
   return { name, email, phone };
 }
 
-export interface ProcessOneResult {
+interface ProcessOneResult {
   vacancy: Vacancy;
   hash: string;
   isNew: boolean;
@@ -123,7 +123,7 @@ export function processOneCrawlResult(
   return { vacancy, hash, isNew: true, descriptionChanged: false };
 }
 
-export interface MarkUnseenResult {
+interface MarkUnseenResult {
   vacancies: Vacancy[];
   goneCount: number;
 }

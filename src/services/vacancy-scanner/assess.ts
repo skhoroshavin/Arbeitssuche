@@ -13,7 +13,7 @@ const VALID_SCORES: MatchScore[] = [
   "excellent",
 ];
 
-export interface AssessResult {
+interface AssessResult {
   summary: string;
   matchScore: MatchScore;
 }

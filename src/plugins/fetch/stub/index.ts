@@ -1,11 +1,11 @@
 import type { Fetch } from "@/plugins/fetch/types.js";
 
-export interface StubRoute {
+interface StubRoute {
   body: unknown;
   status?: number;
 }
 
-export interface StubFetch extends Fetch {
+interface StubFetch extends Fetch {
   requestedUrls: string[];
 }
 

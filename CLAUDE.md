@@ -37,7 +37,7 @@ npm run crawl:download        # Download HTML samples for crawler tests
 npm run format                # Prettier
 npm run lint                  # ESLint
 npm run lint:fix              # ESLint --fix
-npm run check                 # Dead code detection + shared code placement
+npm run check                 # Architecture checks (dead code, shared code, imports, exports)
 ```
 
 ## Architecture
@@ -46,7 +46,7 @@ npm run check                 # Dead code detection + shared code placement
 src/
   utils/          # Shared utilities used by 2+ different entity implementations.
                   #   Self-contained: no @/ imports from other layers.
-                  #   Enforced by check-shared-code script.
+                  #   Enforced by check-architecture script.
   plugins/        # External service interfaces (browser, commute, job-site, llm, pdf-renderer).
                   #   Each has types.ts + real impl + stub/ for testing.
                   #   Subfolders are implementations only, never utilities.
@@ -72,7 +72,7 @@ src/
                   #   data/       — shared domain query hooks (React Query over IPC)
                   #   layout/     — app shell (AppLayout, LayoutContext)
                   #   pages/      — page groups, each with own components/, hooks/, views/
-scripts/          # CLI utility scripts (bump-version, crawl-download, check-shared-code).
+scripts/          # CLI utility scripts (bump-version, crawl-download, check-architecture).
 e2e/              # E2E tests: fixtures, page objects, tests-flow/, tests-templates/.
 .github/workflows/  # CI (push/PR) and release (v* tags).
 ```
@@ -115,7 +115,7 @@ Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each pa
 
 ### Shared code placement
 
-`check-shared-code` (run via `npm run check`) enforces that exports in `ui/components/` and `ui/hooks/` are genuinely shared — used by 2+ page groups, by layout + a page group, or by sibling files in the same directory. Single-page-group-only code must live in `pages/<group>/components/` or `pages/<group>/hooks/`.
+`check-architecture` (run via `npm run check`) enforces that exports in `ui/components/` and `ui/hooks/` are genuinely shared — used by 2+ page groups, by layout + a page group, or by sibling files in the same directory. Single-page-group-only code must live in `pages/<group>/components/` or `pages/<group>/hooks/`.
 
 ### Key patterns
 
@@ -135,7 +135,7 @@ Page groups (`applicant`, `job-search`, `settings`) cannot cross-import. Each pa
 - Filename must correspond to what is exported (e.g. `database.ts` exports `Database`, `queryRow`, `queryRows`)
 - Keep interfaces simple — if a utility needs extensive documentation, simplify the interface
 - Max 80 lines per file (excluding blanks/comments), max complexity 10 per function (ESLint-enforced)
-- `check-shared-code` verifies each utility is imported by 2+ distinct entities and has tests
+- `check-architecture` verifies each utility is imported by 2+ distinct entities and has tests
 
 ## Code conventions
 

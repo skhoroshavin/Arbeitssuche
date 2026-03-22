@@ -2,7 +2,7 @@ import type { CommuteClient } from "@/plugins/commute/types.js";
 import type { Vacancy } from "@/models/vacancy/vacancy.js";
 import { formatError } from "./format-error.js";
 
-export interface ComputeCommutesInput {
+interface ComputeCommutesInput {
   vacancies: Vacancy[];
   origin: string;
   commuteClient: CommuteClient;
@@ -10,7 +10,7 @@ export interface ComputeCommutesInput {
   onProgress?: (message: string, current: number, total: number) => void;
 }
 
-export interface ComputeCommutesOutput {
+interface ComputeCommutesOutput {
   vacancies: Vacancy[];
   computedCount: number;
   skippedCount: number;

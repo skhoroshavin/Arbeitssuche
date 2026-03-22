@@ -1,6 +1,6 @@
 import { ToggleButton } from "@/ui/pages/job-search/components/ToggleButton";
 
-export interface SiteInfo {
+interface SiteInfo {
   name: string;
   supportedModes: string[];
 }

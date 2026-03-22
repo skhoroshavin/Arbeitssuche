@@ -8,8 +8,6 @@ import type {
   VacancyStatus,
 } from "./types.js";
 
-export type { VacancySource };
-
 /** Rich domain object wrapping VacancyDTO with derived methods. */
 export class Vacancy implements VacancyDTO {
   readonly hash: string;
