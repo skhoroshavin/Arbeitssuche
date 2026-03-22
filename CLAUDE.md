@@ -13,7 +13,7 @@ Arbeitssuche — an Electron desktop app for crawling German job boards, trackin
 - **Data**: SQLite (via `Database` class wrapping `node:sqlite`), encrypted secrets via Electron `safeStorage`
 - **Build**: electron-vite (main + preload + renderer), TypeScript strict mode
 - **Test**: Node.js native test runner (`node:test` + `node:assert/strict`), Playwright (e2e)
-- **CI/CD**: GitHub Actions (CI on push/PR, release on tag)
+- **CI/CD**: GitHub Actions (CI on push/PR, release via workflow_dispatch)
 
 ## Commands
 
@@ -31,7 +31,7 @@ npm run test:e2e              # E2E tests (Electron + Playwright)
 npm run test:visual           # Visual snapshot tests
 npm run validate              # Full pipeline: format + check + lint + test + integration + build + e2e
 
-npm run bump <dev|major|minor|patch>  # Bump version (stable→dev→release)
+npm run bump <dev|major|minor|patch>  # Bump version (stable→dev, dev→release)
 npm run crawl:download        # Download HTML samples for crawler tests
 
 npm run format                # Prettier
@@ -63,6 +63,7 @@ src/
                   #             each with own components/, hooks/, views/
 scripts/          # CLI utilities (bump-version, crawl-download, check-architecture).
 e2e/              # E2E tests: fixtures, page objects, tests-flow/, tests-templates/.
+.github/workflows/  # CI (push/PR) and release (workflow_dispatch).
 ```
 
 ### Key patterns
@@ -89,11 +90,11 @@ e2e/              # E2E tests: fixtures, page objects, tests-flow/, tests-templa
 
 ## Release process
 
-1. In the release PR: `npm run bump dev` then `npm run bump patch` (or `minor`/`major`)
-2. Squash-merge to `main`
-3. `auto-tag.yml` detects the stable version on `main`, creates a `v*` tag
-4. The tag triggers `release.yml` which builds and publishes artifacts
-5. The `dev-bump` job in `release.yml` auto-creates a PR for the next `-dev` version
+Between releases, `main` always has a `-dev` version (e.g. `0.1.9-dev`). Version numbers are only incremented during release — the dev version indicates the base, not the next release.
+
+1. Merge all feature PRs for this release into `main` (using merge commits)
+2. Go to Actions → Release → Run workflow → pick bump type (patch/minor/major)
+3. The workflow bumps `0.1.9-dev` → `0.1.10` (for patch), tags `v0.1.10`, then immediately bumps to `0.1.10-dev` — two commits + tag pushed to `main`, then builds all platforms and publishes the GitHub release
 
 ## Rules
 
