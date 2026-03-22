@@ -114,7 +114,7 @@ describe("arbeitsagentur", () => {
   });
 
   describe("getVacancyList response mapping", () => {
-    test("maps search results to URLs with base64-encoded refnr", async () => {
+    test("maps search results to URLs with plain refnr", async () => {
       const { site } = createSite({
         [SEARCH_URL_PATTERN]: {
           body: searchResponse({
@@ -126,8 +126,8 @@ describe("arbeitsagentur", () => {
       const result = await site.getVacancyList(baseCriteria);
 
       assert.equal(result.urls.length, 2);
-      assert.ok(result.urls[0].includes(btoa("10000-111")));
-      assert.ok(result.urls[1].includes(btoa("10000-222")));
+      assert.ok(result.urls[0].endsWith("/jobdetail/10000-111"));
+      assert.ok(result.urls[1].endsWith("/jobdetail/10000-222"));
       assert.equal(result.nextPageId, "2");
     });
 
@@ -238,20 +238,19 @@ describe("arbeitsagentur", () => {
       assert.equal(details.address, "10115 Berlin");
     });
 
-    test("fetches details API with base64 refnr from URL", async () => {
+    test("base64-encodes plain refnr from URL for API call", async () => {
       const refnr = "10000-12345";
-      const encodedRefnr = btoa(refnr);
       const { site, stubFetch } = createSite({
         [DETAILS_URL_PATTERN]: {
           body: { stellenangebotsTitel: "Senior Dev" },
         },
       });
 
-      const vacancyUrl = `https://www.arbeitsagentur.de/jobsuche/jobdetail/${encodedRefnr}`;
+      const vacancyUrl = `https://www.arbeitsagentur.de/jobsuche/jobdetail/${refnr}`;
       await site.getVacancyDetails(vacancyUrl);
 
       assert.ok(
-        stubFetch.requestedUrls[0].includes(`/jobdetails/${encodedRefnr}`),
+        stubFetch.requestedUrls[0].includes(`/jobdetails/${btoa(refnr)}`),
       );
     });
   });

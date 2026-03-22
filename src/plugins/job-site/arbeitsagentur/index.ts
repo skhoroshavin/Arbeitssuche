@@ -82,8 +82,7 @@ function buildAddressFromLocations(
 }
 
 function refnrToUrl(refnr: string): string {
-  const encoded = btoa(refnr);
-  return `${SITE_BASE}/jobsuche/jobdetail/${encoded}`;
+  return `${SITE_BASE}/jobsuche/jobdetail/${refnr}`;
 }
 
 function mapSearchResponse(data: ApiSearchResponse): {
@@ -139,8 +138,9 @@ class ArbeitsagenturSite implements JobSite {
   }
 
   async getVacancyDetails(url: string) {
-    const encodedRefnr = url.split("/").pop();
-    if (!encodedRefnr) throw new Error(`Cannot extract refnr from URL: ${url}`);
+    const refnr = url.split("/").pop();
+    if (!refnr) throw new Error(`Cannot extract refnr from URL: ${url}`);
+    const encodedRefnr = btoa(refnr);
     const apiUrl = `${API_BASE}/pc/v3/jobdetails/${encodedRefnr}`;
     const res = await this.fetch(apiUrl, { headers: API_HEADERS });
     assertOk(res, apiUrl);

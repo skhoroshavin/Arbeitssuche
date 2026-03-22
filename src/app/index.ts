@@ -8,6 +8,7 @@ import type { ConfigRepository } from "./config/types.js";
 import type { VacancyRepository } from "@/repositories/vacancy/types.js";
 import { createSqliteVacancyRepository } from "@/repositories/vacancy/index.js";
 import type { CommuteClient } from "@/plugins/commute/types.js";
+import { createGoogleMapsCommuteClient } from "@/plugins/commute/google-maps/index.js";
 import type { PdfRenderer } from "@/plugins/pdf-renderer/types.js";
 import { createElectronPdfRenderer } from "@/plugins/pdf-renderer/index.js";
 import type { LlmClient, LlmModelRegistry } from "@/plugins/llm/types.js";
@@ -95,7 +96,10 @@ export function createAppServices(ctx: ServiceContext): AppServices {
       consultationModel,
     );
 
-    const commuteClient = ctx.commuteClient ?? null;
+    const googleMapsApiKey = secrets.googleMapsApiKey;
+    const commuteClient = googleMapsApiKey
+      ? createGoogleMapsCommuteClient(googleMapsApiKey)
+      : (ctx.commuteClient ?? null);
 
     const modelRegistry = ctx.modelRegistry ?? createModelRegistry(provider);
 
