@@ -24,7 +24,7 @@ export default function SettingsMaps() {
 
   if (isLoading) return <Loading />;
 
-  const provider = providers?.[0];
+  const provider = providers?.find((p) => p.id === "google-maps");
 
   return (
     <>

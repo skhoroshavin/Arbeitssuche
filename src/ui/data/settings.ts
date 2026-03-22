@@ -13,98 +13,87 @@ import type {
 import { DEFAULT_PROVIDER } from "@/models/config/types";
 import type { ResolvedConfig } from "@/models/config/resolve";
 
-// --- LLM secrets ---
+// --- Provider secrets (factory) ---
+
+function createProviderSecretHooks(type: "llm" | "commute") {
+  const queryKey = [`${type}-secrets`];
+  const basePath = `/settings/${type}`;
+
+  function useSecrets() {
+    return useIpcQuery({
+      queryKey,
+      queryFn: () =>
+        ipcFetch<Record<string, MaskedSecret>>(`${basePath}/secrets`),
+    });
+  }
+
+  function useSave() {
+    const invalidate = useInvalidate();
+    return useIpcMutation({
+      mutationFn: ({
+        providerId,
+        value,
+      }: {
+        providerId: string;
+        value: string;
+      }) =>
+        ipcFetch(`${basePath}/${providerId}/secret`, {
+          method: "PUT",
+          body: JSON.stringify({ value }),
+        }),
+      onSuccess: () => invalidate(queryKey),
+    });
+  }
+
+  function useClear() {
+    const invalidate = useInvalidate();
+    return useIpcMutation({
+      mutationFn: (providerId: string) =>
+        ipcFetch(`${basePath}/${providerId}/secret`, { method: "DELETE" }),
+      onSuccess: () => invalidate(queryKey),
+    });
+  }
+
+  function useTest() {
+    return useIpcMutation({
+      mutationFn: (providerId: string) =>
+        ipcFetch<{ ok: boolean; error?: string }>(
+          `${basePath}/${providerId}/secret/test`,
+          { method: "POST" },
+        ),
+    });
+  }
+
+  return { useSecrets, useSave, useClear, useTest };
+}
+
+const llmHooks = createProviderSecretHooks("llm");
+const commuteHooks = createProviderSecretHooks("commute");
 
 export function useLlmSecrets() {
-  return useIpcQuery({
-    queryKey: ["llm-secrets"],
-    queryFn: () =>
-      ipcFetch<Record<string, MaskedSecret>>("/settings/llm/secrets"),
-  });
+  return llmHooks.useSecrets();
 }
-
 export function useSaveLlmSecret() {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
-    mutationFn: ({
-      providerId,
-      value,
-    }: {
-      providerId: string;
-      value: string;
-    }) =>
-      ipcFetch(`/settings/llm/${providerId}/secret`, {
-        method: "PUT",
-        body: JSON.stringify({ value }),
-      }),
-    onSuccess: () => invalidate(["llm-secrets"]),
-  });
+  return llmHooks.useSave();
 }
-
 export function useClearLlmSecret() {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
-    mutationFn: (providerId: string) =>
-      ipcFetch(`/settings/llm/${providerId}/secret`, { method: "DELETE" }),
-    onSuccess: () => invalidate(["llm-secrets"]),
-  });
+  return llmHooks.useClear();
 }
-
 export function useTestLlmSecret() {
-  return useIpcMutation({
-    mutationFn: (providerId: string) =>
-      ipcFetch<{ ok: boolean; error?: string }>(
-        `/settings/llm/${providerId}/secret/test`,
-        { method: "POST" },
-      ),
-  });
+  return llmHooks.useTest();
 }
-
-// --- Commute secrets ---
 
 export function useCommuteSecrets() {
-  return useIpcQuery({
-    queryKey: ["commute-secrets"],
-    queryFn: () =>
-      ipcFetch<Record<string, MaskedSecret>>("/settings/commute/secrets"),
-  });
+  return commuteHooks.useSecrets();
 }
-
 export function useSaveCommuteSecret() {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
-    mutationFn: ({
-      providerId,
-      value,
-    }: {
-      providerId: string;
-      value: string;
-    }) =>
-      ipcFetch(`/settings/commute/${providerId}/secret`, {
-        method: "PUT",
-        body: JSON.stringify({ value }),
-      }),
-    onSuccess: () => invalidate(["commute-secrets"]),
-  });
+  return commuteHooks.useSave();
 }
-
 export function useClearCommuteSecret() {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
-    mutationFn: (providerId: string) =>
-      ipcFetch(`/settings/commute/${providerId}/secret`, { method: "DELETE" }),
-    onSuccess: () => invalidate(["commute-secrets"]),
-  });
+  return commuteHooks.useClear();
 }
-
 export function useTestCommuteSecret() {
-  return useIpcMutation({
-    mutationFn: (providerId: string) =>
-      ipcFetch<{ ok: boolean; error?: string }>(
-        `/settings/commute/${providerId}/secret/test`,
-        { method: "POST" },
-      ),
-  });
+  return commuteHooks.useTest();
 }
 
 // --- Provider info ---

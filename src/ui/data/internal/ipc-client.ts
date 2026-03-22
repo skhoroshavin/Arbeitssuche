@@ -16,12 +16,47 @@ interface RouteMapping {
   ) => unknown[];
 }
 
+type Route = { method: string; pattern: RegExp; mapping: RouteMapping };
+
+function createProviderSecretRoutes(type: string): Route[] {
+  return [
+    {
+      method: "GET",
+      pattern: new RegExp(`^/settings/${type}/secrets$`),
+      mapping: {
+        channel: `settings:${type}:secrets`,
+        extractArgs: () => [],
+      },
+    },
+    {
+      method: "PUT",
+      pattern: new RegExp(`^/settings/${type}/([^/]+)/secret$`),
+      mapping: {
+        channel: `settings:${type}:secret:save`,
+        extractArgs: (p, body) => [p[1], body?.value],
+      },
+    },
+    {
+      method: "DELETE",
+      pattern: new RegExp(`^/settings/${type}/([^/]+)/secret$`),
+      mapping: {
+        channel: `settings:${type}:secret:clear`,
+        extractArgs: (p) => [p[1]],
+      },
+    },
+    {
+      method: "POST",
+      pattern: new RegExp(`^/settings/${type}/([^/]+)/secret/test$`),
+      mapping: {
+        channel: `settings:${type}:secret:test`,
+        extractArgs: (p) => [p[1]],
+      },
+    },
+  ];
+}
+
 // Map HTTP method + path pattern to IPC channel
-const ROUTE_MAP: Array<{
-  method: string;
-  pattern: RegExp;
-  mapping: RouteMapping;
-}> = [
+const ROUTE_MAP: Route[] = [
   // Applicants
   {
     method: "GET",
@@ -227,72 +262,9 @@ const ROUTE_MAP: Array<{
       extractArgs: () => [],
     },
   },
-  // Settings: LLM secrets
-  {
-    method: "GET",
-    pattern: /^\/settings\/llm\/secrets$/,
-    mapping: {
-      channel: "settings:llm:secrets",
-      extractArgs: () => [],
-    },
-  },
-  {
-    method: "PUT",
-    pattern: /^\/settings\/llm\/([^/]+)\/secret$/,
-    mapping: {
-      channel: "settings:llm:secret:save",
-      extractArgs: (p, body) => [p[1], body?.value],
-    },
-  },
-  {
-    method: "DELETE",
-    pattern: /^\/settings\/llm\/([^/]+)\/secret$/,
-    mapping: {
-      channel: "settings:llm:secret:clear",
-      extractArgs: (p) => [p[1]],
-    },
-  },
-  {
-    method: "POST",
-    pattern: /^\/settings\/llm\/([^/]+)\/secret\/test$/,
-    mapping: {
-      channel: "settings:llm:secret:test",
-      extractArgs: (p) => [p[1]],
-    },
-  },
-  // Settings: Commute secrets
-  {
-    method: "GET",
-    pattern: /^\/settings\/commute\/secrets$/,
-    mapping: {
-      channel: "settings:commute:secrets",
-      extractArgs: () => [],
-    },
-  },
-  {
-    method: "PUT",
-    pattern: /^\/settings\/commute\/([^/]+)\/secret$/,
-    mapping: {
-      channel: "settings:commute:secret:save",
-      extractArgs: (p, body) => [p[1], body?.value],
-    },
-  },
-  {
-    method: "DELETE",
-    pattern: /^\/settings\/commute\/([^/]+)\/secret$/,
-    mapping: {
-      channel: "settings:commute:secret:clear",
-      extractArgs: (p) => [p[1]],
-    },
-  },
-  {
-    method: "POST",
-    pattern: /^\/settings\/commute\/([^/]+)\/secret\/test$/,
-    mapping: {
-      channel: "settings:commute:secret:test",
-      extractArgs: (p) => [p[1]],
-    },
-  },
+  // Settings: Provider secrets (LLM + Commute)
+  ...createProviderSecretRoutes("llm"),
+  ...createProviderSecretRoutes("commute"),
   // Settings: Provider info
   {
     method: "GET",
