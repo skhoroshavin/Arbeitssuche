@@ -14,6 +14,4 @@ export type SecretKey =
   | "requestyApiKey"
   | "googleMapsApiKey";
 
-export type MaskedSecrets = Record<SecretKey, MaskedSecret>;
-
 export const DEFAULT_SECRETS: Secrets = {};

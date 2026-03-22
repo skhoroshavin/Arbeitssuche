@@ -1,25 +1,24 @@
-import { test, before, after } from "node:test";
-import assert from "node:assert/strict";
+import { test, beforeAll, afterAll, expect } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createSqliteApplicantRepository } from "./index.js";
-import { Database } from "@/utils/database.js";
+import { createSqliteApplicantRepository } from "./index";
+import { Database } from "@/utils/database";
 import {
   applicantRepositoryTests,
   makeSampleApplicant,
-} from "./applicant.test-suite.js";
+} from "./applicant.test-suite";
 
 let tmpDir: string;
 let counter = 0;
 
-before(() => {
+beforeAll(() => {
   tmpDir = fs.mkdtempSync(
     path.join(os.tmpdir(), "applicant-integration-test-"),
   );
 });
 
-after(() => {
+afterAll(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
@@ -52,7 +51,7 @@ test("saved applicant survives new repository instance", async () => {
   t1();
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(dbId);
-  assert.deepEqual(repo2.load(id), sample);
+  expect(repo2.load(id)).toEqual(sample);
   t2();
 });
 
@@ -65,7 +64,7 @@ test("list works across instances", async () => {
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(dbId);
   const ids = repo2.list().map((a: { id: string }) => a.id);
-  assert.deepEqual(ids.sort(), [id1, id2].sort());
+  expect(ids.sort()).toEqual([id1, id2].sort());
   t2();
 });
 
@@ -79,6 +78,6 @@ test("delete persists across instances", async () => {
   t1();
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(dbId);
-  assert.equal(repo2.exists(id), false);
+  expect(repo2.exists(id)).toBe(false);
   t2();
 });

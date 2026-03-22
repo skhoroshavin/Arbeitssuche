@@ -7,9 +7,10 @@ import {
   useUpdateVacancyCoverLetter,
   useGenerateVacancyCoverLetter,
 } from "@/ui/data/job-searches";
+import { useApiKeyStatus } from "@/ui/data/settings";
 import { Card, SectionHeader, Loading, ArrowLeftIcon } from "@/ui/components";
 import { CoverLetterEditor } from "@/ui/pages/job-search/components/CoverLetterEditor";
-import { Markdown } from "@/ui/pages/job-search/components/Markdown";
+import { Markdown } from "@/ui/components";
 import { StatusBadge } from "@/ui/pages/job-search/components/StatusBadge";
 import { useLayoutConfig } from "@/ui/layout";
 import type {
@@ -229,6 +230,7 @@ export default function JobSearchVacancyDetail() {
   const coverLetterQuery = useVacancyCoverLetter(id!, hash!);
   const updateCoverLetter = useUpdateVacancyCoverLetter(id!, hash!);
   const generateCoverLetter = useGenerateVacancyCoverLetter(id!, hash!);
+  const { hasLlmKey } = useApiKeyStatus();
   const [eventForm, setEventForm] = useState<{
     type: ActivityType;
     extra: Record<string, string>;
@@ -354,6 +356,7 @@ export default function JobSearchVacancyDetail() {
           coverLetterQuery={coverLetterQuery}
           updateMutation={updateCoverLetter}
           generateMutation={generateCoverLetter}
+          llmAvailable={hasLlmKey}
         />
       </Card>
 

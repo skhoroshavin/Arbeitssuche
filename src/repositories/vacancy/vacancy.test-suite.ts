@@ -1,8 +1,7 @@
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
-import { Vacancy } from "@/models/vacancy/vacancy.js";
-import type { VacancyDTO, Activity } from "@/models/vacancy/types.js";
-import type { VacancyRepository } from "./types.js";
+import { test, describe, expect } from "vitest";
+import { Vacancy } from "@/models/vacancy/vacancy";
+import type { VacancyDTO, Activity } from "@/models/vacancy/types";
+import type { VacancyRepository } from "./types";
 
 export function makeVacancy(overrides: Partial<VacancyDTO> = {}): Vacancy {
   return new Vacancy({
@@ -26,7 +25,7 @@ export function vacancyRepositoryTests(name: string, factory: RepoFactory) {
   describe(name, () => {
     test("returns undefined for missing job search", () => {
       const { repo, teardown } = factory.createRepo();
-      assert.equal(repo.loadAll("nope"), undefined);
+      expect(repo.loadAll("nope")).toBe(undefined);
       teardown();
     });
 
@@ -34,9 +33,9 @@ export function vacancyRepositoryTests(name: string, factory: RepoFactory) {
       const { repo, teardown } = factory.createRepo();
       repo.save("s1", [makeVacancy()], "2026-01-01.yaml");
       const output = repo.loadAll("s1");
-      assert.equal(output!.vacancies.length, 1);
-      assert.equal(output!.latestCrawl, "2026-01-01.yaml");
-      assert.equal(output!.vacancies[0].hash, "abc123");
+      expect(output!.vacancies.length).toBe(1);
+      expect(output!.latestCrawl).toBe("2026-01-01.yaml");
+      expect(output!.vacancies[0].hash).toBe("abc123");
       teardown();
     });
 
@@ -47,7 +46,7 @@ export function vacancyRepositoryTests(name: string, factory: RepoFactory) {
       const v3 = makeVacancy({ hash: "h3" });
       repo.save("s1", [v1, v2, v3], "2026-01-01.yaml");
       const output = repo.loadAll("s1")!;
-      assert.equal(output.vacancies.length, 3);
+      expect(output.vacancies.length).toBe(3);
       teardown();
     });
 
@@ -55,9 +54,9 @@ export function vacancyRepositoryTests(name: string, factory: RepoFactory) {
       const { repo, teardown } = factory.createRepo();
       repo.save("s1", [], "2026-01-01.yaml");
       const output = repo.loadAll("s1");
-      assert.ok(output !== undefined);
-      assert.equal(output!.vacancies.length, 0);
-      assert.deepEqual(output!.vacancies, []);
+      expect(output !== undefined).toBeTruthy();
+      expect(output!.vacancies.length).toBe(0);
+      expect(output!.vacancies).toEqual([]);
       teardown();
     });
 
@@ -68,9 +67,9 @@ export function vacancyRepositoryTests(name: string, factory: RepoFactory) {
       repo.save("s1", [v1, v2], "2026-01-01.yaml");
       repo.save("s1", [v2], "2026-02-01.yaml");
       const output = repo.loadAll("s1")!;
-      assert.equal(output.vacancies.length, 1);
-      assert.equal(output.latestCrawl, "2026-02-01.yaml");
-      assert.equal(output.vacancies[0].hash, "h2");
+      expect(output.vacancies.length).toBe(1);
+      expect(output.latestCrawl).toBe("2026-02-01.yaml");
+      expect(output.vacancies[0].hash).toBe("h2");
       teardown();
     });
 
@@ -79,9 +78,9 @@ export function vacancyRepositoryTests(name: string, factory: RepoFactory) {
       repo.save("s1", [makeVacancy()], "2026-01-01.yaml");
       const a = repo.loadAll("s1")!;
       const b = repo.loadAll("s1")!;
-      assert.notEqual(a, b);
+      expect(a).not.toBe(b);
       Object.assign(a.vacancies[0], { title: "mutated" });
-      assert.equal(repo.loadAll("s1")!.vacancies[0].title, "Developer");
+      expect(repo.loadAll("s1")!.vacancies[0].title).toBe("Developer");
       teardown();
     });
 
@@ -89,14 +88,14 @@ export function vacancyRepositoryTests(name: string, factory: RepoFactory) {
       const { repo, teardown } = factory.createRepo();
       repo.save("s1", [makeVacancy()], "2026-01-01.yaml");
       const found = repo.findByHash("s1", "abc123");
-      assert.equal(found!.company, "ACME");
+      expect(found!.company).toBe("ACME");
       teardown();
     });
 
     test("findByHash returns undefined for missing hash", () => {
       const { repo, teardown } = factory.createRepo();
       repo.save("s1", [makeVacancy()], "2026-01-01.yaml");
-      assert.equal(repo.findByHash("s1", "zzz999"), undefined);
+      expect(repo.findByHash("s1", "zzz999")).toBe(undefined);
       teardown();
     });
 
@@ -106,31 +105,31 @@ export function vacancyRepositoryTests(name: string, factory: RepoFactory) {
       const activity: Activity = { type: "applied", date: "2026-01-15" };
       await repo.addActivity("s1", "abc123", activity);
       const loaded = repo.loadAll("s1")!;
-      assert.equal(loaded.vacancies[0].activityHistory.length, 1);
-      assert.equal(loaded.vacancies[0].activityHistory[0].type, "applied");
+      expect(loaded.vacancies[0].activityHistory.length).toBe(1);
+      expect(loaded.vacancies[0].activityHistory[0].type).toBe("applied");
       teardown();
     });
 
     test("addActivity throws for missing job search", async () => {
       const { repo, teardown } = factory.createRepo();
-      await assert.rejects(() =>
+      await expect(() =>
         repo.addActivity("nope", "abc123", {
           type: "applied",
           date: "2026-01-15",
         }),
-      );
+      ).rejects.toThrow();
       teardown();
     });
 
     test("addActivity throws for missing vacancy", async () => {
       const { repo, teardown } = factory.createRepo();
       repo.save("s1", [makeVacancy()], "2026-01-01.yaml");
-      await assert.rejects(() =>
+      await expect(() =>
         repo.addActivity("s1", "zzz999", {
           type: "applied",
           date: "2026-01-15",
         }),
-      );
+      ).rejects.toThrow();
       teardown();
     });
 
@@ -147,8 +146,8 @@ export function vacancyRepositoryTests(name: string, factory: RepoFactory) {
         interviewDate: "2026-02-01",
       });
       const loaded = repo.loadAll("s1")!;
-      assert.equal(loaded.vacancies[0].activityHistory.length, 2);
-      assert.equal(loaded.vacancies[0].activityHistory[1].type, "invited");
+      expect(loaded.vacancies[0].activityHistory.length).toBe(2);
+      expect(loaded.vacancies[0].activityHistory[1].type).toBe("invited");
       teardown();
     });
 
@@ -158,9 +157,9 @@ export function vacancyRepositoryTests(name: string, factory: RepoFactory) {
       const v2 = makeVacancy({ hash: "h2", title: "Backend Dev" });
       repo.save("s1", [v1, v2], "2026-01-01.yaml");
       const output = repo.loadAll("s1")!;
-      assert.equal(output.vacancies.length, 2);
+      expect(output.vacancies.length).toBe(2);
       const titles = output.vacancies.map((v) => v.title).sort();
-      assert.deepEqual(titles, ["Backend Dev", "Frontend Dev"]);
+      expect(titles).toEqual(["Backend Dev", "Frontend Dev"]);
       teardown();
     });
   });

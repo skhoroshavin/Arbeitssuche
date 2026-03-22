@@ -13,3 +13,9 @@ export interface CommuteResult {
 export interface CommuteClient {
   getCommute(origin: string, destination: string): Promise<CommuteResult>;
 }
+
+export interface CommuteProviderInfo {
+  id: string;
+  name: string;
+  instructions: string;
+}

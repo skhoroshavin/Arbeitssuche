@@ -1,7 +1,6 @@
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
-import type { Secrets } from "@/models/secrets/types.js";
-import type { SecretsRepository } from "./types.js";
+import { test, describe, expect } from "vitest";
+import type { Secrets } from "@/models/secrets/types";
+import type { SecretsRepository } from "./types";
 
 export const SAMPLE_SECRETS: Secrets = {
   openrouterApiKey: "sk-or-test-key",
@@ -16,14 +15,14 @@ export function secretsRepositoryTests(name: string, factory: RepoFactory) {
   describe(name, () => {
     test("returns empty secrets initially", () => {
       const { repo, teardown } = factory.createRepo();
-      assert.deepEqual(repo.load(), {});
+      expect(repo.load()).toEqual({});
       teardown();
     });
 
     test("save + load round-trips", async () => {
       const { repo, teardown } = factory.createRepo();
       await repo.save(SAMPLE_SECRETS);
-      assert.deepEqual(repo.load(), SAMPLE_SECRETS);
+      expect(repo.load()).toEqual(SAMPLE_SECRETS);
       teardown();
     });
 
@@ -31,7 +30,7 @@ export function secretsRepositoryTests(name: string, factory: RepoFactory) {
       const { repo, teardown } = factory.createRepo();
       const partial: Secrets = { openrouterApiKey: "sk-only" };
       await repo.save(partial);
-      assert.deepEqual(repo.load(), partial);
+      expect(repo.load()).toEqual(partial);
       teardown();
     });
 
@@ -40,9 +39,9 @@ export function secretsRepositoryTests(name: string, factory: RepoFactory) {
       await repo.save(SAMPLE_SECRETS);
       const a = repo.load();
       const b = repo.load();
-      assert.notEqual(a, b);
+      expect(a).not.toBe(b);
       a.openrouterApiKey = "mutated";
-      assert.equal(repo.load().openrouterApiKey, "sk-or-test-key");
+      expect(repo.load().openrouterApiKey).toBe("sk-or-test-key");
       teardown();
     });
 
@@ -51,7 +50,7 @@ export function secretsRepositoryTests(name: string, factory: RepoFactory) {
       await repo.save(SAMPLE_SECRETS);
       const updated: Secrets = { googleMapsApiKey: "new-maps-key" };
       await repo.save(updated);
-      assert.deepEqual(repo.load(), updated);
+      expect(repo.load()).toEqual(updated);
       teardown();
     });
   });

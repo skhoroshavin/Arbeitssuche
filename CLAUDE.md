@@ -12,7 +12,7 @@ Arbeitssuche — an Electron desktop app for crawling German job boards, trackin
 - **LLM**: OpenRouter (pluggable via factory pattern)
 - **Data**: SQLite (via `Database` class wrapping `node:sqlite`), encrypted secrets via Electron `safeStorage`
 - **Build**: electron-vite (main + preload + renderer), TypeScript strict mode
-- **Test**: Node.js native test runner (`node:test` + `node:assert/strict`), Playwright (e2e)
+- **Test**: vitest (unit + component), @testing-library/react (component), Playwright (e2e)
 - **CI/CD**: GitHub Actions (CI on push/PR, release via workflow_dispatch)
 
 ## Commands
@@ -25,7 +25,7 @@ npm run electron:dist:mac:x64   # Build + package macOS (x64)
 npm run electron:dist:win     # Build + package Windows (x64)
 npm run electron:dist:linux   # Build + package Linux (x64)
 
-npm test                      # Unit tests (*.test.ts)
+npm test                      # Unit + component tests (vitest)
 npm run test:integration      # Integration tests (*.integration-test.ts)
 npm run test:e2e              # E2E tests (Electron + Playwright)
 npm run test:visual           # Visual snapshot tests

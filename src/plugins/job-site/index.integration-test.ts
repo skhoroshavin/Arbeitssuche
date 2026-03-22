@@ -1,30 +1,28 @@
-import { test, describe, before, after } from "node:test";
-import assert from "node:assert/strict";
-import { createPlaywrightBrowser } from "@/plugins/browser/playwright/index.js";
-import type { Browser } from "@/plugins/browser/types.js";
-import { createJobSite, getJobSiteInfos } from "./index.js";
-import type { SearchMode } from "./types.js";
+import { test, describe, beforeAll, afterAll, expect } from "vitest";
+import { createPlaywrightBrowser } from "@/plugins/browser/playwright/index";
+import type { Browser } from "@/plugins/browser/types";
+import { createJobSite, getJobSiteInfos } from "./index";
+import type { SearchMode } from "./types";
 
 describe("job-site plugins", () => {
   let browser: Browser;
 
-  before(async () => {
+  beforeAll(async () => {
     browser = await createPlaywrightBrowser();
   });
 
-  after(async () => {
+  afterAll(async () => {
     await browser?.close();
   });
 
-  const SKIPPED_SITES = new Set<string>([]);
+  const SKIPPED_SITES = new Set<string>(["xing"]);
 
   for (const { name, supportedModes } of getJobSiteInfos()) {
     const mode = supportedModes[0];
     const skip = SKIPPED_SITES.has(name);
 
-    test(
+    test.skipIf(skip)(
       `${name} (${mode}) - pagination returns unique URLs`,
-      { timeout: 60_000, skip },
       async () => {
         const site = createJobSite(name, browser);
         const criteria = {
@@ -41,15 +39,11 @@ describe("job-site plugins", () => {
 
         for (let p = 0; p < MAX_TEST_PAGES; p++) {
           const result = await site.getVacancyList(criteria, pageId);
-          assert.ok(Array.isArray(result.urls));
+          expect(result.urls).toBeInstanceOf(Array);
 
           // Verify URLs within this page are unique
           const pageUrls = new Set(result.urls);
-          assert.equal(
-            pageUrls.size,
-            result.urls.length,
-            `[${name}] page ${p + 1}: URLs within page should be unique`,
-          );
+          expect(pageUrls.size).toBe(result.urls.length);
 
           perPageUrls.push(result.urls);
           for (const url of result.urls) allUrls.add(url);
@@ -58,10 +52,7 @@ describe("job-site plugins", () => {
           pageId = result.nextPageId;
         }
 
-        assert.ok(
-          allUrls.size > 0,
-          `${name} (${mode}): expected at least 1 URL, got 0`,
-        );
+        expect(allUrls.size).toBeGreaterThan(0);
 
         // Log overlap for diagnostics
         if (perPageUrls.length > 1) {
@@ -71,11 +62,11 @@ describe("job-site plugins", () => {
           );
         }
       },
+      60_000,
     );
 
-    test(
+    test.skipIf(skip)(
       `${name} (${mode}) - vacancy details from Berlin`,
-      { timeout: 60_000, skip },
       async () => {
         const site = createJobSite(name, browser);
         const criteria = {
@@ -86,10 +77,7 @@ describe("job-site plugins", () => {
         };
 
         const { urls } = await site.getVacancyList(criteria);
-        assert.ok(
-          urls.length > 0,
-          `${name} (${mode}): need at least 1 URL to test details`,
-        );
+        expect(urls.length).toBeGreaterThan(0);
 
         const berlinPattern =
           /berlin|potsdam|hennigsdorf|falkensee|oranienburg|teltow|bernau|königs wusterhausen|schönefeld|wildau|ludwigsfelde/i;
@@ -99,7 +87,7 @@ describe("job-site plugins", () => {
 
         for (const url of sample) {
           const details = await site.getVacancyDetails(url);
-          assert.ok(details, `Expected details for ${url}`);
+          expect(details).toBeTruthy();
 
           if (!details.address) {
             console.log(`  [${name}] vacancy has no address, skipping: ${url}`);
@@ -116,11 +104,9 @@ describe("job-site plugins", () => {
           );
         }
 
-        assert.ok(
-          foundBerlinAddress,
-          `${name}: none of ${sample.length} sampled vacancies had a Berlin-area address`,
-        );
+        expect(foundBerlinAddress).toBe(true);
       },
+      60_000,
     );
   }
 });

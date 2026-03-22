@@ -8,7 +8,23 @@ import type { Secrets, SecretKey } from "@/models/secrets/types.js";
 import type { ConfigKey } from "@/models/config/types.js";
 import { resolveConfig } from "@/models/config/resolve.js";
 import { getJobSiteInfos } from "@/plugins/job-site/index.js";
+import { getLlmProviders } from "@/plugins/llm/index.js";
+import { getCommuteProviders } from "@/plugins/commute/index.js";
 import { startCrawl, abortCrawl } from "./crawl-manager.js";
+
+async function testBearerKey(
+  url: string,
+  apiKey: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    signal: AbortSignal.timeout(10_000),
+  });
+  await res.text();
+  if (!res.ok)
+    return { ok: false, error: `HTTP ${res.status}: ${res.statusText}` };
+  return { ok: true };
+}
 
 function maskToken(token: string | undefined): string {
   if (!token) return "";
@@ -218,40 +234,153 @@ export function registerIpcHandlers(options: IpcHandlerOptions): void {
   // --- Sites ---
   handle("sites:list", () => ({ sites: getJobSiteInfos() }));
 
-  // --- Settings ---
-  handle("settings:secrets:load", () => {
+  // --- Provider ID → SecretKey mapping ---
+  const LLM_SECRET_KEYS: Record<string, SecretKey> = {
+    openrouter: "openrouterApiKey",
+    requesty: "requestyApiKey",
+  };
+  const COMMUTE_SECRET_KEYS: Record<string, SecretKey> = {
+    "google-maps": "googleMapsApiKey",
+  };
+
+  function maskedSecretsFor(
+    mapping: Record<string, SecretKey>,
+  ): Record<string, { masked: string; isSet: boolean }> {
     const secrets = services.secretsRepo.load();
-    const keys: SecretKey[] = [
-      "openrouterApiKey",
-      "requestyApiKey",
-      "googleMapsApiKey",
-    ];
     const result: Record<string, { masked: string; isSet: boolean }> = {};
-    for (const key of keys) {
+    for (const [providerId, key] of Object.entries(mapping)) {
       const value = secrets[key];
-      result[key] = { masked: maskToken(value), isSet: !!value };
+      result[providerId] = { masked: maskToken(value), isSet: !!value };
     }
     return result;
-  });
-  if (process.env.ELECTRON_TEST === "1") {
-    handle("settings:secrets:load-raw", () => services.secretsRepo.load());
   }
-  handle("settings:secrets:save", async (data: Secrets) => {
-    await services.secretsRepo.save(data);
-    services.rebuild();
-    return { ok: true };
-  });
-  handle("settings:secrets:save-one", async (key: SecretKey, value: string) => {
+
+  function resolveSecretKey(
+    providerId: string,
+    mapping: Record<string, SecretKey>,
+  ): SecretKey {
+    const key = mapping[providerId];
+    if (!key) throw new Error(`Unknown provider: ${providerId}`);
+    return key;
+  }
+
+  async function saveProviderSecret(
+    providerId: string,
+    value: string,
+    mapping: Record<string, SecretKey>,
+  ): Promise<{ ok: true }> {
+    const key = resolveSecretKey(providerId, mapping);
     const secrets = services.secretsRepo.load();
     secrets[key] = value;
     await services.secretsRepo.save(secrets);
     services.rebuild();
     return { ok: true };
-  });
-  handle("settings:secrets:clear", async (key: SecretKey) => {
+  }
+
+  async function clearProviderSecret(
+    providerId: string,
+    mapping: Record<string, SecretKey>,
+  ): Promise<{ ok: true }> {
+    const key = resolveSecretKey(providerId, mapping);
     const secrets = services.secretsRepo.load();
     delete secrets[key];
     await services.secretsRepo.save(secrets);
+    services.rebuild();
+    return { ok: true };
+  }
+
+  // --- Settings: LLM secrets ---
+  handle("settings:llm:secrets", () => maskedSecretsFor(LLM_SECRET_KEYS));
+  handle(
+    "settings:llm:secret:save",
+    async (providerId: string, value: string) =>
+      saveProviderSecret(providerId, value, LLM_SECRET_KEYS),
+  );
+  handle("settings:llm:secret:clear", async (providerId: string) =>
+    clearProviderSecret(providerId, LLM_SECRET_KEYS),
+  );
+  handle("settings:llm:secret:test", async (providerId: string) => {
+    const key = resolveSecretKey(providerId, LLM_SECRET_KEYS);
+    const secrets = services.secretsRepo.load();
+    const value = secrets[key];
+    if (!value) return { ok: false, error: "Kein Schlüssel gesetzt" };
+    try {
+      switch (providerId) {
+        case "openrouter":
+          return testBearerKey("https://openrouter.ai/api/v1/auth/key", value);
+        case "requesty":
+          return testBearerKey(
+            "https://router.eu.requesty.ai/v1/models",
+            value,
+          );
+        default:
+          return { ok: false, error: "Unbekannter Anbieter" };
+      }
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  });
+
+  // --- Settings: Commute secrets ---
+  handle("settings:commute:secrets", () =>
+    maskedSecretsFor(COMMUTE_SECRET_KEYS),
+  );
+  handle(
+    "settings:commute:secret:save",
+    async (providerId: string, value: string) =>
+      saveProviderSecret(providerId, value, COMMUTE_SECRET_KEYS),
+  );
+  handle("settings:commute:secret:clear", async (providerId: string) =>
+    clearProviderSecret(providerId, COMMUTE_SECRET_KEYS),
+  );
+  handle("settings:commute:secret:test", async (providerId: string) => {
+    const key = resolveSecretKey(providerId, COMMUTE_SECRET_KEYS);
+    const secrets = services.secretsRepo.load();
+    const value = secrets[key];
+    if (!value) return { ok: false, error: "Kein Schlüssel gesetzt" };
+    try {
+      switch (providerId) {
+        case "google-maps": {
+          const url = `https://maps.googleapis.com/maps/api/directions/json?origin=Berlin&destination=Berlin&mode=transit&key=${value}`;
+          const res = await fetch(url, {
+            signal: AbortSignal.timeout(10_000),
+          });
+          if (!res.ok) {
+            await res.text();
+            return {
+              ok: false,
+              error: `HTTP ${res.status}: ${res.statusText}`,
+            };
+          }
+          const data: { status: string } = await res.json();
+          if (data.status !== "OK")
+            return { ok: false, error: `API-Status: ${data.status}` };
+          return { ok: true };
+        }
+        default:
+          return { ok: false, error: "Unbekannter Anbieter" };
+      }
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  });
+
+  // --- Provider info ---
+  handle("settings:llm-providers", () => getLlmProviders());
+  handle("settings:commute-providers", () => getCommuteProviders());
+
+  // --- E2E test helpers ---
+  if (process.env.ELECTRON_TEST === "1") {
+    handle("settings:secrets:load-raw", () => services.secretsRepo.load());
+  }
+  handle("settings:secrets:save", async (data: Secrets) => {
+    await services.secretsRepo.save(data);
     services.rebuild();
     return { ok: true };
   });

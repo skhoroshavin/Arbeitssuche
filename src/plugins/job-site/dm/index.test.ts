@@ -1,8 +1,7 @@
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
+import { test, describe, expect } from "vitest";
 import { join } from "path";
-import { createDmSite } from "./index.js";
-import { createStubBrowser } from "@/plugins/browser/stub/index.js";
+import { createDmSite } from "./index";
+import { createStubBrowser } from "@/plugins/browser/stub/index";
 
 const SAMPLES_DIR = join(import.meta.dirname ?? __dirname, "html_samples");
 
@@ -15,9 +14,9 @@ describe("dm", () => {
       query: "",
       mode: "employment",
     });
-    assert.ok(urls.length > 0, "Expected at least one URL");
+    expect(urls.length > 0).toBeTruthy();
     for (const url of urls) {
-      assert.match(url, /^https?:\/\//, `Expected absolute URL, got: ${url}`);
+      expect(url).toMatch(/^https?:\/\//);
     }
   });
 
@@ -30,14 +29,12 @@ describe("dm", () => {
       mode: "employment",
     });
     const vacancy = await site.getVacancyDetails(urls[0]);
-    assert.ok(
+    expect(
       typeof vacancy.title === "string" && vacancy.title.length > 0,
-      "Expected non-empty title",
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       typeof vacancy.company === "string" && vacancy.company.length > 0,
-      "Expected non-empty company",
-    );
+    ).toBeTruthy();
   });
 
   test("getVacancyDetails returns raw HTML description from JSON-LD", async () => {
@@ -59,15 +56,13 @@ describe("dm", () => {
     const browser = createStubBrowser({ [vacancyUrl]: html });
     const site = createDmSite(browser);
     const vacancy = await site.getVacancyDetails(vacancyUrl);
-    assert.ok(vacancy.descriptionHtml, "Expected descriptionHtml");
-    assert.ok(
+    expect(vacancy.descriptionHtml).toBeTruthy();
+    expect(
       vacancy.descriptionHtml!.includes("<strong>Drogist</strong>"),
-      "Expected raw HTML bold",
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       vacancy.descriptionHtml!.includes("<li>Training provided</li>"),
-      "Expected raw HTML list items",
-    );
+    ).toBeTruthy();
   });
 
   test("getVacancyDetails DOM fallback produces HTML with headings", async () => {
@@ -84,15 +79,9 @@ describe("dm", () => {
     const browser = createStubBrowser({ [vacancyUrl]: html });
     const site = createDmSite(browser);
     const vacancy = await site.getVacancyDetails(vacancyUrl);
-    assert.ok(vacancy.descriptionHtml, "Expected descriptionHtml");
-    assert.ok(
-      vacancy.descriptionHtml!.includes("<h2>Aufgaben</h2>"),
-      "Expected h2 heading in HTML",
-    );
-    assert.ok(
-      vacancy.descriptionHtml!.includes("<li>Task one</li>"),
-      "Expected HTML list items",
-    );
+    expect(vacancy.descriptionHtml).toBeTruthy();
+    expect(vacancy.descriptionHtml!.includes("<h2>Aufgaben</h2>")).toBeTruthy();
+    expect(vacancy.descriptionHtml!.includes("<li>Task one</li>")).toBeTruthy();
   });
 
   test("getVacancyList returns no pagination (single page)", async () => {
@@ -104,6 +93,6 @@ describe("dm", () => {
       query: "",
       mode: "employment",
     });
-    assert.equal(result.nextPageId, undefined, "DM should have no pagination");
+    expect(result.nextPageId).toBe(undefined);
   });
 });

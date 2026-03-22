@@ -1,9 +1,8 @@
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
-import { createArbeitsagenturSite } from "./index.js";
-import { createStubBrowser } from "@/plugins/browser/stub/index.js";
-import { createStubFetch } from "@/plugins/fetch/stub/index.js";
-import type { SearchCriteria } from "@/plugins/job-site/types.js";
+import { test, describe, expect } from "vitest";
+import { createArbeitsagenturSite } from "./index";
+import { createStubBrowser } from "@/plugins/browser/stub/index";
+import { createStubFetch } from "@/plugins/fetch/stub/index";
+import type { SearchCriteria } from "@/plugins/job-site/types";
 
 const SEARCH_URL_PATTERN = "/pc/v4/jobs";
 const DETAILS_URL_PATTERN = "/pc/v3/jobdetails/";
@@ -47,12 +46,12 @@ describe("arbeitsagentur", () => {
       await site.getVacancyList(baseCriteria);
 
       const url = stubFetch.requestedUrls[0];
-      assert.ok(url.includes("was=Software"));
-      assert.ok(url.includes("wo=Berlin"));
-      assert.ok(url.includes("angebotsart=1"));
-      assert.ok(url.includes("umkreis=25"));
-      assert.ok(url.includes("page=1"));
-      assert.ok(url.includes("size=25"));
+      expect(url.includes("was=Software")).toBeTruthy();
+      expect(url.includes("wo=Berlin")).toBeTruthy();
+      expect(url.includes("angebotsart=1")).toBeTruthy();
+      expect(url.includes("umkreis=25")).toBeTruthy();
+      expect(url.includes("page=1")).toBeTruthy();
+      expect(url.includes("size=25")).toBeTruthy();
     });
 
     test("omits was param when query is empty", async () => {
@@ -61,7 +60,7 @@ describe("arbeitsagentur", () => {
       });
       await site.getVacancyList({ ...baseCriteria, query: "" });
 
-      assert.ok(!stubFetch.requestedUrls[0].includes("was="));
+      expect(!stubFetch.requestedUrls[0].includes("was=")).toBeTruthy();
     });
 
     test("sets angebotsart=4 for apprenticeship", async () => {
@@ -75,8 +74,8 @@ describe("arbeitsagentur", () => {
       });
 
       const url = stubFetch.requestedUrls[0];
-      assert.ok(url.includes("angebotsart=4"));
-      assert.ok(!url.includes("berufserfahrung"));
+      expect(url.includes("angebotsart=4")).toBeTruthy();
+      expect(!url.includes("berufserfahrung")).toBeTruthy();
     });
 
     test("sets berufserfahrung=BEL for entry-level", async () => {
@@ -90,8 +89,8 @@ describe("arbeitsagentur", () => {
       });
 
       const url = stubFetch.requestedUrls[0];
-      assert.ok(url.includes("angebotsart=1"));
-      assert.ok(url.includes("berufserfahrung=BEL"));
+      expect(url.includes("angebotsart=1")).toBeTruthy();
+      expect(url.includes("berufserfahrung=BEL")).toBeTruthy();
     });
 
     test("uses custom radiusKm", async () => {
@@ -100,7 +99,7 @@ describe("arbeitsagentur", () => {
       });
       await site.getVacancyList({ ...baseCriteria, radiusKm: 50 });
 
-      assert.ok(stubFetch.requestedUrls[0].includes("umkreis=50"));
+      expect(stubFetch.requestedUrls[0].includes("umkreis=50")).toBeTruthy();
     });
 
     test("uses pageId for pagination", async () => {
@@ -109,7 +108,7 @@ describe("arbeitsagentur", () => {
       });
       await site.getVacancyList(baseCriteria, "3");
 
-      assert.ok(stubFetch.requestedUrls[0].includes("page=3"));
+      expect(stubFetch.requestedUrls[0].includes("page=3")).toBeTruthy();
     });
   });
 
@@ -125,10 +124,10 @@ describe("arbeitsagentur", () => {
       });
       const result = await site.getVacancyList(baseCriteria);
 
-      assert.equal(result.urls.length, 2);
-      assert.ok(result.urls[0].endsWith("/jobdetail/10000-111"));
-      assert.ok(result.urls[1].endsWith("/jobdetail/10000-222"));
-      assert.equal(result.nextPageId, "2");
+      expect(result.urls.length).toBe(2);
+      expect(result.urls[0].endsWith("/jobdetail/10000-111")).toBeTruthy();
+      expect(result.urls[1].endsWith("/jobdetail/10000-222")).toBeTruthy();
+      expect(result.nextPageId).toBe("2");
     });
 
     test("returns no nextPageId on last page", async () => {
@@ -142,7 +141,7 @@ describe("arbeitsagentur", () => {
       });
       const result = await site.getVacancyList(baseCriteria);
 
-      assert.equal(result.nextPageId, undefined);
+      expect(result.nextPageId).toBe(undefined);
     });
 
     test("handles empty results", async () => {
@@ -151,8 +150,8 @@ describe("arbeitsagentur", () => {
       });
       const result = await site.getVacancyList(baseCriteria);
 
-      assert.deepEqual(result.urls, []);
-      assert.equal(result.nextPageId, undefined);
+      expect(result.urls).toEqual([]);
+      expect(result.nextPageId).toBe(undefined);
     });
 
     test("handles missing stellenangebote", async () => {
@@ -163,8 +162,8 @@ describe("arbeitsagentur", () => {
       });
       const result = await site.getVacancyList(baseCriteria);
 
-      assert.deepEqual(result.urls, []);
-      assert.equal(result.nextPageId, undefined);
+      expect(result.urls).toEqual([]);
+      expect(result.nextPageId).toBe(undefined);
     });
   });
 
@@ -196,13 +195,13 @@ describe("arbeitsagentur", () => {
         "https://www.arbeitsagentur.de/jobsuche/jobdetail/abc123";
       const details = await site.getVacancyDetails(vacancyUrl);
 
-      assert.equal(details.title, "Software Engineer");
-      assert.equal(details.company, "Test GmbH");
-      assert.equal(details.address, "Hauptstr. 1, 10115 Berlin");
-      assert.equal(details.descriptionHtml, "Great job description");
-      assert.equal(details.startDate, "2026-04-01");
-      assert.equal(details.publishedAt, "2026-03-15");
-      assert.equal(details.contact, undefined);
+      expect(details.title).toBe("Software Engineer");
+      expect(details.company).toBe("Test GmbH");
+      expect(details.address).toBe("Hauptstr. 1, 10115 Berlin");
+      expect(details.descriptionHtml).toBe("Great job description");
+      expect(details.startDate).toBe("2026-04-01");
+      expect(details.publishedAt).toBe("2026-03-15");
+      expect(details.contact).toBe(undefined);
     });
 
     test("handles missing address fields", async () => {
@@ -216,7 +215,7 @@ describe("arbeitsagentur", () => {
         "https://www.arbeitsagentur.de/jobsuche/jobdetail/abc123",
       );
 
-      assert.equal(details.address, undefined);
+      expect(details.address).toBe(undefined);
     });
 
     test("filters out null string values in address", async () => {
@@ -235,7 +234,7 @@ describe("arbeitsagentur", () => {
         "https://www.arbeitsagentur.de/jobsuche/jobdetail/abc123",
       );
 
-      assert.equal(details.address, "10115 Berlin");
+      expect(details.address).toBe("10115 Berlin");
     });
 
     test("base64-encodes plain refnr from URL for API call", async () => {
@@ -249,9 +248,9 @@ describe("arbeitsagentur", () => {
       const vacancyUrl = `https://www.arbeitsagentur.de/jobsuche/jobdetail/${refnr}`;
       await site.getVacancyDetails(vacancyUrl);
 
-      assert.ok(
+      expect(
         stubFetch.requestedUrls[0].includes(`/jobdetails/${btoa(refnr)}`),
-      );
+      ).toBeTruthy();
     });
   });
 });

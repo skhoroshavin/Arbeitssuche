@@ -83,6 +83,22 @@ export class JobSearchPage {
     await this.page.goto(`/job-searches/${id}/vacancies`);
   }
 
+  get missingKeyNote(): Locator {
+    return this.page.locator("text=Ohne KI-Schlüssel").first();
+  }
+
+  get missingMapsKeyNote(): Locator {
+    return this.page.locator("text=Ohne Maps-Schlüssel").first();
+  }
+
+  get settingsLink(): Locator {
+    return this.page.getByRole("link", { name: "KI-Einstellungen" });
+  }
+
+  get llmRequiredNotice(): Locator {
+    return this.page.locator("text=KI-Schlüssel erforderlich").first();
+  }
+
   async gotoVacancyDetail(id: string, hash: string) {
     await this.page.goto(`/job-searches/${id}/vacancies/${hash}`);
   }

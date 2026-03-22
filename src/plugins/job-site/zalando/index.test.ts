@@ -1,8 +1,7 @@
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
+import { test, describe, expect } from "vitest";
 import { join } from "path";
-import { createZalandoSite } from "./index.js";
-import { createStubBrowser } from "@/plugins/browser/stub/index.js";
+import { createZalandoSite } from "./index";
+import { createStubBrowser } from "@/plugins/browser/stub/index";
 
 const SAMPLES_DIR = join(import.meta.dirname ?? __dirname, "html_samples");
 
@@ -15,9 +14,9 @@ describe("zalando", () => {
       query: "",
       mode: "employment",
     });
-    assert.ok(urls.length > 0, "Expected at least one URL");
+    expect(urls.length > 0).toBeTruthy();
     for (const url of urls) {
-      assert.match(url, /^https?:\/\//, `Expected absolute URL, got: ${url}`);
+      expect(url).toMatch(/^https?:\/\//);
     }
   });
 
@@ -30,14 +29,12 @@ describe("zalando", () => {
       mode: "employment",
     });
     const vacancy = await site.getVacancyDetails(urls[0]);
-    assert.ok(
+    expect(
       typeof vacancy.title === "string" && vacancy.title.length > 0,
-      "Expected non-empty title",
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       typeof vacancy.company === "string" && vacancy.company.length > 0,
-      "Expected non-empty company",
-    );
+    ).toBeTruthy();
   });
 
   test("getVacancyDetails returns raw HTML from section", async () => {
@@ -60,14 +57,12 @@ describe("zalando", () => {
     const browser = createStubBrowser({ [vacancyUrl]: html });
     const site = createZalandoSite(browser);
     const vacancy = await site.getVacancyDetails(vacancyUrl);
-    assert.ok(vacancy.descriptionHtml, "Expected descriptionHtml");
-    assert.ok(
+    expect(vacancy.descriptionHtml).toBeTruthy();
+    expect(
       vacancy.descriptionHtml!.includes("<strong>talented engineer</strong>"),
-      "Expected raw HTML bold",
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       vacancy.descriptionHtml!.includes("<li>Requirement number 1"),
-      "Expected raw HTML list items",
-    );
+    ).toBeTruthy();
   });
 });

@@ -1,21 +1,20 @@
-import { test, before, after } from "node:test";
-import assert from "node:assert/strict";
+import { test, beforeAll, afterAll, expect } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createSqliteVacancyRepository } from "./index.js";
-import { Database } from "@/utils/database.js";
-import { createSqliteJobSearchRepository } from "@/repositories/job-search/index.js";
-import { vacancyRepositoryTests, makeVacancy } from "./vacancy.test-suite.js";
+import { createSqliteVacancyRepository } from "./index";
+import { Database } from "@/utils/database";
+import { createSqliteJobSearchRepository } from "@/repositories/job-search/index";
+import { vacancyRepositoryTests, makeVacancy } from "./vacancy.test-suite";
 
 let tmpDir: string;
 let counter = 0;
 
-before(() => {
+beforeAll(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "vacancy-integration-test-"));
 });
 
-after(() => {
+afterAll(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
@@ -52,10 +51,10 @@ test("saved vacancies survive new repository instance", () => {
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(id);
   const output = repo2.loadAll("s1");
-  assert.equal(output!.vacancies.length, 1);
-  assert.equal(output!.latestCrawl, "2026-01-01.yaml");
-  assert.equal(output!.vacancies[0].hash, "abc123");
-  assert.equal(output!.vacancies[0].title, "Developer");
+  expect(output!.vacancies.length).toBe(1);
+  expect(output!.latestCrawl).toBe("2026-01-01.yaml");
+  expect(output!.vacancies[0].hash).toBe("abc123");
+  expect(output!.vacancies[0].title).toBe("Developer");
   t2();
 });
 
@@ -71,8 +70,8 @@ test("added activity persists across instances", async () => {
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(id);
   const loaded = repo2.loadAll("s1")!;
-  assert.equal(loaded.vacancies[0].activityHistory.length, 1);
-  assert.equal(loaded.vacancies[0].activityHistory[0].type, "applied");
+  expect(loaded.vacancies[0].activityHistory.length).toBe(1);
+  expect(loaded.vacancies[0].activityHistory[0].type).toBe("applied");
   t2();
 });
 
@@ -84,7 +83,7 @@ test("findByHash works across instances", () => {
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(id);
   const found = repo2.findByHash("s1", "abc123");
-  assert.equal(found!.company, "ACME");
+  expect(found!.company).toBe("ACME");
   t2();
 });
 
@@ -98,9 +97,9 @@ test("multiple vacancies persist correctly", () => {
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(id);
   const output = repo2.loadAll("s1")!;
-  assert.equal(output.vacancies.length, 2);
+  expect(output.vacancies.length).toBe(2);
   const titles = output.vacancies.map((v) => v.title).sort();
-  assert.deepEqual(titles, ["Backend Dev", "Frontend Dev"]);
+  expect(titles).toEqual(["Backend Dev", "Frontend Dev"]);
   t2();
 });
 
@@ -115,7 +114,7 @@ test("save replaces vacancies across instances", () => {
 
   const { repo: repo2, teardown: t2 } = createRepoWithId(id);
   const output = repo2.loadAll("s1")!;
-  assert.equal(output.vacancies.length, 1);
-  assert.equal(output.latestCrawl, "2026-02-01.yaml");
+  expect(output.vacancies.length).toBe(1);
+  expect(output.latestCrawl).toBe("2026-02-01.yaml");
   t2();
 });

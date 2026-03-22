@@ -1,7 +1,6 @@
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
-import type { AppConfig } from "@/models/config/types.js";
-import type { ConfigRepository } from "./types.js";
+import { test, describe, expect } from "vitest";
+import type { AppConfig } from "@/models/config/types";
+import type { ConfigRepository } from "./types";
 
 export const SAMPLE_CONFIG: AppConfig = {
   assessmentModel: "google/gemini-2.5-flash",
@@ -16,14 +15,14 @@ export function configRepositoryTests(name: string, factory: RepoFactory) {
   describe(name, () => {
     test("returns empty config initially", () => {
       const { repo, teardown } = factory.createRepo();
-      assert.deepEqual(repo.load(), {});
+      expect(repo.load()).toEqual({});
       teardown();
     });
 
     test("save + load round-trips", async () => {
       const { repo, teardown } = factory.createRepo();
       await repo.save(SAMPLE_CONFIG);
-      assert.deepEqual(repo.load(), SAMPLE_CONFIG);
+      expect(repo.load()).toEqual(SAMPLE_CONFIG);
       teardown();
     });
 
@@ -31,7 +30,7 @@ export function configRepositoryTests(name: string, factory: RepoFactory) {
       const { repo, teardown } = factory.createRepo();
       const partial: AppConfig = { assessmentModel: "test/model" };
       await repo.save(partial);
-      assert.deepEqual(repo.load(), partial);
+      expect(repo.load()).toEqual(partial);
       teardown();
     });
 
@@ -40,9 +39,9 @@ export function configRepositoryTests(name: string, factory: RepoFactory) {
       await repo.save(SAMPLE_CONFIG);
       const a = repo.load();
       const b = repo.load();
-      assert.notEqual(a, b);
+      expect(a).not.toBe(b);
       a.assessmentModel = "mutated";
-      assert.equal(repo.load().assessmentModel, "google/gemini-2.5-flash");
+      expect(repo.load().assessmentModel).toBe("google/gemini-2.5-flash");
       teardown();
     });
 
@@ -51,7 +50,7 @@ export function configRepositoryTests(name: string, factory: RepoFactory) {
       await repo.save(SAMPLE_CONFIG);
       const updated: AppConfig = { coverLetterModel: "new-model" };
       await repo.save(updated);
-      assert.deepEqual(repo.load(), updated);
+      expect(repo.load()).toEqual(updated);
       teardown();
     });
   });

@@ -1,4 +1,8 @@
-import type { CommuteResult, CommuteClient } from "@/plugins/commute/types.js";
+import type {
+  CommuteResult,
+  CommuteClient,
+  CommuteProviderInfo,
+} from "@/plugins/commute/types.js";
 
 interface DistanceMatrixResponse {
   rows: {
@@ -78,6 +82,22 @@ async function fetchDuration(
     durationMinutes: Math.round(element.duration.value / 60),
   };
 }
+
+export const googleMapsProviderInfo: CommuteProviderInfo = {
+  id: "google-maps",
+  name: "Google Maps",
+  instructions: [
+    "1. Öffne die [Google Cloud Console](https://console.cloud.google.com)",
+    "2. Erstelle ein [neues Projekt](https://console.cloud.google.com/projectcreate) oder wähle ein bestehendes aus",
+    "3. Aktiviere die [Abrechnung](https://console.cloud.google.com/billing) für das Projekt (erforderlich für API-Zugriff)",
+    '4. Öffne die [API-Bibliothek](https://console.cloud.google.com/apis/library) und suche nach "Distance Matrix API"',
+    '5. Klicke auf [Distance Matrix API](https://console.cloud.google.com/apis/library/distance-matrix-backend.googleapis.com) → "Aktivieren"',
+    '6. Gehe zu [Anmeldedaten](https://console.cloud.google.com/apis/credentials) → "Anmeldedaten erstellen" → "API-Schlüssel"',
+    '7. Klicke auf "Schlüssel einschränken" und wähle unter "API-Einschränkungen" nur die Distance Matrix API',
+    "8. Kopiere den Schlüssel - er beginnt mit `AIza...`",
+    "9. Füge ihn oben ein",
+  ].join("\n"),
+};
 
 class GoogleMapsCommuteClient implements CommuteClient {
   constructor(private readonly apiKey: string) {}

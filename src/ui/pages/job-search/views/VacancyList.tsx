@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams, Link, useSearchParams, useLocation } from "react-router";
 import { useInvalidate } from "@/ui/hooks";
+import { useApiKeyStatus } from "@/ui/data/settings";
 import {
   useJobSearchVacancies,
   type VacancyWithStatus,
@@ -17,7 +18,7 @@ import {
   EmptyState,
   Loading,
 } from "@/ui/components";
-import { Markdown } from "@/ui/pages/job-search/components/Markdown";
+import { Markdown } from "@/ui/components";
 import { ProgressLog } from "@/ui/pages/job-search/components/ProgressLog";
 import { StatusBadge } from "@/ui/pages/job-search/components/StatusBadge";
 import {
@@ -219,6 +220,7 @@ export default function JobSearchVacancyList() {
     return [...list].sort((a, b) => compareVacancies(sortBy, a, b));
   }, [vacancies, filter, sortBy]);
 
+  const { hasLlmKey, hasMapsKey } = useApiKeyStatus();
   const isCrawling = !!(progressJobId && !crawlDone);
 
   if (isLoading) return <Loading />;
@@ -235,13 +237,43 @@ export default function JobSearchVacancyList() {
           </>
         }
         actions={
-          <button
-            onClick={handleStartCrawl}
-            disabled={isCrawling}
-            className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
-            Aktualisieren
-          </button>
+          <div>
+            <button
+              onClick={handleStartCrawl}
+              disabled={isCrawling}
+              className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
+              Aktualisieren
+            </button>
+            {(!hasLlmKey || !hasMapsKey) && (
+              <div className="mt-2 space-y-1 text-right">
+                {!hasLlmKey && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Ohne KI-Schlüssel: keine Zusammenfassungen.{" "}
+                    <Link
+                      to="/settings"
+                      state={{ returnTo: location.pathname + location.search }}
+                      className="underline hover:no-underline"
+                    >
+                      KI-Einstellungen
+                    </Link>
+                  </p>
+                )}
+                {!hasMapsKey && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Ohne Maps-Schlüssel: keine Fahrtzeiten.{" "}
+                    <Link
+                      to="/settings/maps"
+                      state={{ returnTo: location.pathname + location.search }}
+                      className="underline hover:no-underline"
+                    >
+                      Karten-Einstellungen
+                    </Link>
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         }
       />
 

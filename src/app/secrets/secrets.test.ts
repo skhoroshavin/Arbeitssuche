@@ -1,16 +1,12 @@
-import { test, before, after } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect, beforeAll, afterAll } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { Secrets } from "@/models/secrets/types.js";
-import { createStubSecretsRepository } from "./stub.js";
-import { createEncryptedSecretsRepository } from "./encrypted.js";
-import type { Cipher } from "./types.js";
-import {
-  secretsRepositoryTests,
-  SAMPLE_SECRETS,
-} from "./secrets.test-suite.js";
+import type { Secrets } from "@/models/secrets/types";
+import { createStubSecretsRepository } from "./stub";
+import { createEncryptedSecretsRepository } from "./encrypted";
+import type { Cipher } from "./types";
+import { secretsRepositoryTests, SAMPLE_SECRETS } from "./secrets.test-suite";
 
 // --- Stub ---
 
@@ -23,7 +19,7 @@ secretsRepositoryTests("StubSecretsRepository", {
 
 test("StubSecretsRepository initializes from provided data", () => {
   const repo = createStubSecretsRepository(SAMPLE_SECRETS);
-  assert.deepEqual(repo.load(), SAMPLE_SECRETS);
+  expect(repo.load()).toEqual(SAMPLE_SECRETS);
 });
 
 // --- Encrypted (with test cipher) ---
@@ -45,11 +41,11 @@ const testCipher: Cipher = {
 let tmpDir: string;
 let counter = 0;
 
-before(() => {
+beforeAll(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "secrets-test-"));
 });
 
-after(() => {
+afterAll(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
@@ -83,7 +79,7 @@ test("saved secrets survive new repository instance", async () => {
   await repo1.save(SAMPLE_SECRETS);
 
   const { repo: repo2 } = createEncryptedRepoWithId(id);
-  assert.deepEqual(repo2.load(), SAMPLE_SECRETS);
+  expect(repo2.load()).toEqual(SAMPLE_SECRETS);
 });
 
 test("overwritten secrets persist correctly", async () => {
@@ -94,7 +90,7 @@ test("overwritten secrets persist correctly", async () => {
   await repo1.save(updated);
 
   const { repo: repo2 } = createEncryptedRepoWithId(id);
-  assert.deepEqual(repo2.load(), updated);
+  expect(repo2.load()).toEqual(updated);
 });
 
 test("returns defaults for corrupted file", async () => {
@@ -103,5 +99,5 @@ test("returns defaults for corrupted file", async () => {
   fs.writeFileSync(filePath, "not valid encrypted data");
 
   const { repo } = createEncryptedRepoWithId(id);
-  assert.deepEqual(repo.load(), {});
+  expect(repo.load()).toEqual({});
 });

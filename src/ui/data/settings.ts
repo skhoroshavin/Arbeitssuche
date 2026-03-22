@@ -2,37 +2,118 @@ import { useInvalidate } from "@/ui/hooks";
 import { ipcFetch } from "./internal/ipc-client";
 import { useIpcMutation } from "./internal/use-ipc-mutation";
 import { useIpcQuery } from "./internal/use-ipc-query";
-import type { MaskedSecrets, SecretKey } from "@/models/secrets/types";
-import type { ConfigKey, LlmModel } from "@/models/config/types";
+import type { MaskedSecret } from "@/models/secrets/types";
+import type {
+  ConfigKey,
+  LlmModel,
+  LlmProvider,
+  LlmProviderInfo,
+  CommuteProviderInfo,
+} from "@/models/config/types";
+import { DEFAULT_PROVIDER } from "@/models/config/types";
 import type { ResolvedConfig } from "@/models/config/resolve";
 
-export function useSecrets() {
+// --- Provider secrets (factory) ---
+
+function createProviderSecretHooks(type: "llm" | "commute") {
+  const queryKey = [`${type}-secrets`];
+  const basePath = `/settings/${type}`;
+
+  function useSecrets() {
+    return useIpcQuery({
+      queryKey,
+      queryFn: () =>
+        ipcFetch<Record<string, MaskedSecret>>(`${basePath}/secrets`),
+    });
+  }
+
+  function useSave() {
+    const invalidate = useInvalidate();
+    return useIpcMutation({
+      mutationFn: ({
+        providerId,
+        value,
+      }: {
+        providerId: string;
+        value: string;
+      }) =>
+        ipcFetch(`${basePath}/${providerId}/secret`, {
+          method: "PUT",
+          body: JSON.stringify({ value }),
+        }),
+      onSuccess: () => invalidate(queryKey),
+    });
+  }
+
+  function useClear() {
+    const invalidate = useInvalidate();
+    return useIpcMutation({
+      mutationFn: (providerId: string) =>
+        ipcFetch(`${basePath}/${providerId}/secret`, { method: "DELETE" }),
+      onSuccess: () => invalidate(queryKey),
+    });
+  }
+
+  function useTest() {
+    return useIpcMutation({
+      mutationFn: (providerId: string) =>
+        ipcFetch<{ ok: boolean; error?: string }>(
+          `${basePath}/${providerId}/secret/test`,
+          { method: "POST" },
+        ),
+    });
+  }
+
+  return { useSecrets, useSave, useClear, useTest };
+}
+
+const llmHooks = createProviderSecretHooks("llm");
+const commuteHooks = createProviderSecretHooks("commute");
+
+export function useLlmSecrets() {
+  return llmHooks.useSecrets();
+}
+export function useSaveLlmSecret() {
+  return llmHooks.useSave();
+}
+export function useClearLlmSecret() {
+  return llmHooks.useClear();
+}
+export function useTestLlmSecret() {
+  return llmHooks.useTest();
+}
+
+export function useCommuteSecrets() {
+  return commuteHooks.useSecrets();
+}
+export function useSaveCommuteSecret() {
+  return commuteHooks.useSave();
+}
+export function useClearCommuteSecret() {
+  return commuteHooks.useClear();
+}
+export function useTestCommuteSecret() {
+  return commuteHooks.useTest();
+}
+
+// --- Provider info ---
+
+export function useLlmProviders() {
   return useIpcQuery({
-    queryKey: ["secrets"],
-    queryFn: () => ipcFetch<MaskedSecrets>("/settings/secrets"),
+    queryKey: ["llm-providers"],
+    queryFn: () => ipcFetch<LlmProviderInfo[]>("/settings/llm-providers"),
   });
 }
 
-export function useSaveSecret() {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
-    mutationFn: ({ key, value }: { key: SecretKey; value: string }) =>
-      ipcFetch(`/settings/secrets/${key}`, {
-        method: "PUT",
-        body: JSON.stringify({ value }),
-      }),
-    onSuccess: () => invalidate(["secrets"]),
+export function useCommuteProviders() {
+  return useIpcQuery({
+    queryKey: ["commute-providers"],
+    queryFn: () =>
+      ipcFetch<CommuteProviderInfo[]>("/settings/commute-providers"),
   });
 }
 
-export function useClearSecret() {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
-    mutationFn: (key: SecretKey) =>
-      ipcFetch(`/settings/secrets/${key}`, { method: "DELETE" }),
-    onSuccess: () => invalidate(["secrets"]),
-  });
-}
+// --- Config ---
 
 export function useConfig() {
   return useIpcQuery({
@@ -61,4 +142,25 @@ export function useSaveConfig() {
       invalidate(["llm-models"]);
     },
   });
+}
+
+// --- API key status (used across the app) ---
+
+export function useApiKeyStatus(): {
+  hasLlmKey: boolean;
+  hasMapsKey: boolean;
+  isLoading: boolean;
+} {
+  const { data: llmSecrets, isLoading: llmLoading } = useLlmSecrets();
+  const { data: commuteSecrets, isLoading: commuteLoading } =
+    useCommuteSecrets();
+  const { data: config, isLoading: configLoading } = useConfig();
+
+  const provider: LlmProvider = config?.provider ?? DEFAULT_PROVIDER;
+
+  return {
+    hasLlmKey: llmSecrets?.[provider]?.isSet ?? false,
+    hasMapsKey: commuteSecrets?.["google-maps"]?.isSet ?? false,
+    isLoading: llmLoading || commuteLoading || configLoading,
+  };
 }

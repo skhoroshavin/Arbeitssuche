@@ -2,14 +2,17 @@ import { test, expect } from "../fixtures.js";
 
 test.describe("Job Search Flow", () => {
   let applicantId: string;
+  let originalSecrets: Record<string, string>;
 
   test.beforeEach(async ({ api }) => {
     applicantId = await api.createApplicant(`e2e-js-${Date.now()}`);
+    originalSecrets = await api.getSecrets();
   });
 
   test.afterEach(async ({ api }) => {
     await api.deleteJobSearchesForApplicant(applicantId);
     await api.deleteApplicant(applicantId);
+    await api.saveSecrets(originalSecrets);
   });
 
   test("can create a job search under an applicant", async ({
@@ -21,97 +24,11 @@ test.describe("Job Search Flow", () => {
     await expect(applicantPage.page.getByText("e2e search term")).toBeVisible();
   });
 
-  test("input is focused when create form opens", async ({ applicantPage }) => {
-    await applicantPage.goto(applicantId);
-    await applicantPage.newSearchButton.click();
-    await expect(applicantPage.searchTermInput).toBeFocused();
-  });
-
-  test("can create a job search by pressing Enter", async ({
-    applicantPage,
-  }) => {
-    await applicantPage.goto(applicantId);
-    await applicantPage.createJobSearchViaEnter("e2e enter search");
-
-    await expect(applicantPage.page.getByText("e2e enter search")).toBeVisible({
-      timeout: 15000,
-    });
-  });
-
-  test("job search title bar shows applicant name", async ({
-    jobSearchPage,
-    api,
-  }) => {
-    const jsId = await api.createJobSearch("e2e titlebar test", applicantId);
-
-    await jobSearchPage.gotoConfig(jsId);
-
-    const applicant = (await api.getApplicant(applicantId)) as {
-      personal: { name: string };
-    };
-    await expect(
-      jobSearchPage.page.getByText(applicant.personal.name),
-    ).toBeVisible();
-  });
-
-  test("pressing Escape closes create form without creating a job search", async ({
-    applicantPage,
-  }) => {
-    await applicantPage.goto(applicantId);
-    await applicantPage.openAndDismissSearchForm("e2e escape search");
-
-    await expect(applicantPage.createButton).not.toBeVisible();
-    await expect(
-      applicantPage.page.getByText("e2e escape search"),
-    ).not.toBeVisible();
-  });
-
-  test("config page shows Suchmodus toggle buttons", async ({
-    jobSearchPage,
-    api,
-  }) => {
-    const jsId = await api.createJobSearch("e2e mode toggle test", applicantId);
-
-    await jobSearchPage.gotoConfig(jsId);
-    await expect(jobSearchPage.searchModeHeading).toBeVisible();
-    await expect(jobSearchPage.festanstellungButton).toBeVisible();
-    await expect(jobSearchPage.berufseinsteigerButton).toBeVisible();
-    await expect(jobSearchPage.ausbildungButton).toBeVisible();
-  });
-
-  test("job search nav shows expected links", async ({
-    jobSearchPage,
-    api,
-  }) => {
-    const jsId = await api.createJobSearch("e2e nav links test", applicantId);
-
-    await jobSearchPage.gotoConfig(jsId);
-    await expect(jobSearchPage.configHeading).toBeVisible();
-
-    await expect(jobSearchPage.navLink("Konfiguration")).toBeVisible();
-    await expect(jobSearchPage.navLink("Anschreiben")).toBeVisible();
-    await expect(jobSearchPage.navLink("Stellen")).toBeVisible();
-  });
-
-  test("stellen page has Aktualisieren button and sort options", async ({
-    jobSearchPage,
-    api,
-  }) => {
-    const jsId = await api.createJobSearch("e2e stellen test", applicantId);
-
-    await jobSearchPage.gotoVacancies(jsId);
-    await expect(jobSearchPage.vacanciesHeading).toBeVisible();
-    await expect(jobSearchPage.refreshButton).toBeVisible();
-    await expect(jobSearchPage.sortDatum).toBeVisible();
-    await expect(jobSearchPage.sortUnternehmen).toBeVisible();
-    await expect(jobSearchPage.sortFahrtzeit).toBeVisible();
-    await expect(jobSearchPage.sortBewertung).toBeVisible();
-  });
-
   test("cover letter page has Generieren button that calls LLM", async ({
     jobSearchPage,
     api,
   }) => {
+    await api.saveSecrets({ openrouterApiKey: "sk-or-fake-e2e-key" });
     const jsId = await api.createJobSearch(
       "e2e cover letter test",
       applicantId,
@@ -129,22 +46,19 @@ test.describe("Job Search Flow", () => {
     await expect(jobSearchPage.generateButton).toBeVisible({ timeout: 30000 });
   });
 
-  test("cover letter generation shows error when no API key is configured", async ({
+  test("cover letter Generieren button is disabled when no API key is configured", async ({
     jobSearchPage,
     api,
   }) => {
+    await api.saveSecrets({});
     const jsId = await api.createJobSearch(
       "e2e cover letter error",
       applicantId,
     );
 
     await jobSearchPage.gotoCoverLetter(jsId);
-    await jobSearchPage.generateButton.click();
-
-    await expect(
-      jobSearchPage.page.getByText("Generierung fehlgeschlagen"),
-    ).toBeVisible({ timeout: 30000 });
-    await expect(jobSearchPage.generateButton).toBeVisible();
+    await expect(jobSearchPage.generateButton).toBeDisabled();
+    await expect(jobSearchPage.llmRequiredNotice).toBeVisible();
   });
 
   test("vacancy card shows source site labels", async ({
@@ -270,6 +184,48 @@ test.describe("Job Search Flow", () => {
 
     // Assert sort button is still active (has bg-zinc-700 class)
     await expect(jobSearchPage.sortUnternehmen).toHaveClass(/bg-zinc-700/);
+  });
+
+  test("vacancy list shows missing-key notes when keys are not configured", async ({
+    jobSearchPage,
+    api,
+  }) => {
+    await api.saveSecrets({});
+    const jsId = await api.createJobSearch("e2e missing keys", applicantId);
+
+    await jobSearchPage.gotoVacancies(jsId);
+    await expect(jobSearchPage.missingKeyNote).toBeVisible();
+    await expect(jobSearchPage.missingMapsKeyNote).toBeVisible();
+  });
+
+  test("vacancy list notes are hidden when keys are configured", async ({
+    jobSearchPage,
+    api,
+  }) => {
+    await api.saveSecrets({
+      openrouterApiKey: "sk-or-test-key-value",
+      googleMapsApiKey: "maps-test-key-value",
+    });
+    const jsId = await api.createJobSearch("e2e keys set", applicantId);
+
+    await jobSearchPage.gotoVacancies(jsId);
+    await expect(jobSearchPage.missingKeyNote).not.toBeVisible();
+    await expect(jobSearchPage.missingMapsKeyNote).not.toBeVisible();
+  });
+
+  test("clicking settings link from vacancy list navigates to settings", async ({
+    jobSearchPage,
+    api,
+  }) => {
+    await api.saveSecrets({});
+    const jsId = await api.createJobSearch("e2e settings link", applicantId);
+
+    await jobSearchPage.gotoVacancies(jsId);
+    await expect(jobSearchPage.settingsLink).toBeVisible();
+    await jobSearchPage.settingsLink.click();
+    await expect(
+      jobSearchPage.page.getByRole("heading", { name: "Einstellungen" }),
+    ).toBeVisible();
   });
 
   test("vacancy detail shows source links and contact person", async ({

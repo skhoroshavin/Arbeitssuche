@@ -1,6 +1,5 @@
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
-import { createWithUniqueId } from "./create-with-unique-id.js";
+import { describe, it, expect } from "vitest";
+import { createWithUniqueId } from "./create-with-unique-id";
 
 describe("createWithUniqueId", () => {
   it("returns the first non-existing id", () => {
@@ -8,7 +7,7 @@ describe("createWithUniqueId", () => {
       () => "abc",
       () => false,
     );
-    assert.equal(id, "abc");
+    expect(id).toBe("abc");
   });
 
   it("retries when id already exists", () => {
@@ -20,17 +19,15 @@ describe("createWithUniqueId", () => {
       () => ids[i++],
       (id) => existing.has(id),
     );
-    assert.equal(id, "free");
+    expect(id).toBe("free");
   });
 
   it("throws after 5 failed attempts", () => {
-    assert.throws(
-      () =>
-        createWithUniqueId(
-          () => "collision",
-          () => true,
-        ),
-      { message: "Failed to generate unique id after 5 attempts" },
-    );
+    expect(() =>
+      createWithUniqueId(
+        () => "collision",
+        () => true,
+      ),
+    ).toThrow("Failed to generate unique id after 5 attempts");
   });
 });

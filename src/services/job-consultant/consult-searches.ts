@@ -29,12 +29,12 @@ const CONSULT_SEARCHES_SCHEMA: JsonSchema = {
 function buildConsultSearchesPrompt(applicant: Applicant): string {
   const sections = formatApplicantSections(applicant);
 
-  return `Sie sind ein erfahrener Karriereberater. Analysieren Sie das folgende Bewerberprofil und schlagen Sie 5–10 konkrete Suchbegriffe für Jobbörsen vor.
+  return `Sie sind ein erfahrener Karriereberater. Analysieren Sie das folgende Bewerberprofil und schlagen Sie 5-10 konkrete Suchbegriffe für Jobbörsen vor.
 
 Jeder Vorschlag soll enthalten:
 - "searchTerm": ein prägnanter Suchbegriff für deutsche Jobbörsen (z.B. "React Entwickler", "Senior Java Backend", "DevOps Engineer")
-- "searchMode": einer der folgenden Werte: "employment" (Festanstellung), "entry-level" (Berufseinsteiger), "apprenticeship" (Ausbildung) — wählen Sie passend zum Erfahrungsniveau
-- "reason": 1–2 Sätze auf Deutsch, warum dieser Suchbegriff zum Profil passt
+- "searchMode": einer der folgenden Werte: "employment" (Festanstellung), "entry-level" (Berufseinsteiger), "apprenticeship" (Ausbildung) - wählen Sie passend zum Erfahrungsniveau
+- "reason": 1-2 Sätze auf Deutsch, warum dieser Suchbegriff zum Profil passt
 
 Bieten Sie Vielfalt: direkte Treffer basierend auf bisheriger Erfahrung, angrenzende Rollen, und ggf. aufstrebende Karrieremöglichkeiten.
 

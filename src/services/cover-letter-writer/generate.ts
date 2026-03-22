@@ -26,7 +26,7 @@ Das Anschreiben soll:
 - Einen professionellen, motivierten Ton haben
 - Die relevanten Qualifikationen und Erfahrungen des Kandidaten hervorheben
 - Auf Deutsch verfasst sein
-- Nur den Brieftext enthalten (ohne Absenderadresse, Datum, Betreffzeile — diese werden separat formatiert)
+- Nur den Brieftext enthalten (ohne Absenderadresse, Datum, Betreffzeile - diese werden separat formatiert)
 - Erwähne die Politik nicht direkt, auch wenn sie in den Persönlichen Hinweisen erwähnt wird
 - Verwende keine Formulierungen, die deutlich über dem im Lebenslauf angegebenen Deutschniveau liegen
 - Auf jeden Fall sollte „ich" nicht zu oft verwendet werden.

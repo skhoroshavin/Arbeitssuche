@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useLocation, Link } from "react-router";
 import {
   useApplicant,
   useDownloadResume,
   useConsultSearches,
 } from "@/ui/data/applicants";
+import { useApiKeyStatus } from "@/ui/data/settings";
 import {
   useJobSearches,
   useCreateJobSearch,
@@ -366,9 +367,11 @@ export default function ApplicantOverview() {
   const createJobSearch = useCreateJobSearch();
   const deleteJobSearch = useDeleteJobSearch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const downloadResume = useDownloadResume(id!, data?.personal?.name ?? "");
   const consultSearches = useConsultSearches(id!);
+  const { hasLlmKey } = useApiKeyStatus();
 
   const [showConsultation, setShowConsultation] = useState(false);
   const [isCreatingSuggestions, setIsCreatingSuggestions] = useState(false);
@@ -415,7 +418,7 @@ export default function ApplicantOverview() {
             <button
               key={opt.value}
               type="button"
-              title={`${opt.label} — ${opt.description}`}
+              title={`${opt.label} - ${opt.description}`}
               disabled={downloadResume.isPending}
               onClick={() => downloadResume.mutate(opt.value)}
               className="flex flex-col items-center rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-95 transition-colors disabled:opacity-50"
@@ -449,13 +452,27 @@ export default function ApplicantOverview() {
         }}
         onNavigate={(jsId) => navigate(`/job-searches/${jsId}`)}
         headerExtra={
-          <button
-            onClick={handleConsult}
-            disabled={consultSearches.isPending}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-          >
-            Beratung
-          </button>
+          <div>
+            <button
+              onClick={handleConsult}
+              disabled={consultSearches.isPending || !hasLlmKey}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+            >
+              Beratung
+            </button>
+            {!hasLlmKey && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                KI-Schlüssel erforderlich.{" "}
+                <Link
+                  to="/settings"
+                  state={{ returnTo: location.pathname }}
+                  className="underline hover:no-underline"
+                >
+                  Zu den Einstellungen
+                </Link>
+              </p>
+            )}
+          </div>
         }
       />
 

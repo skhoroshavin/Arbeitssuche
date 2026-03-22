@@ -1,5 +1,4 @@
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, expect } from "vitest";
 
 import {
   parseVersion,
@@ -10,7 +9,7 @@ import {
 
 describe("parseVersion", () => {
   it("parses a release version", () => {
-    assert.deepStrictEqual(parseVersion("1.2.3"), {
+    expect(parseVersion("1.2.3")).toEqual({
       major: 1,
       minor: 2,
       patch: 3,
@@ -19,7 +18,7 @@ describe("parseVersion", () => {
   });
 
   it("parses a dev version", () => {
-    assert.deepStrictEqual(parseVersion("0.1.2-dev"), {
+    expect(parseVersion("0.1.2-dev")).toEqual({
       major: 0,
       minor: 1,
       patch: 2,
@@ -28,31 +27,29 @@ describe("parseVersion", () => {
   });
 
   it("throws on invalid version", () => {
-    assert.throws(() => parseVersion("not-a-version"), /Invalid version/);
+    expect(() => parseVersion("not-a-version")).toThrow(/Invalid version/);
   });
 
   it("throws on version with unknown prerelease", () => {
-    assert.throws(() => parseVersion("1.2.3-beta.1"), /Invalid version/);
+    expect(() => parseVersion("1.2.3-beta.1")).toThrow(/Invalid version/);
   });
 
   it("throws on rc version", () => {
-    assert.throws(() => parseVersion("1.3.0-rc.5"), /Invalid version/);
+    expect(() => parseVersion("1.3.0-rc.5")).toThrow(/Invalid version/);
   });
 });
 
 describe("formatVersion", () => {
   it("formats a release version", () => {
-    assert.equal(
+    expect(
       formatVersion({ major: 1, minor: 2, patch: 3, prerelease: null }),
-      "1.2.3",
-    );
+    ).toBe("1.2.3");
   });
 
   it("formats a dev version", () => {
-    assert.equal(
+    expect(
       formatVersion({ major: 0, minor: 1, patch: 2, prerelease: "dev" }),
-      "0.1.2-dev",
-    );
+    ).toBe("0.1.2-dev");
   });
 });
 
@@ -73,15 +70,11 @@ describe("computeNextVersion", () => {
 
   describe("bump dev", () => {
     it("adds -dev suffix", () => {
-      assert.deepStrictEqual(
-        computeNextVersion(rel(1, 2, 3), "dev"),
-        dev(1, 2, 3),
-      );
+      expect(computeNextVersion(rel(1, 2, 3), "dev")).toEqual(dev(1, 2, 3));
     });
 
     it("throws if already dev", () => {
-      assert.throws(
-        () => computeNextVersion(dev(1, 2, 3), "dev"),
+      expect(() => computeNextVersion(dev(1, 2, 3), "dev")).toThrow(
         /Already a dev version/,
       );
     });
@@ -89,15 +82,11 @@ describe("computeNextVersion", () => {
 
   describe("bump major", () => {
     it("bumps major, resets minor+patch", () => {
-      assert.deepStrictEqual(
-        computeNextVersion(dev(1, 2, 4), "major"),
-        rel(2, 0, 0),
-      );
+      expect(computeNextVersion(dev(1, 2, 4), "major")).toEqual(rel(2, 0, 0));
     });
 
     it("throws if not dev", () => {
-      assert.throws(
-        () => computeNextVersion(rel(1, 2, 3), "major"),
+      expect(() => computeNextVersion(rel(1, 2, 3), "major")).toThrow(
         /requires a -dev version/,
       );
     });
@@ -105,15 +94,11 @@ describe("computeNextVersion", () => {
 
   describe("bump minor", () => {
     it("bumps minor, resets patch", () => {
-      assert.deepStrictEqual(
-        computeNextVersion(dev(1, 2, 4), "minor"),
-        rel(1, 3, 0),
-      );
+      expect(computeNextVersion(dev(1, 2, 4), "minor")).toEqual(rel(1, 3, 0));
     });
 
     it("throws if not dev", () => {
-      assert.throws(
-        () => computeNextVersion(rel(1, 2, 3), "minor"),
+      expect(() => computeNextVersion(rel(1, 2, 3), "minor")).toThrow(
         /requires a -dev version/,
       );
     });
@@ -121,15 +106,11 @@ describe("computeNextVersion", () => {
 
   describe("bump patch", () => {
     it("bumps patch", () => {
-      assert.deepStrictEqual(
-        computeNextVersion(dev(1, 2, 4), "patch"),
-        rel(1, 2, 5),
-      );
+      expect(computeNextVersion(dev(1, 2, 4), "patch")).toEqual(rel(1, 2, 5));
     });
 
     it("throws if not dev", () => {
-      assert.throws(
-        () => computeNextVersion(rel(1, 2, 3), "patch"),
+      expect(() => computeNextVersion(rel(1, 2, 3), "patch")).toThrow(
         /requires a -dev version/,
       );
     });

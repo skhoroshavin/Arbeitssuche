@@ -1,14 +1,13 @@
-import { test, describe } from "node:test";
-import assert from "node:assert/strict";
-import { createStubCommuteClient } from "@/plugins/commute/stub/index.js";
+import { test, describe, expect } from "vitest";
+import { createStubCommuteClient } from "@/plugins/commute/stub/index";
 
 describe("StubCommuteClient", () => {
   test("returns default result", async () => {
     const client = createStubCommuteClient();
     const result = await client.getCommute("Berlin", "Munich");
-    assert.equal(result.distance, "10.0 km");
-    assert.ok(result.durations.morning);
-    assert.ok(result.fetchedAt);
+    expect(result.distance).toBe("10.0 km");
+    expect(result.durations.morning).toBeTruthy();
+    expect(result.fetchedAt).toBeTruthy();
   });
 
   test("returns configured single result", async () => {
@@ -19,7 +18,7 @@ describe("StubCommuteClient", () => {
     };
     const client = createStubCommuteClient(custom);
     const result = await client.getCommute("A", "B");
-    assert.deepEqual(result, custom);
+    expect(result).toEqual(custom);
   });
 
   test("returns destination-specific results from map", async () => {
@@ -35,9 +34,9 @@ describe("StubCommuteClient", () => {
     ]);
     const client = createStubCommuteClient(results);
     const result = await client.getCommute("Berlin", "Munich");
-    assert.equal(result.distance, "600 km");
+    expect(result.distance).toBe("600 km");
 
     const fallback = await client.getCommute("Berlin", "Hamburg");
-    assert.equal(fallback.distance, "10.0 km");
+    expect(fallback.distance).toBe("10.0 km");
   });
 });

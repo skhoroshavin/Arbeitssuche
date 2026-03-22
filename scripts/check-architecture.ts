@@ -632,13 +632,14 @@ function checkImportRules(
         }
       } else if (specifier.startsWith("./") && isTest && testExposedConfig) {
         // Black-box test rule: relative imports restricted
+        const bare = specifier.replace(/\.js$/, "");
         if (
-          specifier !== "./index.js" &&
-          specifier !== "./types.js" &&
-          !/^\.\/[\w-]+\.test-suite\.js$/.test(specifier)
+          bare !== "./index" &&
+          bare !== "./types" &&
+          !/^\.\/[\w-]+\.test-suite$/.test(bare)
         ) {
           errors.push(
-            `${srcRelPath}: test must import from ./index.js, ./types.js, or ./*.test-suite.js`,
+            `${srcRelPath}: test must import from ./index, ./types, or ./*.test-suite`,
           );
         }
       }
