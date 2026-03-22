@@ -1,10 +1,12 @@
-import { useSecrets } from "@/ui/data/settings";
+import { useSecrets, useSecretKeyInfos } from "@/ui/data/settings";
 import { Card, PageHeader, SectionHeader, Loading } from "@/ui/components";
 import { Disclosure } from "@/ui/pages/settings/components/Disclosure";
 import { SecretField } from "@/ui/pages/settings/components/SecretField";
 
 export default function SettingsMaps() {
   const { data: secrets, isLoading } = useSecrets();
+  const { data: keyInfos } = useSecretKeyInfos();
+  const keyInfo = keyInfos?.find((ki) => ki.key === "googleMapsApiKey");
 
   if (isLoading) return <Loading />;
 
@@ -20,23 +22,26 @@ export default function SettingsMaps() {
             masked={secrets?.googleMapsApiKey?.masked ?? ""}
             isSet={secrets?.googleMapsApiKey?.isSet ?? false}
           />
-          <Disclosure title="Wie bekomme ich einen API-Schlüssel?">
-            <p>
-              1. Gehe zur{" "}
-              <a
-                href="https://console.cloud.google.com/apis/credentials"
-                target="_blank"
-                rel="noreferrer"
-                className="text-blue-600 dark:text-blue-400 underline"
-              >
-                Google Cloud Console
-              </a>
-            </p>
-            <p>2. Erstelle ein Projekt (falls noch nicht vorhanden)</p>
-            <p>3. Aktiviere die „Directions API"</p>
-            <p>4. Erstelle unter „Anmeldedaten" einen API-Schlüssel</p>
-            <p>5. Füge ihn oben ein</p>
-          </Disclosure>
+          {keyInfo && (
+            <Disclosure title="Wie bekomme ich einen API-Schlüssel?">
+              <p>
+                1. Gehe zur{" "}
+                <a
+                  href={keyInfo.helpUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-600 dark:text-blue-400 underline"
+                >
+                  {keyInfo.helpLabel}
+                </a>
+              </p>
+              {keyInfo.helpSteps.map((step, i) => (
+                <p key={i}>
+                  {i + 2}. {step}
+                </p>
+              ))}
+            </Disclosure>
+          )}
         </div>
       </Card>
     </>

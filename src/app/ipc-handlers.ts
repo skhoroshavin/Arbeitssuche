@@ -8,6 +8,7 @@ import type { Secrets, SecretKey } from "@/models/secrets/types.js";
 import type { ConfigKey } from "@/models/config/types.js";
 import { resolveConfig } from "@/models/config/resolve.js";
 import { getJobSiteInfos } from "@/plugins/job-site/index.js";
+import { getLlmSecretKeyInfo, googleMapsKeyInfo } from "./secret-key-infos.js";
 import { startCrawl, abortCrawl } from "./crawl-manager.js";
 
 function maskToken(token: string | undefined): string {
@@ -254,6 +255,71 @@ export function registerIpcHandlers(options: IpcHandlerOptions): void {
     await services.secretsRepo.save(secrets);
     services.rebuild();
     return { ok: true };
+  });
+
+  // --- Secret key info ---
+  handle("settings:secrets:info", () => {
+    const config = resolveConfig(services.configRepo.load());
+    return [getLlmSecretKeyInfo(config.provider), googleMapsKeyInfo];
+  });
+
+  // --- Secret key test ---
+  handle("settings:secrets:test", async (key: SecretKey) => {
+    const secrets = services.secretsRepo.load();
+    const value = secrets[key];
+    if (!value) {
+      return { ok: false, error: "Kein Schlüssel gesetzt" };
+    }
+    try {
+      switch (key) {
+        case "openrouterApiKey": {
+          const res = await fetch("https://openrouter.ai/api/v1/auth/key", {
+            headers: { Authorization: `Bearer ${value}` },
+            signal: AbortSignal.timeout(10_000),
+          });
+          if (!res.ok)
+            return {
+              ok: false,
+              error: `HTTP ${res.status}: ${res.statusText}`,
+            };
+          return { ok: true };
+        }
+        case "requestyApiKey": {
+          const res = await fetch("https://router.eu.requesty.ai/v1/models", {
+            headers: { Authorization: `Bearer ${value}` },
+            signal: AbortSignal.timeout(10_000),
+          });
+          if (!res.ok)
+            return {
+              ok: false,
+              error: `HTTP ${res.status}: ${res.statusText}`,
+            };
+          return { ok: true };
+        }
+        case "googleMapsApiKey": {
+          const url = `https://maps.googleapis.com/maps/api/directions/json?origin=Berlin&destination=Berlin&mode=transit&key=${value}`;
+          const res = await fetch(url, {
+            signal: AbortSignal.timeout(10_000),
+          });
+          if (!res.ok)
+            return {
+              ok: false,
+              error: `HTTP ${res.status}: ${res.statusText}`,
+            };
+          const data: { status: string } = await res.json();
+          if (data.status !== "OK")
+            return { ok: false, error: `API-Status: ${data.status}` };
+          return { ok: true };
+        }
+        default:
+          return { ok: false, error: "Unbekannter Schlüssel" };
+      }
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
   });
 
   // --- LLM models ---

@@ -4,6 +4,7 @@ import {
   useUpdateJobSearchCoverLetter,
   useGenerateCoverLetter,
 } from "@/ui/data/job-searches";
+import { useApiKeyStatus } from "@/ui/data/settings";
 import { Card, PageHeader, Loading } from "@/ui/components";
 import { CoverLetterEditor } from "@/ui/pages/job-search/components/CoverLetterEditor";
 
@@ -12,6 +13,7 @@ export default function JobSearchCoverLetter() {
   const coverLetterQuery = useJobSearchCoverLetter(id!);
   const update = useUpdateJobSearchCoverLetter(id!);
   const generate = useGenerateCoverLetter(id!);
+  const { hasLlmKey } = useApiKeyStatus();
 
   if (coverLetterQuery.isLoading) return <Loading />;
 
@@ -24,6 +26,7 @@ export default function JobSearchCoverLetter() {
           coverLetterQuery={coverLetterQuery}
           updateMutation={update}
           generateMutation={generate}
+          llmAvailable={hasLlmKey}
           rows={20}
         />
       </Card>

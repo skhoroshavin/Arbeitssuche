@@ -3,6 +3,7 @@ import {
   useConfig,
   useSaveConfig,
   useLlmModels,
+  useSecretKeyInfos,
 } from "@/ui/data/settings";
 import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config/types";
 import {
@@ -50,34 +51,17 @@ const PROVIDER_CONFIG: Record<
     label: string;
     description: string;
     secretKey: "openrouterApiKey" | "requestyApiKey";
-    helpUrl: string;
-    helpLabel: string;
-    helpSteps: string[];
   }
 > = {
   openrouter: {
     label: "OpenRouter",
     description: "Global",
     secretKey: "openrouterApiKey",
-    helpUrl: "https://openrouter.ai/keys",
-    helpLabel: "openrouter.ai/keys",
-    helpSteps: [
-      "Erstelle ein Konto oder melde dich an",
-      'Klicke auf „Create Key" und kopiere den Schlüssel',
-      "Füge ihn oben ein",
-    ],
   },
   requesty: {
     label: "Requesty",
     description: "EU-Datenverarbeitung",
     secretKey: "requestyApiKey",
-    helpUrl: "https://requesty.ai",
-    helpLabel: "requesty.ai",
-    helpSteps: [
-      "Erstelle ein Konto oder melde dich an",
-      "Erstelle einen API-Schlüssel und kopiere ihn",
-      "Füge ihn oben ein",
-    ],
   },
 };
 
@@ -98,6 +82,8 @@ function ProviderSecretSection({
 }) {
   const cfg = PROVIDER_CONFIG[provider];
   const secret = secrets?.[cfg.secretKey];
+  const { data: keyInfos } = useSecretKeyInfos();
+  const keyInfo = keyInfos?.find((ki) => ki.key === cfg.secretKey);
 
   return (
     <Card className="p-6 mt-4">
@@ -109,24 +95,26 @@ function ProviderSecretSection({
           masked={secret?.masked ?? ""}
           isSet={secret?.isSet ?? false}
         />
-        <Disclosure title="Wie bekomme ich einen API-Schlüssel?">
-          <p>
-            1. Gehe zu{" "}
-            <a
-              href={cfg.helpUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-blue-600 dark:text-blue-400 underline"
-            >
-              {cfg.helpLabel}
-            </a>
-          </p>
-          {cfg.helpSteps.map((step, i) => (
-            <p key={i}>
-              {i + 2}. {step}
+        {keyInfo && (
+          <Disclosure title="Wie bekomme ich einen API-Schlüssel?">
+            <p>
+              1. Gehe zu{" "}
+              <a
+                href={keyInfo.helpUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-600 dark:text-blue-400 underline"
+              >
+                {keyInfo.helpLabel}
+              </a>
             </p>
-          ))}
-        </Disclosure>
+            {keyInfo.helpSteps.map((step, i) => (
+              <p key={i}>
+                {i + 2}. {step}
+              </p>
+            ))}
+          </Disclosure>
+        )}
       </div>
     </Card>
   );

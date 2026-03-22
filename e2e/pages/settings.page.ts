@@ -59,6 +59,18 @@ export class SettingsPage {
     await this.providerButton(name).click();
   }
 
+  testButton(label: string): Locator {
+    return this.page.getByRole("button", { name: `${label} testen` });
+  }
+
+  testResult(): Locator {
+    return this.page
+      .locator("[class*='text-green'], [class*='text-red']")
+      .filter({
+        hasText: /(Gültig|HTTP|API-Status|Kein Schlüssel)/,
+      });
+  }
+
   async replaceAndSave(label: string, value: string) {
     await this.replaceButton(label).click();
     await this.tokenInput(label).fill(value);

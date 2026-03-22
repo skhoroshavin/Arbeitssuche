@@ -237,6 +237,22 @@ const ROUTE_MAP: Array<{
     },
   },
   {
+    method: "GET",
+    pattern: /^\/settings\/secrets\/info$/,
+    mapping: {
+      channel: "settings:secrets:info",
+      extractArgs: () => [],
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/settings\/secrets\/test\/([^/]+)$/,
+    mapping: {
+      channel: "settings:secrets:test",
+      extractArgs: (p) => [p[1]],
+    },
+  },
+  {
     method: "PUT",
     pattern: /^\/settings\/secrets$/,
     mapping: {

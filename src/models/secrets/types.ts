@@ -16,4 +16,12 @@ export type SecretKey =
 
 export type MaskedSecrets = Record<SecretKey, MaskedSecret>;
 
+export interface SecretKeyInfo {
+  key: SecretKey;
+  label: string;
+  helpUrl: string;
+  helpLabel: string;
+  helpSteps: string[];
+}
+
 export const DEFAULT_SECRETS: Secrets = {};

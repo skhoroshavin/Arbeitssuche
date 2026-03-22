@@ -72,13 +72,16 @@ test.describe("Applicant Flow", () => {
 
 test.describe("Applicant Tabs & Edit Forms", () => {
   let applicantId: string;
+  let originalSecrets: Record<string, string>;
 
   test.beforeEach(async ({ api }) => {
     applicantId = await api.createApplicant(`e2e-tabs-${Date.now()}`);
+    originalSecrets = await api.getSecrets();
   });
 
   test.afterEach(async ({ api }) => {
     await api.deleteApplicant(applicantId);
+    await api.saveSecrets(originalSecrets);
   });
 
   test("shows all six navigation tabs", async ({ applicantPage }) => {
@@ -220,6 +223,22 @@ test.describe("Applicant Tabs & Edit Forms", () => {
     // Verify no error appeared — the page should still show the overview
     await expect(
       page.getByRole("heading", { name: "Lebenslauf" }),
+    ).toBeVisible();
+  });
+
+  test("Beratung button is disabled when no LLM key", async ({
+    applicantPage,
+    api,
+  }) => {
+    await api.saveSecrets({});
+    await applicantPage.goto(applicantId);
+
+    const beratungButton = applicantPage.page.getByRole("button", {
+      name: "Beratung",
+    });
+    await expect(beratungButton).toBeDisabled();
+    await expect(
+      applicantPage.page.locator("text=KI-Schlüssel erforderlich"),
     ).toBeVisible();
   });
 });

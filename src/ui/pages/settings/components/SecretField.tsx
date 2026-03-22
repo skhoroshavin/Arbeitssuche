@@ -1,5 +1,9 @@
 import { useState, useCallback } from "react";
-import { useSaveSecret, useClearSecret } from "@/ui/data/settings";
+import {
+  useSaveSecret,
+  useClearSecret,
+  useTestSecret,
+} from "@/ui/data/settings";
 import { useEscapeKey } from "@/ui/hooks";
 import type { SecretKey } from "@/models/secrets/types";
 
@@ -18,8 +22,13 @@ export function SecretField({
 }: SecretFieldProps) {
   const [mode, setMode] = useState<"display" | "editing">("display");
   const [inputValue, setInputValue] = useState("");
+  const [testResult, setTestResult] = useState<{
+    ok: boolean;
+    error?: string;
+  } | null>(null);
   const saveSecret = useSaveSecret();
   const clearSecret = useClearSecret();
+  const testSecret = useTestSecret();
 
   const handleSave = async () => {
     if (!inputValue.trim()) return;
@@ -35,6 +44,14 @@ export function SecretField({
 
   const handleClear = async () => {
     await clearSecret.mutateAsync(secretKey);
+    setTestResult(null);
+  };
+
+  const handleTest = () => {
+    setTestResult(null);
+    testSecret.mutate(secretKey, {
+      onSuccess: (result) => setTestResult(result),
+    });
   };
 
   const handleStartEditing = () => {
@@ -47,42 +64,60 @@ export function SecretField({
   return (
     <div>
       {mode === "display" ? (
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 font-mono border border-gray-200 dark:border-gray-700 rounded">
-            {isSet ? masked : "Nicht gesetzt"}
-          </span>
-          <div className="flex gap-2 ml-auto">
-            {isSet ? (
-              <>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 font-mono border border-gray-200 dark:border-gray-700 rounded">
+              {isSet ? masked : "Nicht gesetzt"}
+            </span>
+            <div className="flex gap-2 ml-auto">
+              {isSet ? (
+                <>
+                  <button
+                    type="button"
+                    aria-label={`${label} testen`}
+                    onClick={handleTest}
+                    disabled={testSecret.isPending}
+                    className="px-3 py-1 text-xs font-medium rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+                  >
+                    {testSecret.isPending ? "Teste..." : "Testen"}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`${label} ersetzen`}
+                    onClick={handleStartEditing}
+                    className="px-3 py-1 text-xs font-medium rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Ersetzen
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`${label} löschen`}
+                    onClick={handleClear}
+                    disabled={clearSecret.isPending}
+                    className="px-3 py-1 text-xs font-medium rounded border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
+                  >
+                    Löschen
+                  </button>
+                </>
+              ) : (
                 <button
                   type="button"
-                  aria-label={`${label} ersetzen`}
+                  aria-label={`${label} hinzufügen`}
                   onClick={handleStartEditing}
                   className="px-3 py-1 text-xs font-medium rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
-                  Ersetzen
+                  Hinzufügen
                 </button>
-                <button
-                  type="button"
-                  aria-label={`${label} löschen`}
-                  onClick={handleClear}
-                  disabled={clearSecret.isPending}
-                  className="px-3 py-1 text-xs font-medium rounded border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
-                >
-                  Löschen
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                aria-label={`${label} hinzufügen`}
-                onClick={handleStartEditing}
-                className="px-3 py-1 text-xs font-medium rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                Hinzufügen
-              </button>
-            )}
+              )}
+            </div>
           </div>
+          {testResult && (
+            <div
+              className={`mt-2 text-xs ${testResult.ok ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+            >
+              {testResult.ok ? "Gültig" : (testResult.error ?? "Ungültig")}
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex items-center gap-2">

@@ -224,4 +224,33 @@ test.describe("Settings Flow", () => {
     await settingsPage.goto();
     await expect(settingsPage.page.getByText(REQUESTY_LABEL)).toBeVisible();
   });
+
+  // --- Test button tests ---
+
+  test("Testen button is visible when key is set, not visible when not set", async ({
+    api,
+    settingsPage,
+  }) => {
+    await api.saveSecrets({ openrouterApiKey: "sk-or-test-button-check" });
+    await settingsPage.goto();
+
+    await expect(settingsPage.testButton(OPENROUTER_LABEL)).toBeVisible();
+
+    // Clear the key
+    await settingsPage.clearButton(OPENROUTER_LABEL).click();
+    await expect(settingsPage.testButton(OPENROUTER_LABEL)).not.toBeVisible();
+  });
+
+  test("clicking Testen with a fake key shows error result", async ({
+    api,
+    settingsPage,
+  }) => {
+    await api.saveSecrets({ openrouterApiKey: "sk-or-invalid-fake-key" });
+    await settingsPage.goto();
+
+    await settingsPage.testButton(OPENROUTER_LABEL).click();
+
+    // Wait for the test result to appear (error since key is invalid)
+    await expect(settingsPage.testResult()).toBeVisible({ timeout: 15000 });
+  });
 });
