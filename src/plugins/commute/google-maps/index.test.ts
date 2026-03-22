@@ -1,7 +1,7 @@
 import { test, describe, expect } from "vitest";
 import { createGoogleMapsCommuteClient } from "./index";
 
-const API_PATTERN = "maps.googleapis.com/maps/api/distancematrix";
+const API_PATTERN = "maps\\.googleapis\\.com/maps/api/distancematrix";
 
 function matrixResponse(distanceText: string, durationSeconds: number): object {
   return {
