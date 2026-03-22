@@ -227,53 +227,87 @@ const ROUTE_MAP: Array<{
       extractArgs: () => [],
     },
   },
-  // Settings
+  // Settings: LLM secrets
   {
     method: "GET",
-    pattern: /^\/settings\/secrets$/,
+    pattern: /^\/settings\/llm\/secrets$/,
     mapping: {
-      channel: "settings:secrets:load",
+      channel: "settings:llm:secrets",
       extractArgs: () => [],
     },
   },
   {
-    method: "GET",
-    pattern: /^\/settings\/secrets\/info$/,
-    mapping: {
-      channel: "settings:secrets:info",
-      extractArgs: () => [],
-    },
-  },
-  {
-    method: "POST",
-    pattern: /^\/settings\/secrets\/test\/([^/]+)$/,
-    mapping: {
-      channel: "settings:secrets:test",
-      extractArgs: (p) => [p[1]],
-    },
-  },
-  {
     method: "PUT",
-    pattern: /^\/settings\/secrets$/,
+    pattern: /^\/settings\/llm\/([^/]+)\/secret$/,
     mapping: {
-      channel: "settings:secrets:save",
-      extractArgs: (_p, body) => [body],
-    },
-  },
-  {
-    method: "PUT",
-    pattern: /^\/settings\/secrets\/([^/]+)$/,
-    mapping: {
-      channel: "settings:secrets:save-one",
+      channel: "settings:llm:secret:save",
       extractArgs: (p, body) => [p[1], body?.value],
     },
   },
   {
     method: "DELETE",
-    pattern: /^\/settings\/secrets\/([^/]+)$/,
+    pattern: /^\/settings\/llm\/([^/]+)\/secret$/,
     mapping: {
-      channel: "settings:secrets:clear",
+      channel: "settings:llm:secret:clear",
       extractArgs: (p) => [p[1]],
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/settings\/llm\/([^/]+)\/secret\/test$/,
+    mapping: {
+      channel: "settings:llm:secret:test",
+      extractArgs: (p) => [p[1]],
+    },
+  },
+  // Settings: Commute secrets
+  {
+    method: "GET",
+    pattern: /^\/settings\/commute\/secrets$/,
+    mapping: {
+      channel: "settings:commute:secrets",
+      extractArgs: () => [],
+    },
+  },
+  {
+    method: "PUT",
+    pattern: /^\/settings\/commute\/([^/]+)\/secret$/,
+    mapping: {
+      channel: "settings:commute:secret:save",
+      extractArgs: (p, body) => [p[1], body?.value],
+    },
+  },
+  {
+    method: "DELETE",
+    pattern: /^\/settings\/commute\/([^/]+)\/secret$/,
+    mapping: {
+      channel: "settings:commute:secret:clear",
+      extractArgs: (p) => [p[1]],
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/settings\/commute\/([^/]+)\/secret\/test$/,
+    mapping: {
+      channel: "settings:commute:secret:test",
+      extractArgs: (p) => [p[1]],
+    },
+  },
+  // Settings: Provider info
+  {
+    method: "GET",
+    pattern: /^\/settings\/llm-providers$/,
+    mapping: {
+      channel: "settings:llm-providers",
+      extractArgs: () => [],
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/settings\/commute-providers$/,
+    mapping: {
+      channel: "settings:commute-providers",
+      extractArgs: () => [],
     },
   },
   // LLM models

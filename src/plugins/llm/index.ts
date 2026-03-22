@@ -1,14 +1,20 @@
 import {
   createOpenRouterClient,
   createOpenRouterModelRegistry,
+  openrouterProviderInfo,
 } from "./openrouter/index.js";
 import {
   createRequestyClient,
   createRequestyModelRegistry,
+  requestyProviderInfo,
 } from "./requesty/index.js";
-import type { LlmClient, LlmModelRegistry } from "./types.js";
+import type { LlmClient, LlmModelRegistry, LlmProviderInfo } from "./types.js";
 
-export type { LlmClient, JsonSchema } from "./types.js";
+export type { LlmClient, JsonSchema, LlmProviderInfo } from "./types.js";
+
+export function getLlmProviders(): LlmProviderInfo[] {
+  return [openrouterProviderInfo, requestyProviderInfo];
+}
 
 export function createLlmClient(
   provider: string,

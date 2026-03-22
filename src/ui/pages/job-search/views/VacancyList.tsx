@@ -18,7 +18,7 @@ import {
   EmptyState,
   Loading,
 } from "@/ui/components";
-import { Markdown } from "@/ui/pages/job-search/components/Markdown";
+import { Markdown } from "@/ui/components";
 import { ProgressLog } from "@/ui/pages/job-search/components/ProgressLog";
 import { StatusBadge } from "@/ui/pages/job-search/components/StatusBadge";
 import {

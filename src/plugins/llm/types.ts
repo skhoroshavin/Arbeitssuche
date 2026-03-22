@@ -37,3 +37,10 @@ export interface LlmModelInfo {
 export interface LlmModelRegistry {
   fetchModels(): Promise<LlmModelInfo[]>;
 }
+
+export interface LlmProviderInfo {
+  id: string;
+  name: string;
+  description: string;
+  instructions: string;
+}

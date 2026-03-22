@@ -6,6 +6,7 @@ import type {
   LlmClient,
   LlmModelInfo,
   LlmModelRegistry,
+  LlmProviderInfo,
 } from "@/plugins/llm/types.js";
 
 export function createRequestyClient(apiKey: string, model: string): LlmClient {
@@ -16,6 +17,20 @@ export function createRequestyClient(apiKey: string, model: string): LlmClient {
     "Requesty",
   );
 }
+
+export const requestyProviderInfo: LlmProviderInfo = {
+  id: "requesty",
+  name: "Requesty",
+  description: "EU-Datenverarbeitung",
+  instructions: [
+    "1. Erstelle ein Konto auf [requesty.ai](https://requesty.ai) oder melde dich an",
+    "2. Requesty verarbeitet alle Daten in der EU",
+    "3. Klicke in der Seitenleiste auf \u201EAPI Keys\u201C",
+    "4. Klicke auf \u201ECreate API Key\u201C und gib einen Namen ein",
+    "5. Kopiere den Schl\u00fcssel",
+    "6. F\u00fcge ihn oben ein",
+  ].join("\n"),
+};
 
 function splitRegion(id: string): { baseId: string; region: string | null } {
   const at = id.lastIndexOf("@");

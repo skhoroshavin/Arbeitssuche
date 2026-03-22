@@ -1,9 +1,12 @@
 import {
-  useSecrets,
+  useLlmSecrets,
+  useSaveLlmSecret,
+  useClearLlmSecret,
+  useTestLlmSecret,
   useConfig,
   useSaveConfig,
   useLlmModels,
-  useSecretKeyInfos,
+  useLlmProviders,
 } from "@/ui/data/settings";
 import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config/types";
 import {
@@ -12,7 +15,13 @@ import {
   DEFAULT_COVER_LETTER_MODEL,
   DEFAULT_CONSULTATION_MODEL,
 } from "@/models/config/types";
-import { Card, PageHeader, SectionHeader, Loading } from "@/ui/components";
+import {
+  Card,
+  PageHeader,
+  SectionHeader,
+  Loading,
+  Markdown,
+} from "@/ui/components";
 import { Disclosure } from "@/ui/pages/settings/components/Disclosure";
 import { SecretField } from "@/ui/pages/settings/components/SecretField";
 import { ModelCombobox } from "@/ui/pages/settings/components/ModelCombobox";
@@ -45,85 +54,52 @@ const MODEL_OPTIONS: LlmModel[] = [
   },
 ];
 
-const PROVIDER_CONFIG: Record<
-  LlmProvider,
-  {
-    label: string;
-    description: string;
-    secretKey: "openrouterApiKey" | "requestyApiKey";
-  }
-> = {
-  openrouter: {
-    label: "OpenRouter",
-    description: "Global",
-    secretKey: "openrouterApiKey",
-  },
-  requesty: {
-    label: "Requesty",
-    description: "EU-Datenverarbeitung",
-    secretKey: "requestyApiKey",
-  },
-};
-
-const PROVIDER_KEYS: LlmProvider[] = ["openrouter", "requesty"];
-
-const PROVIDERS = PROVIDER_KEYS.map((value) => ({
-  value,
-  label: PROVIDER_CONFIG[value].label,
-  description: PROVIDER_CONFIG[value].description,
-}));
-
 function ProviderSecretSection({
-  provider,
+  providerId,
   secrets,
 }: {
-  provider: LlmProvider;
-  secrets: ReturnType<typeof useSecrets>["data"];
+  providerId: string;
+  secrets: Record<string, { masked: string; isSet: boolean }> | undefined;
 }) {
-  const cfg = PROVIDER_CONFIG[provider];
-  const secret = secrets?.[cfg.secretKey];
-  const { data: keyInfos } = useSecretKeyInfos();
-  const keyInfo = keyInfos?.find((ki) => ki.key === cfg.secretKey);
+  const { data: providers } = useLlmProviders();
+  const saveMutation = useSaveLlmSecret();
+  const clearMutation = useClearLlmSecret();
+  const testMutation = useTestLlmSecret();
+
+  const provider = providers?.find((p) => p.id === providerId);
+  const secret = secrets?.[providerId];
+
+  if (!provider) return null;
 
   return (
     <Card className="p-6 mt-4">
-      <SectionHeader>{cfg.label} API-Schlüssel</SectionHeader>
+      <SectionHeader>{provider.name} API-Schlüssel</SectionHeader>
       <div className="mt-4">
         <SecretField
-          label={`${cfg.label} API-Schlüssel`}
-          secretKey={cfg.secretKey}
+          label={`${provider.name} API-Schlüssel`}
           masked={secret?.masked ?? ""}
           isSet={secret?.isSet ?? false}
+          onSave={async (value) => {
+            await saveMutation.mutateAsync({ providerId, value });
+          }}
+          onClear={async () => {
+            await clearMutation.mutateAsync(providerId);
+          }}
+          onTest={() => testMutation.mutateAsync(providerId)}
         />
-        {keyInfo && (
-          <Disclosure title="Wie bekomme ich einen API-Schlüssel?">
-            <p>
-              1. Gehe zu{" "}
-              <a
-                href={keyInfo.helpUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-blue-600 dark:text-blue-400 underline"
-              >
-                {keyInfo.helpLabel}
-              </a>
-            </p>
-            {keyInfo.helpSteps.map((step, i) => (
-              <p key={i}>
-                {i + 2}. {step}
-              </p>
-            ))}
-          </Disclosure>
-        )}
+        <Disclosure title="Wie bekomme ich einen API-Schlüssel?">
+          <Markdown>{provider.instructions}</Markdown>
+        </Disclosure>
       </div>
     </Card>
   );
 }
 
 export default function SettingsAI() {
-  const { data: secrets, isLoading: secretsLoading } = useSecrets();
+  const { data: secrets, isLoading: secretsLoading } = useLlmSecrets();
   const { data: config, isLoading: configLoading } = useConfig();
   const { data: remoteModels, isLoading: modelsLoading } = useLlmModels();
+  const { data: providers } = useLlmProviders();
   const saveConfig = useSaveConfig();
 
   if (secretsLoading || configLoading) return <Loading />;
@@ -137,7 +113,7 @@ export default function SettingsAI() {
     saveConfig.mutate({ key, value });
   };
 
-  const handleProviderChange = (value: LlmProvider) => {
+  const handleProviderChange = (value: string) => {
     saveConfig.mutate({ key: "provider", value });
   };
 
@@ -147,18 +123,18 @@ export default function SettingsAI() {
       <Card className="p-6">
         <SectionHeader>KI-Anbieter</SectionHeader>
         <div className="mt-4 flex gap-3">
-          {PROVIDERS.map((p) => (
+          {(providers ?? []).map((p) => (
             <button
-              key={p.value}
+              key={p.id}
               type="button"
-              onClick={() => handleProviderChange(p.value)}
+              onClick={() => handleProviderChange(p.id)}
               className={`flex-1 px-4 py-3 rounded-lg border-2 text-left transition-colors ${
-                provider === p.value
+                provider === p.id
                   ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
                   : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
               }`}
             >
-              <div className="font-medium text-sm">{p.label}</div>
+              <div className="font-medium text-sm">{p.name}</div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {p.description}
               </div>
@@ -166,7 +142,7 @@ export default function SettingsAI() {
           ))}
         </div>
       </Card>
-      <ProviderSecretSection provider={provider} secrets={secrets} />
+      <ProviderSecretSection providerId={provider} secrets={secrets} />
       <Card className="p-6 mt-4">
         <SectionHeader>Modelle</SectionHeader>
         <div className="space-y-4 mt-4">

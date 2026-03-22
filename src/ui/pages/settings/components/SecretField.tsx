@@ -1,24 +1,22 @@
 import { useState, useCallback } from "react";
-import {
-  useSaveSecret,
-  useClearSecret,
-  useTestSecret,
-} from "@/ui/data/settings";
 import { useEscapeKey } from "@/ui/hooks";
-import type { SecretKey } from "@/models/secrets/types";
 
 interface SecretFieldProps {
   label: string;
-  secretKey: SecretKey;
   masked: string;
   isSet: boolean;
+  onSave: (value: string) => Promise<void>;
+  onClear: () => Promise<void>;
+  onTest: () => Promise<{ ok: boolean; error?: string }>;
 }
 
 export function SecretField({
   label,
-  secretKey,
   masked,
   isSet,
+  onSave,
+  onClear,
+  onTest,
 }: SecretFieldProps) {
   const [mode, setMode] = useState<"display" | "editing">("display");
   const [inputValue, setInputValue] = useState("");
@@ -26,15 +24,20 @@ export function SecretField({
     ok: boolean;
     error?: string;
   } | null>(null);
-  const saveSecret = useSaveSecret();
-  const clearSecret = useClearSecret();
-  const testSecret = useTestSecret();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
   const handleSave = async () => {
     if (!inputValue.trim()) return;
-    await saveSecret.mutateAsync({ key: secretKey, value: inputValue.trim() });
-    setInputValue("");
-    setMode("display");
+    setIsSaving(true);
+    try {
+      await onSave(inputValue.trim());
+      setInputValue("");
+      setMode("display");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = useCallback(() => {
@@ -43,15 +46,24 @@ export function SecretField({
   }, []);
 
   const handleClear = async () => {
-    await clearSecret.mutateAsync(secretKey);
-    setTestResult(null);
+    setIsClearing(true);
+    try {
+      await onClear();
+      setTestResult(null);
+    } finally {
+      setIsClearing(false);
+    }
   };
 
-  const handleTest = () => {
+  const handleTest = async () => {
     setTestResult(null);
-    testSecret.mutate(secretKey, {
-      onSuccess: (result) => setTestResult(result),
-    });
+    setIsTesting(true);
+    try {
+      const result = await onTest();
+      setTestResult(result);
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   const handleStartEditing = () => {
@@ -76,10 +88,10 @@ export function SecretField({
                     type="button"
                     aria-label={`${label} testen`}
                     onClick={handleTest}
-                    disabled={testSecret.isPending}
+                    disabled={isTesting}
                     className="px-3 py-1 text-xs font-medium rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
                   >
-                    {testSecret.isPending ? "Teste..." : "Testen"}
+                    {isTesting ? "Teste..." : "Testen"}
                   </button>
                   <button
                     type="button"
@@ -93,7 +105,7 @@ export function SecretField({
                     type="button"
                     aria-label={`${label} löschen`}
                     onClick={handleClear}
-                    disabled={clearSecret.isPending}
+                    disabled={isClearing}
                     className="px-3 py-1 text-xs font-medium rounded border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
                   >
                     Löschen
@@ -133,7 +145,7 @@ export function SecretField({
             type="button"
             aria-label={`${label} speichern`}
             onClick={handleSave}
-            disabled={!inputValue.trim() || saveSecret.isPending}
+            disabled={!inputValue.trim() || isSaving}
             className="px-3 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Speichern

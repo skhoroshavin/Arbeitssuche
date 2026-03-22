@@ -10,7 +10,7 @@ import {
 import { useApiKeyStatus } from "@/ui/data/settings";
 import { Card, SectionHeader, Loading, ArrowLeftIcon } from "@/ui/components";
 import { CoverLetterEditor } from "@/ui/pages/job-search/components/CoverLetterEditor";
-import { Markdown } from "@/ui/pages/job-search/components/Markdown";
+import { Markdown } from "@/ui/components";
 import { StatusBadge } from "@/ui/pages/job-search/components/StatusBadge";
 import { useLayoutConfig } from "@/ui/layout";
 import type {

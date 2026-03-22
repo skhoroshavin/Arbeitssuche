@@ -2,42 +2,129 @@ import { useInvalidate } from "@/ui/hooks";
 import { ipcFetch } from "./internal/ipc-client";
 import { useIpcMutation } from "./internal/use-ipc-mutation";
 import { useIpcQuery } from "./internal/use-ipc-query";
+import type { MaskedSecret } from "@/models/secrets/types";
 import type {
-  MaskedSecrets,
-  SecretKey,
-  SecretKeyInfo,
-} from "@/models/secrets/types";
-import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config/types";
+  ConfigKey,
+  LlmModel,
+  LlmProvider,
+  LlmProviderInfo,
+  CommuteProviderInfo,
+} from "@/models/config/types";
 import { DEFAULT_PROVIDER } from "@/models/config/types";
 import type { ResolvedConfig } from "@/models/config/resolve";
 
-export function useSecrets() {
+// --- LLM secrets ---
+
+export function useLlmSecrets() {
   return useIpcQuery({
-    queryKey: ["secrets"],
-    queryFn: () => ipcFetch<MaskedSecrets>("/settings/secrets"),
+    queryKey: ["llm-secrets"],
+    queryFn: () =>
+      ipcFetch<Record<string, MaskedSecret>>("/settings/llm/secrets"),
   });
 }
 
-export function useSaveSecret() {
+export function useSaveLlmSecret() {
   const invalidate = useInvalidate();
   return useIpcMutation({
-    mutationFn: ({ key, value }: { key: SecretKey; value: string }) =>
-      ipcFetch(`/settings/secrets/${key}`, {
+    mutationFn: ({
+      providerId,
+      value,
+    }: {
+      providerId: string;
+      value: string;
+    }) =>
+      ipcFetch(`/settings/llm/${providerId}/secret`, {
         method: "PUT",
         body: JSON.stringify({ value }),
       }),
-    onSuccess: () => invalidate(["secrets"]),
+    onSuccess: () => invalidate(["llm-secrets"]),
   });
 }
 
-export function useClearSecret() {
+export function useClearLlmSecret() {
   const invalidate = useInvalidate();
   return useIpcMutation({
-    mutationFn: (key: SecretKey) =>
-      ipcFetch(`/settings/secrets/${key}`, { method: "DELETE" }),
-    onSuccess: () => invalidate(["secrets"]),
+    mutationFn: (providerId: string) =>
+      ipcFetch(`/settings/llm/${providerId}/secret`, { method: "DELETE" }),
+    onSuccess: () => invalidate(["llm-secrets"]),
   });
 }
+
+export function useTestLlmSecret() {
+  return useIpcMutation({
+    mutationFn: (providerId: string) =>
+      ipcFetch<{ ok: boolean; error?: string }>(
+        `/settings/llm/${providerId}/secret/test`,
+        { method: "POST" },
+      ),
+  });
+}
+
+// --- Commute secrets ---
+
+export function useCommuteSecrets() {
+  return useIpcQuery({
+    queryKey: ["commute-secrets"],
+    queryFn: () =>
+      ipcFetch<Record<string, MaskedSecret>>("/settings/commute/secrets"),
+  });
+}
+
+export function useSaveCommuteSecret() {
+  const invalidate = useInvalidate();
+  return useIpcMutation({
+    mutationFn: ({
+      providerId,
+      value,
+    }: {
+      providerId: string;
+      value: string;
+    }) =>
+      ipcFetch(`/settings/commute/${providerId}/secret`, {
+        method: "PUT",
+        body: JSON.stringify({ value }),
+      }),
+    onSuccess: () => invalidate(["commute-secrets"]),
+  });
+}
+
+export function useClearCommuteSecret() {
+  const invalidate = useInvalidate();
+  return useIpcMutation({
+    mutationFn: (providerId: string) =>
+      ipcFetch(`/settings/commute/${providerId}/secret`, { method: "DELETE" }),
+    onSuccess: () => invalidate(["commute-secrets"]),
+  });
+}
+
+export function useTestCommuteSecret() {
+  return useIpcMutation({
+    mutationFn: (providerId: string) =>
+      ipcFetch<{ ok: boolean; error?: string }>(
+        `/settings/commute/${providerId}/secret/test`,
+        { method: "POST" },
+      ),
+  });
+}
+
+// --- Provider info ---
+
+export function useLlmProviders() {
+  return useIpcQuery({
+    queryKey: ["llm-providers"],
+    queryFn: () => ipcFetch<LlmProviderInfo[]>("/settings/llm-providers"),
+  });
+}
+
+export function useCommuteProviders() {
+  return useIpcQuery({
+    queryKey: ["commute-providers"],
+    queryFn: () =>
+      ipcFetch<CommuteProviderInfo[]>("/settings/commute-providers"),
+  });
+}
+
+// --- Config ---
 
 export function useConfig() {
   return useIpcQuery({
@@ -68,42 +155,23 @@ export function useSaveConfig() {
   });
 }
 
-export function useSecretKeyInfos() {
-  return useIpcQuery({
-    queryKey: ["secret-key-infos"],
-    queryFn: () => ipcFetch<SecretKeyInfo[]>("/settings/secrets/info"),
-  });
-}
-
-export function useTestSecret() {
-  return useIpcMutation({
-    mutationFn: (key: SecretKey) =>
-      ipcFetch<{ ok: boolean; error?: string }>(
-        `/settings/secrets/test/${key}`,
-        { method: "POST" },
-      ),
-  });
-}
-
-const PROVIDER_SECRET_KEYS: Record<LlmProvider, SecretKey> = {
-  openrouter: "openrouterApiKey",
-  requesty: "requestyApiKey",
-};
+// --- API key status (used across the app) ---
 
 export function useApiKeyStatus(): {
   hasLlmKey: boolean;
   hasMapsKey: boolean;
   isLoading: boolean;
 } {
-  const { data: secrets, isLoading: secretsLoading } = useSecrets();
+  const { data: llmSecrets, isLoading: llmLoading } = useLlmSecrets();
+  const { data: commuteSecrets, isLoading: commuteLoading } =
+    useCommuteSecrets();
   const { data: config, isLoading: configLoading } = useConfig();
 
   const provider: LlmProvider = config?.provider ?? DEFAULT_PROVIDER;
-  const llmKey = PROVIDER_SECRET_KEYS[provider];
 
   return {
-    hasLlmKey: secrets?.[llmKey]?.isSet ?? false,
-    hasMapsKey: secrets?.googleMapsApiKey?.isSet ?? false,
-    isLoading: secretsLoading || configLoading,
+    hasLlmKey: llmSecrets?.[provider]?.isSet ?? false,
+    hasMapsKey: commuteSecrets?.["google-maps"]?.isSet ?? false,
+    isLoading: llmLoading || commuteLoading || configLoading,
   };
 }
