@@ -2,7 +2,7 @@ import type { CommuteResult, CommuteClient } from "@/plugins/commute/types.js";
 
 const DEFAULT_RESULT: CommuteResult = {
   distance: "10.0 km",
-  durations: { morning: "25 mins", day: "20 mins", evening: "30 mins" },
+  durations: { morning: 25, day: 20, evening: 30 },
   fetchedAt: "2020-01-01T00:00:00.000Z",
 };
 

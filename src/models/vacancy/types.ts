@@ -85,9 +85,9 @@ export type VacancyStatus =
   | "not-interested";
 
 interface CommuteDurations {
-  morning: string;
-  day: string;
-  evening: string;
+  morning: number;
+  day: number;
+  evening: number;
 }
 
 export interface CommuteInfo {
@@ -101,7 +101,7 @@ export interface VacancySource {
   url: string;
 }
 
-export interface Vacancy {
+export interface VacancyDTO {
   hash: string;
   title: string;
   company: string;

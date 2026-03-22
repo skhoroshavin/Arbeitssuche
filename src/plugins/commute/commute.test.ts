@@ -14,7 +14,7 @@ describe("StubCommuteClient", () => {
   test("returns configured single result", async () => {
     const custom = {
       distance: "50 km",
-      durations: { morning: "1h", day: "45m", evening: "1h10m" },
+      durations: { morning: 60, day: 45, evening: 70 },
       fetchedAt: "2026-01-01",
     };
     const client = createStubCommuteClient(custom);
@@ -28,7 +28,7 @@ describe("StubCommuteClient", () => {
         "Munich",
         {
           distance: "600 km",
-          durations: { morning: "5h", day: "4h", evening: "5h" },
+          durations: { morning: 300, day: 240, evening: 300 },
           fetchedAt: "2026-01-01",
         },
       ],

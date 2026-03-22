@@ -1,5 +1,6 @@
 import { Database, queryRow, queryRows } from "@/utils/database.js";
-import type { Vacancy, Activity } from "@/models/vacancy/types.js";
+import { Vacancy } from "@/models/vacancy/vacancy.js";
+import type { Activity } from "@/models/vacancy/types.js";
 import {
   createVacancyListOutput,
   type VacancyRepository,
@@ -46,7 +47,7 @@ class SqliteVacancyRepository implements VacancyRepository {
     if (!meta) return undefined;
 
     const rows = queryRows<{ data: string }>(this.loadAllStmt, jobSearchId);
-    const vacancies = rows.map((r): Vacancy => JSON.parse(r.data));
+    const vacancies = rows.map((r) => new Vacancy(JSON.parse(r.data)));
 
     return {
       generatedAt: meta.generated_at,
@@ -83,7 +84,7 @@ class SqliteVacancyRepository implements VacancyRepository {
       jobSearchId,
       hash,
     );
-    return row ? JSON.parse(row.data) : undefined;
+    return row ? new Vacancy(JSON.parse(row.data)) : undefined;
   }
 
   async addActivity(
@@ -98,10 +99,12 @@ class SqliteVacancyRepository implements VacancyRepository {
     );
     if (!row) throw new Error(`Vacancy "${hash}" not found`);
 
-    const vacancy: Vacancy = JSON.parse(row.data);
-    vacancy.activityHistory.push(activity);
+    const vacancy = new Vacancy(JSON.parse(row.data));
+    const updated = vacancy.with({
+      activityHistory: [...vacancy.activityHistory, activity],
+    });
 
-    this.updateVacancyStmt.run(JSON.stringify(vacancy), jobSearchId, hash);
+    this.updateVacancyStmt.run(JSON.stringify(updated), jobSearchId, hash);
   }
 }
 

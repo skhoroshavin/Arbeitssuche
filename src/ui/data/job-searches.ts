@@ -6,14 +6,14 @@ import {
 } from "@/ui/hooks";
 import type { JobSearch, JobSearchInfo } from "@/models/job-search/types";
 import type {
-  Vacancy,
+  VacancyDTO,
   VacancySource,
   VacancyStatus,
 } from "@/models/vacancy/types";
 
 export type { VacancySource };
 
-export type VacancyWithStatus = Vacancy & {
+export type VacancyWithStatus = VacancyDTO & {
   status: VacancyStatus;
   sources: VacancySource[];
 };

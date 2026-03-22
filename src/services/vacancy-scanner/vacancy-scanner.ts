@@ -4,7 +4,7 @@ import type { ApplicantRepository } from "@/repositories/applicant/types.js";
 import type { LlmClient } from "@/plugins/llm/types.js";
 import type { CommuteClient } from "@/plugins/commute/types.js";
 import type { JobSite } from "@/plugins/job-site/types.js";
-import type { Vacancy } from "@/models/vacancy/types.js";
+import type { Vacancy } from "@/models/vacancy/vacancy.js";
 import type { ProgressEvent } from "@/models/events.js";
 import { getJobSiteNames } from "@/plugins/job-site/index.js";
 import { resolveSearchParams } from "./resolve-search-params.js";

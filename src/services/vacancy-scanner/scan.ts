@@ -3,7 +3,7 @@ import type { LlmClient } from "@/plugins/llm/types.js";
 import type { CommuteClient } from "@/plugins/commute/types.js";
 import type { Applicant } from "@/models/applicant/types.js";
 import type { SearchPreferences } from "@/models/job-search/types.js";
-import type { Vacancy } from "@/models/vacancy/types.js";
+import type { Vacancy } from "@/models/vacancy/vacancy.js";
 import type { ProgressEvent } from "@/models/events.js";
 import { processOneCrawlResult } from "./unify.js";
 import { computeCommutes } from "./commute.js";
@@ -128,12 +128,11 @@ async function enrichVacancy(
     ]);
 
     if (assessmentResult) {
-      updated = {
-        ...updated,
+      updated = updated.with({
         summary: assessmentResult.summary,
         matchScore: assessmentResult.matchScore,
         descriptionChanged: false,
-      };
+      });
     }
     if (contactResult) {
       updated = mergeContactInfo(updated, contactResult);

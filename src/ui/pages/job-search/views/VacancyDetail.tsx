@@ -106,8 +106,8 @@ function VacancyCommuteSection({
         {Object.entries(commute).map(([addr, info]) => (
           <div key={addr} className="contents">
             <div>{addr}</div>
-            <div>{info.durations.morning}</div>
-            <div>{info.durations.day}</div>
+            <div>{info.durations.morning} min</div>
+            <div>{info.durations.day} min</div>
             <div>{info.distance}</div>
           </div>
         ))}

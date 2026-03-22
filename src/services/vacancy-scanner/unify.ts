@@ -1,6 +1,6 @@
 import type { VacancyDetails } from "@/plugins/job-site/types.js";
+import { Vacancy } from "@/models/vacancy/vacancy.js";
 import type {
-  Vacancy,
   FoundActivity,
   NotFoundActivity,
   VacancyContact,
@@ -52,8 +52,7 @@ function mergeWithExisting(
     existing.description,
   );
 
-  const vacancy: Vacancy = {
-    ...existing,
+  const vacancy = existing.with({
     urls: mergeUrls(existing.urls, details.url),
     addresses: mergeAddresses(existing.addresses, details.address),
     description: description ?? existing.description,
@@ -62,7 +61,7 @@ function mergeWithExisting(
     startDate: details.startDate ?? existing.startDate,
     activityHistory: [...existing.activityHistory, foundActivity],
     active: true,
-  };
+  });
 
   return { vacancy, hash, isNew: false, descriptionChanged };
 }
@@ -107,7 +106,7 @@ export function processOneCrawlResult(
     );
   }
 
-  const vacancy: Vacancy = {
+  const vacancy = new Vacancy({
     hash,
     title: details.title ?? "",
     company: details.company ?? "",
@@ -119,7 +118,7 @@ export function processOneCrawlResult(
     descriptionChanged: false,
     activityHistory: [foundActivity],
     active: true,
-  };
+  });
 
   return { vacancy, hash, isNew: true, descriptionChanged: false };
 }
@@ -144,11 +143,10 @@ export function markUnseenAsGone(
       date: crawlDate,
       site: "all",
     };
-    return {
-      ...v,
+    return v.with({
       active: false,
       activityHistory: [...v.activityHistory, notFoundActivity],
-    };
+    });
   });
 
   return { vacancies, goneCount };

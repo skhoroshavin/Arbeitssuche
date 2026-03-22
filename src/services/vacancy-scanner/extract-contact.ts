@@ -1,4 +1,5 @@
-import type { Vacancy, VacancyContact } from "@/models/vacancy/types.js";
+import type { Vacancy } from "@/models/vacancy/vacancy.js";
+import type { VacancyContact } from "@/models/vacancy/types.js";
 import type { JsonSchema, LlmClient } from "@/plugins/llm/types.js";
 
 export interface ContactExtractionResult {
@@ -199,5 +200,5 @@ export function mergeContactInfo(
 
   if (!addressesChanged && !contactChanged) return vacancy;
 
-  return { ...vacancy, addresses, contact };
+  return vacancy.with({ addresses, contact });
 }

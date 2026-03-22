@@ -1,7 +1,7 @@
 interface CommuteDurations {
-  morning: string;
-  day: string;
-  evening: string;
+  morning: number;
+  day: number;
+  evening: number;
 }
 
 export interface CommuteResult {

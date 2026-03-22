@@ -1,4 +1,5 @@
-import type { Vacancy, Activity } from "@/models/vacancy/types.js";
+import { Vacancy } from "@/models/vacancy/vacancy.js";
+import type { Activity } from "@/models/vacancy/types.js";
 
 export interface VacancyListOutput {
   generatedAt: string;

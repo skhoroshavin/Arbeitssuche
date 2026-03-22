@@ -259,10 +259,7 @@ function classifyFile(relPath: string): Zone | null {
   return null;
 }
 
-function parseBarrel(
-  barrelFile: SourceFile,
-  kind: SharedDir,
-): SharedExport[] {
+function parseBarrel(barrelFile: SourceFile, kind: SharedDir): SharedExport[] {
   const exports: SharedExport[] = [];
 
   for (const exportDecl of barrelFile.getExportDeclarations()) {

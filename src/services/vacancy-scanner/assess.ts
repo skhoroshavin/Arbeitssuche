@@ -1,6 +1,7 @@
 import type { Applicant } from "@/models/applicant/types.js";
 import type { SearchPreferences } from "@/models/job-search/types.js";
-import type { Vacancy, MatchScore } from "@/models/vacancy/types.js";
+import type { Vacancy } from "@/models/vacancy/vacancy.js";
+import type { MatchScore } from "@/models/vacancy/types.js";
 import type { JsonSchema, LlmClient } from "@/plugins/llm/types.js";
 import { formatApplicantSections } from "@/models/applicant/format.js";
 

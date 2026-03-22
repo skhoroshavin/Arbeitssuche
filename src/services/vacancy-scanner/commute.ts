@@ -1,5 +1,5 @@
 import type { CommuteClient } from "@/plugins/commute/types.js";
-import type { Vacancy } from "@/models/vacancy/types.js";
+import type { Vacancy } from "@/models/vacancy/vacancy.js";
 import { formatError } from "./format-error.js";
 
 export interface ComputeCommutesInput {
@@ -64,7 +64,7 @@ export async function computeCommutes(
     }
 
     if (computed) {
-      updatedMap.set(vacancy.hash, { ...vacancy, commute });
+      updatedMap.set(vacancy.hash, vacancy.with({ commute }));
       computedCount++;
     }
   }

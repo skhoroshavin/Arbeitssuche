@@ -60,7 +60,9 @@ function commuteLabel(
 ): string | undefined {
   if (!commute) return undefined;
   const first = Object.values(commute)[0];
-  return first ? `${first.durations.morning} (${first.distance})` : undefined;
+  return first
+    ? `${first.durations.morning} min (${first.distance})`
+    : undefined;
 }
 
 function latestActivityDate(v: VacancyWithStatus): string {
@@ -73,10 +75,7 @@ function commuteMinutes(commute?: Record<string, CommuteInfo>): number {
   if (!commute) return Infinity;
   const first = Object.values(commute)[0];
   if (!first) return Infinity;
-  const t = first.durations.morning;
-  const hours = t.match(/(\d+)\s*hour/)?.[1];
-  const mins = t.match(/(\d+)\s*min/)?.[1];
-  return (hours ? parseInt(hours) * 60 : 0) + (mins ? parseInt(mins) : 0);
+  return first.durations.morning;
 }
 
 function compareVacancies(
