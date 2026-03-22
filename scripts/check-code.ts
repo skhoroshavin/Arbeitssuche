@@ -3,7 +3,7 @@ import { join, relative } from "path";
 import { Project, SyntaxKind, type SourceFile, Node } from "ts-morph";
 
 // =============================================================================
-// Path constants
+// Configuration
 // =============================================================================
 
 const ROOT = join(import.meta.dirname, "..");
@@ -11,32 +11,30 @@ const SRC_DIR = join(ROOT, "src");
 const UI_DIR = join(SRC_DIR, "ui");
 const UTILS_DIR = join(SRC_DIR, "utils");
 
-// =============================================================================
-// Dead-code constants
-// =============================================================================
+// UI sub-layer directories (non-page zones used for classifying importers)
+const UI_ZONES = ["components", "hooks", "layout", "data"] as const;
 
-const TYPE_KINDS = new Set([
-  SyntaxKind.InterfaceDeclaration,
-  SyntaxKind.TypeAliasDeclaration,
-]);
+// Which of those zones have barrel exports checked for shared-code placement.
+// Each export must be used by 2+ page groups, layout + a page group,
+// a sibling in the same directory, or an extra consumer listed below.
+const SHARED_UI_DIRS = ["components", "hooks"] as const;
 
-const DECLARATION_KINDS = new Set([
-  SyntaxKind.FunctionDeclaration,
-  SyntaxKind.VariableStatement,
-  SyntaxKind.ClassDeclaration,
-  SyntaxKind.InterfaceDeclaration,
-  SyntaxKind.TypeAliasDeclaration,
-  SyntaxKind.EnumDeclaration,
-]);
+// Independent page groups under ui/pages/. Cannot cross-import.
+const PAGE_GROUPS = ["applicant", "job-search", "settings"] as const;
 
-// =============================================================================
-// Shared-code constants
-// =============================================================================
+// Extra consumer zones that make a shared dir's export count as shared.
+// Example: hooks used only by data/ are still considered shared.
+const EXTRA_SHARED_CONSUMERS: Partial<
+  Record<(typeof SHARED_UI_DIRS)[number], readonly Zone[]>
+> = {
+  hooks: ["data"],
+};
 
-const PAGE_GROUPS: Zone[] = ["applicant", "job-search", "settings"];
-
-/** Source modules excluded from placement checks (always considered shared). */
+// Modules always excluded from shared-code placement checks.
 const EXCLUDED_MODULES = new Set(["Icons"]);
+
+// src/utils/: each module must be imported by at least this many distinct entities.
+const MIN_UTIL_CONSUMERS = 2;
 
 // =============================================================================
 // Types
@@ -69,19 +67,13 @@ interface UnusedSymbol {
 /** Map from "file::exportedName" → { sourceFile, originalName } */
 type ReExportMap = Map<string, { sourceFile: string; originalName: string }>;
 
-type Zone =
-  | "components"
-  | "hooks"
-  | "layout"
-  | "data"
-  | "applicant"
-  | "job-search"
-  | "settings";
+type Zone = (typeof UI_ZONES)[number] | (typeof PAGE_GROUPS)[number];
+type SharedDir = (typeof SHARED_UI_DIRS)[number];
 
 interface SharedExport {
   name: string;
   sourceModule: string;
-  kind: "components" | "hooks";
+  kind: SharedDir;
 }
 
 // =============================================================================
@@ -110,6 +102,20 @@ function getSrcRelPath(sourceFile: SourceFile): string {
 // =============================================================================
 // Dead-code functions
 // =============================================================================
+
+const TYPE_KINDS = new Set([
+  SyntaxKind.InterfaceDeclaration,
+  SyntaxKind.TypeAliasDeclaration,
+]);
+
+const DECLARATION_KINDS = new Set([
+  SyntaxKind.FunctionDeclaration,
+  SyntaxKind.VariableStatement,
+  SyntaxKind.ClassDeclaration,
+  SyntaxKind.InterfaceDeclaration,
+  SyntaxKind.TypeAliasDeclaration,
+  SyntaxKind.EnumDeclaration,
+]);
 
 function extractExports(sourceFile: SourceFile): ExportEntry[] {
   const entries: ExportEntry[] = [];
@@ -247,7 +253,7 @@ function classifyFile(relPath: string): Zone | null {
     }
     return null;
   }
-  for (const zone of ["components", "hooks", "layout", "data"] as const) {
+  for (const zone of UI_ZONES) {
     if (relPath.startsWith(`${zone}/`)) return zone;
   }
   return null;
@@ -255,7 +261,7 @@ function classifyFile(relPath: string): Zone | null {
 
 function parseBarrel(
   barrelFile: SourceFile,
-  kind: "components" | "hooks",
+  kind: SharedDir,
 ): SharedExport[] {
   const exports: SharedExport[] = [];
 
@@ -357,7 +363,9 @@ function isGenuinelyShared(
   if (isImportedBySibling(sharedExport, uiFiles)) return true;
   if (pageGroups.length >= 2) return true;
   if (zones.has("layout") && pageGroups.length >= 1) return true;
-  if (sharedExport.kind === "hooks" && zones.has("data")) return true;
+
+  const extra = EXTRA_SHARED_CONSUMERS[sharedExport.kind];
+  if (extra?.some((z) => zones.has(z))) return true;
 
   return false;
 }
@@ -369,19 +377,12 @@ function checkUiSharedCode(srcFiles: SourceFile[]): string[] {
     sf.getFilePath().startsWith(UI_DIR + "/"),
   );
 
-  const componentsBarrel = uiFiles.find((sf) =>
-    sf.getFilePath().endsWith("/components/index.ts"),
-  );
-  const hooksBarrel = uiFiles.find((sf) =>
-    sf.getFilePath().endsWith("/hooks/index.ts"),
-  );
-
   const sharedExports: SharedExport[] = [];
-  if (componentsBarrel) {
-    sharedExports.push(...parseBarrel(componentsBarrel, "components"));
-  }
-  if (hooksBarrel) {
-    sharedExports.push(...parseBarrel(hooksBarrel, "hooks"));
+  for (const dir of SHARED_UI_DIRS) {
+    const barrel = uiFiles.find((sf) =>
+      sf.getFilePath().endsWith(`/${dir}/index.ts`),
+    );
+    if (barrel) sharedExports.push(...parseBarrel(barrel, dir));
   }
 
   for (const exp of sharedExports) {
@@ -447,12 +448,14 @@ function checkUtils(srcFiles: SourceFile[]): string[] {
     const entities = entitiesByUtil.get(utilFilePath);
     const count = entities?.size ?? 0;
 
-    if (count < 2) {
+    if (count < MIN_UTIL_CONSUMERS) {
       const detail =
         count === 0
           ? "not imported by any entity"
           : `only used by: ${[...entities!].join(", ")}`;
-      errors.push(`utils/${name}.ts ${detail} → Must be used by 2+ entities`);
+      errors.push(
+        `utils/${name}.ts ${detail} → Must be used by ${MIN_UTIL_CONSUMERS}+ entities`,
+      );
     }
   }
 
