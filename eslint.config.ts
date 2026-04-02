@@ -24,7 +24,7 @@ export default tseslint.config(
       "scratchpad/",
       "scratchpad_dev/",
       "test-results/",
-      "dependency-cruiser.cjs",
+      ".dependency-cruiser.cjs",
     ],
   },
   {

@@ -60,16 +60,16 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            script: electron:dist:mac:arm64
+            script: dist:mac:arm64
             artifact: mac-arm64
           - os: macos-latest
-            script: electron:dist:mac:x64
+            script: dist:mac:x64
             artifact: mac-x64
           - os: ubuntu-latest
-            script: electron:dist:linux
+            script: dist:linux
             artifact: linux-x64
           - os: windows-latest
-            script: electron:dist:win
+            script: dist:win
             artifact: win-x64
     runs-on: ${{ matrix.os }}
     steps:

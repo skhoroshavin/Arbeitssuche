@@ -10,7 +10,7 @@ It focuses on how to build/test/lint and which coding rules to follow.
 - Module mode: ESM (`"type": "module"`)
 - Path alias: `@/* -> src/*`
 - Main layers: `src/utils`, `src/models`, `src/plugins`, `src/repositories`, `src/services`, `src/app`, `src/ui`
-- Layer import rules (`dependency-cruiser.cjs`):
+- Layer import rules (`.dependency-cruiser.cjs`):
   - `utils` -> `utils`
   - `models` -> `models`
   - `plugins` -> `plugins`, `utils`, and plugin `types.ts` surfaces
@@ -22,18 +22,14 @@ It focuses on how to build/test/lint and which coding rules to follow.
 ## Setup
 
 - Install dependencies: `npm install`
-- Run app in dev mode: `npm run electron:dev`
+- Run app in dev mode: `npm run dev`
 
 ## Build, Lint, and Test Commands
 
 ### Core Commands
 
-- `preflight` - format, lint, dependency cruise, and knip:
-  - `npm run preflight`
-- `validate:sandboxed` - run preflight + all tests/build that can run in sandbox:
-  - `npm run validate:sandboxed`
-- `valide` - full validation (not sandbox-safe):
-  - `npm run validate`
+- `verify` - check everything including build:
+  - `npm run verify`
 
 ## Running a Single Test (Important)
 
@@ -48,14 +44,14 @@ It focuses on how to build/test/lint and which coding rules to follow.
 
 ### Vitest Integration
 
-- Full integration suite: `npm run test:integration`
+- Full crawler test suite: `npm run test:crawler`
 - Single integration file:
   - `npx vitest run --config vitest.integration.config.ts src/plugins/job-site/<name>.integration-test.ts`
-- Existing focused scripts:
-  - `npm run test:integration:arbeitsagentur`
-  - `npm run test:integration:xing`
-  - `npm run test:integration:zalando`
-  - `npm run test:integration:dm`
+- Existing focused crawler tests:
+  - `npm run test:crawler:arbeitsagentur`
+  - `npm run test:crawler:xing`
+  - `npm run test:crawler:zalando`
+  - `npm run test:crawler:dm`
 
 ### Playwright (E2E + Visual)
 
@@ -106,7 +102,7 @@ It focuses on how to build/test/lint and which coding rules to follow.
 
 ### Architecture Rules (depcruise + custom ESLint)
 
-- Respect layer boundaries in `dependency-cruiser.cjs`
+- Respect layer boundaries in `.dependency-cruiser.cjs`
 - UI page groups must stay isolated (`applicant`, `job-search`, `settings`)
 - `plugins`, `repositories`, `services`, `app` should import only allowed upstream surfaces
 - Shared-code rule: files in configured shared dirs should be consumed by at least 2 entities
@@ -143,7 +139,7 @@ It focuses on how to build/test/lint and which coding rules to follow.
 ## Agent Execution Checklist
 
 - Before finishing, run at least:
-  - `preflight`
+  - `npm run verify`
   - `npm test`
-- If integration/plugin/crawling logic changed, also run: `npm run test:integration`
+- If crawler/integration logic changed, also run: `npm run test:crawler`
 - If UI flow, Electron boot, preload, or IPC changed, also run: `npm run test:e2e`
