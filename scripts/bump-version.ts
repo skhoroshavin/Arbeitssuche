@@ -1,7 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
-import typia from "typia";
 
 const ROOT = path.join(import.meta.dirname, "..");
 const BUMP_ARGS = ["dev", "major", "minor", "patch"] as const;
@@ -44,8 +43,7 @@ function main() {
 
   // Read current version
   const packageRaw: unknown = JSON.parse(readFileSync(PKG_PATH, "utf8"));
-  if (!typia.is<PackageJson>(packageRaw))
-    throw new Error("Invalid package.json");
+  if (!isPackageJson(packageRaw)) throw new Error("Invalid package.json");
   const package_ = packageRaw;
   const currentVersion: string = package_.version;
   const parsed = parseVersion(currentVersion);
@@ -149,8 +147,7 @@ function bumpFiles(package_: PackageJson, nextVersion: string): void {
   writeFileSync(PKG_PATH, JSON.stringify(package_, undefined, 2) + "\n");
 
   const lockRaw: unknown = JSON.parse(readFileSync(LOCK_PATH, "utf8"));
-  if (!typia.is<PackageJson>(lockRaw))
-    throw new Error("Invalid package-lock.json");
+  if (!isPackageJson(lockRaw)) throw new Error("Invalid package-lock.json");
   const lock = lockRaw;
   lock.version = nextVersion;
   if (lock.packages?.[""]?.version) {
@@ -165,4 +162,22 @@ interface PackageJson {
   version: string;
   packages?: Record<string, { version?: string }>;
   [key: string]: unknown;
+}
+
+function isPackageJson(value: unknown): value is PackageJson {
+  if (!isRecord(value)) return false;
+  if (typeof value.version !== "string") return false;
+  if (value.packages === undefined) return true;
+  if (!isRecord(value.packages)) return false;
+
+  return Object.values(value.packages).every(isPackageEntry);
+}
+
+function isPackageEntry(value: unknown): value is { version?: string } {
+  if (!isRecord(value)) return false;
+  return value.version === undefined || typeof value.version === "string";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
