@@ -8,46 +8,19 @@ import type { ConfigRepository } from "./config/types.js";
 import type { VacancyRepository } from "@/repositories/vacancy/types.js";
 import { createSqliteVacancyRepository } from "@/repositories/vacancy/index.js";
 import type { CommuteClient } from "@/plugins/commute/types.js";
-import { createGoogleMapsCommuteClient } from "@/plugins/commute/google-maps/index.js";
+import { createGoogleMapsCommuteClient } from "@/plugins/commute/index.js";
+import { getJobSiteNames } from "@/plugins/job-site/index.js";
 import type { PdfRenderer } from "@/plugins/pdf-renderer/types.js";
 import { createElectronPdfRenderer } from "@/plugins/pdf-renderer/index.js";
 import type { LlmClient, LlmModelRegistry } from "@/plugins/llm/types.js";
 import { createLlmClient, createModelRegistry } from "@/plugins/llm/index.js";
-import { resolveConfig } from "@/models/config/resolve.js";
+import { resolveConfig } from "@/models/config/index.js";
 import { ResumeRenderer } from "@/services/resume-renderer/index.js";
 import { JobConsultant } from "@/services/job-consultant/index.js";
 import { VacancyScanner } from "@/services/vacancy-scanner/index.js";
 import { CoverLetterWriter } from "@/services/cover-letter-writer/index.js";
 import type { LlmClientFactory } from "./llm-factory.js";
-
-interface ServiceContext {
-  applicantRepo: ApplicantRepository;
-  jobSearchRepo: JobSearchRepository;
-  secretsRepo: SecretsRepository;
-  configRepo: ConfigRepository;
-  vacancyRepo: VacancyRepository;
-  pdfRenderer?: PdfRenderer;
-  modelRegistry?: LlmModelRegistry;
-  llmClientFactory?: LlmClientFactory;
-  commuteClient?: CommuteClient | null;
-}
-
-function buildLlmClient(
-  factory: LlmClientFactory | undefined,
-  provider: string,
-  apiKey: string | undefined,
-  model: string,
-): LlmClient | null {
-  if (factory) {
-    try {
-      return factory(model);
-    } catch {
-      return null;
-    }
-  }
-  if (!apiKey) return null;
-  return createLlmClient(provider, apiKey, model);
-}
+import { resolveSecrets } from "@/models/secrets/index.js";
 
 export interface AppServices {
   applicantRepo: ApplicantRepository;
@@ -63,34 +36,29 @@ export interface AppServices {
   rebuild: () => void;
 }
 
-export function createAppServices(ctx: ServiceContext): AppServices {
-  const pdfRenderer = ctx.pdfRenderer ?? createElectronPdfRenderer();
+export function createAppServices(context: ServiceContext): AppServices {
+  const pdfRenderer = context.pdfRenderer ?? createElectronPdfRenderer();
 
   function buildServices() {
     const { provider, assessmentModel, coverLetterModel, consultationModel } =
-      resolveConfig(ctx.configRepo.load());
-    const secrets = ctx.secretsRepo.load();
-
-    const apiKeyMap: Record<string, string | undefined> = {
-      openrouter: secrets.openrouterApiKey,
-      requesty: secrets.requestyApiKey,
-    };
-    const apiKey = apiKeyMap[provider];
+      resolveConfig(context.configRepo.load());
+    const secrets = resolveSecrets(context.secretsRepo.load());
+    const apiKey = getProviderApiKey(provider, secrets);
 
     const assessmentLlm = buildLlmClient(
-      ctx.llmClientFactory,
+      context.llmClientFactory,
       provider,
       apiKey,
       assessmentModel,
     );
     const coverLetterLlm = buildLlmClient(
-      ctx.llmClientFactory,
+      context.llmClientFactory,
       provider,
       apiKey,
       coverLetterModel,
     );
     const consultationLlm = buildLlmClient(
-      ctx.llmClientFactory,
+      context.llmClientFactory,
       provider,
       apiKey,
       consultationModel,
@@ -99,25 +67,27 @@ export function createAppServices(ctx: ServiceContext): AppServices {
     const googleMapsApiKey = secrets.googleMapsApiKey;
     const commuteClient = googleMapsApiKey
       ? createGoogleMapsCommuteClient(googleMapsApiKey)
-      : (ctx.commuteClient ?? null);
+      : context.commuteClient;
 
-    const modelRegistry = ctx.modelRegistry ?? createModelRegistry(provider);
+    const modelRegistry =
+      context.modelRegistry ?? createModelRegistry(provider);
 
     return {
       modelRegistry,
-      resumeRenderer: new ResumeRenderer(ctx.applicantRepo, pdfRenderer),
-      jobConsultant: new JobConsultant(ctx.applicantRepo, consultationLlm),
+      resumeRenderer: new ResumeRenderer(context.applicantRepo, pdfRenderer),
+      jobConsultant: new JobConsultant(context.applicantRepo, consultationLlm),
       vacancyScanner: new VacancyScanner(
-        ctx.vacancyRepo,
-        ctx.jobSearchRepo,
-        ctx.applicantRepo,
+        context.vacancyRepo,
+        context.jobSearchRepo,
+        context.applicantRepo,
         assessmentLlm,
         commuteClient,
+        getJobSiteNames,
       ),
       coverLetterWriter: new CoverLetterWriter(
-        ctx.jobSearchRepo,
-        ctx.applicantRepo,
-        ctx.vacancyRepo,
+        context.jobSearchRepo,
+        context.applicantRepo,
+        context.vacancyRepo,
         coverLetterLlm,
       ),
     };
@@ -126,11 +96,11 @@ export function createAppServices(ctx: ServiceContext): AppServices {
   let services = buildServices();
 
   return {
-    applicantRepo: ctx.applicantRepo,
-    jobSearchRepo: ctx.jobSearchRepo,
-    vacancyRepo: ctx.vacancyRepo,
-    secretsRepo: ctx.secretsRepo,
-    configRepo: ctx.configRepo,
+    applicantRepo: context.applicantRepo,
+    jobSearchRepo: context.jobSearchRepo,
+    vacancyRepo: context.vacancyRepo,
+    secretsRepo: context.secretsRepo,
+    configRepo: context.configRepo,
     get modelRegistry() {
       return services.modelRegistry;
     },
@@ -153,15 +123,58 @@ export function createAppServices(ctx: ServiceContext): AppServices {
 }
 
 export function createSqliteServiceContext(
-  db: Database,
+  database: Database,
   secretsRepo: SecretsRepository,
   configRepo: ConfigRepository,
 ): ServiceContext {
   return {
-    applicantRepo: createSqliteApplicantRepository(db),
-    jobSearchRepo: createSqliteJobSearchRepository(db),
+    applicantRepo: createSqliteApplicantRepository(database),
+    jobSearchRepo: createSqliteJobSearchRepository(database),
     secretsRepo,
     configRepo,
-    vacancyRepo: createSqliteVacancyRepository(db),
+    vacancyRepo: createSqliteVacancyRepository(database),
   };
+}
+
+interface ServiceContext {
+  applicantRepo: ApplicantRepository;
+  jobSearchRepo: JobSearchRepository;
+  secretsRepo: SecretsRepository;
+  configRepo: ConfigRepository;
+  vacancyRepo: VacancyRepository;
+  pdfRenderer?: PdfRenderer;
+  modelRegistry?: LlmModelRegistry;
+  llmClientFactory?: LlmClientFactory;
+  commuteClient?: CommuteClient;
+}
+
+function buildLlmClient(
+  factory: LlmClientFactory | undefined,
+  provider: string,
+  apiKey: string | undefined,
+  model: string,
+): LlmClient | undefined {
+  if (factory) {
+    try {
+      return factory(model);
+    } catch {
+      return undefined;
+    }
+  }
+  if (!apiKey) return undefined;
+  return createLlmClient(provider, apiKey, model);
+}
+
+function getProviderApiKey(
+  provider: string,
+  secrets: ReturnType<typeof resolveSecrets>,
+): string | undefined {
+  switch (provider) {
+    case "requesty": {
+      return secrets.requestyApiKey;
+    }
+    default: {
+      return secrets.openrouterApiKey;
+    }
+  }
 }

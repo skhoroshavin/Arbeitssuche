@@ -1,7 +1,5 @@
 import type { Page } from "@playwright/test";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export class ElectronApiHelper {
   constructor(private readonly page: Page) {}
 

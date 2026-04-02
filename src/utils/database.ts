@@ -1,20 +1,22 @@
 import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-import type { StatementSync, SQLInputValue } from "node:sqlite";
-import { DatabaseSync } from "node:sqlite";
+import typia from "typia";
+import path from "node:path";
+import { DatabaseSync, StatementSync } from "node:sqlite";
 
 /** SQLite database wrapper with WAL mode, foreign keys, and transaction support. */
 export class Database {
   private constructor(private readonly inner: DatabaseSync) {}
 
   /** Open (or create) a database at the given path, creating parent directories as needed. */
-  static open(dbPath: string): Database {
-    mkdirSync(dirname(dbPath), { recursive: true });
-    const db = new DatabaseSync(dbPath, { enableForeignKeyConstraints: true });
-    db.exec("PRAGMA journal_mode = WAL");
-    db.exec("PRAGMA synchronous = NORMAL");
-    db.exec("PRAGMA busy_timeout = 5000");
-    return new Database(db);
+  static open(databasePath: string): Database {
+    mkdirSync(path.dirname(databasePath), { recursive: true });
+    const database = new DatabaseSync(databasePath, {
+      enableForeignKeyConstraints: true,
+    });
+    database.exec("PRAGMA journal_mode = WAL");
+    database.exec("PRAGMA synchronous = NORMAL");
+    database.exec("PRAGMA busy_timeout = 5000");
+    return new Database(database);
   }
 
   prepare(sql: string): StatementSync {
@@ -29,33 +31,21 @@ export class Database {
     this.inner.close();
   }
 
-  transaction<T>(fn: () => T): T {
+  transaction<T>(function_: () => T): T {
     this.inner.exec("BEGIN TRANSACTION");
     try {
-      const result = fn();
+      const result = function_();
       this.inner.exec("COMMIT");
       return result;
-    } catch (err) {
+    } catch (error) {
       this.inner.exec("ROLLBACK");
-      throw err;
+      throw error;
     }
   }
 }
 
-/** Execute a prepared statement and return the first row, or undefined. */
-export function queryRow<T>(
-  stmt: StatementSync,
-  ...params: SQLInputValue[]
-): T | undefined {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- SQLite API returns unknown
-  return stmt.get(...params) as T | undefined;
-}
-
-/** Execute a prepared statement and return all matching rows. */
-export function queryRows<T>(
-  stmt: StatementSync,
-  ...params: SQLInputValue[]
-): T[] {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- SQLite API returns unknown
-  return stmt.all(...params) as T[];
+/** Parse a row which may be undefined; returns undefined when row is missing. */
+export function parseRow(row: unknown): unknown {
+  if (row === undefined) return undefined;
+  return JSON.parse(typia.assert<{ data: string }>(row).data);
 }

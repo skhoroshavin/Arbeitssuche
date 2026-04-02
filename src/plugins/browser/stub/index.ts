@@ -1,61 +1,65 @@
-import { readFileSync } from "fs";
-import { join } from "path";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { gunzipSync } from "node:zlib";
+import typia from "typia";
+import { findStubMatch } from "@/plugins/stub-utilities.js";
 import type {
   Browser,
   Page,
   OpenPageOptions,
 } from "@/plugins/browser/types.js";
 
-interface StubBrowser extends Browser {
-  visitedUrls: string[];
-}
-
-function loadData(dir: string): Record<string, string> {
-  return JSON.parse(
-    gunzipSync(readFileSync(join(dir, "data.json.gz"))).toString("utf-8"),
-  );
+export function createStubBrowser(
+  pagesOrDirectory: Record<string, string> | string,
+): StubBrowser {
+  return new StubBrowserImpl(pagesOrDirectory);
 }
 
 class StubBrowserImpl implements StubBrowser {
-  readonly visitedUrls: string[] = [];
-  private readonly pages: Record<string, string>;
-
-  constructor(pagesOrDir: Record<string, string> | string) {
+  constructor(pagesOrDirectory: Record<string, string> | string) {
     this.pages =
-      typeof pagesOrDir === "string" ? loadData(pagesOrDir) : pagesOrDir;
+      typeof pagesOrDirectory === "string"
+        ? loadData(pagesOrDirectory)
+        : pagesOrDirectory;
   }
 
-  private resolve(url: string): string {
-    if (url in this.pages) return this.pages[url];
-    for (const [pattern, html] of Object.entries(this.pages)) {
-      if (url.includes(pattern)) return html;
-    }
-    return "";
-  }
+  readonly visitedUrls: string[] = [];
 
-  async openPage(url: string, _opts?: OpenPageOptions): Promise<Page> {
+  openPage(url: string, _options?: OpenPageOptions): Promise<Page> {
     const visitedUrls = this.visitedUrls;
     const resolve = this.resolve.bind(this);
     visitedUrls.push(url);
     let html = resolve(url);
-    return {
+    return Promise.resolve({
       get html() {
         return html;
       },
-      async navigate(nextUrl: string) {
+      navigate(nextUrl: string): Promise<void> {
         visitedUrls.push(nextUrl);
         html = resolve(nextUrl);
+        return Promise.resolve();
       },
       async close() {},
-    };
+    });
   }
 
   async close() {}
+
+  private resolve(url: string): string {
+    return findStubMatch(this.pages, url) ?? "";
+  }
+
+  private readonly pages: Record<string, string>;
 }
 
-export function createStubBrowser(
-  pagesOrDir: Record<string, string> | string,
-): StubBrowser {
-  return new StubBrowserImpl(pagesOrDir);
+interface StubBrowser extends Browser {
+  visitedUrls: string[];
+}
+
+function loadData(directory: string): Record<string, string> {
+  return typia.json.assertParse<Record<string, string>>(
+    gunzipSync(readFileSync(path.join(directory, "data.json.gz"))).toString(
+      "utf8",
+    ),
+  );
 }

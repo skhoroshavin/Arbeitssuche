@@ -6,7 +6,9 @@ afterEach(() => {
   cleanup();
 });
 
-if (typeof window !== "undefined") {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  window.electronAPI = { invoke: async () => undefined } as never;
-}
+globalThis.electronAPI = {
+  invoke: () => Promise.resolve(),
+  on: () => noopCleanup,
+};
+
+function noopCleanup() {}

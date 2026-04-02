@@ -9,12 +9,14 @@ describe("createOpenRouterModelRegistry", () => {
   });
 
   function mockFetch(body: unknown) {
-    globalThis.fetch = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => body,
-      text: async () => JSON.stringify(body),
-    })) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(body),
+        text: () => Promise.resolve(JSON.stringify(body)),
+      }),
+    ) as unknown as typeof fetch;
   }
 
   it("returns models with non-undefined names", async () => {
@@ -56,8 +58,8 @@ describe("createOpenRouterModelRegistry", () => {
     const registry = createOpenRouterModelRegistry();
     const models = await registry.fetchModels();
 
-    expect(models[0]!.pricing.prompt).toBe("0.000003");
-    expect(models[0]!.pricing.completion).toBe("0.000015");
+    expect(models[0].pricing.prompt).toBe("0.000003");
+    expect(models[0].pricing.completion).toBe("0.000015");
   });
 
   it("defaults pricing to 0 when missing", async () => {
@@ -68,7 +70,7 @@ describe("createOpenRouterModelRegistry", () => {
     const registry = createOpenRouterModelRegistry();
     const models = await registry.fetchModels();
 
-    expect(models[0]!.pricing.prompt).toBe("0");
-    expect(models[0]!.pricing.completion).toBe("0");
+    expect(models[0].pricing.prompt).toBe("0");
+    expect(models[0].pricing.completion).toBe("0");
   });
 });

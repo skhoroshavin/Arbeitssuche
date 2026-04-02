@@ -5,19 +5,17 @@ import {
   type JobSearchInfo,
   type SearchMode,
 } from "@/models/job-search/types.js";
+import { resolveJobSearch } from "@/models/job-search/index.js";
 import type { JobSearchRepository } from "@/repositories/job-search/types.js";
-import { deriveId } from "@/utils/derive-id.js";
-import { createWithUniqueId } from "@/utils/create-with-unique-id.js";
+import { createUniqueDerivedId } from "@/utils/id.js";
 
-interface StubData {
-  jobSearch: JobSearch;
-  coverLetter?: string;
-  applicationCoverLetters?: Map<string, string>;
+export function createStubJobSearchRepository(
+  initial?: Record<string, Partial<StubData>>,
+): JobSearchRepository {
+  return new StubJobSearchRepository(initial);
 }
 
 class StubJobSearchRepository implements JobSearchRepository {
-  private readonly store: Map<string, StubData>;
-
   constructor(initial?: Record<string, Partial<StubData>>) {
     this.store = new Map(
       initial
@@ -38,22 +36,16 @@ class StubJobSearchRepository implements JobSearchRepository {
     );
   }
 
-  private getOrThrow(id: string): StubData {
-    const data = this.store.get(id);
-    if (!data) throw new Error(`Job search "${id}" not found`);
-    return data;
+  listByApplicant(applicantId: string): JobSearchInfo[] {
+    return this.list().filter((js) => js.applicantId === applicantId);
   }
 
   list(): JobSearchInfo[] {
-    return [...this.store.entries()].map(([id, data]) => ({
-      id,
+    return [...this.store.values()].map((data) => ({
+      id: data.jobSearch.id,
       applicantId: data.jobSearch.applicantId,
       searchTerm: data.jobSearch.params.searchTerm,
     }));
-  }
-
-  listByApplicant(applicantId: string): JobSearchInfo[] {
-    return this.list().filter((js) => js.applicantId === applicantId);
   }
 
   exists(id: string): boolean {
@@ -61,12 +53,12 @@ class StubJobSearchRepository implements JobSearchRepository {
   }
 
   load(id: string): JobSearch {
-    return structuredClone(this.getOrThrow(id).jobSearch);
+    return resolveJobSearch(structuredClone(this.getOrThrow(id).jobSearch));
   }
 
-  async save(id: string, data: JobSearch) {
-    this.getOrThrow(id); // ensure exists
-    this.store.get(id)!.jobSearch = structuredClone(data);
+  save(id: string, data: JobSearch): void {
+    const entry = this.getOrThrow(id);
+    entry.jobSearch = resolveJobSearch(structuredClone(data));
   }
 
   create(
@@ -74,19 +66,17 @@ class StubJobSearchRepository implements JobSearchRepository {
     applicantId: string,
     searchMode?: SearchMode,
   ): string {
-    const id = createWithUniqueId(
-      () => deriveId(searchTerm),
-      (id) => this.store.has(id),
-    );
-    const params = { ...DEFAULT_SEARCH_PARAMS, searchTerm };
-    if (searchMode) params.searchMode = searchMode;
+    const id = createUniqueDerivedId(searchTerm, (id) => this.store.has(id));
+    const parameters = { ...DEFAULT_SEARCH_PARAMS, searchTerm };
+    if (searchMode) parameters.searchMode = searchMode;
+    const jobSearch = resolveJobSearch({
+      id,
+      applicantId,
+      params: parameters,
+      preferences: { ...DEFAULT_PREFERENCES },
+    });
     this.store.set(id, {
-      jobSearch: {
-        id,
-        applicantId,
-        params,
-        preferences: { ...DEFAULT_PREFERENCES },
-      },
+      jobSearch,
     });
     return id;
   }
@@ -95,39 +85,36 @@ class StubJobSearchRepository implements JobSearchRepository {
     this.store.delete(id);
   }
 
-  loadCoverLetter(id: string): string | undefined {
-    return this.store.get(id)?.coverLetter;
+  loadApplicationCoverLetter(jobSearchId: string, vacancyHash: string): string {
+    return (
+      this.store.get(jobSearchId)?.applicationCoverLetters?.get(vacancyHash) ??
+      ""
+    );
   }
 
-  async saveCoverLetter(id: string, coverLetter: string) {
-    this.getOrThrow(id); // ensure exists
-    this.store.get(id)!.coverLetter = coverLetter;
-  }
-
-  loadApplicationCoverLetter(
-    jobSearchId: string,
-    vacancyHash: string,
-  ): string | undefined {
-    return this.store
-      .get(jobSearchId)
-      ?.applicationCoverLetters?.get(vacancyHash);
-  }
-
-  async saveApplicationCoverLetter(
+  saveApplicationCoverLetter(
     jobSearchId: string,
     vacancyHash: string,
     content: string,
-  ): Promise<void> {
+  ): void {
     const data = this.getOrThrow(jobSearchId);
     if (!data.applicationCoverLetters) {
       data.applicationCoverLetters = new Map();
     }
     data.applicationCoverLetters.set(vacancyHash, content);
   }
+
+  private getOrThrow(id: string): StubData {
+    const data = this.store.get(id);
+    if (!data) throw new Error(`Job search "${id}" not found`);
+    return data;
+  }
+
+  private readonly store: Map<string, StubData>;
 }
 
-export function createStubJobSearchRepository(
-  initial?: Record<string, Partial<StubData>>,
-): JobSearchRepository {
-  return new StubJobSearchRepository(initial);
+interface StubData {
+  jobSearch: JobSearch;
+  coverLetter?: string;
+  applicationCoverLetters?: Map<string, string>;
 }

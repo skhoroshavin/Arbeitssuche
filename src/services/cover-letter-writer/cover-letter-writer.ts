@@ -2,6 +2,7 @@ import type { JobSearchRepository } from "@/repositories/job-search/types.js";
 import type { ApplicantRepository } from "@/repositories/applicant/types.js";
 import type { VacancyRepository } from "@/repositories/vacancy/types.js";
 import type { LlmClient } from "@/plugins/llm/types.js";
+import { ensureLlmAvailable } from "@/services/asserts.js";
 import { generateCoverLetter } from "./generate.js";
 import { generatePersonalizedCoverLetter } from "./generate-personalized.js";
 
@@ -10,16 +11,14 @@ export class CoverLetterWriter {
     private readonly jobSearchRepo: JobSearchRepository,
     private readonly applicantRepo: ApplicantRepository,
     private readonly vacancyRepo: VacancyRepository,
-    private readonly llm: LlmClient | null,
+    private readonly llm?: LlmClient,
   ) {}
 
   async generate(jobSearchId: string): Promise<{ content: string }> {
     const jobSearch = this.jobSearchRepo.load(jobSearchId);
     const applicant = this.applicantRepo.load(jobSearch.applicantId);
 
-    if (!this.llm) {
-      throw new Error("No LLM API key configured");
-    }
+    ensureLlmAvailable(this.llm);
 
     const content = await generateCoverLetter(applicant, jobSearch, this.llm);
     return { content };
@@ -29,9 +28,7 @@ export class CoverLetterWriter {
     jobSearchId: string,
     vacancyHash: string,
   ): Promise<{ content: string }> {
-    if (!this.llm) {
-      throw new Error("No LLM API key configured");
-    }
+    ensureLlmAvailable(this.llm);
 
     const vacancy = this.vacancyRepo.findByHash(jobSearchId, vacancyHash);
     if (!vacancy) {
@@ -40,7 +37,10 @@ export class CoverLetterWriter {
 
     const jobSearch = this.jobSearchRepo.load(jobSearchId);
     const applicant = this.applicantRepo.load(jobSearch.applicantId);
-    const templateCoverLetter = this.jobSearchRepo.loadCoverLetter(jobSearchId);
+    const templateCoverLetter = this.jobSearchRepo.loadApplicationCoverLetter(
+      jobSearchId,
+      "",
+    );
 
     const content = await generatePersonalizedCoverLetter(
       applicant,
@@ -49,7 +49,7 @@ export class CoverLetterWriter {
       jobSearch,
       this.llm,
     );
-    await this.jobSearchRepo.saveApplicationCoverLetter(
+    this.jobSearchRepo.saveApplicationCoverLetter(
       jobSearchId,
       vacancyHash,
       content,

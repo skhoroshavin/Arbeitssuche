@@ -5,141 +5,16 @@ import {
   type JobSearchInfo,
   type SearchMode,
 } from "@/models/job-search/types.js";
+import { resolveJobSearch } from "@/models/job-search/index.js";
 import type { JobSearchRepository } from "@/repositories/job-search/types.js";
-import { deriveId } from "@/utils/derive-id.js";
-import { createWithUniqueId } from "@/utils/create-with-unique-id.js";
-import { Database, queryRow, queryRows } from "@/utils/database.js";
-
-type JobSearchRow = { id: string; applicant_id: string; search_term: string };
-
-function mapRow(r: JobSearchRow): JobSearchInfo {
-  return { id: r.id, applicantId: r.applicant_id, searchTerm: r.search_term };
-}
-
-class SqliteJobSearchRepository implements JobSearchRepository {
-  private readonly listStmt;
-  private readonly listByApplicantStmt;
-  private readonly existsStmt;
-  private readonly loadStmt;
-  private readonly updateStmt;
-  private readonly insertStmt;
-  private readonly deleteStmt;
-  private readonly loadCoverLetterStmt;
-  private readonly saveCoverLetterStmt;
-
-  constructor(db: Database) {
-    this.listStmt = db.prepare(
-      "SELECT id, applicant_id, search_term FROM job_searches",
-    );
-    this.listByApplicantStmt = db.prepare(
-      "SELECT id, applicant_id, search_term FROM job_searches WHERE applicant_id = ?",
-    );
-    this.existsStmt = db.prepare("SELECT 1 FROM job_searches WHERE id = ?");
-    this.loadStmt = db.prepare("SELECT data FROM job_searches WHERE id = ?");
-    this.updateStmt = db.prepare(
-      "UPDATE job_searches SET applicant_id = ?, search_term = ?, data = ? WHERE id = ?",
-    );
-    this.insertStmt = db.prepare(
-      "INSERT INTO job_searches (id, applicant_id, search_term, data) VALUES (?, ?, ?, ?)",
-    );
-    this.deleteStmt = db.prepare("DELETE FROM job_searches WHERE id = ?");
-    this.loadCoverLetterStmt = db.prepare(
-      "SELECT content FROM cover_letters WHERE job_search_id = ? AND vacancy_hash = ?",
-    );
-    this.saveCoverLetterStmt = db.prepare(
-      "INSERT OR REPLACE INTO cover_letters (job_search_id, vacancy_hash, content) VALUES (?, ?, ?)",
-    );
-  }
-
-  list(): JobSearchInfo[] {
-    return queryRows<JobSearchRow>(this.listStmt).map(mapRow);
-  }
-
-  listByApplicant(applicantId: string): JobSearchInfo[] {
-    return queryRows<JobSearchRow>(this.listByApplicantStmt, applicantId).map(
-      mapRow,
-    );
-  }
-
-  exists(id: string): boolean {
-    return this.existsStmt.get(id) !== undefined;
-  }
-
-  load(id: string): JobSearch {
-    const row = queryRow<{ data: string }>(this.loadStmt, id);
-    if (!row) throw new Error(`Job search "${id}" not found`);
-    return JSON.parse(row.data);
-  }
-
-  async save(id: string, data: JobSearch) {
-    const result = this.updateStmt.run(
-      data.applicantId,
-      data.params.searchTerm,
-      JSON.stringify(data),
-      id,
-    );
-    if (result.changes === 0) throw new Error(`Job search "${id}" not found`);
-  }
-
-  create(
-    searchTerm: string,
-    applicantId: string,
-    searchMode?: SearchMode,
-  ): string {
-    const id = createWithUniqueId(
-      () => deriveId(searchTerm),
-      (id) => this.exists(id),
-    );
-    const params = { ...DEFAULT_SEARCH_PARAMS, searchTerm };
-    if (searchMode) params.searchMode = searchMode;
-    const data: JobSearch = {
-      id,
-      applicantId,
-      params,
-      preferences: { ...DEFAULT_PREFERENCES },
-    };
-    this.insertStmt.run(id, applicantId, searchTerm, JSON.stringify(data));
-    return id;
-  }
-
-  delete(id: string): void {
-    this.deleteStmt.run(id);
-  }
-
-  loadCoverLetter(id: string): string | undefined {
-    const row = queryRow<{ content: string }>(this.loadCoverLetterStmt, id, "");
-    return row?.content;
-  }
-
-  async saveCoverLetter(id: string, coverLetter: string) {
-    this.saveCoverLetterStmt.run(id, "", coverLetter);
-  }
-
-  loadApplicationCoverLetter(
-    jobSearchId: string,
-    vacancyHash: string,
-  ): string | undefined {
-    const row = queryRow<{ content: string }>(
-      this.loadCoverLetterStmt,
-      jobSearchId,
-      vacancyHash,
-    );
-    return row?.content;
-  }
-
-  async saveApplicationCoverLetter(
-    jobSearchId: string,
-    vacancyHash: string,
-    content: string,
-  ): Promise<void> {
-    this.saveCoverLetterStmt.run(jobSearchId, vacancyHash, content);
-  }
-}
+import { createUniqueDerivedId } from "@/utils/id.js";
+import { Database, parseRow } from "@/utils/database.js";
+import typia from "typia";
 
 export function createSqliteJobSearchRepository(
-  db: Database,
+  database: Database,
 ): JobSearchRepository {
-  db.exec(`
+  database.exec(`
     CREATE TABLE IF NOT EXISTS job_searches (
       id TEXT PRIMARY KEY,
       applicant_id TEXT NOT NULL,
@@ -156,5 +31,123 @@ export function createSqliteJobSearchRepository(
 
     CREATE INDEX IF NOT EXISTS idx_job_searches_applicant ON job_searches(applicant_id)
   `);
-  return new SqliteJobSearchRepository(db);
+  return new SqliteJobSearchRepository(database);
 }
+
+class SqliteJobSearchRepository implements JobSearchRepository {
+  constructor(database: Database) {
+    this.listStmt = database.prepare(
+      "SELECT id, applicant_id, search_term FROM job_searches",
+    );
+    this.listByApplicantStmt = database.prepare(
+      "SELECT id, applicant_id, search_term FROM job_searches WHERE applicant_id = ?",
+    );
+    this.existsStmt = database.prepare(
+      "SELECT 1 FROM job_searches WHERE id = ?",
+    );
+    this.loadStmt = database.prepare(
+      "SELECT data FROM job_searches WHERE id = ?",
+    );
+    this.updateStmt = database.prepare(
+      "UPDATE job_searches SET applicant_id = ?, search_term = ?, data = ? WHERE id = ?",
+    );
+    this.insertStmt = database.prepare(
+      "INSERT INTO job_searches (id, applicant_id, search_term, data) VALUES (?, ?, ?, ?)",
+    );
+    this.deleteStmt = database.prepare("DELETE FROM job_searches WHERE id = ?");
+    this.loadCoverLetterStmt = database.prepare(
+      "SELECT content FROM cover_letters WHERE job_search_id = ? AND vacancy_hash = ?",
+    );
+    this.saveCoverLetterStmt = database.prepare(
+      "INSERT OR REPLACE INTO cover_letters (job_search_id, vacancy_hash, content) VALUES (?, ?, ?)",
+    );
+  }
+
+  list(): JobSearchInfo[] {
+    return this.listStmt.all().map((row) => parseJobSearchRow(row));
+  }
+
+  listByApplicant(applicantId: string): JobSearchInfo[] {
+    return this.listByApplicantStmt
+      .all(applicantId)
+      .map((row) => parseJobSearchRow(row));
+  }
+
+  create(
+    searchTerm: string,
+    applicantId: string,
+    searchMode?: SearchMode,
+  ): string {
+    const id = createUniqueDerivedId(searchTerm, (id) => this.exists(id));
+    const parameters = { ...DEFAULT_SEARCH_PARAMS, searchTerm };
+    if (searchMode) parameters.searchMode = searchMode;
+    const data = resolveJobSearch({
+      id,
+      applicantId,
+      params: parameters,
+      preferences: { ...DEFAULT_PREFERENCES },
+    });
+    this.insertStmt.run(id, applicantId, searchTerm, JSON.stringify(data));
+    return id;
+  }
+
+  exists(id: string): boolean {
+    return this.existsStmt.get(id) !== undefined;
+  }
+
+  load(id: string): JobSearch {
+    const jobSearch = parseRow(this.loadStmt.get(id));
+    if (jobSearch === undefined)
+      throw new Error(`Job search "${id}" not found`);
+    return resolveJobSearch(typia.assert<JobSearch>(jobSearch));
+  }
+
+  save(id: string, data: JobSearch): void {
+    const resolved = resolveJobSearch(data);
+    const result = this.updateStmt.run(
+      resolved.applicantId,
+      resolved.params.searchTerm,
+      JSON.stringify(resolved),
+      id,
+    );
+    if (result.changes === 0) throw new Error(`Job search "${id}" not found`);
+  }
+
+  delete(id: string): void {
+    this.deleteStmt.run(id);
+  }
+
+  loadApplicationCoverLetter(jobSearchId: string, vacancyHash: string): string {
+    const raw = this.loadCoverLetterStmt.get(jobSearchId, vacancyHash);
+    if (raw === undefined) return "";
+    return typia.assert<{ content: string }>(raw).content;
+  }
+
+  saveApplicationCoverLetter(
+    jobSearchId: string,
+    vacancyHash: string,
+    content: string,
+  ): void {
+    this.saveCoverLetterStmt.run(jobSearchId, vacancyHash, content);
+  }
+
+  private readonly listStmt;
+  private readonly listByApplicantStmt;
+  private readonly existsStmt;
+  private readonly loadStmt;
+  private readonly updateStmt;
+  private readonly insertStmt;
+  private readonly deleteStmt;
+  private readonly loadCoverLetterStmt;
+  private readonly saveCoverLetterStmt;
+}
+
+function parseJobSearchRow(raw: unknown): JobSearchInfo {
+  return mapRow(typia.assert<JobSearchRow>(raw));
+}
+
+function mapRow(r: JobSearchRow): JobSearchInfo {
+  return { id: r.id, applicantId: r.applicant_id, searchTerm: r.search_term };
+}
+
+type JobSearchRow = { id: string; applicant_id: string; search_term: string };

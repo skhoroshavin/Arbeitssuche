@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "lib": ["ES2022", "ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
@@ -10,7 +11,7 @@
     "outDir": "dist",
     "rootDir": ".",
     "baseUrl": ".",
-    "paths": { "@/*": ["./src/*"] }
+    "paths": { "@/*": ["./src/*"], "eslint": ["./node_modules/eslint"] }
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "scripts/**/*", "e2e/**/*", "eslint/**/*", "*.ts"]
 }

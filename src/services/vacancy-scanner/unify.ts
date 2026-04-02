@@ -1,5 +1,5 @@
 import type { VacancyDetails } from "@/plugins/job-site/types.js";
-import { Vacancy } from "@/models/vacancy/vacancy.js";
+import { Vacancy } from "@/models/vacancy/index.js";
 import type {
   FoundActivity,
   NotFoundActivity,
@@ -7,64 +7,13 @@ import type {
 } from "@/models/vacancy/types.js";
 import { vacancyHash } from "./vacancy-hash.js";
 import { htmlToMarkdown } from "./markdown.js";
+import { mergeAddresses } from "./extract-contact.js";
 
-function contactFromDetails(
-  details: VacancyDetails,
-): VacancyContact | undefined {
-  if (!details.contact) return undefined;
-  const { name, email, phone } = details.contact;
-  if (!name && !email && !phone) return undefined;
-  return { name, email, phone };
-}
-
-interface ProcessOneResult {
+export interface ProcessOneResult {
   vacancy: Vacancy;
   hash: string;
   isNew: boolean;
   descriptionChanged: boolean;
-}
-
-function mergeUrls(existing: string[], newUrl: string): string[] {
-  return existing.includes(newUrl) ? existing : [...existing, newUrl];
-}
-
-function mergeAddresses(existing: string[], newAddress?: string): string[] {
-  if (!newAddress) return existing;
-  return existing.includes(newAddress) ? existing : [...existing, newAddress];
-}
-
-function hasDescriptionChanged(
-  newDesc?: string,
-  existingDesc?: string,
-): boolean {
-  return !!newDesc && !!existingDesc && newDesc !== existingDesc;
-}
-
-function mergeWithExisting(
-  existing: Vacancy,
-  details: VacancyDetails,
-  hash: string,
-  foundActivity: FoundActivity,
-  contact: VacancyContact | undefined,
-  description: string | undefined,
-): ProcessOneResult {
-  const descriptionChanged = hasDescriptionChanged(
-    description,
-    existing.description,
-  );
-
-  const vacancy = existing.with({
-    urls: mergeUrls(existing.urls, details.url),
-    addresses: mergeAddresses(existing.addresses, details.address),
-    description: description ?? existing.description,
-    descriptionChanged,
-    contact: contact ?? existing.contact,
-    startDate: details.startDate ?? existing.startDate,
-    activityHistory: [...existing.activityHistory, foundActivity],
-    active: true,
-  });
-
-  return { vacancy, hash, isNew: false, descriptionChanged };
 }
 
 export function processOneCrawlResult(
@@ -109,8 +58,8 @@ export function processOneCrawlResult(
 
   const vacancy = new Vacancy({
     hash,
-    title: details.title ?? "",
-    company: details.company ?? "",
+    title: details.title,
+    company: details.company,
     urls: [details.url],
     addresses: details.address ? [details.address] : [],
     contact,
@@ -122,11 +71,6 @@ export function processOneCrawlResult(
   });
 
   return { vacancy, hash, isNew: true, descriptionChanged: false };
-}
-
-interface MarkUnseenResult {
-  vacancies: Vacancy[];
-  goneCount: number;
 }
 
 export function markUnseenAsGone(
@@ -151,4 +95,59 @@ export function markUnseenAsGone(
   });
 
   return { vacancies, goneCount };
+}
+
+interface MarkUnseenResult {
+  vacancies: Vacancy[];
+  goneCount: number;
+}
+
+function contactFromDetails(
+  details: VacancyDetails,
+): VacancyContact | undefined {
+  if (!details.contact) return undefined;
+  const { name, email, phone } = details.contact;
+  if (!name && !email && !phone) return undefined;
+  return { name, email, phone };
+}
+
+function mergeWithExisting(
+  existing: Vacancy,
+  details: VacancyDetails,
+  hash: string,
+  foundActivity: FoundActivity,
+  contact?: VacancyContact,
+  description?: string,
+): ProcessOneResult {
+  const descriptionChanged = hasDescriptionChanged(
+    description,
+    existing.description,
+  );
+
+  const vacancy = existing.with({
+    urls: mergeUrls(existing.urls, details.url),
+    addresses: mergeAddresses(
+      existing.addresses,
+      details.address ? [details.address] : [],
+    ),
+    description: description ?? existing.description,
+    descriptionChanged,
+    contact: contact ?? existing.contact,
+    startDate: details.startDate ?? existing.startDate,
+    activityHistory: [...existing.activityHistory, foundActivity],
+    active: true,
+  });
+
+  return { vacancy, hash, isNew: false, descriptionChanged };
+}
+
+function mergeUrls(existing: string[], newUrl: string): string[] {
+  return existing.includes(newUrl) ? existing : [...existing, newUrl];
+}
+
+function hasDescriptionChanged(
+  newDesc?: string,
+  existingDesc?: string,
+): boolean {
+  return !!newDesc && !!existingDesc && newDesc !== existingDesc;
 }

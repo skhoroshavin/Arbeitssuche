@@ -3,12 +3,6 @@ import { useWatch, type Control, type FieldValues } from "react-hook-form";
 
 export type AutoSaveStatus = "idle" | "unsaved" | "saving" | "saved" | "error";
 
-interface UseAutoSaveOptions<T extends FieldValues> {
-  control: Control<T>;
-  onSave: (data: T) => Promise<unknown>;
-  debounceMs?: number;
-}
-
 export function useAutoSave<T extends FieldValues>({
   control,
   onSave,
@@ -17,23 +11,25 @@ export function useAutoSave<T extends FieldValues>({
   status: AutoSaveStatus;
   resetBaseline: () => void;
 } {
-  const values = useWatch({ control });
-  const baselineRef = useRef<string | null>(null);
-  const pendingBaselineRef = useRef(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const onSaveRef = useRef(onSave);
+  const values = useWatch({ control, compute: (v) => v });
+  const baselineReference = useRef<string | undefined>(undefined);
+  const pendingBaselineReference = useRef(false);
+  const timerReference = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const onSaveReference = useRef(onSave);
   const [status, setStatus] = useState<AutoSaveStatus>("idle");
 
-  onSaveRef.current = onSave;
+  onSaveReference.current = onSave;
 
   const resetBaseline = useCallback(() => {
-    pendingBaselineRef.current = true;
+    pendingBaselineReference.current = true;
   }, []);
 
   const doSave = useCallback((data: T) => {
-    baselineRef.current = JSON.stringify(data);
+    baselineReference.current = JSON.stringify(data);
     setStatus("saving");
-    onSaveRef.current(data).then(
+    onSaveReference.current(data).then(
       () => setStatus("saved"),
       () => setStatus("error"),
     );
@@ -42,59 +38,63 @@ export function useAutoSave<T extends FieldValues>({
   // Detect changes and debounce
   useEffect(() => {
     // Capture baseline from actual useWatch values after form.reset()
-    if (pendingBaselineRef.current) {
-      baselineRef.current = JSON.stringify(values);
-      pendingBaselineRef.current = false;
+    if (pendingBaselineReference.current) {
+      baselineReference.current = JSON.stringify(values);
+      pendingBaselineReference.current = false;
       return;
     }
 
-    if (baselineRef.current === null) return;
+    if (baselineReference.current === undefined) return;
 
     const serialized = JSON.stringify(values);
-    if (serialized === baselineRef.current) {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
+    if (serialized === baselineReference.current) {
+      if (timerReference.current) {
+        clearTimeout(timerReference.current);
+        timerReference.current = undefined;
       }
-      setStatus((prev) => (prev === "unsaved" ? "idle" : prev));
+      setStatus((previous) => (previous === "unsaved" ? "idle" : previous));
       return;
     }
 
     setStatus("unsaved");
 
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      timerRef.current = null;
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- useWatch returns partial type
-      doSave(structuredClone(values) as T);
+    if (timerReference.current) clearTimeout(timerReference.current);
+    timerReference.current = setTimeout(() => {
+      timerReference.current = undefined;
+      doSave(structuredClone(values));
     }, debounceMs);
 
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
+      if (timerReference.current) {
+        clearTimeout(timerReference.current);
+        timerReference.current = undefined;
       }
     };
   }, [values, debounceMs, doSave]);
 
   // Flush on unmount
-  const valuesRef = useRef(values);
-  valuesRef.current = values;
+  const valuesReference = useRef(values);
+  valuesReference.current = values;
   useEffect(() => {
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
+      if (timerReference.current) {
+        clearTimeout(timerReference.current);
+        timerReference.current = undefined;
       }
       if (
-        baselineRef.current !== null &&
-        JSON.stringify(valuesRef.current) !== baselineRef.current
+        baselineReference.current !== undefined &&
+        JSON.stringify(valuesReference.current) !== baselineReference.current
       ) {
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- useWatch returns partial type
-        onSaveRef.current(structuredClone(valuesRef.current) as T);
+        void onSaveReference.current(structuredClone(valuesReference.current));
       }
     };
   }, []);
 
   return { status, resetBaseline };
+}
+
+interface UseAutoSaveOptions<T extends FieldValues> {
+  control: Control<T>;
+  onSave: (data: T) => Promise<unknown>;
+  debounceMs?: number;
 }

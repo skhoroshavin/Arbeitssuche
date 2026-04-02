@@ -1,9 +1,45 @@
+import typia from "typia";
 import type {
-  JsonSchema,
   LlmClient,
   LlmModelInfo,
+  LlmPricing,
   LlmModelRegistry,
+  TypedSchema,
 } from "@/plugins/llm/types.js";
+import { toStrictSchema } from "./strict-schema.js";
+
+export function normalizeNestedPricing(raw: unknown): LlmPricing {
+  if (!isRecord(raw)) return { prompt: "0", completion: "0" };
+  return {
+    prompt: normalizePrice(raw.prompt),
+    completion: normalizePrice(raw.completion),
+  };
+}
+
+export function normalizeFlatPricing(raw: Record<string, unknown>): LlmPricing {
+  return {
+    prompt: normalizePrice(raw.input_price),
+    completion: normalizePrice(raw.output_price),
+  };
+}
+
+export function createOpenAICompatibleClient(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  providerName: string,
+): LlmClient {
+  return new OpenAICompatibleClient(baseUrl, apiKey, model, providerName);
+}
+
+export function createModelRegistry(
+  url: string,
+  normalize: ModelNormalizer,
+): LlmModelRegistry {
+  return new OpenAICompatibleModelRegistry(url, normalize);
+}
+
+export { toStrictSchema } from "./strict-schema.js";
 
 class OpenAICompatibleClient implements LlmClient {
   constructor(
@@ -17,22 +53,31 @@ class OpenAICompatibleClient implements LlmClient {
     return this.fetchCompletion(prompt, maxTokens);
   }
 
-  async completeJSON<T = unknown>(
+  async completeJSON<T>(
     prompt: string,
     maxTokens: number,
-    schema: JsonSchema,
-  ): Promise<T | null> {
+    schema: TypedSchema<T>,
+  ): Promise<T> {
     const content = await this.fetchCompletion(prompt, maxTokens, {
       response_format: {
         type: "json_schema",
-        json_schema: { name: "response", strict: true, schema },
+        json_schema: {
+          name: "response",
+          strict: true,
+          schema: toStrictSchema(schema.schema),
+        },
       },
     });
-    try {
-      return JSON.parse(content);
-    } catch {
-      return null;
-    }
+    return schema.parse(content);
+  }
+
+  async ping(): Promise<boolean> {
+    const response = await fetch(`${this.baseUrl}/models`, {
+      headers: { Authorization: `Bearer ${this.apiKey}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+    await response.text();
+    return response.ok;
   }
 
   private async fetchCompletion(
@@ -40,7 +85,7 @@ class OpenAICompatibleClient implements LlmClient {
     maxTokens: number,
     extraBody?: Record<string, unknown>,
   ): Promise<string> {
-    const res = await fetch(`${this.baseUrl}/chat/completions`, {
+    const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
@@ -55,16 +100,16 @@ class OpenAICompatibleClient implements LlmClient {
       signal: AbortSignal.timeout(120_000),
     });
 
-    if (!res.ok) {
-      const text = await res.text();
+    if (!response.ok) {
+      const text = await response.text();
       throw new Error(
-        `${this.providerName} API error (${res.status}): ${text}`,
+        `${this.providerName} API error (${response.status}): ${text}`,
       );
     }
 
-    const json: {
+    const json = typia.json.assertParse<{
       choices?: Array<{ message?: { content?: string } }>;
-    } = await res.json();
+    }>(await response.text());
     const content = json.choices?.[0]?.message?.content;
     if (!content) {
       throw new Error(`${this.providerName} returned empty response`);
@@ -72,17 +117,6 @@ class OpenAICompatibleClient implements LlmClient {
     return content;
   }
 }
-
-export function createOpenAICompatibleClient(
-  baseUrl: string,
-  apiKey: string,
-  model: string,
-  providerName: string,
-): LlmClient {
-  return new OpenAICompatibleClient(baseUrl, apiKey, model, providerName);
-}
-
-type ModelNormalizer = (raw: Record<string, unknown>) => LlmModelInfo;
 
 class OpenAICompatibleModelRegistry implements LlmModelRegistry {
   constructor(
@@ -96,17 +130,24 @@ class OpenAICompatibleModelRegistry implements LlmModelRegistry {
         signal: AbortSignal.timeout(10_000),
       });
       if (!response.ok) return [];
-      const data: { data: Record<string, unknown>[] } = await response.json();
-      return data.data.map(this.normalize);
+      const data = typia.json.assertParse<{
+        data: Record<string, unknown>[];
+      }>(await response.text());
+      return data.data.map((raw) => this.normalize(raw));
     } catch {
       return [];
     }
   }
 }
 
-export function createModelRegistry(
-  url: string,
-  normalize: ModelNormalizer,
-): LlmModelRegistry {
-  return new OpenAICompatibleModelRegistry(url, normalize);
+type ModelNormalizer = (raw: Record<string, unknown>) => LlmModelInfo;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function normalizePrice(value: unknown): string {
+  return typeof value === "string" || typeof value === "number"
+    ? String(value)
+    : "0";
 }

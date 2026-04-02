@@ -1,29 +1,26 @@
+import typia from "typia";
 import type { Applicant } from "@/models/applicant/types.js";
-import {
-  SEARCH_MODES,
-  type ConsultationSuggestion,
-} from "@/models/job-search/types.js";
-import type { JsonSchema, LlmClient } from "@/plugins/llm/types.js";
-import { formatApplicantSections } from "@/models/applicant/format.js";
+import type { ConsultationSuggestion } from "@/models/job-search/types.js";
+import type { LlmClient, TypedSchema } from "@/plugins/llm/types.js";
+import { formatApplicantSections } from "@/models/applicant/index.js";
 
-function isValidSearchMode(value: string): boolean {
-  return SEARCH_MODES.some((m) => m === value);
+export async function consultSearches(
+  applicant: Applicant,
+  llmClient: LlmClient,
+): Promise<ConsultationSuggestion[]> {
+  const prompt = buildConsultSearchesPrompt(applicant);
+  return llmClient.completeJSON(
+    prompt,
+    CONSULT_MAX_TOKENS,
+    CONSULT_SEARCHES_SCHEMA,
+  );
 }
 
 const CONSULT_MAX_TOKENS = 4096;
 
-const CONSULT_SEARCHES_SCHEMA: JsonSchema = {
-  type: "array",
-  items: {
-    type: "object",
-    properties: {
-      searchTerm: { type: "string" },
-      searchMode: { type: "string", enum: SEARCH_MODES },
-      reason: { type: "string" },
-    },
-    required: ["searchTerm", "searchMode", "reason"],
-    additionalProperties: false,
-  },
+const CONSULT_SEARCHES_SCHEMA: TypedSchema<ConsultationSuggestion[]> = {
+  schema: typia.json.schema<ConsultationSuggestion[]>(),
+  parse: typia.json.createAssertParse<ConsultationSuggestion[]>(),
 };
 
 function buildConsultSearchesPrompt(applicant: Applicant): string {
@@ -42,52 +39,4 @@ Geben Sie NUR ein JSON-Array zurück (keine Markdown-Fences, kein zusätzlicher 
 [{"searchTerm": "...", "searchMode": "employment", "reason": "..."}]
 
 ${sections.join("\n\n")}`;
-}
-
-function parseConsultSearchesResult(
-  parsed: unknown,
-): ConsultationSuggestion[] | null {
-  if (!Array.isArray(parsed) || parsed.length === 0) return null;
-
-  const suggestions: ConsultationSuggestion[] = [];
-
-  for (const item of parsed) {
-    if (
-      !item ||
-      typeof item !== "object" ||
-      typeof item.searchTerm !== "string" ||
-      !item.searchTerm ||
-      typeof item.searchMode !== "string" ||
-      !isValidSearchMode(item.searchMode) ||
-      typeof item.reason !== "string" ||
-      !item.reason
-    ) {
-      continue;
-    }
-
-    suggestions.push({
-      searchTerm: item.searchTerm,
-      searchMode: item.searchMode,
-      reason: item.reason,
-    });
-  }
-
-  return suggestions.length > 0 ? suggestions : null;
-}
-
-export async function consultSearches(
-  applicant: Applicant,
-  llmClient: LlmClient,
-): Promise<ConsultationSuggestion[]> {
-  const prompt = buildConsultSearchesPrompt(applicant);
-  const parsed = await llmClient.completeJSON(
-    prompt,
-    CONSULT_MAX_TOKENS,
-    CONSULT_SEARCHES_SCHEMA,
-  );
-  const suggestions = parseConsultSearchesResult(parsed);
-  if (!suggestions) {
-    throw new Error("Failed to parse consultation response");
-  }
-  return suggestions;
 }

@@ -1,6 +1,6 @@
-import { join } from "path";
+import path from "node:path";
 import { parseArgs } from "node:util";
-import { createPlaywrightBrowser } from "@/plugins/browser/playwright/index.js";
+import { createPlaywrightBrowser } from "@/plugins/browser/index.js";
 import { createJobSite, getJobSiteNames } from "@/plugins/job-site/index.js";
 import { SEARCH_MODES } from "@/models/job-search/types.js";
 import type { SearchMode } from "@/models/job-search/types.js";
@@ -16,38 +16,37 @@ const { values } = parseArgs({
 });
 
 function isSearchMode(value: string | undefined): value is SearchMode {
-  return value !== undefined && SEARCH_MODES.some((m) => m === value);
+  return value !== undefined && SEARCH_MODES.includes(value);
 }
 
 if (!isSearchMode(values.mode)) {
-  console.error(
+  throw new Error(
     `Invalid mode: ${values.mode}. Available: ${SEARCH_MODES.join(", ")}`,
   );
-  process.exit(1);
 }
 const mode = values.mode;
-const location = values.location!;
-const query = values.query!;
-const outDir = values["out-dir"]!;
+const location = values.location;
+const query = values.query;
+const outputDirectory = values["out-dir"];
 
 const allSiteNames = getJobSiteNames();
 const sitesToRun = values.site ? [values.site] : allSiteNames;
 
 const unknown = sitesToRun.filter((s) => !allSiteNames.includes(s));
-if (unknown.length) {
-  console.error(`Unknown sites: ${unknown.join(", ")}`);
-  console.error(`Available: ${allSiteNames.join(", ")}`);
-  process.exit(1);
+if (unknown.length > 0) {
+  throw new Error(
+    `Unknown sites: ${unknown.join(", ")}. Available: ${allSiteNames.join(", ")}`,
+  );
 }
 
 console.log(`Downloading HTML samples for: ${sitesToRun.join(", ")}`);
 console.log(`Search: "${query}" in ${location}, mode: ${mode}`);
-console.log(`Output dir: ${outDir}`);
+console.log(`Output dir: ${outputDirectory}`);
 
 for (const siteName of sitesToRun) {
-  const recordDir = join(outDir, siteName, "html_samples");
+  const recordDirectory = path.join(outputDirectory, siteName, "html_samples");
 
-  const browser = await createPlaywrightBrowser({ recordDir });
+  const browser = await createPlaywrightBrowser({ recordDirectory });
   try {
     const site = createJobSite(siteName, browser);
     const criteria = { location, query, mode };
@@ -65,18 +64,18 @@ for (const siteName of sitesToRun) {
 
     // Fetch vacancy details (up to 5)
     const sample = allUrls.slice(0, 5);
-    for (let i = 0; i < sample.length; i++) {
+    for (let index = 0; index < sample.length; index++) {
       console.log(
-        `[${siteName}] Fetching vacancy ${i + 1}/${sample.length}: ${sample[i]}`,
+        `[${siteName}] Fetching vacancy ${index + 1}/${sample.length}: ${sample[index]}`,
       );
       try {
-        await site.getVacancyDetails(sample[i]);
-      } catch (err) {
-        console.error(`[${siteName}] Failed: ${sample[i]}`, err);
+        await site.getVacancyDetails(sample[index]);
+      } catch (error) {
+        console.error(`[${siteName}] Failed: ${sample[index]}`, error);
       }
     }
 
-    console.log(`[${siteName}] Saved to ${recordDir}`);
+    console.log(`[${siteName}] Saved to ${recordDirectory}`);
   } finally {
     await browser.close();
   }

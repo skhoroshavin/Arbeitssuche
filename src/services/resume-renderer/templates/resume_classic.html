@@ -1,150 +1,192 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
-<head>
-<meta charset="UTF-8">
-<style>
-  @page {
-    size: A4;
-    margin: 20mm 18mm;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 10.5pt;
-    line-height: 1.45;
-    color: #222;
-  }
-  a { color: #222; text-decoration: none; }
-  h1 {
-    font-size: 22pt;
-    font-weight: normal;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    text-align: center;
-    margin-bottom: 6px;
-  }
-  .contact {
-    text-align: center;
-    font-size: 9pt;
-    color: #555;
-    margin-bottom: 16px;
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      @page {
+        size: A4;
+        margin: 20mm 18mm;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 10.5pt;
+        line-height: 1.45;
+        color: #222;
+      }
+      a {
+        color: #222;
+        text-decoration: none;
+      }
+      h1 {
+        font-size: 22pt;
+        font-weight: normal;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        text-align: center;
+        margin-bottom: 6px;
+      }
+      .contact {
+        text-align: center;
+        font-size: 9pt;
+        color: #555;
+        margin-bottom: 16px;
 
-    span + span::before { content: " · "; }
-  }
-  hr {
-    border: none;
-    border-top: 1px solid #999;
-    margin: 10px 0;
-  }
-  h2 {
-    font-size: 12pt;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid #999;
-    padding-bottom: 2px;
-    margin: 14px 0 8px;
-    break-after: avoid;
-  }
-  .job {
-    margin-bottom: 10px;
-    break-inside: avoid;
-  }
-  .job-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+        span + span::before {
+          content: " · ";
+        }
+      }
+      hr {
+        border: none;
+        border-top: 1px solid #999;
+        margin: 10px 0;
+      }
+      h2 {
+        font-size: 12pt;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #999;
+        padding-bottom: 2px;
+        margin: 14px 0 8px;
+        break-after: avoid;
+      }
+      .job {
+        margin-bottom: 10px;
+        break-inside: avoid;
+      }
+      .job-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
 
-    .role { font-weight: bold; }
-    .dates { font-size: 9.5pt; color: #555; white-space: nowrap; }
-  }
-  .job-company { font-style: italic; color: #444; }
-  ul { margin: 4px 0 0 18px; }
-  li { margin-bottom: 2px; }
-  .edu {
-    margin-bottom: 8px;
-    break-inside: avoid;
-  }
-  .edu-header {
-    display: flex;
-    justify-content: space-between;
+        .role {
+          font-weight: bold;
+        }
+        .dates {
+          font-size: 9.5pt;
+          color: #555;
+          white-space: nowrap;
+        }
+      }
+      .job-company {
+        font-style: italic;
+        color: #444;
+      }
+      ul {
+        margin: 4px 0 0 18px;
+      }
+      li {
+        margin-bottom: 2px;
+      }
+      .edu {
+        margin-bottom: 8px;
+        break-inside: avoid;
+      }
+      .edu-header {
+        display: flex;
+        justify-content: space-between;
 
-    .course { font-weight: bold; }
-    .dates { font-size: 9.5pt; color: #555; }
-  }
-  .skills { color: #333; }
-  .langs { display: flex; flex-wrap: wrap; gap: 4px 20px; }
-  .hobbies { color: #444; }
-</style>
-</head>
-<body>
-  <h1>{{personal.name}}</h1>
-  <div class="contact">
-    {{#if personal.email}}<span>{{personal.email}}</span>{{/if}}
-    {{#if personal.phone}}<span>{{personal.phone}}</span>{{/if}}
-    {{#if personal.location}}<span>{{personal.location}}</span>{{/if}}
-  </div>
-
-  {{#if experience}}
-  <h2>Berufserfahrung</h2>
-  {{#each experience}}
-  <div class="job">
-    <div class="job-header">
-      <span class="role">{{this.role}}</span>
-      {{#if this.startDate}}<span class="dates">{{this.startDate}} – {{this.endDate}}</span>{{/if}}
+        .course {
+          font-weight: bold;
+        }
+        .dates {
+          font-size: 9.5pt;
+          color: #555;
+        }
+      }
+      .skills {
+        color: #333;
+      }
+      .langs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 20px;
+      }
+      .hobbies {
+        color: #444;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>{{personal.name}}</h1>
+    <div class="contact">
+      {{#if personal.email}}<span>{{personal.email}}</span>{{/if}} {{#if
+      personal.phone}}<span>{{personal.phone}}</span>{{/if}} {{#if
+      personal.location}}<span>{{personal.location}}</span>{{/if}}
     </div>
-    <div class="job-company">{{this.company}}{{#if this.location}}, {{this.location}}{{/if}}</div>
-    {{#if this.highlights}}
-    <ul>{{#each this.highlights}}<li>{{this}}</li>{{/each}}</ul>
+
+    {{#if experience}}
+    <h2>Berufserfahrung</h2>
+    {{#each experience}}
+    <div class="job">
+      <div class="job-header">
+        <span class="role">{{this.role}}</span>
+        {{#if this.startDate}}<span class="dates"
+          >{{this.startDate}} – {{this.endDate}}</span
+        >{{/if}}
+      </div>
+      <div class="job-company">
+        {{this.company}}{{#if this.location}}, {{this.location}}{{/if}}
+      </div>
+      {{#if this.highlights}}
+      <ul>
+        {{#each this.highlights}}
+        <li>{{this}}</li>
+        {{/each}}
+      </ul>
+      {{/if}}
+    </div>
+    {{/each}} {{/if}} {{#if education}}
+    <h2>Ausbildung</h2>
+    {{#each education}}
+    <div class="edu">
+      <div class="edu-header">
+        <span class="course">{{this.course}}</span>
+        {{#if this.startDate}}<span class="dates"
+          >{{this.startDate}} – {{this.endDate}}</span
+        >{{/if}}
+      </div>
+      <div>
+        {{this.institution}}{{#if this.location}}, {{this.location}}{{/if}}
+      </div>
+      {{#if this.highlights}}
+      <ul>
+        {{#each this.highlights}}
+        <li>{{this}}</li>
+        {{/each}}
+      </ul>
+      {{/if}}
+    </div>
+    {{/each}} {{/if}} {{#if skills}}
+    <h2>Kenntnisse</h2>
+    <p class="skills">{{join skills ", "}}</p>
+    {{/if}} {{#if languages}}
+    <h2>Sprachen</h2>
+    <div class="langs">
+      {{#each languages}}<span>{{this.language}} ({{this.level}})</span
+      >{{/each}}
+    </div>
+    {{/if}} {{#if certifications}}
+    <h2>Zertifikate</h2>
+    {{#each certifications}}
+    <div class="edu">
+      <div class="edu-header">
+        <span class="course">{{this.name}}</span>
+        {{#if this.date}}<span class="dates">{{this.date}}</span>{{/if}}
+      </div>
+      {{#if this.issuer}}
+      <div>{{this.issuer}}</div>
+      {{/if}} {{#if this.description}}
+      <div>{{this.description}}</div>
+      {{/if}}
+    </div>
+    {{/each}} {{/if}} {{#if hobbies}}
+    <h2>Interessen</h2>
+    <p class="hobbies">{{join hobbies ", "}}</p>
     {{/if}}
-  </div>
-  {{/each}}
-  {{/if}}
-
-  {{#if education}}
-  <h2>Ausbildung</h2>
-  {{#each education}}
-  <div class="edu">
-    <div class="edu-header">
-      <span class="course">{{this.course}}</span>
-      {{#if this.startDate}}<span class="dates">{{this.startDate}} – {{this.endDate}}</span>{{/if}}
-    </div>
-    <div>{{this.institution}}{{#if this.location}}, {{this.location}}{{/if}}</div>
-    {{#if this.highlights}}
-    <ul>{{#each this.highlights}}<li>{{this}}</li>{{/each}}</ul>
-    {{/if}}
-  </div>
-  {{/each}}
-  {{/if}}
-
-  {{#if skills}}
-  <h2>Kenntnisse</h2>
-  <p class="skills">{{join skills ", "}}</p>
-  {{/if}}
-
-  {{#if languages}}
-  <h2>Sprachen</h2>
-  <div class="langs">
-    {{#each languages}}<span>{{this.language}} ({{this.level}})</span>{{/each}}
-  </div>
-  {{/if}}
-
-  {{#if certifications}}
-  <h2>Zertifikate</h2>
-  {{#each certifications}}
-  <div class="edu">
-    <div class="edu-header">
-      <span class="course">{{this.name}}</span>
-      {{#if this.date}}<span class="dates">{{this.date}}</span>{{/if}}
-    </div>
-    {{#if this.issuer}}<div>{{this.issuer}}</div>{{/if}}
-    {{#if this.description}}<div>{{this.description}}</div>{{/if}}
-  </div>
-  {{/each}}
-  {{/if}}
-
-  {{#if hobbies}}
-  <h2>Interessen</h2>
-  <p class="hobbies">{{join hobbies ", "}}</p>
-  {{/if}}
-</body>
+  </body>
 </html>

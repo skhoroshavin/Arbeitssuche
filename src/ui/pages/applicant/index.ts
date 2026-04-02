@@ -1,8 +1,8 @@
-export { default as ApplicantList } from "./views/List";
+export { default as ApplicantList } from "./views/list";
 export { default as ApplicantLayout } from "./layout";
-export { default as ApplicantOverview } from "./views/Overview";
-export { default as ApplicantEditPersonal } from "./views/EditPersonal";
-export { default as ApplicantEditExperience } from "./views/EditExperience";
-export { default as ApplicantEditEducation } from "./views/EditEducation";
-export { default as ApplicantEditCertifications } from "./views/EditCertifications";
-export { default as ApplicantEditOther } from "./views/EditOther";
+export { default as ApplicantOverview } from "./views/overview";
+export { default as ApplicantEditPersonal } from "./views/edit-personal";
+export { default as ApplicantEditExperience } from "./views/edit-experience";
+export { default as ApplicantEditEducation } from "./views/edit-education";
+export { default as ApplicantEditCertifications } from "./views/edit-certifications";
+export { default as ApplicantEditOther } from "./views/edit-other";

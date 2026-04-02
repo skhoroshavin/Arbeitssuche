@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 
 export function useScrollRestoration(
-  ref: RefObject<HTMLElement | null>,
+  reference: RefObject<HTMLElement | null>,
   locationKey: string,
 ): void {
   const scrollPositions = useRef(new Map<string, number>());
@@ -10,21 +10,21 @@ export function useScrollRestoration(
 
   // Track scroll position continuously via passive listener
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const element = reference.current;
+    if (!element) return;
 
     const onScroll = () => {
-      currentScrollTop.current = el.scrollTop;
+      currentScrollTop.current = element.scrollTop;
     };
 
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [ref]);
+    element.addEventListener("scroll", onScroll, { passive: true });
+    return () => element.removeEventListener("scroll", onScroll);
+  }, [reference]);
 
   // Save previous position and restore on location change
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const element = reference.current;
+    if (!element) return;
 
     if (previousKey.current !== locationKey) {
       scrollPositions.current.set(
@@ -35,18 +35,18 @@ export function useScrollRestoration(
     }
 
     const saved = scrollPositions.current.get(locationKey) ?? 0;
-    el.scrollTop = saved;
+    element.scrollTop = saved;
 
     // If content isn't tall enough yet, retry with rAF polling
     let rafId: number | undefined;
-    if (saved > 0 && el.scrollTop !== saved) {
+    if (saved > 0 && element.scrollTop !== saved) {
       let frame = 0;
       const maxFrames = 30;
 
       const tryRestore = () => {
-        el.scrollTop = saved;
+        element.scrollTop = saved;
         frame++;
-        if (el.scrollTop !== saved && frame < maxFrames) {
+        if (element.scrollTop !== saved && frame < maxFrames) {
           rafId = requestAnimationFrame(tryRestore);
         }
       };
@@ -57,5 +57,5 @@ export function useScrollRestoration(
     return () => {
       if (rafId !== undefined) cancelAnimationFrame(rafId);
     };
-  }, [locationKey, ref]);
+  }, [locationKey, reference]);
 }

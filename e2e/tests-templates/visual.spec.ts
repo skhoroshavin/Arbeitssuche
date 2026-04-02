@@ -1,11 +1,11 @@
 import { test, expect } from "@playwright/test";
 import path from "node:path";
-import { renderHTML } from "../../src/use-cases/render-resume/renderer.js";
+import { renderHTML } from "../../src/services/resume-renderer/renderer.js";
 import { pdf } from "pdf-to-img";
 
 const templatesDir = path.resolve(
   import.meta.dirname,
-  "../../src/use-cases/render-resume/templates",
+  "../../src/services/resume-renderer/templates",
 );
 
 const resumeData = {

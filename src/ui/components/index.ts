@@ -1,8 +1,8 @@
-export { Card } from "./Card";
-export { PageHeader } from "./PageHeader";
-export { Input, Textarea } from "./FormField";
-export { SectionHeader } from "./SectionHeader";
-export { EmptyState } from "./EmptyState";
-export { Loading } from "./Loading";
-export { HomeIcon, ArrowLeftIcon, ChevronRightIcon } from "./Icons";
-export { Markdown } from "./Markdown";
+export { Card } from "./card";
+export { PageHeader } from "./page-header";
+export { Input, Textarea } from "./form-field";
+export { SectionHeader } from "./section-header";
+export { EmptyState } from "./empty-state";
+export { Loading } from "./loading";
+export { HomeIcon, ArrowLeftIcon, ChevronRightIcon, CogIcon } from "./icons";
+export { Markdown } from "./markdown";

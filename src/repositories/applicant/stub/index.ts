@@ -1,29 +1,28 @@
 import {
   DEFAULT_APPLICANT,
+  type ApplicantPersonal,
   type Applicant,
   type ApplicantInfo,
 } from "@/models/applicant/types.js";
+import { resolveApplicant } from "@/models/applicant/index.js";
 import type { ApplicantRepository } from "@/repositories/applicant/types.js";
-import { deriveId } from "@/utils/derive-id.js";
-import { createWithUniqueId } from "@/utils/create-with-unique-id.js";
+import { createUniqueDerivedId } from "@/utils/id.js";
+
+export function createStubApplicantRepository(
+  initial?: Record<string, Applicant>,
+): ApplicantRepository {
+  return new StubApplicantRepository(initial);
+}
 
 class StubApplicantRepository implements ApplicantRepository {
-  private readonly store: Map<string, Applicant>;
-
   constructor(initial?: Record<string, Applicant>) {
     this.store = new Map(initial ? Object.entries(initial) : []);
   }
 
-  private getOrThrow(id: string): Applicant {
-    const data = this.store.get(id);
-    if (!data) throw new Error(`Applicant "${id}" not found`);
-    return data;
-  }
-
   list(): ApplicantInfo[] {
-    return [...this.store.entries()].map(([id, data]) => ({
-      id,
-      name: data.personal.name || undefined,
+    return [...this.store.values()].map((data) => ({
+      id: data.id,
+      name: data.personal.name,
     }));
   }
 
@@ -32,34 +31,34 @@ class StubApplicantRepository implements ApplicantRepository {
   }
 
   load(id: string): Applicant {
-    return structuredClone(this.getOrThrow(id));
+    return resolveApplicant(structuredClone(this.getOrThrow(id)));
   }
 
-  async save(id: string, data: Applicant) {
-    this.getOrThrow(id); // ensure exists
-    this.store.set(id, structuredClone(data));
+  save(id: string, data: Applicant): void {
+    this.getOrThrow(id);
+    this.store.set(id, resolveApplicant(structuredClone(data)));
   }
 
   create(name: string): string {
-    const id = createWithUniqueId(
-      () => deriveId(name),
-      (id) => this.store.has(id),
-    );
-    this.store.set(id, {
-      ...DEFAULT_APPLICANT,
-      id,
-      personal: { name },
-    });
+    const id = createUniqueDerivedId(name, (id) => this.store.has(id));
+    const personal: ApplicantPersonal = {
+      ...DEFAULT_APPLICANT.personal,
+      name,
+    };
+    const data = resolveApplicant({ ...DEFAULT_APPLICANT, id, personal });
+    this.store.set(id, data);
     return id;
   }
 
   delete(id: string): void {
     this.store.delete(id);
   }
-}
 
-export function createStubApplicantRepository(
-  initial?: Record<string, Applicant>,
-): ApplicantRepository {
-  return new StubApplicantRepository(initial);
+  private getOrThrow(id: string): Applicant {
+    const data = this.store.get(id);
+    if (!data) throw new Error(`Applicant "${id}" not found`);
+    return data;
+  }
+
+  private readonly store: Map<string, Applicant>;
 }

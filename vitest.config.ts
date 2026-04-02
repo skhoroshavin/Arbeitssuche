@@ -1,16 +1,17 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
-import { resolve } from "node:path";
+import UnpluginTypia from "@typia/unplugin/vite";
+import path from "node:path";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), UnpluginTypia()],
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   test: {
-    include: ["{src,scripts}/**/*.test.{ts,tsx}"],
+    include: ["{src,scripts,eslint}/**/*.test.{ts,tsx}"],
     setupFiles: ["./src/ui/test-setup.ts"],
   },
 });

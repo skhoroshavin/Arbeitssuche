@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
+import type { TypedSchema } from "@/plugins/llm/types.js";
 import { createOpenAICompatibleClient } from "./index";
 
 describe("OpenAICompatibleClient", () => {
@@ -9,12 +10,14 @@ describe("OpenAICompatibleClient", () => {
   });
 
   function mockFetch(body: unknown, status = 200) {
-    globalThis.fetch = vi.fn(async () => ({
-      ok: status >= 200 && status < 300,
-      status,
-      json: async () => body,
-      text: async () => JSON.stringify(body),
-    })) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: status >= 200 && status < 300,
+        status,
+        json: () => Promise.resolve(body),
+        text: () => Promise.resolve(JSON.stringify(body)),
+      }),
+    ) as unknown as typeof fetch;
   }
 
   describe("complete", () => {
@@ -63,7 +66,30 @@ describe("OpenAICompatibleClient", () => {
   });
 
   describe("completeJSON", () => {
-    it("returns null on truncated JSON", async () => {
+    const testSchema: TypedSchema<{ score: number }> = {
+      schema: {
+        components: { schemas: {} },
+        schema: {
+          type: "object",
+          properties: { score: { type: "number" } },
+          required: ["score"],
+        },
+      },
+      parse(input: string): { score: number } {
+        const parsed: unknown = JSON.parse(input);
+        if (
+          !parsed ||
+          typeof parsed !== "object" ||
+          !("score" in parsed) ||
+          typeof parsed.score !== "number"
+        ) {
+          throw new Error("Validation failed");
+        }
+        return parsed as { score: number };
+      },
+    };
+
+    it("throws on truncated JSON", async () => {
       mockFetch({
         choices: [{ message: { content: '{"score": 42, "trun' } }],
       });
@@ -74,14 +100,12 @@ describe("OpenAICompatibleClient", () => {
         "test/model",
         "TestProvider",
       );
-      const result = await client.completeJSON("prompt", 100, {
-        type: "object",
-        properties: { score: { type: "number" } },
-      });
-      expect(result).toBe(null);
+      await expect(() =>
+        client.completeJSON("prompt", 100, testSchema),
+      ).rejects.toThrow();
     });
 
-    it("parses JSON from response content", async () => {
+    it("returns validated result from response content", async () => {
       mockFetch({
         choices: [{ message: { content: JSON.stringify({ score: 42 }) } }],
       });
@@ -92,12 +116,24 @@ describe("OpenAICompatibleClient", () => {
         "test/model",
         "TestProvider",
       );
-      const result = await client.completeJSON<{ score: number }>(
-        "prompt",
-        100,
-        { type: "object", properties: { score: { type: "number" } } },
-      );
+      const result = await client.completeJSON("prompt", 100, testSchema);
       expect(result).toEqual({ score: 42 });
+    });
+
+    it("throws when validation fails", async () => {
+      mockFetch({
+        choices: [{ message: { content: JSON.stringify({ wrong: "field" }) } }],
+      });
+
+      const client = createOpenAICompatibleClient(
+        "https://example.com/v1",
+        "test-key",
+        "test/model",
+        "TestProvider",
+      );
+      await expect(() =>
+        client.completeJSON("prompt", 100, testSchema),
+      ).rejects.toThrow("Validation failed");
     });
   });
 
@@ -118,13 +154,17 @@ describe("OpenAICompatibleClient", () => {
       const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
       expect(fetchMock.mock.calls.length).toBe(1);
 
-      const [url, options] = fetchMock.mock.calls[0]! as [string, RequestInit];
+      const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
       expect(url).toBe("https://example.com/v1/chat/completions");
       expect((options.headers as Record<string, string>)["Authorization"]).toBe(
         "Bearer my-api-key",
       );
 
-      const body = JSON.parse(options.body as string);
+      const body = JSON.parse(options.body as string) as {
+        model: string;
+        messages: Array<{ content: string }>;
+        max_tokens: number;
+      };
       expect(body.model).toBe("my/model");
       expect(body.messages[0].content).toBe("test prompt");
       expect(body.max_tokens).toBe(200);

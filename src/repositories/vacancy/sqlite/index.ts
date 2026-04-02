@@ -1,53 +1,69 @@
-import { Database, queryRow, queryRows } from "@/utils/database.js";
-import { Vacancy } from "@/models/vacancy/vacancy.js";
-import type { Activity } from "@/models/vacancy/types.js";
+import { Database, parseRow } from "@/utils/database.js";
+import { Vacancy } from "@/models/vacancy/index.js";
+import type { Activity, VacancyDTO } from "@/models/vacancy/types.js";
+import { resolveVacancy } from "@/models/vacancy/index.js";
 import {
+  EMPTY_VACANCY_LIST_OUTPUT,
   createVacancyListOutput,
   type VacancyRepository,
 } from "@/repositories/vacancy/types.js";
+import typia from "typia";
+
+export function createSqliteVacancyRepository(
+  database: Database,
+): VacancyRepository {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS vacancy_meta (
+      job_search_id TEXT PRIMARY KEY REFERENCES job_searches(id) ON DELETE CASCADE,
+      generated_at TEXT NOT NULL,
+      latest_crawl TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS vacancies (
+      job_search_id TEXT NOT NULL REFERENCES job_searches(id) ON DELETE CASCADE,
+      hash TEXT NOT NULL,
+      data TEXT NOT NULL,
+      PRIMARY KEY (job_search_id, hash)
+    )
+  `);
+  return new SqliteVacancyRepository(database);
+}
 
 class SqliteVacancyRepository implements VacancyRepository {
-  private readonly loadMetaStmt;
-  private readonly loadAllStmt;
-  private readonly upsertMetaStmt;
-  private readonly deleteStaleVacanciesStmt;
-  private readonly upsertVacancyStmt;
-  private readonly findByHashStmt;
-  private readonly updateVacancyStmt;
-
-  constructor(private readonly db: Database) {
-    this.loadMetaStmt = db.prepare(
+  constructor(private readonly database: Database) {
+    this.loadMetaStmt = database.prepare(
       "SELECT generated_at, latest_crawl FROM vacancy_meta WHERE job_search_id = ?",
     );
-    this.loadAllStmt = db.prepare(
+    this.loadAllStmt = database.prepare(
       "SELECT data FROM vacancies WHERE job_search_id = ?",
     );
-    this.upsertMetaStmt = db.prepare(
+    this.upsertMetaStmt = database.prepare(
       "INSERT OR REPLACE INTO vacancy_meta (job_search_id, generated_at, latest_crawl) VALUES (?, ?, ?)",
     );
-    this.deleteStaleVacanciesStmt = db.prepare(
+    this.deleteStaleVacanciesStmt = database.prepare(
       "DELETE FROM vacancies WHERE job_search_id = ? AND hash NOT IN (SELECT value FROM json_each(?))",
     );
-    this.upsertVacancyStmt = db.prepare(
+    this.upsertVacancyStmt = database.prepare(
       "INSERT OR REPLACE INTO vacancies (job_search_id, hash, data) VALUES (?, ?, ?)",
     );
-    this.findByHashStmt = db.prepare(
+    this.findByHashStmt = database.prepare(
       "SELECT data FROM vacancies WHERE job_search_id = ? AND hash = ?",
     );
-    this.updateVacancyStmt = db.prepare(
+    this.updateVacancyStmt = database.prepare(
       "UPDATE vacancies SET data = ? WHERE job_search_id = ? AND hash = ?",
     );
   }
 
   loadAll(jobSearchId: string) {
-    const meta = queryRow<{ generated_at: string; latest_crawl: string }>(
-      this.loadMetaStmt,
-      jobSearchId,
+    const metaRaw = this.loadMetaStmt.get(jobSearchId);
+    if (metaRaw === undefined) return EMPTY_VACANCY_LIST_OUTPUT;
+    const meta = typia.assert<{ generated_at: string; latest_crawl: string }>(
+      metaRaw,
     );
-    if (!meta) return undefined;
 
-    const rows = queryRows<{ data: string }>(this.loadAllStmt, jobSearchId);
-    const vacancies = rows.map((r) => new Vacancy(JSON.parse(r.data)));
+    const vacancies = this.loadAllStmt
+      .all(jobSearchId)
+      .map((raw) => hydrateVacancyRow(raw));
 
     return {
       generatedAt: meta.generated_at,
@@ -58,10 +74,9 @@ class SqliteVacancyRepository implements VacancyRepository {
 
   save(jobSearchId: string, vacancies: Vacancy[], latestCrawl: string): void {
     const output = createVacancyListOutput(vacancies, latestCrawl);
-
     const hashes = JSON.stringify(vacancies.map((v) => v.hash));
 
-    this.db.transaction(() => {
+    this.database.transaction(() => {
       this.upsertMetaStmt.run(
         jobSearchId,
         output.generatedAt,
@@ -79,49 +94,36 @@ class SqliteVacancyRepository implements VacancyRepository {
   }
 
   findByHash(jobSearchId: string, hash: string): Vacancy | undefined {
-    const row = queryRow<{ data: string }>(
-      this.findByHashStmt,
-      jobSearchId,
-      hash,
-    );
-    return row ? new Vacancy(JSON.parse(row.data)) : undefined;
+    const row = parseRow(this.findByHashStmt.get(jobSearchId, hash));
+    if (row === undefined) return undefined;
+    return hydrateVacancy(row);
   }
 
-  async addActivity(
-    jobSearchId: string,
-    hash: string,
-    activity: Activity,
-  ): Promise<void> {
-    const row = queryRow<{ data: string }>(
-      this.findByHashStmt,
-      jobSearchId,
-      hash,
-    );
-    if (!row) throw new Error(`Vacancy "${hash}" not found`);
+  addActivity(jobSearchId: string, hash: string, activity: Activity): void {
+    const row = parseRow(this.findByHashStmt.get(jobSearchId, hash));
+    if (row === undefined) throw new Error(`Vacancy "${hash}" not found`);
 
-    const vacancy = new Vacancy(JSON.parse(row.data));
+    const vacancy = hydrateVacancy(row);
     const updated = vacancy.with({
       activityHistory: [...vacancy.activityHistory, activity],
     });
 
     this.updateVacancyStmt.run(JSON.stringify(updated), jobSearchId, hash);
   }
+
+  private readonly loadMetaStmt;
+  private readonly loadAllStmt;
+  private readonly upsertMetaStmt;
+  private readonly deleteStaleVacanciesStmt;
+  private readonly upsertVacancyStmt;
+  private readonly findByHashStmt;
+  private readonly updateVacancyStmt;
 }
 
-export function createSqliteVacancyRepository(db: Database): VacancyRepository {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS vacancy_meta (
-      job_search_id TEXT PRIMARY KEY REFERENCES job_searches(id) ON DELETE CASCADE,
-      generated_at TEXT NOT NULL,
-      latest_crawl TEXT NOT NULL
-    );
+function hydrateVacancyRow(row: unknown): Vacancy {
+  return hydrateVacancy(parseRow(row));
+}
 
-    CREATE TABLE IF NOT EXISTS vacancies (
-      job_search_id TEXT NOT NULL REFERENCES job_searches(id) ON DELETE CASCADE,
-      hash TEXT NOT NULL,
-      data TEXT NOT NULL,
-      PRIMARY KEY (job_search_id, hash)
-    )
-  `);
-  return new SqliteVacancyRepository(db);
+function hydrateVacancy(data: unknown): Vacancy {
+  return new Vacancy(resolveVacancy(typia.assert<Partial<VacancyDTO>>(data)));
 }

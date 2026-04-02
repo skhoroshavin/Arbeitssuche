@@ -1,177 +1,225 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
-<head>
-<meta charset="UTF-8">
-<style>
-  @page {
-    size: A4;
-    margin: 20mm 18mm;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: Garamond, Palatino, "Book Antiqua", serif;
-    font-size: 10pt;
-    line-height: 1.5;
-    color: #2d2d2d;
-  }
-  a { color: #2d2d2d; text-decoration: none; }
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      @page {
+        size: A4;
+        margin: 20mm 18mm;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Garamond, Palatino, "Book Antiqua", serif;
+        font-size: 10pt;
+        line-height: 1.5;
+        color: #2d2d2d;
+      }
+      a {
+        color: #2d2d2d;
+        text-decoration: none;
+      }
 
-  .header {
-    text-align: center;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #3d3d3d;
-    margin-bottom: 4px;
+      .header {
+        text-align: center;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #3d3d3d;
+        margin-bottom: 4px;
 
-    h1 {
-      font-size: 26pt;
-      font-weight: 400;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: #1a1a1a;
-      margin-bottom: 6px;
-    }
-  }
-  .contact {
-    font-size: 9pt;
-    color: #666;
-    letter-spacing: 0.5px;
+        h1 {
+          font-size: 26pt;
+          font-weight: 400;
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          color: #1a1a1a;
+          margin-bottom: 6px;
+        }
+      }
+      .contact {
+        font-size: 9pt;
+        color: #666;
+        letter-spacing: 0.5px;
 
-    span + span::before { content: "  |  "; }
-  }
-  .subtitle {
-    text-align: center;
-    font-size: 9pt;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: #999;
-    padding: 6px 0;
-    border-bottom: 0.5px solid #ccc;
-    margin-bottom: 14px;
-  }
-  h2 {
-    font-size: 10pt;
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: #666;
-    margin: 16px 0 8px;
-    break-after: avoid;
-  }
-  .row {
-    display: flex;
-    break-inside: avoid;
-  }
-  .row-dates {
-    width: 90px;
-    flex-shrink: 0;
-    font-size: 8.5pt;
-    color: #888;
-    padding: 4px 12px 4px 0;
-    border-right: 1px solid #ddd;
-    text-align: right;
-    white-space: nowrap;
-  }
-  .row-content {
-    flex: 1;
-    padding: 4px 0 4px 12px;
+        span + span::before {
+          content: "  |  ";
+        }
+      }
+      .subtitle {
+        text-align: center;
+        font-size: 9pt;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: #999;
+        padding: 6px 0;
+        border-bottom: 0.5px solid #ccc;
+        margin-bottom: 14px;
+      }
+      h2 {
+        font-size: 10pt;
+        font-weight: 400;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: #666;
+        margin: 16px 0 8px;
+        break-after: avoid;
+      }
+      .row {
+        display: flex;
+        break-inside: avoid;
+      }
+      .row-dates {
+        width: 90px;
+        flex-shrink: 0;
+        font-size: 8.5pt;
+        color: #888;
+        padding: 4px 12px 4px 0;
+        border-right: 1px solid #ddd;
+        text-align: right;
+        white-space: nowrap;
+      }
+      .row-content {
+        flex: 1;
+        padding: 4px 0 4px 12px;
 
-    .title { font-weight: 600; font-size: 10.5pt; color: #1a1a1a; }
-    .subtitle-text { font-style: italic; font-size: 9.5pt; color: #555; }
-    .location-text { font-size: 8.5pt; color: #999; }
-  }
-  ul { margin: 3px 0 0 16px; }
-  li { margin-bottom: 1px; font-size: 9.5pt; color: #444; }
-  .skills-list { font-size: 9.5pt; color: #444; line-height: 1.8; }
-  .langs-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px 24px;
-    font-size: 9.5pt;
-  }
-  .lang-entry .level { color: #999; font-size: 8.5pt; }
-  .hobbies-text { font-size: 9.5pt; color: #666; font-style: italic; }
-</style>
-</head>
-<body>
-  <div class="header">
-    <h1>{{personal.name}}</h1>
-    <div class="contact">
-      {{#if personal.email}}<span>{{personal.email}}</span>{{/if}}
-      {{#if personal.phone}}<span>{{personal.phone}}</span>{{/if}}
-      {{#if personal.location}}<span>{{personal.location}}</span>{{/if}}
-    </div>
-  </div>
-  <div class="subtitle">Lebenslauf</div>
-
-  {{#if experience}}
-  <h2>Berufserfahrung</h2>
-  <div class="section">
-    {{#each experience}}
-    <div class="row">
-      <div class="row-dates">{{#if this.startDate}}{{this.startDate}} –<br>{{this.endDate}}{{/if}}</div>
-      <div class="row-content">
-        <div class="title">{{this.role}}</div>
-        <div class="subtitle-text">{{this.company}}</div>
-        {{#if this.location}}<div class="location-text">{{this.location}}</div>{{/if}}
-        {{#if this.highlights}}
-        <ul>{{#each this.highlights}}<li>{{this}}</li>{{/each}}</ul>
-        {{/if}}
+        .title {
+          font-weight: 600;
+          font-size: 10.5pt;
+          color: #1a1a1a;
+        }
+        .subtitle-text {
+          font-style: italic;
+          font-size: 9.5pt;
+          color: #555;
+        }
+        .location-text {
+          font-size: 8.5pt;
+          color: #999;
+        }
+      }
+      ul {
+        margin: 3px 0 0 16px;
+      }
+      li {
+        margin-bottom: 1px;
+        font-size: 9.5pt;
+        color: #444;
+      }
+      .skills-list {
+        font-size: 9.5pt;
+        color: #444;
+        line-height: 1.8;
+      }
+      .langs-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px 24px;
+        font-size: 9.5pt;
+      }
+      .lang-entry .level {
+        color: #999;
+        font-size: 8.5pt;
+      }
+      .hobbies-text {
+        font-size: 9.5pt;
+        color: #666;
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>{{personal.name}}</h1>
+      <div class="contact">
+        {{#if personal.email}}<span>{{personal.email}}</span>{{/if}} {{#if
+        personal.phone}}<span>{{personal.phone}}</span>{{/if}} {{#if
+        personal.location}}<span>{{personal.location}}</span>{{/if}}
       </div>
     </div>
-    {{/each}}
-  </div>
-  {{/if}}
+    <div class="subtitle">Lebenslauf</div>
 
-  {{#if education}}
-  <h2>Ausbildung</h2>
-  <div class="section">
-    {{#each education}}
-    <div class="row">
-      <div class="row-dates">{{#if this.startDate}}{{this.startDate}} –<br>{{this.endDate}}{{/if}}</div>
-      <div class="row-content">
-        <div class="title">{{this.course}}</div>
-        <div class="subtitle-text">{{this.institution}}</div>
-        {{#if this.location}}<div class="location-text">{{this.location}}</div>{{/if}}
-        {{#if this.highlights}}
-        <ul>{{#each this.highlights}}<li>{{this}}</li>{{/each}}</ul>
-        {{/if}}
+    {{#if experience}}
+    <h2>Berufserfahrung</h2>
+    <div class="section">
+      {{#each experience}}
+      <div class="row">
+        <div class="row-dates">
+          {{#if this.startDate}}{{this.startDate}} –<br />{{this.endDate}}{{/if}}
+        </div>
+        <div class="row-content">
+          <div class="title">{{this.role}}</div>
+          <div class="subtitle-text">{{this.company}}</div>
+          {{#if this.location}}
+          <div class="location-text">{{this.location}}</div>
+          {{/if}} {{#if this.highlights}}
+          <ul>
+            {{#each this.highlights}}
+            <li>{{this}}</li>
+            {{/each}}
+          </ul>
+          {{/if}}
+        </div>
       </div>
+      {{/each}}
     </div>
-    {{/each}}
-  </div>
-  {{/if}}
-
-  {{#if skills}}
-  <h2>Kenntnisse</h2>
-  <p class="skills-list">{{join skills ", "}}</p>
-  {{/if}}
-
-  {{#if languages}}
-  <h2>Sprachen</h2>
-  <div class="langs-grid">
-    {{#each languages}}<div class="lang-entry">{{this.language}} <span class="level">{{this.level}}</span></div>{{/each}}
-  </div>
-  {{/if}}
-
-  {{#if certifications}}
-  <h2>Zertifikate</h2>
-  <div class="section">
-    {{#each certifications}}
-    <div class="row">
-      <div class="row-dates">{{#if this.date}}{{this.date}}{{/if}}</div>
-      <div class="row-content">
-        <div class="title">{{this.name}}</div>
-        {{#if this.issuer}}<div class="subtitle-text">{{this.issuer}}</div>{{/if}}
-        {{#if this.description}}<div class="location-text">{{this.description}}</div>{{/if}}
+    {{/if}} {{#if education}}
+    <h2>Ausbildung</h2>
+    <div class="section">
+      {{#each education}}
+      <div class="row">
+        <div class="row-dates">
+          {{#if this.startDate}}{{this.startDate}} –<br />{{this.endDate}}{{/if}}
+        </div>
+        <div class="row-content">
+          <div class="title">{{this.course}}</div>
+          <div class="subtitle-text">{{this.institution}}</div>
+          {{#if this.location}}
+          <div class="location-text">{{this.location}}</div>
+          {{/if}} {{#if this.highlights}}
+          <ul>
+            {{#each this.highlights}}
+            <li>{{this}}</li>
+            {{/each}}
+          </ul>
+          {{/if}}
+        </div>
       </div>
+      {{/each}}
     </div>
-    {{/each}}
-  </div>
-  {{/if}}
-
-  {{#if hobbies}}
-  <h2>Interessen</h2>
-  <p class="hobbies-text">{{join hobbies ", "}}</p>
-  {{/if}}
-</body>
+    {{/if}} {{#if skills}}
+    <h2>Kenntnisse</h2>
+    <p class="skills-list">{{join skills ", "}}</p>
+    {{/if}} {{#if languages}}
+    <h2>Sprachen</h2>
+    <div class="langs-grid">
+      {{#each languages}}
+      <div class="lang-entry">
+        {{this.language}} <span class="level">{{this.level}}</span>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}} {{#if certifications}}
+    <h2>Zertifikate</h2>
+    <div class="section">
+      {{#each certifications}}
+      <div class="row">
+        <div class="row-dates">{{#if this.date}}{{this.date}}{{/if}}</div>
+        <div class="row-content">
+          <div class="title">{{this.name}}</div>
+          {{#if this.issuer}}
+          <div class="subtitle-text">{{this.issuer}}</div>
+          {{/if}} {{#if this.description}}
+          <div class="location-text">{{this.description}}</div>
+          {{/if}}
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}} {{#if hobbies}}
+    <h2>Interessen</h2>
+    <p class="hobbies-text">{{join hobbies ", "}}</p>
+    {{/if}}
+  </body>
 </html>

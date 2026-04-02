@@ -11,8 +11,9 @@ export function createStubConfigRepository(
       return structuredClone(stored);
     },
 
-    async save(data: AppConfig) {
+    save(data: AppConfig): Promise<void> {
       stored = structuredClone(data);
+      return Promise.resolve();
     },
   };
 }

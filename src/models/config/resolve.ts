@@ -15,9 +15,9 @@ export interface ResolvedConfig {
 
 export function resolveConfig(config: AppConfig): ResolvedConfig {
   return {
-    provider: config.provider || DEFAULT_PROVIDER,
-    assessmentModel: config.assessmentModel || DEFAULT_ASSESSMENT_MODEL,
-    coverLetterModel: config.coverLetterModel || DEFAULT_COVER_LETTER_MODEL,
-    consultationModel: config.consultationModel || DEFAULT_CONSULTATION_MODEL,
+    provider: config.provider ?? DEFAULT_PROVIDER,
+    assessmentModel: config.assessmentModel ?? DEFAULT_ASSESSMENT_MODEL,
+    coverLetterModel: config.coverLetterModel ?? DEFAULT_COVER_LETTER_MODEL,
+    consultationModel: config.consultationModel ?? DEFAULT_CONSULTATION_MODEL,
   };
 }

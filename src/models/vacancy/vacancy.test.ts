@@ -1,20 +1,6 @@
 import { describe, it, test, expect } from "vitest";
-import { Vacancy } from "./vacancy";
+import { Vacancy } from "./index";
 import type { VacancyDTO } from "./types";
-
-function makeVacancy(overrides: Partial<VacancyDTO> = {}): Vacancy {
-  return new Vacancy({
-    hash: "abc123",
-    title: "Test",
-    company: "Test Co",
-    urls: [],
-    addresses: [],
-    descriptionChanged: false,
-    activityHistory: [],
-    active: true,
-    ...overrides,
-  });
-}
 
 describe("deriveStatus", () => {
   it("returns 'new' for active vacancy with no history", () => {
@@ -117,6 +103,27 @@ describe("deriveStatus", () => {
         ],
       }).deriveStatus(),
     ).toBe("applied");
+  });
+});
+
+describe("constructor", () => {
+  it("fills missing runtime defaults", () => {
+    expect(new Vacancy({ hash: "abc" })).toMatchObject({
+      hash: "abc",
+      title: "",
+      company: "",
+      urls: [],
+      addresses: [],
+      contact: {},
+      startDate: "",
+      description: "",
+      descriptionChanged: false,
+      summary: "",
+      matchScore: "ok",
+      commute: {},
+      activityHistory: [],
+      active: true,
+    });
   });
 });
 
@@ -296,43 +303,16 @@ describe("with", () => {
   });
 });
 
-describe("constructor validation", () => {
-  test("defaults activityHistory to empty array", () => {
-    const v = new Vacancy({
-      hash: "h",
-      title: "t",
-      company: "c",
-      urls: [],
-      addresses: [],
-      descriptionChanged: false,
-      active: true,
-    } as VacancyDTO);
-    expect(v.activityHistory).toEqual([]);
+function makeVacancy(overrides: Partial<VacancyDTO> = {}): Vacancy {
+  return new Vacancy({
+    hash: "abc123",
+    title: "Test",
+    company: "Test Co",
+    urls: [],
+    addresses: [],
+    descriptionChanged: false,
+    activityHistory: [],
+    active: true,
+    ...overrides,
   });
-
-  test("defaults active to true when missing", () => {
-    const v = new Vacancy({
-      hash: "h",
-      title: "t",
-      company: "c",
-      urls: [],
-      addresses: [],
-      descriptionChanged: false,
-      activityHistory: [],
-    } as VacancyDTO);
-    expect(v.active).toBe(true);
-  });
-
-  test("defaults descriptionChanged to false when missing", () => {
-    const v = new Vacancy({
-      hash: "h",
-      title: "t",
-      company: "c",
-      urls: [],
-      addresses: [],
-      activityHistory: [],
-      active: true,
-    } as VacancyDTO);
-    expect(v.descriptionChanged).toBe(false);
-  });
-});
+}

@@ -1,4 +1,27 @@
 import type { Fetch } from "@/plugins/fetch/types.js";
+import { findStubMatch } from "@/plugins/stub-utilities.js";
+
+export function createStubFetch(routes: Record<string, StubRoute>): StubFetch {
+  const requestedUrls: string[] = [];
+
+  const stubFetch: StubFetch = Object.assign(
+    (url: string, _init?: RequestInit): Promise<Response> => {
+      requestedUrls.push(url);
+      const route = findStubMatch(routes, url);
+      if (route) {
+        return Promise.resolve(
+          Response.json(route.body, {
+            status: route.status ?? 200,
+          }),
+        );
+      }
+      return Promise.resolve(new Response("Not Found", { status: 404 }));
+    },
+    { requestedUrls },
+  );
+
+  return stubFetch;
+}
 
 interface StubRoute {
   body: unknown;
@@ -7,25 +30,4 @@ interface StubRoute {
 
 interface StubFetch extends Fetch {
   requestedUrls: string[];
-}
-
-export function createStubFetch(routes: Record<string, StubRoute>): StubFetch {
-  const requestedUrls: string[] = [];
-
-  const stubFetch: StubFetch = Object.assign(
-    async (url: string, _init?: RequestInit): Promise<Response> => {
-      requestedUrls.push(url);
-      for (const [pattern, route] of Object.entries(routes)) {
-        if (url.includes(pattern)) {
-          return new Response(JSON.stringify(route.body), {
-            status: route.status ?? 200,
-          });
-        }
-      }
-      return new Response("Not Found", { status: 404 });
-    },
-    { requestedUrls },
-  );
-
-  return stubFetch;
 }

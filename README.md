@@ -17,6 +17,7 @@ Eine Desktop-App, die deutsche Jobbörsen durchsucht, deine Bewerbungen verwalte
 Den neuesten Build gibt es unter [Releases](../../releases). Verfügbar für macOS, Windows und Linux.
 
 Für den vollen Funktionsumfang, API-Schlüssel in den Einstellungen hinterlegen:
+
 - [OpenRouter](https://openrouter.ai/) oder [Requesty](https://requesty.ai/) (EU-Datenverarbeitung) — für Matching-Score, Anschreiben-Generierung und Jobsuche-Vorschläge
 - [Google Maps](https://developers.google.com/maps) — für Pendelzeit-Schätzungen
 
@@ -39,7 +40,7 @@ Außerdem ein Experiment in KI-gestützter Entwicklung: Der gesamte Code wurde v
 
 ## Entwicklung
 
-Siehe [CLAUDE.md](CLAUDE.md) für Architektur, Konventionen und Befehle.
+Siehe [AGENTS.md](AGENTS.md) für Architektur, Konventionen und Befehle.
 
 ## Lizenz
 
@@ -66,6 +67,7 @@ A desktop app that crawls German job boards, tracks your applications, and write
 Grab the latest build from [Releases](../../releases). Available for macOS, Windows, and Linux.
 
 For the full experience, add your API keys in Settings:
+
 - [OpenRouter](https://openrouter.ai/) or [Requesty](https://requesty.ai/) (EU data residency) — powers match scoring, cover letter generation, and job search suggestions
 - [Google Maps](https://developers.google.com/maps) — estimates commute times
 
@@ -88,7 +90,7 @@ Also an experiment in AI-assisted development: the entire codebase was written b
 
 ### Development
 
-See [CLAUDE.md](CLAUDE.md) for architecture, conventions, and commands.
+See [AGENTS.md](AGENTS.md) for architecture, conventions, and commands.
 
 ### License
 

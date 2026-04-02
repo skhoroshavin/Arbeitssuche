@@ -1,7 +1,4 @@
-import { useInvalidate } from "@/ui/hooks";
-import { ipcFetch } from "./internal/ipc-client";
-import { useIpcMutation } from "./internal/use-ipc-mutation";
-import { useIpcQuery } from "./internal/use-ipc-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MaskedSecret } from "@/models/secrets/types";
 import type {
   ConfigKey,
@@ -10,138 +7,53 @@ import type {
   LlmProviderInfo,
   CommuteProviderInfo,
 } from "@/models/config/types";
-import { DEFAULT_PROVIDER } from "@/models/config/types";
-import type { ResolvedConfig } from "@/models/config/resolve";
+import {
+  DEFAULT_ASSESSMENT_MODEL,
+  DEFAULT_CONSULTATION_MODEL,
+  DEFAULT_COVER_LETTER_MODEL,
+  DEFAULT_PROVIDER,
+} from "@/models/config/types";
+import type { ResolvedConfig } from "@/models/config/index.js";
+import typia from "typia";
+import { api } from "./internal/api";
 
 // --- Provider secrets (factory) ---
 
-function createProviderSecretHooks(type: "llm" | "commute") {
-  const queryKey = [`${type}-secrets`];
-  const basePath = `/settings/${type}`;
+export function useProviderSecretActions(
+  type: "llm" | "commute",
+  providerId: string,
+) {
+  const hooks = type === "llm" ? llmHooks : commuteHooks;
+  const saveMutation = hooks.useSave();
+  const clearMutation = hooks.useClear();
+  const testMutation = hooks.useTest();
 
-  function useSecrets() {
-    return useIpcQuery({
-      queryKey,
-      queryFn: () =>
-        ipcFetch<Record<string, MaskedSecret>>(`${basePath}/secrets`),
-    });
-  }
-
-  function useSave() {
-    const invalidate = useInvalidate();
-    return useIpcMutation({
-      mutationFn: ({
-        providerId,
-        value,
-      }: {
-        providerId: string;
-        value: string;
-      }) =>
-        ipcFetch(`${basePath}/${providerId}/secret`, {
-          method: "PUT",
-          body: JSON.stringify({ value }),
-        }),
-      onSuccess: () => invalidate(queryKey),
-    });
-  }
-
-  function useClear() {
-    const invalidate = useInvalidate();
-    return useIpcMutation({
-      mutationFn: (providerId: string) =>
-        ipcFetch(`${basePath}/${providerId}/secret`, { method: "DELETE" }),
-      onSuccess: () => invalidate(queryKey),
-    });
-  }
-
-  function useTest() {
-    return useIpcMutation({
-      mutationFn: (providerId: string) =>
-        ipcFetch<{ ok: boolean; error?: string }>(
-          `${basePath}/${providerId}/secret/test`,
-          { method: "POST" },
-        ),
-    });
-  }
-
-  return { useSecrets, useSave, useClear, useTest };
+  return {
+    onSave: async (value: string) => {
+      await saveMutation.mutateAsync({ providerId, value });
+    },
+    onClear: async () => {
+      await clearMutation.mutateAsync(providerId);
+    },
+    onTest: () => testMutation.mutateAsync(providerId),
+  };
 }
 
-const llmHooks = createProviderSecretHooks("llm");
-const commuteHooks = createProviderSecretHooks("commute");
-
-export function useLlmSecrets() {
-  return llmHooks.useSecrets();
-}
-export function useSaveLlmSecret() {
-  return llmHooks.useSave();
-}
-export function useClearLlmSecret() {
-  return llmHooks.useClear();
-}
-export function useTestLlmSecret() {
-  return llmHooks.useTest();
-}
-
-export function useCommuteSecrets() {
-  return commuteHooks.useSecrets();
-}
-export function useSaveCommuteSecret() {
-  return commuteHooks.useSave();
-}
-export function useClearCommuteSecret() {
-  return commuteHooks.useClear();
-}
-export function useTestCommuteSecret() {
-  return commuteHooks.useTest();
+export function resolveSecret(
+  secrets: Record<string, MaskedSecret> | undefined,
+  providerId: string,
+): MaskedSecret {
+  return secrets?.[providerId] ?? EMPTY_MASKED_SECRET;
 }
 
 // --- Provider info ---
 
-export function useLlmProviders() {
-  return useIpcQuery({
-    queryKey: ["llm-providers"],
-    queryFn: () => ipcFetch<LlmProviderInfo[]>("/settings/llm-providers"),
-  });
-}
-
-export function useCommuteProviders() {
-  return useIpcQuery({
-    queryKey: ["commute-providers"],
-    queryFn: () =>
-      ipcFetch<CommuteProviderInfo[]>("/settings/commute-providers"),
-  });
-}
-
-// --- Config ---
-
-export function useConfig() {
-  return useIpcQuery({
-    queryKey: ["config"],
-    queryFn: () => ipcFetch<ResolvedConfig>("/settings/config"),
-  });
-}
-
-export function useLlmModels() {
-  return useIpcQuery({
-    queryKey: ["llm-models"],
-    queryFn: () => ipcFetch<LlmModel[]>("/settings/llm-models"),
-  });
-}
-
-export function useSaveConfig() {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
-    mutationFn: ({ key, value }: { key: ConfigKey; value: string }) =>
-      ipcFetch(`/settings/config/${key}`, {
-        method: "PUT",
-        body: JSON.stringify({ value }),
-      }),
-    onSuccess: () => {
-      invalidate(["config"]);
-      invalidate(["llm-models"]);
-    },
-  });
+export function useCommuteProviderListView() {
+  const query = useCommuteProviders();
+  return {
+    ...query,
+    data: query.data ?? EMPTY_COMMUTE_PROVIDERS,
+  };
 }
 
 // --- API key status (used across the app) ---
@@ -157,10 +69,163 @@ export function useApiKeyStatus(): {
   const { data: config, isLoading: configLoading } = useConfig();
 
   const provider: LlmProvider = config?.provider ?? DEFAULT_PROVIDER;
+  const isLoading = llmLoading || commuteLoading || configLoading;
 
   return {
-    hasLlmKey: llmSecrets?.[provider]?.isSet ?? false,
-    hasMapsKey: commuteSecrets?.["google-maps"]?.isSet ?? false,
-    isLoading: llmLoading || commuteLoading || configLoading,
+    hasLlmKey: hasSecret(llmSecrets, provider),
+    hasMapsKey: hasSecret(commuteSecrets, "google-maps"),
+    isLoading,
   };
+}
+
+export function useAISettingsView(fallbackModels: LlmModel[]) {
+  const { data: secrets, isLoading: secretsLoading } = useLlmSecrets();
+  const { data: config, isLoading: configLoading } = useResolvedConfig();
+  const { data: remoteModels, isLoading: modelsLoading } = useLlmModels();
+  const { data: providers } = useLlmProviders();
+  const saveConfig = useSaveConfig();
+
+  return {
+    secrets,
+    provider: config.provider,
+    config,
+    providers: providers ?? [],
+    models:
+      remoteModels && remoteModels.length > 0 ? remoteModels : fallbackModels,
+    modelsLoading,
+    saveConfig,
+    isLoading: secretsLoading || configLoading,
+  };
+}
+
+export function useCommuteSecrets() {
+  return commuteHooks.useSecrets();
+}
+
+export function useLlmProviders() {
+  return useQuery({
+    queryKey: ["llm-providers"],
+    queryFn: async () =>
+      typia.assert<LlmProviderInfo[]>(
+        await api().invoke("settings:llm-providers"),
+      ),
+  });
+}
+
+const EMPTY_MASKED_SECRET: MaskedSecret = { masked: "", isSet: false };
+const EMPTY_COMMUTE_PROVIDERS: CommuteProviderInfo[] = [];
+
+function useLlmSecrets() {
+  return llmHooks.useSecrets();
+}
+
+function useCommuteProviders() {
+  return useQuery({
+    queryKey: ["commute-providers"],
+    queryFn: async () =>
+      typia.assert<CommuteProviderInfo[]>(
+        await api().invoke("settings:commute-providers"),
+      ),
+  });
+}
+
+function useResolvedConfig() {
+  const query = useConfig();
+  return {
+    ...query,
+    data: query.data ?? {
+      provider: DEFAULT_PROVIDER,
+      assessmentModel: DEFAULT_ASSESSMENT_MODEL,
+      coverLetterModel: DEFAULT_COVER_LETTER_MODEL,
+      consultationModel: DEFAULT_CONSULTATION_MODEL,
+    },
+  };
+}
+
+function useSaveConfig() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ key, value }: { key: ConfigKey; value: string }) =>
+      api().invoke("settings:config:save", key, value),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["config"] });
+      void queryClient.invalidateQueries({ queryKey: ["llm-models"] });
+    },
+  });
+}
+
+function hasSecret(
+  secrets: Record<string, MaskedSecret> | undefined,
+  key: string,
+): boolean {
+  return secrets?.[key]?.isSet ?? false;
+}
+
+function createProviderSecretHooks(type: "llm" | "commute") {
+  const queryKey = [`${type}-secrets`];
+
+  function useSecrets() {
+    return useQuery({
+      queryKey,
+      queryFn: async () =>
+        typia.assert<Record<string, MaskedSecret>>(
+          await api().invoke(`settings:${type}:secrets`),
+        ),
+    });
+  }
+
+  function useSave() {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: ({
+        providerId,
+        value,
+      }: {
+        providerId: string;
+        value: string;
+      }) => api().invoke(`settings:${type}:secret:save`, providerId, value),
+      onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    });
+  }
+
+  function useClear() {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: (providerId: string) =>
+        api().invoke(`settings:${type}:secret:clear`, providerId),
+      onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    });
+  }
+
+  function useTest() {
+    return useMutation({
+      mutationFn: async (providerId: string) =>
+        typia.assert<{ ok: boolean; error?: string }>(
+          await api().invoke(`settings:${type}:secret:test`, providerId),
+        ),
+    });
+  }
+
+  return { useSecrets, useSave, useClear, useTest };
+}
+
+const llmHooks = createProviderSecretHooks("llm");
+const commuteHooks = createProviderSecretHooks("commute");
+
+// --- Config ---
+
+function useConfig() {
+  return useQuery({
+    queryKey: ["config"],
+    queryFn: async () =>
+      typia.assert<ResolvedConfig>(await api().invoke("settings:config:load")),
+  });
+}
+
+function useLlmModels() {
+  return useQuery({
+    queryKey: ["llm-models"],
+    queryFn: async () =>
+      typia.assert<LlmModel[]>(await api().invoke("settings:llm-models")),
+  });
 }

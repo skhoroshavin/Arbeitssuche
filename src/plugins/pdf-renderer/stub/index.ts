@@ -3,8 +3,8 @@ import type { PdfRenderer } from "@/plugins/pdf-renderer/types.js";
 class StubPdfRenderer implements PdfRenderer {
   constructor(private readonly fixedBuffer?: Buffer | Uint8Array) {}
 
-  async htmlToPdf(): Promise<Buffer | Uint8Array> {
-    return this.fixedBuffer ?? Buffer.from("%PDF-1.4 stub");
+  htmlToPdf(): Promise<Buffer | Uint8Array> {
+    return Promise.resolve(this.fixedBuffer ?? Buffer.from("%PDF-1.4 stub"));
   }
 }
 

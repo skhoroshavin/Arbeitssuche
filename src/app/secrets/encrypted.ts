@@ -1,7 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import path from "node:path";
+import typia from "typia";
 import type { Secrets } from "@/models/secrets/types.js";
-import { DEFAULT_SECRETS } from "@/models/secrets/types.js";
+import { resolveSecrets } from "@/models/secrets/index.js";
 import type { Cipher, SecretsRepository } from "./types.js";
 
 export function createEncryptedSecretsRepository(
@@ -11,22 +12,25 @@ export function createEncryptedSecretsRepository(
   return {
     load(): Secrets {
       if (!existsSync(filePath)) {
-        return { ...DEFAULT_SECRETS };
+        return resolveSecrets();
       }
 
       try {
         const encrypted = readFileSync(filePath);
         const decrypted = cipher.decryptString(encrypted);
-        return JSON.parse(decrypted);
+        return resolveSecrets(typia.json.assertParse<Secrets>(decrypted));
       } catch {
-        return { ...DEFAULT_SECRETS };
+        return resolveSecrets();
       }
     },
 
-    async save(data: Secrets): Promise<void> {
-      mkdirSync(dirname(filePath), { recursive: true });
-      const encrypted = cipher.encryptString(JSON.stringify(data));
+    save(data: Secrets): Promise<void> {
+      mkdirSync(path.dirname(filePath), { recursive: true });
+      const encrypted = cipher.encryptString(
+        JSON.stringify(resolveSecrets(data)),
+      );
       writeFileSync(filePath, encrypted);
+      return Promise.resolve();
     },
   };
 }

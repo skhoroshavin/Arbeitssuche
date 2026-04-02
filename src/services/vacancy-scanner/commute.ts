@@ -1,6 +1,48 @@
 import type { CommuteClient } from "@/plugins/commute/types.js";
-import type { Vacancy } from "@/models/vacancy/vacancy.js";
+import type { Vacancy } from "@/models/vacancy/index.js";
 import { formatError } from "./format-error.js";
+
+export async function computeCommutes(
+  input: ComputeCommutesInput,
+): Promise<ComputeCommutesOutput> {
+  const { vacancies, origin, commuteClient, signal, onProgress } = input;
+
+  const needsCommute = vacancies.filter(
+    (v) => v.active && v.addresses.some((addr) => !(addr in v.commute)),
+  );
+
+  let computedCount = 0;
+  let errorCount = 0;
+  const total = needsCommute.length;
+  const updatedMap = new Map<string, Vacancy>();
+
+  for (const [index, vacancy] of needsCommute.entries()) {
+    if (signal?.aborted) break;
+
+    onProgress?.(
+      `Computing commute for "${vacancy.title}" (${index + 1}/${total})`,
+      index + 1,
+      total,
+    );
+
+    const result = await computeSingleVacancyCommute(
+      vacancy,
+      origin,
+      commuteClient,
+    );
+    errorCount += result.errors;
+
+    if (result.computed) {
+      updatedMap.set(vacancy.hash, vacancy.with({ commute: result.commute }));
+      computedCount++;
+    }
+  }
+
+  const mapped = vacancies.map((v) => updatedMap.get(v.hash) ?? v);
+  const skippedCount = vacancies.length - needsCommute.length;
+
+  return { vacancies: mapped, computedCount, skippedCount, errorCount };
+}
 
 interface ComputeCommutesInput {
   vacancies: Vacancy[];
@@ -17,60 +59,29 @@ interface ComputeCommutesOutput {
   errorCount: number;
 }
 
-export async function computeCommutes(
-  input: ComputeCommutesInput,
-): Promise<ComputeCommutesOutput> {
-  const { vacancies, origin, commuteClient, signal, onProgress } = input;
+async function computeSingleVacancyCommute(
+  vacancy: Vacancy,
+  origin: string,
+  commuteClient: CommuteClient,
+) {
+  const commute = { ...vacancy.commute };
+  let computed = false;
+  let errors = 0;
 
-  const needsCommute = vacancies.filter(
-    (v) =>
-      v.active &&
-      v.addresses.length > 0 &&
-      v.addresses.some((addr) => !v.commute?.[addr]),
-  );
+  for (const address of vacancy.addresses) {
+    if (address in commute) continue;
 
-  let computedCount = 0;
-  let errorCount = 0;
-  const total = needsCommute.length;
-
-  const updatedMap = new Map<string, Vacancy>();
-
-  for (let i = 0; i < needsCommute.length; i++) {
-    if (signal?.aborted) break;
-
-    const vacancy = needsCommute[i];
-    onProgress?.(
-      `Computing commute for "${vacancy.title}" (${i + 1}/${total})`,
-      i + 1,
-      total,
-    );
-
-    const commute = { ...vacancy.commute };
-    let computed = false;
-
-    for (const address of vacancy.addresses) {
-      if (commute[address]) continue;
-
-      try {
-        commute[address] = await commuteClient.getCommute(origin, address);
-        computed = true;
-      } catch (err) {
-        console.error(
-          `Commute error for "${vacancy.title}" → "${address}":`,
-          formatError(err),
-        );
-        errorCount++;
-      }
-    }
-
-    if (computed) {
-      updatedMap.set(vacancy.hash, vacancy.with({ commute }));
-      computedCount++;
+    try {
+      commute[address] = await commuteClient.getCommute(origin, address);
+      computed = true;
+    } catch (error) {
+      console.error(
+        `Commute error for "${vacancy.title}" → "${address}":`,
+        formatError(error),
+      );
+      errors++;
     }
   }
 
-  const result = vacancies.map((v) => updatedMap.get(v.hash) ?? v);
-  const skippedCount = vacancies.length - needsCommute.length;
-
-  return { vacancies: result, computedCount, skippedCount, errorCount };
+  return { commute, computed, errors };
 }

@@ -1,16 +1,23 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { IpcCacheProvider } from "./hooks";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router";
-import App from "./App";
+import App from "./app";
 import "./index.css";
 
-createRoot(document.getElementById("root")!).render(
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000 } },
+});
+
+const root = document.querySelector("#root");
+if (!root) throw new Error("Root element not found");
+
+createRoot(root).render(
   <StrictMode>
-    <IpcCacheProvider staleTime={30_000}>
+    <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <App />
       </BrowserRouter>
-    </IpcCacheProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );

@@ -1,10 +1,10 @@
 import { app } from "electron";
-import { join } from "node:path";
-
-export function getDataDir(): string {
-  return join(app.getPath("userData"), "data");
-}
+import path from "node:path";
 
 export function getSecretsPath(): string {
-  return join(getDataDir(), "secrets.enc");
+  return path.join(getDataDirectory(), "secrets.enc");
+}
+
+export function getDataDirectory(): string {
+  return path.join(app.getPath("userData"), "data");
 }

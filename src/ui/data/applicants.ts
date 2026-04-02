@@ -1,93 +1,104 @@
-import { useInvalidate } from "@/ui/hooks";
-import { ipcFetch } from "./internal/ipc-client";
-import { useIpcMutation } from "./internal/use-ipc-mutation";
-import { useIpcQuery } from "./internal/use-ipc-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   Applicant,
   ApplicantInfo,
   ResumeTemplate,
 } from "@/models/applicant/types";
 import type { ConsultationSuggestion } from "@/models/job-search/types";
+import typia from "typia";
+import { api } from "./internal/api";
 
-export function useApplicants() {
-  return useIpcQuery({
-    queryKey: ["applicants"],
-    queryFn: () => ipcFetch<{ applicants: ApplicantInfo[] }>("/applicants"),
-  });
+export function useApplicantListView() {
+  const query = useApplicants();
+  return {
+    ...query,
+    data: query.data?.applicants ?? EMPTY_APPLICANTS,
+  };
+}
+
+export function useApplicantHeaderName(applicantId = "") {
+  const query = useApplicant(applicantId);
+  return {
+    ...query,
+    displayName: query.data?.personal.name || applicantId,
+  };
 }
 
 export function useApplicant(id: string) {
-  return useIpcQuery({
+  return useQuery({
     queryKey: ["applicant", id],
-    queryFn: () => ipcFetch<Applicant>(`/applicants/${id}`),
+    queryFn: async () =>
+      typia.assert<Applicant>(await api().invoke("applicants:load", id)),
     enabled: !!id,
   });
 }
 
 export function useCreateApplicant() {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: (body: { name: string }) =>
-      ipcFetch("/applicants", {
-        method: "POST",
-        body: JSON.stringify(body),
-      }),
-    onSuccess: () => invalidate(["applicants"]),
+      api().invoke("applicants:create", body.name),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["applicants"] }),
   });
 }
 
 export function useUpdateApplicant(id: string) {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
-    mutationFn: (data: Applicant) =>
-      ipcFetch(`/applicants/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
-    onSuccess: () => invalidate(["applicant", id]),
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Applicant) => api().invoke("applicants:save", id, data),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["applicant", id] }),
   });
 }
 
 export function useDeleteApplicant() {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
-    mutationFn: (id: string) =>
-      ipcFetch(`/applicants/${id}`, { method: "DELETE" }),
-    onSuccess: () => invalidate(["applicants"]),
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api().invoke("applicants:delete", id),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["applicants"] }),
   });
 }
 
 export function useConsultSearches(applicantId: string) {
-  return useIpcMutation({
-    mutationFn: () =>
-      ipcFetch<{ suggestions: ConsultationSuggestion[] }>(
-        `/applicants/${applicantId}/consult-searches`,
-        { method: "POST" },
+  return useMutation({
+    mutationFn: async () =>
+      typia.assert<{ suggestions: ConsultationSuggestion[] }>(
+        await api().invoke("applicants:consult-searches", applicantId),
       ),
   });
 }
 
 export function useDownloadResume(id: string, applicantName: string) {
-  return useIpcMutation({
+  return useMutation({
     mutationFn: async (template: ResumeTemplate) => {
-      const buffer = await window.electronAPI!.invoke(
-        "applicants:resume",
-        id,
-        template,
-      );
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- IPC returns unknown
-      const blob = new Blob([buffer as ArrayBuffer], {
-        type: "application/pdf",
-      });
+      const buffer = await api().invoke("applicants:resume", id, template);
+      if (!(buffer instanceof ArrayBuffer)) {
+        throw new TypeError("Expected ArrayBuffer from IPC");
+      }
+      const blob = new Blob([buffer], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       const filename = applicantName
-        ? `${applicantName.toLowerCase().replace(/ /g, "_")}_lebenslauf.pdf`
+        ? `${applicantName.toLowerCase().replaceAll(" ", "_")}_lebenslauf.pdf`
         : `${id}_lebenslauf.pdf`;
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
     },
+  });
+}
+
+const EMPTY_APPLICANTS: ApplicantInfo[] = [];
+
+function useApplicants() {
+  return useQuery({
+    queryKey: ["applicants"],
+    queryFn: async () =>
+      typia.assert<{ applicants: ApplicantInfo[] }>(
+        await api().invoke("applicants:list"),
+      ),
   });
 }

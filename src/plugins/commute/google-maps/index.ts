@@ -1,87 +1,9 @@
+import typia from "typia";
 import type {
   CommuteResult,
   CommuteClient,
   CommuteProviderInfo,
 } from "@/plugins/commute/types.js";
-
-interface DistanceMatrixResponse {
-  rows: {
-    elements: {
-      status: string;
-      distance?: { text: string };
-      duration?: { value: number };
-    }[];
-  }[];
-  status: string;
-}
-
-function getNextWeekday(): Date {
-  const now = new Date();
-  const day = now.getDay();
-
-  let daysUntil = 1;
-  if (day === 0) daysUntil = 1;
-  else if (day === 5) daysUntil = 3;
-  else if (day === 6) daysUntil = 2;
-
-  const next = new Date(now);
-  next.setDate(now.getDate() + daysUntil);
-  next.setHours(0, 0, 0, 0);
-  return next;
-}
-
-function departureTimestamp(baseDate: Date, hour: number): number {
-  const d = new Date(baseDate);
-  d.setHours(hour, 0, 0, 0);
-  return Math.floor(d.getTime() / 1000);
-}
-
-async function fetchDuration(
-  origin: string,
-  destination: string,
-  apiKey: string,
-  departureTime: number,
-): Promise<{ distance: string; durationMinutes: number }> {
-  const params = new URLSearchParams({
-    origins: origin,
-    destinations: destination,
-    mode: "transit",
-    departure_time: String(departureTime),
-    key: apiKey,
-  });
-
-  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?${params}`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-
-  if (!res.ok) {
-    throw new Error(
-      `Distance Matrix API error: ${res.status} ${res.statusText}`,
-    );
-  }
-
-  const data: DistanceMatrixResponse = await res.json();
-
-  if (data.status !== "OK") {
-    throw new Error(`Distance Matrix API status: ${data.status}`);
-  }
-
-  const element = data.rows[0]?.elements[0];
-  if (
-    !element ||
-    element.status !== "OK" ||
-    !element.distance ||
-    !element.duration
-  ) {
-    throw new Error(
-      `No route found for "${destination}": ${element?.status ?? "no data"}`,
-    );
-  }
-
-  return {
-    distance: element.distance.text,
-    durationMinutes: Math.round(element.duration.value / 60),
-  };
-}
 
 export const googleMapsProviderInfo: CommuteProviderInfo = {
   id: "google-maps",
@@ -98,6 +20,10 @@ export const googleMapsProviderInfo: CommuteProviderInfo = {
     "9. Füge ihn oben ein",
   ].join("\n"),
 };
+
+export function createGoogleMapsCommuteClient(apiKey: string): CommuteClient {
+  return new GoogleMapsCommuteClient(apiKey);
+}
 
 class GoogleMapsCommuteClient implements CommuteClient {
   constructor(private readonly apiKey: string) {}
@@ -131,8 +57,95 @@ class GoogleMapsCommuteClient implements CommuteClient {
       fetchedAt: new Date().toISOString(),
     };
   }
+
+  async ping(): Promise<boolean> {
+    const GOOGLE_MAPS_OK_STATUSES = new Set(["OK", "ZERO_RESULTS"]);
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=Berlin&destination=Berlin&mode=transit&key=${this.apiKey}`;
+    const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!response.ok) {
+      await response.text();
+      return false;
+    }
+    const data = typia.json.assertParse<{ status: string }>(
+      await response.text(),
+    );
+    return GOOGLE_MAPS_OK_STATUSES.has(data.status);
+  }
 }
 
-export function createGoogleMapsCommuteClient(apiKey: string): CommuteClient {
-  return new GoogleMapsCommuteClient(apiKey);
+async function fetchDuration(
+  origin: string,
+  destination: string,
+  apiKey: string,
+  departureTime: number,
+): Promise<{ distance: string; durationMinutes: number }> {
+  const parameters = new URLSearchParams({
+    origins: origin,
+    destinations: destination,
+    mode: "transit",
+    departure_time: String(departureTime),
+    key: apiKey,
+  });
+
+  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?${parameters}`;
+  const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+
+  if (!response.ok) {
+    throw new Error(
+      `Distance Matrix API error: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const data = typia.json.assertParse<DistanceMatrixResponse>(
+    await response.text(),
+  );
+
+  if (data.status !== "OK") {
+    throw new Error(`Distance Matrix API status: ${data.status}`);
+  }
+
+  return parseRouteElement(data, destination);
+}
+
+function parseRouteElement(
+  data: DistanceMatrixResponse,
+  destination: string,
+): { distance: string; durationMinutes: number } {
+  const element = data.rows[0].elements[0];
+  if (element.status !== "OK" || !element.distance || !element.duration) {
+    throw new Error(`No route found for "${destination}": ${element.status}`);
+  }
+  return {
+    distance: element.distance.text,
+    durationMinutes: Math.round(element.duration.value / 60),
+  };
+}
+
+function getNextWeekday(): Date {
+  const now = new Date();
+  //                    Sun Mon Tue Wed Thu Fri Sat
+  const DAYS_UNTIL_MON = [1, 1, 1, 1, 1, 3, 2] as const;
+  const daysUntil = DAYS_UNTIL_MON[now.getDay()];
+
+  const next = new Date(now);
+  next.setDate(now.getDate() + daysUntil);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function departureTimestamp(baseDate: Date, hour: number): number {
+  const d = new Date(baseDate);
+  d.setHours(hour, 0, 0, 0);
+  return Math.floor(d.getTime() / 1000);
+}
+
+interface DistanceMatrixResponse {
+  rows: { elements: DistanceMatrixElement[] }[];
+  status: string;
+}
+
+interface DistanceMatrixElement {
+  status: string;
+  distance?: { text: string };
+  duration?: { value: number };
 }

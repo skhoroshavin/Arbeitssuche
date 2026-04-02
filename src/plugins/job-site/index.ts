@@ -11,39 +11,6 @@ import {
 } from "./zalando/index.js";
 import { createDmSite, SUPPORTED_MODES as DM_MODES } from "./dm/index.js";
 
-export type {
-  JobSite,
-  SearchCriteria,
-  VacancyListPage,
-  VacancyDetails,
-  VacancyContact,
-  SearchMode,
-} from "./types.js";
-
-interface SiteEntry {
-  factory: (browser: Browser) => JobSite;
-  supportedModes: readonly SearchMode[];
-}
-
-const REGISTRY: Record<string, SiteEntry> = {
-  arbeitsagentur: {
-    factory: createArbeitsagenturSite,
-    supportedModes: ARBEITSAGENTUR_MODES,
-  },
-  xing: { factory: createXingSite, supportedModes: XING_MODES },
-  zalando: { factory: createZalandoSite, supportedModes: ZALANDO_MODES },
-  dm: { factory: createDmSite, supportedModes: DM_MODES },
-};
-
-export function getJobSiteNames(): string[] {
-  return Object.keys(REGISTRY);
-}
-
-interface JobSiteInfo {
-  name: string;
-  supportedModes: readonly SearchMode[];
-}
-
 export function getJobSiteInfos(): JobSiteInfo[] {
   return Object.entries(REGISTRY).map(([name, entry]) => ({
     name,
@@ -52,10 +19,37 @@ export function getJobSiteInfos(): JobSiteInfo[] {
 }
 
 export function createJobSite(name: string, browser: Browser): JobSite {
-  const entry = REGISTRY[name];
-  if (!entry)
+  if (!isRegistryKey(name))
     throw new Error(
       `Unknown site: "${name}". Available: ${getJobSiteNames().join(", ")}`,
     );
-  return entry.factory(browser);
+  return REGISTRY[name].factory(browser);
+}
+
+export function getJobSiteNames(): string[] {
+  return Object.keys(REGISTRY);
+}
+
+function isRegistryKey(name: string): name is keyof typeof REGISTRY {
+  return name in REGISTRY;
+}
+
+interface JobSiteInfo {
+  name: string;
+  supportedModes: readonly SearchMode[];
+}
+
+const REGISTRY = {
+  arbeitsagentur: {
+    factory: createArbeitsagenturSite,
+    supportedModes: ARBEITSAGENTUR_MODES,
+  },
+  xing: { factory: createXingSite, supportedModes: XING_MODES },
+  zalando: { factory: createZalandoSite, supportedModes: ZALANDO_MODES },
+  dm: { factory: createDmSite, supportedModes: DM_MODES },
+} satisfies Record<string, SiteEntry>;
+
+interface SiteEntry {
+  factory: (browser: Browser) => JobSite;
+  supportedModes: readonly SearchMode[];
 }

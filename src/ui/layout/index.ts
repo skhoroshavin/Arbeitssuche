@@ -1,2 +1,2 @@
-export { AppLayout } from "./AppLayout";
-export { useAutoSaveHeader, useLayoutConfig } from "./LayoutContext";
+export { AppLayout } from "./app-layout";
+export { useAutoSaveHeader, useLayoutConfig } from "./layout-context";

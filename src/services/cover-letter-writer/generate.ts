@@ -1,7 +1,16 @@
 import type { Applicant } from "@/models/applicant/types.js";
 import type { JobSearch } from "@/models/job-search/types.js";
 import type { LlmClient } from "@/plugins/llm/types.js";
-import { formatApplicantSections } from "@/models/applicant/format.js";
+import { formatApplicantSections } from "@/models/applicant/index.js";
+
+export async function generateCoverLetter(
+  applicant: Applicant,
+  jobSearch: JobSearch,
+  llmClient: LlmClient,
+): Promise<string> {
+  const prompt = buildCoverLetterPrompt(applicant, jobSearch);
+  return llmClient.complete(prompt, 4096);
+}
 
 function buildCoverLetterPrompt(
   applicant: Applicant,
@@ -35,13 +44,4 @@ Das Anschreiben soll:
 Geben Sie NUR den Anschreiben-Text zurück, ohne zusätzliche Erklärungen oder Markdown-Formatierung.
 
 ${sections.join("\n\n")}`;
-}
-
-export async function generateCoverLetter(
-  applicant: Applicant,
-  jobSearch: JobSearch,
-  llmClient: LlmClient,
-): Promise<string> {
-  const prompt = buildCoverLetterPrompt(applicant, jobSearch);
-  return llmClient.complete(prompt, 4096);
 }
