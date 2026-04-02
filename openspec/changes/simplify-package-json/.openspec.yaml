@@ -1,0 +1,8 @@
+id: simplify-package-json
+schema: change-v1
+artifacts:
+  proposal: done
+  design: done
+  tasks: done
+  spec: done
+  context: pending
