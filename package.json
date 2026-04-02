@@ -42,7 +42,7 @@
     "eslint": "^10.0.3",
     "eslint-plugin-check-file": "^3.3.1",
     "eslint-plugin-unicorn": "^64.0.0",
-    "eslint-plugin-unslop": "^0.2.0",
+    "eslint-plugin-unslop": "^0.2.1",
     "jscpd": "^4.0.8",
     "jsdom": "^29.0.1",
     "knip": "^6.2.0",

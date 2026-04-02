@@ -4,6 +4,10 @@ import { execSync } from "node:child_process";
 import typia from "typia";
 
 const ROOT = path.join(import.meta.dirname, "..");
+const BUMP_ARGS = ["dev", "major", "minor", "patch"] as const;
+const VERSION_RE = /^(\d+)\.(\d+)\.(\d+)(?:-(dev))?$/;
+const PKG_PATH = path.join(ROOT, "package.json");
+const LOCK_PATH = path.join(ROOT, "package-lock.json");
 
 // Only run when executed directly, not when imported for testing
 if (import.meta.url === `file://${process.argv[1]}`) main();
@@ -140,11 +144,6 @@ export function formatVersion(v: ParsedVersion): string {
   return v.prerelease === "dev" ? `${base}-dev` : base;
 }
 
-const BUMP_ARGS = ["dev", "major", "minor", "patch"] as const;
-type BumpArgument = (typeof BUMP_ARGS)[number];
-
-const VERSION_RE = /^(\d+)\.(\d+)\.(\d+)(?:-(dev))?$/;
-
 function bumpFiles(package_: PackageJson, nextVersion: string): void {
   package_.version = nextVersion;
   writeFileSync(PKG_PATH, JSON.stringify(package_, undefined, 2) + "\n");
@@ -160,8 +159,7 @@ function bumpFiles(package_: PackageJson, nextVersion: string): void {
   writeFileSync(LOCK_PATH, JSON.stringify(lock, undefined, 2) + "\n");
 }
 
-const PKG_PATH = path.join(ROOT, "package.json");
-const LOCK_PATH = path.join(ROOT, "package-lock.json");
+type BumpArgument = (typeof BUMP_ARGS)[number];
 
 interface PackageJson {
   version: string;
