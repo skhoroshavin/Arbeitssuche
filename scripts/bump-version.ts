@@ -158,12 +158,6 @@ function bumpFiles(package_: PackageJson, nextVersion: string): void {
 
 type BumpArgument = (typeof BUMP_ARGS)[number];
 
-interface PackageJson {
-  version: string;
-  packages?: Record<string, { version?: string }>;
-  [key: string]: unknown;
-}
-
 function isPackageJson(value: unknown): value is PackageJson {
   if (!isRecord(value)) return false;
   if (typeof value.version !== "string") return false;
@@ -180,4 +174,10 @@ function isPackageEntry(value: unknown): value is { version?: string } {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+interface PackageJson {
+  version: string;
+  packages?: Record<string, { version?: string }>;
+  [key: string]: unknown;
 }
