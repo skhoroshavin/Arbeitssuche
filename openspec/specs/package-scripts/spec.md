@@ -1,8 +1,11 @@
 # package-scripts Specification
 
 ## Purpose
+
 TBD - created by archiving change simplify-package-json. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Consolidated fix command
 
 The system MUST provide a single `fix` command that auto-fixes all static analysis issues.
@@ -36,4 +39,3 @@ The system MUST provide a `test:all` command that runs all test suites sequentia
 **WHEN** the developer runs `npm run test:all`
 **THEN** unit tests, crawler tests, and e2e tests run sequentially
 **AND** execution stops on the first failing test suite
-
