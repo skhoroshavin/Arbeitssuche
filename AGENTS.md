@@ -138,6 +138,7 @@ It focuses on how to build/test/lint and which coding rules to follow.
 
 ## Agent Execution Checklist
 
+- Before committing any changes, run: `npm run fix`
 - Before finishing, run at least:
   - `npm run verify`
   - `npm test`
