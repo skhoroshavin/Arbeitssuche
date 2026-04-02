@@ -73,6 +73,8 @@ function main() {
   console.log("Push with: git push");
 }
 
+const BUMP_ARGS = ["dev", "major", "minor", "patch"] as const;
+
 export interface ParsedVersion {
   major: number;
   minor: number;
@@ -93,6 +95,8 @@ export function parseVersion(version: string): ParsedVersion {
     prerelease: pre === "dev" ? "dev" : undefined,
   };
 }
+
+const VERSION_RE = /^(\d+)\.(\d+)\.(\d+)(?:-(dev))?$/;
 
 export function computeNextVersion(
   current: ParsedVersion,
@@ -140,11 +144,6 @@ export function formatVersion(v: ParsedVersion): string {
   return v.prerelease === "dev" ? `${base}-dev` : base;
 }
 
-const BUMP_ARGS = ["dev", "major", "minor", "patch"] as const;
-type BumpArgument = (typeof BUMP_ARGS)[number];
-
-const VERSION_RE = /^(\d+)\.(\d+)\.(\d+)(?:-(dev))?$/;
-
 function bumpFiles(package_: PackageJson, nextVersion: string): void {
   package_.version = nextVersion;
   writeFileSync(PKG_PATH, JSON.stringify(package_, undefined, 2) + "\n");
@@ -160,11 +159,13 @@ function bumpFiles(package_: PackageJson, nextVersion: string): void {
   writeFileSync(LOCK_PATH, JSON.stringify(lock, undefined, 2) + "\n");
 }
 
-const PKG_PATH = path.join(ROOT, "package.json");
-const LOCK_PATH = path.join(ROOT, "package-lock.json");
+type BumpArgument = (typeof BUMP_ARGS)[number];
 
 interface PackageJson {
   version: string;
   packages?: Record<string, { version?: string }>;
   [key: string]: unknown;
 }
+
+const PKG_PATH = path.join(ROOT, "package.json");
+const LOCK_PATH = path.join(ROOT, "package-lock.json");
