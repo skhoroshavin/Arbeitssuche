@@ -1,6 +1,62 @@
 import { protocol } from "electron";
-import { join, extname, resolve } from "node:path";
+import path from "node:path";
 import { readFileSync } from "node:fs";
+
+export function registerAppProtocol(rendererDirectory: string): void {
+  protocol.handle("app", (request) => {
+    const url = new URL(request.url);
+
+    // Try the exact path first
+    if (!url.pathname.endsWith("/")) {
+      const response = tryServeFile(
+        path.join(rendererDirectory, url.pathname),
+        rendererDirectory,
+      );
+      if (response) return response;
+    }
+
+    // Handle relative asset paths from sub-routes:
+    // e.g. /applicants/assets/index.js → /assets/index.js
+    const assetMatch = url.pathname.match(/\/(assets\/.+)$/);
+    if (assetMatch) {
+      const response = tryServeFile(
+        path.join(rendererDirectory, assetMatch[1]),
+        rendererDirectory,
+      );
+      if (response) return response;
+    }
+
+    // SPA fallback: serve index.html for client-side routes
+    return (
+      tryServeFile(
+        path.join(rendererDirectory, "index.html"),
+        rendererDirectory,
+      ) ?? new Response("Not Found", { status: 404 })
+    );
+  });
+}
+
+function tryServeFile(
+  filePath: string,
+  allowedDirectory: string,
+): Response | undefined {
+  const resolved = path.resolve(filePath);
+  if (!resolved.startsWith(path.resolve(allowedDirectory) + "/"))
+    return undefined;
+
+  try {
+    const data = readFileSync(resolved);
+    const mimeType =
+      MIME_TYPES[path.extname(resolved)] || "application/octet-stream";
+    const headers: Record<string, string> = { "Content-Type": mimeType };
+    if (path.extname(resolved) === ".html") {
+      headers["Content-Security-Policy"] = CSP;
+    }
+    return new Response(data, { headers });
+  } catch {
+    return undefined;
+  }
+}
 
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -27,50 +83,3 @@ const CSP = [
   "base-uri 'none'",
   "form-action 'none'",
 ].join("; ");
-
-function tryServeFile(filePath: string, allowedDir: string): Response | null {
-  const resolved = resolve(filePath);
-  if (!resolved.startsWith(resolve(allowedDir) + "/")) return null;
-
-  try {
-    const data = readFileSync(resolved);
-    const mimeType =
-      MIME_TYPES[extname(resolved)] || "application/octet-stream";
-    const headers: Record<string, string> = { "Content-Type": mimeType };
-    if (extname(resolved) === ".html") {
-      headers["Content-Security-Policy"] = CSP;
-    }
-    return new Response(data, { headers });
-  } catch {
-    return null;
-  }
-}
-
-export function registerAppProtocol(rendererDir: string): void {
-  protocol.handle("app", (request) => {
-    const url = new URL(request.url);
-
-    // Try the exact path first
-    if (!url.pathname.endsWith("/")) {
-      const response = tryServeFile(
-        join(rendererDir, url.pathname),
-        rendererDir,
-      );
-      if (response) return response;
-    }
-
-    // Handle relative asset paths from sub-routes:
-    // e.g. /applicants/assets/index.js → /assets/index.js
-    const assetMatch = url.pathname.match(/\/(assets\/.+)$/);
-    if (assetMatch) {
-      const response = tryServeFile(
-        join(rendererDir, assetMatch[1]),
-        rendererDir,
-      );
-      if (response) return response;
-    }
-
-    // SPA fallback: serve index.html for client-side routes
-    return tryServeFile(join(rendererDir, "index.html"), rendererDir)!;
-  });
-}

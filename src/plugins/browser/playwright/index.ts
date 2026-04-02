@@ -1,62 +1,52 @@
-import { mkdirSync, writeFileSync } from "fs";
-import { join } from "path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { gzipSync } from "node:zlib";
-import { chromium } from "playwright";
+import {
+  chromium,
+  type Page as PwPage,
+  type Browser as PwBrowser,
+} from "playwright";
 import type {
   Browser,
   Page,
   OpenPageOptions,
 } from "@/plugins/browser/types.js";
 
-async function navigateAndCapture(
-  page: Awaited<
-    ReturnType<Awaited<ReturnType<typeof chromium.launch>>["newPage"]>
-  >,
-  url: string,
-  waitFor?: string,
-): Promise<string> {
-  if (waitFor) {
-    await page.goto(url, { waitUntil: "commit", timeout: 10_000 });
-    await page.waitForSelector(waitFor, { timeout: 15_000 }).catch(() => null);
-  } else {
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 10_000 });
-  }
-  return page.content();
+export async function createPlaywrightBrowser(options?: {
+  headless?: boolean;
+  recordDirectory?: string;
+}): Promise<Browser> {
+  const pw = await chromium.launch({ headless: options?.headless ?? true });
+  return new PlaywrightBrowser(pw, options?.recordDirectory);
 }
 
 class PlaywrightBrowser implements Browser {
-  private readonly recorded: { url: string; html: string }[] = [];
-
   constructor(
-    private readonly pw: Awaited<ReturnType<typeof chromium.launch>>,
-    private readonly recordDir?: string,
+    private readonly pw: PwBrowser,
+    private readonly recordDirectory?: string,
   ) {}
 
-  private record(url: string, html: string): void {
-    if (this.recordDir) this.recorded.push({ url, html });
-  }
-
-  async openPage(url: string, opts?: OpenPageOptions): Promise<Page> {
+  async openPage(url: string, options?: OpenPageOptions): Promise<Page> {
     const pwPage = await this.pw.newPage();
     const record = this.record.bind(this);
 
-    if (opts?.blockPatterns) {
-      const patterns = opts.blockPatterns;
+    if (options?.blockPatterns) {
+      const patterns = options.blockPatterns;
       await pwPage.route(
         (u) => patterns.some((p) => p.test(u.toString())),
         (route) => route.abort(),
       );
     }
 
-    let html = await navigateAndCapture(pwPage, url, opts?.waitFor);
+    let html = await navigateAndCapture(pwPage, url, options?.waitFor);
     record(url, html);
 
     return {
       get html() {
         return html;
       },
-      async navigate(nextUrl: string, navOpts?: { waitFor?: string }) {
-        html = await navigateAndCapture(pwPage, nextUrl, navOpts?.waitFor);
+      async navigate(nextUrl: string, navOptions?: { waitFor?: string }) {
+        html = await navigateAndCapture(pwPage, nextUrl, navOptions?.waitFor);
         record(nextUrl, html);
       },
       async close() {
@@ -68,24 +58,36 @@ class PlaywrightBrowser implements Browser {
   async close() {
     await this.pw.close();
 
-    if (this.recordDir && this.recorded.length > 0) {
-      mkdirSync(this.recordDir, { recursive: true });
+    if (this.recordDirectory && this.recorded.length > 0) {
+      mkdirSync(this.recordDirectory, { recursive: true });
       const data: Record<string, string> = {};
       for (const { url, html } of this.recorded) {
         data[url] = html;
       }
       writeFileSync(
-        join(this.recordDir, "data.json.gz"),
-        gzipSync(Buffer.from(JSON.stringify(data), "utf-8")),
+        path.join(this.recordDirectory, "data.json.gz"),
+        gzipSync(Buffer.from(JSON.stringify(data), "utf8")),
       );
     }
   }
+
+  private record(url: string, html: string): void {
+    if (this.recordDirectory) this.recorded.push({ url, html });
+  }
+
+  private readonly recorded: { url: string; html: string }[] = [];
 }
 
-export async function createPlaywrightBrowser(options?: {
-  headless?: boolean;
-  recordDir?: string;
-}): Promise<Browser> {
-  const pw = await chromium.launch({ headless: options?.headless ?? true });
-  return new PlaywrightBrowser(pw, options?.recordDir);
+async function navigateAndCapture(
+  page: PwPage,
+  url: string,
+  waitFor?: string,
+): Promise<string> {
+  if (waitFor) {
+    await page.goto(url, { waitUntil: "commit", timeout: 10_000 });
+    await page.waitForSelector(waitFor, { timeout: 15_000 }).catch(() => {});
+  } else {
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 10_000 });
+  }
+  return page.content();
 }

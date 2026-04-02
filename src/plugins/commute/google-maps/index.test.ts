@@ -1,37 +1,6 @@
 import { test, describe, expect } from "vitest";
 import { createGoogleMapsCommuteClient } from "./index";
 
-const API_PATTERN = "maps\\.googleapis\\.com/maps/api/distancematrix";
-
-function matrixResponse(distanceText: string, durationSeconds: number): object {
-  return {
-    status: "OK",
-    rows: [
-      {
-        elements: [
-          {
-            status: "OK",
-            distance: { text: distanceText },
-            duration: { value: durationSeconds },
-          },
-        ],
-      },
-    ],
-  };
-}
-
-function createStubFetch(response: object) {
-  const requestedUrls: string[] = [];
-  const stubFetch = async (
-    url: string,
-    _init?: RequestInit,
-  ): Promise<Response> => {
-    requestedUrls.push(url);
-    return new Response(JSON.stringify(response), { status: 200 });
-  };
-  return { fetch: stubFetch as typeof globalThis.fetch, requestedUrls };
-}
-
 describe("GoogleMapsCommuteClient", () => {
   test("returns durations as rounded minutes", async () => {
     const response = matrixResponse("15.3 km", 1890);
@@ -109,3 +78,31 @@ describe("GoogleMapsCommuteClient", () => {
     }
   });
 });
+
+const API_PATTERN = String.raw`maps\.googleapis\.com/maps/api/distancematrix`;
+
+function matrixResponse(distanceText: string, durationSeconds: number): object {
+  return {
+    status: "OK",
+    rows: [
+      {
+        elements: [
+          {
+            status: "OK",
+            distance: { text: distanceText },
+            duration: { value: durationSeconds },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function createStubFetch(response: object) {
+  const requestedUrls: string[] = [];
+  const stubFetch = (url: string, _init?: RequestInit): Promise<Response> => {
+    requestedUrls.push(url);
+    return Promise.resolve(Response.json(response, { status: 200 }));
+  };
+  return { fetch: stubFetch as typeof globalThis.fetch, requestedUrls };
+}

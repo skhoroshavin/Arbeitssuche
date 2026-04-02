@@ -39,7 +39,7 @@ Außerdem ein Experiment in KI-gestützter Entwicklung: Der gesamte Code wurde v
 
 ## Entwicklung
 
-Siehe [CLAUDE.md](CLAUDE.md) für Architektur, Konventionen und Befehle.
+Siehe [AGENTS.md](AGENTS.md) für Architektur, Konventionen und Befehle.
 
 ## Lizenz
 
@@ -88,7 +88,7 @@ Also an experiment in AI-assisted development: the entire codebase was written b
 
 ### Development
 
-See [CLAUDE.md](CLAUDE.md) for architecture, conventions, and commands.
+See [AGENTS.md](AGENTS.md) for architecture, conventions, and commands.
 
 ### License
 

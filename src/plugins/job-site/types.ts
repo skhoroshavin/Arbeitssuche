@@ -20,8 +20,8 @@ export interface VacancyContact {
 
 export interface VacancyDetails {
   url: string;
-  title?: string;
-  company?: string;
+  title: string;
+  company: string;
   address?: string;
   descriptionHtml?: string;
   startDate?: string;
@@ -37,4 +37,22 @@ export interface JobSite {
     pageId?: string,
   ): Promise<VacancyListPage>;
   getVacancyDetails(url: string): Promise<VacancyDetails>;
+}
+
+// --- JSON-LD types for job posting structured data ---
+
+export interface JobPostingJsonLd {
+  title?: string;
+  description?: string;
+  datePosted?: string;
+  hiringOrganization?: { name?: string };
+  jobLocation?:
+    | { address?: JobPostingAddress }
+    | { address?: JobPostingAddress }[];
+}
+
+interface JobPostingAddress {
+  streetAddress?: string;
+  postalCode?: string;
+  addressLocality?: string;
 }

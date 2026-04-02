@@ -6,7 +6,7 @@ export const SEARCH_MODES = [
 
 export type SearchMode = (typeof SEARCH_MODES)[number];
 
-export interface SearchParams {
+export interface SearchParameters {
   searchTerm: string;
   radiusKm: number;
   searchMode: SearchMode;
@@ -23,7 +23,7 @@ export interface SearchPreferences {
 export interface JobSearch {
   id: string;
   applicantId: string;
-  params: SearchParams;
+  params: SearchParameters;
   preferences: SearchPreferences;
 }
 
@@ -39,7 +39,7 @@ export interface ConsultationSuggestion {
   reason: string;
 }
 
-export const DEFAULT_SEARCH_PARAMS: SearchParams = {
+export const DEFAULT_SEARCH_PARAMS: SearchParameters = {
   searchTerm: "",
   radiusKm: 30,
   searchMode: "employment",

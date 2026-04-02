@@ -7,42 +7,43 @@ import type {
   VacancySource,
   VacancyStatus,
 } from "./types.js";
+import { resolveVacancy } from "./resolve.js";
 
 /** Rich domain object wrapping VacancyDTO with derived methods. */
 export class Vacancy implements VacancyDTO {
+  constructor(data: Partial<VacancyDTO>) {
+    const merged = resolveVacancy(data);
+
+    this.hash = merged.hash;
+    this.title = merged.title;
+    this.company = merged.company;
+    this.urls = merged.urls;
+    this.addresses = merged.addresses;
+    this.contact = merged.contact;
+    this.startDate = merged.startDate;
+    this.description = merged.description;
+    this.descriptionChanged = merged.descriptionChanged;
+    this.summary = merged.summary;
+    this.matchScore = merged.matchScore;
+    this.commute = merged.commute;
+    this.activityHistory = merged.activityHistory;
+    this.active = merged.active;
+  }
+
   readonly hash: string;
   readonly title: string;
   readonly company: string;
   readonly urls: string[];
   readonly addresses: string[];
-  readonly contact?: VacancyContact;
-  readonly startDate?: string;
-  readonly description?: string;
+  readonly contact: VacancyContact;
+  readonly startDate: string;
+  readonly description: string;
   readonly descriptionChanged: boolean;
-  readonly summary?: string;
-  readonly matchScore?: MatchScore;
-  readonly commute?: Record<string, CommuteInfo>;
+  readonly summary: string;
+  readonly matchScore: MatchScore;
+  readonly commute: Record<string, CommuteInfo>;
   readonly activityHistory: Activity[];
   readonly active: boolean;
-
-  constructor(data: VacancyDTO) {
-    this.hash = data.hash;
-    this.title = data.title;
-    this.company = data.company;
-    this.urls = Array.isArray(data.urls) ? data.urls : [];
-    this.addresses = Array.isArray(data.addresses) ? data.addresses : [];
-    this.contact = data.contact;
-    this.startDate = data.startDate;
-    this.description = data.description;
-    this.descriptionChanged = data.descriptionChanged ?? false;
-    this.summary = data.summary;
-    this.matchScore = data.matchScore;
-    this.commute = data.commute;
-    this.activityHistory = Array.isArray(data.activityHistory)
-      ? data.activityHistory
-      : [];
-    this.active = data.active ?? true;
-  }
 
   /** Derive current status from activity history and active flag. */
   deriveStatus(): VacancyStatus {
@@ -51,25 +52,11 @@ export class Vacancy implements VacancyDTO {
     );
 
     if (userActivities.length === 0) {
-      if (!this.active) return "gone";
-      const wasGone = this.activityHistory.some((a) => a.type === "not-found");
-      return wasGone ? "renewed" : "new";
+      return deriveStatusNoUserActivity(this.activityHistory, this.active);
     }
 
     const types = new Set(userActivities.map((a) => a.type));
-
-    if (types.has("rejected")) return "rejected";
-    if (types.has("offered")) return "offered";
-    if (types.has("interviewed")) return "interviewed";
-    if (types.has("invited")) return "invited";
-
-    if (types.has("applied")) {
-      return this.active ? "applied" : "ignored";
-    }
-
-    if (types.has("not-interested")) return "not-interested";
-
-    return this.active ? "new" : "gone";
+    return deriveStatusFromHistory(types, this.active);
   }
 
   /** Extract deduplicated sources from "found" activities. */
@@ -90,27 +77,46 @@ export class Vacancy implements VacancyDTO {
 
   /** Minimum morning commute across all addresses in minutes, or undefined if none. */
   getMinCommuteMinutes(): number | undefined {
-    if (!this.commute) return undefined;
     const infos = Object.values(this.commute);
     if (infos.length === 0) return undefined;
-
-    let min: number | undefined;
-    for (const info of infos) {
-      const m = info.durations.morning;
-      if (min === undefined || m < min) min = m;
-    }
-    return min;
+    return Math.min(...infos.map((info) => info.durations.morning));
   }
 
   /** Get date of the most recent activity, or empty string. */
   getLatestActivityDate(): string {
-    return this.activityHistory.length > 0
-      ? this.activityHistory[this.activityHistory.length - 1].date
-      : "";
+    const latestActivity = this.activityHistory.at(-1);
+    return latestActivity?.date ?? "";
   }
 
   /** Create a new Vacancy with overridden fields. */
   with(overrides: Partial<VacancyDTO>): Vacancy {
     return new Vacancy({ ...this, ...overrides });
   }
+}
+
+function deriveStatusNoUserActivity(
+  activityHistory: Activity[],
+  active: boolean,
+): VacancyStatus {
+  if (!active) return "gone";
+  const wasGone = activityHistory.some((a) => a.type === "not-found");
+  return wasGone ? "renewed" : "new";
+}
+
+function deriveStatusFromHistory(
+  types: Set<string>,
+  active: boolean,
+): VacancyStatus {
+  const STATUS_PRIORITY = [
+    "rejected",
+    "offered",
+    "interviewed",
+    "invited",
+  ] as const;
+  const match = STATUS_PRIORITY.find((t) => types.has(t));
+  if (match) return match;
+
+  if (types.has("applied")) return active ? "applied" : "ignored";
+  if (types.has("not-interested")) return "not-interested";
+  return active ? "new" : "gone";
 }

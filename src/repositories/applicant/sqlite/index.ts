@@ -1,40 +1,57 @@
 import {
   DEFAULT_APPLICANT,
+  type ApplicantPersonal,
   type Applicant,
   type ApplicantInfo,
 } from "@/models/applicant/types.js";
+import { resolveApplicant } from "@/models/applicant/index.js";
 import type { ApplicantRepository } from "@/repositories/applicant/types.js";
-import { deriveId } from "@/utils/derive-id.js";
-import { createWithUniqueId } from "@/utils/create-with-unique-id.js";
-import { Database, queryRow, queryRows } from "@/utils/database.js";
+import { createUniqueDerivedId } from "@/utils/id.js";
+import { Database, parseRow } from "@/utils/database.js";
+import typia from "typia";
+
+export function createSqliteApplicantRepository(
+  database: Database,
+): ApplicantRepository {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS applicants (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      data TEXT NOT NULL
+    )
+  `);
+  return new SqliteApplicantRepository(database);
+}
 
 class SqliteApplicantRepository implements ApplicantRepository {
-  private readonly listStmt;
-  private readonly existsStmt;
-  private readonly loadStmt;
-  private readonly updateStmt;
-  private readonly insertStmt;
-  private readonly deleteStmt;
-
-  constructor(db: Database) {
-    this.listStmt = db.prepare("SELECT id, name FROM applicants");
-    this.existsStmt = db.prepare("SELECT 1 FROM applicants WHERE id = ?");
-    this.loadStmt = db.prepare("SELECT data FROM applicants WHERE id = ?");
-    this.updateStmt = db.prepare(
+  constructor(database: Database) {
+    this.listStmt = database.prepare("SELECT id, name FROM applicants");
+    this.existsStmt = database.prepare("SELECT 1 FROM applicants WHERE id = ?");
+    this.loadStmt = database.prepare(
+      "SELECT data FROM applicants WHERE id = ?",
+    );
+    this.updateStmt = database.prepare(
       "UPDATE applicants SET name = ?, data = ? WHERE id = ?",
     );
-    this.insertStmt = db.prepare(
+    this.insertStmt = database.prepare(
       "INSERT INTO applicants (id, name, data) VALUES (?, ?, ?)",
     );
-    this.deleteStmt = db.prepare("DELETE FROM applicants WHERE id = ?");
+    this.deleteStmt = database.prepare("DELETE FROM applicants WHERE id = ?");
   }
 
   list(): ApplicantInfo[] {
-    const rows = queryRows<{ id: string; name: string | null }>(this.listStmt);
-    return rows.map((r) => ({
-      id: r.id,
-      name: r.name || undefined,
-    }));
+    return this.listStmt.all().map((row) => parseApplicantRow(row));
+  }
+
+  create(name: string): string {
+    const id = createUniqueDerivedId(name, (id) => this.exists(id));
+    const personal: ApplicantPersonal = {
+      ...DEFAULT_APPLICANT.personal,
+      name,
+    };
+    const data = resolveApplicant({ ...DEFAULT_APPLICANT, id, personal });
+    this.insertStmt.run(id, name, JSON.stringify(data));
+    return id;
   }
 
   exists(id: string): boolean {
@@ -42,48 +59,34 @@ class SqliteApplicantRepository implements ApplicantRepository {
   }
 
   load(id: string): Applicant {
-    const row = queryRow<{ data: string }>(this.loadStmt, id);
-    if (!row) throw new Error(`Applicant "${id}" not found`);
-    return JSON.parse(row.data);
+    const applicant = parseRow(this.loadStmt.get(id));
+    if (applicant === undefined) throw new Error(`Applicant "${id}" not found`);
+    return resolveApplicant(typia.assert<Applicant>(applicant));
   }
 
-  async save(id: string, data: Applicant) {
+  save(id: string, data: Applicant): void {
+    const resolved = resolveApplicant(data);
     const result = this.updateStmt.run(
-      data.personal.name || null,
-      JSON.stringify(data),
+      resolved.personal.name,
+      JSON.stringify(resolved),
       id,
     );
     if (result.changes === 0) throw new Error(`Applicant "${id}" not found`);
   }
 
-  create(name: string): string {
-    const id = createWithUniqueId(
-      () => deriveId(name),
-      (id) => this.exists(id),
-    );
-    const data = {
-      ...DEFAULT_APPLICANT,
-      id,
-      personal: { name },
-    };
-    this.insertStmt.run(id, name || null, JSON.stringify(data));
-    return id;
-  }
-
   delete(id: string): void {
     this.deleteStmt.run(id);
   }
+
+  private readonly listStmt;
+  private readonly existsStmt;
+  private readonly loadStmt;
+  private readonly updateStmt;
+  private readonly insertStmt;
+  private readonly deleteStmt;
 }
 
-export function createSqliteApplicantRepository(
-  db: Database,
-): ApplicantRepository {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS applicants (
-      id TEXT PRIMARY KEY,
-      name TEXT,
-      data TEXT NOT NULL
-    )
-  `);
-  return new SqliteApplicantRepository(db);
+function parseApplicantRow(raw: unknown): ApplicantInfo {
+  const r = typia.assert<{ id: string; name: string | null }>(raw);
+  return { id: r.id, name: r.name || undefined };
 }

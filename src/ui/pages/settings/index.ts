@@ -1,3 +1,3 @@
 export { default as SettingsLayout } from "./layout";
-export { default as SettingsAI } from "./views/AI";
-export { default as SettingsMaps } from "./views/Maps";
+export { default as SettingsAI } from "./views/ai";
+export { default as SettingsMaps } from "./views/maps";

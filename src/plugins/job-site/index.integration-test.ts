@@ -1,8 +1,7 @@
 import { test, describe, beforeAll, afterAll, expect } from "vitest";
-import { createPlaywrightBrowser } from "@/plugins/browser/playwright/index";
+import { createPlaywrightBrowser } from "@/plugins/browser/index.js";
 import type { Browser } from "@/plugins/browser/types";
 import { createJobSite, getJobSiteInfos } from "./index";
-import type { SearchMode } from "./types";
 
 describe("job-site plugins", () => {
   let browser: Browser;
@@ -12,7 +11,7 @@ describe("job-site plugins", () => {
   });
 
   afterAll(async () => {
-    await browser?.close();
+    await browser.close();
   });
 
   const SKIPPED_SITES = new Set<string>(["xing"]);
@@ -29,7 +28,7 @@ describe("job-site plugins", () => {
           location: "Berlin",
           query: "",
           radiusKm: 10,
-          mode: mode as SearchMode,
+          mode: mode,
         };
 
         const allUrls = new Set<string>();
@@ -73,7 +72,7 @@ describe("job-site plugins", () => {
           location: "Berlin",
           query: "",
           radiusKm: 10,
-          mode: mode as SearchMode,
+          mode: mode,
         };
 
         const { urls } = await site.getVacancyList(criteria);

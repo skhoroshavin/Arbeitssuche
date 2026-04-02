@@ -1,29 +1,33 @@
 import { defineConfig } from "electron-vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { resolve } from "node:path";
+import UnpluginTypia from "@typia/unplugin/vite";
+import path from "node:path";
 import { cpSync, readdirSync } from "node:fs";
 import type { Plugin } from "vite";
 
 function copyTemplatesPlugin(): Plugin {
-  const srcDir = resolve(__dirname, "src/services/resume-renderer/templates");
-  const outDir = resolve(__dirname, "out/main/templates");
+  const sourceDirectory = path.resolve(
+    __dirname,
+    "src/services/resume-renderer/templates",
+  );
+  const outputDirectory = path.resolve(__dirname, "out/main/templates");
   return {
     name: "copy-templates",
     buildStart() {
-      for (const file of readdirSync(srcDir)) {
-        this.addWatchFile(resolve(srcDir, file));
+      for (const file of readdirSync(sourceDirectory)) {
+        this.addWatchFile(path.resolve(sourceDirectory, file));
       }
     },
     closeBundle() {
-      cpSync(srcDir, outDir, { recursive: true });
+      cpSync(sourceDirectory, outputDirectory, { recursive: true });
     },
   };
 }
 
 export default defineConfig({
   main: {
-    plugins: [copyTemplatesPlugin()],
+    plugins: [copyTemplatesPlugin(), UnpluginTypia()],
     build: {
       outDir: "out/main",
       lib: {
@@ -41,7 +45,7 @@ export default defineConfig({
     },
     resolve: {
       alias: {
-        "@": resolve(__dirname, "./src"),
+        "@": path.resolve(__dirname, "./src"),
       },
     },
   },
@@ -59,22 +63,22 @@ export default defineConfig({
     },
     resolve: {
       alias: {
-        "@": resolve(__dirname, "./src"),
+        "@": path.resolve(__dirname, "./src"),
       },
     },
   },
   renderer: {
     root: "src/ui",
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), UnpluginTypia()],
     build: {
-      outDir: resolve(__dirname, "out/renderer"),
+      outDir: path.resolve(__dirname, "out/renderer"),
       rollupOptions: {
-        input: resolve(__dirname, "src/ui/index.html"),
+        input: path.resolve(__dirname, "src/ui/index.html"),
       },
     },
     resolve: {
       alias: {
-        "@": resolve(__dirname, "./src"),
+        "@": path.resolve(__dirname, "./src"),
       },
     },
   },

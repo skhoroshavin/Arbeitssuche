@@ -1,3 +1,4 @@
+import typia from "typia";
 import type { Browser } from "@/plugins/browser/types.js";
 import type { Fetch } from "@/plugins/fetch/types.js";
 import type {
@@ -5,11 +6,113 @@ import type {
   JobSite,
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
+import { formatAddressParts } from "@/utils/text.js";
 
-const API_BASE = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service";
-const API_KEY = "jobboerse-jobsuche";
-const SITE_BASE = "https://www.arbeitsagentur.de";
-const API_HEADERS = { "X-API-Key": API_KEY };
+export function createArbeitsagenturSite(
+  browser: Browser,
+  fetch?: Fetch,
+): JobSite {
+  return new ArbeitsagenturSite(browser, fetch);
+}
+
+class ArbeitsagenturSite implements JobSite {
+  constructor(_browser: Browser, fetch?: Fetch) {
+    this.fetch = fetch ?? globalThis.fetch;
+  }
+
+  readonly name = "arbeitsagentur";
+  readonly supportedModes = [...SUPPORTED_MODES];
+
+  async getVacancyList(criteria: SearchCriteria, pageId?: string) {
+    const url = buildSearchApiUrl(criteria, pageId);
+    const response = await this.fetch(url, { headers: API_HEADERS });
+    assertOk(response, url);
+    const data = typia.json.assertParse<ApiSearchResponse>(
+      await response.text(),
+    );
+    return mapSearchResponse(data);
+  }
+
+  async getVacancyDetails(url: string) {
+    const refnr = url.split("/").pop();
+    if (!refnr) throw new Error(`Cannot extract refnr from URL: ${url}`);
+    const encodedRefnr = btoa(refnr);
+    const apiUrl = `${API_BASE}/pc/v3/jobdetails/${encodedRefnr}`;
+    const response = await this.fetch(apiUrl, { headers: API_HEADERS });
+    assertOk(response, apiUrl);
+    const data = typia.json.assertParse<ApiJobDetails>(await response.text());
+    return mapDetailsResponse(data, url);
+  }
+
+  private readonly fetch: Fetch;
+}
+
+function assertOk(response: Response, url: string): void {
+  if (!response.ok) {
+    throw new Error(
+      `Arbeitsagentur API error: ${response.status} ${response.statusText} for ${url}`,
+    );
+  }
+}
+
+function mapSearchResponse(data: ApiSearchResponse): {
+  urls: string[];
+  nextPageId?: string;
+} {
+  const items = data.stellenangebote ?? [];
+  const urls = items.map((item) => refnrToUrl(item.refnr));
+  const totalPages = Math.ceil(data.maxErgebnisse / data.size);
+  const nextPageId =
+    items.length > 0 && data.page < totalPages
+      ? String(data.page + 1)
+      : undefined;
+  return { urls, nextPageId };
+}
+
+function mapDetailsResponse(data: ApiJobDetails, url: string): VacancyDetails {
+  return {
+    url,
+    title: data.stellenangebotsTitel ?? "",
+    company: data.firma ?? "",
+    address: buildAddressFromLocations(data.stellenlokationen),
+    descriptionHtml: data.stellenangebotsBeschreibung,
+    startDate: data.eintrittszeitraum?.von,
+    publishedAt: data.veroeffentlichungszeitraum?.von,
+    contact: undefined,
+  };
+}
+
+function buildSearchApiUrl(criteria: SearchCriteria, pageId?: string): string {
+  const qs = new URLSearchParams();
+  if (criteria.query) qs.set("was", criteria.query);
+  qs.set("wo", criteria.location);
+  qs.set("angebotsart", modeToAngebotsart(criteria.mode));
+  if (criteria.mode === "entry-level") qs.set("berufserfahrung", "BEL");
+  qs.set("umkreis", String(criteria.radiusKm ?? 25));
+  const pageNumber = Number(pageId ?? "1");
+  qs.set("page", String(pageNumber));
+  qs.set("size", "25");
+  return `${API_BASE}/pc/v4/jobs?${qs.toString()}`;
+}
+
+function refnrToUrl(refnr: string): string {
+  return `${SITE_BASE}/jobsuche/jobdetail/${refnr}`;
+}
+
+function buildAddressFromLocations(
+  locations?: ApiJobDetails["stellenlokationen"],
+): string | undefined {
+  if (!locations?.length) return undefined;
+  const addr = locations[0].adresse;
+  if (!addr) return undefined;
+  const cityLine = formatAddressParts([addr.plz, addr.ort], " ");
+  return formatAddressParts([addr.strasse, cityLine]);
+}
+
+function modeToAngebotsart(mode: string): string {
+  if (mode === "apprenticeship") return "4";
+  return "1";
+}
 
 export const SUPPORTED_MODES = [
   "employment",
@@ -17,9 +120,10 @@ export const SUPPORTED_MODES = [
   "apprenticeship",
 ] as const;
 
-interface ApiSearchResult {
-  refnr: string;
-}
+const API_BASE = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service";
+const API_KEY = "jobboerse-jobsuche";
+const SITE_BASE = "https://www.arbeitsagentur.de";
+const API_HEADERS = { "X-API-Key": API_KEY };
 
 interface ApiSearchResponse {
   stellenangebote?: ApiSearchResult[];
@@ -44,114 +148,6 @@ interface ApiJobDetails {
   referenznummer?: string;
 }
 
-function modeToAngebotsart(mode: string): string {
-  if (mode === "apprenticeship") return "4";
-  return "1";
-}
-
-function buildSearchApiUrl(criteria: SearchCriteria, pageId?: string): string {
-  const qs = new URLSearchParams();
-  if (criteria.query) qs.set("was", criteria.query);
-  qs.set("wo", criteria.location);
-  qs.set("angebotsart", modeToAngebotsart(criteria.mode));
-  if (criteria.mode === "entry-level") qs.set("berufserfahrung", "BEL");
-  qs.set("umkreis", String(criteria.radiusKm ?? 25));
-  const pageNum = Number(pageId ?? "1");
-  qs.set("page", String(pageNum));
-  qs.set("size", "25");
-  return `${API_BASE}/pc/v4/jobs?${qs.toString()}`;
-}
-
-function nonNull(value?: string): string | undefined {
-  return value && value !== "null" ? value : undefined;
-}
-
-function buildAddressFromLocations(
-  locations?: ApiJobDetails["stellenlokationen"],
-): string | undefined {
-  if (!locations?.length) return undefined;
-  const addr = locations[0].adresse;
-  if (!addr) return undefined;
-  const parts = [
-    nonNull(addr.strasse),
-    [nonNull(addr.plz), nonNull(addr.ort)].filter(Boolean).join(" "),
-  ]
-    .filter(Boolean)
-    .join(", ");
-  return parts || undefined;
-}
-
-function refnrToUrl(refnr: string): string {
-  return `${SITE_BASE}/jobsuche/jobdetail/${refnr}`;
-}
-
-function mapSearchResponse(data: ApiSearchResponse): {
-  urls: string[];
-  nextPageId: string | undefined;
-} {
-  const items = data.stellenangebote ?? [];
-  const urls = items.map((item) => refnrToUrl(item.refnr));
-  const totalPages = Math.ceil(data.maxErgebnisse / data.size);
-  const nextPageId =
-    items.length > 0 && data.page < totalPages
-      ? String(data.page + 1)
-      : undefined;
-  return { urls, nextPageId };
-}
-
-function mapDetailsResponse(data: ApiJobDetails, url: string): VacancyDetails {
-  return {
-    url,
-    title: data.stellenangebotsTitel,
-    company: data.firma,
-    address: buildAddressFromLocations(data.stellenlokationen),
-    descriptionHtml: data.stellenangebotsBeschreibung,
-    startDate: data.eintrittszeitraum?.von,
-    publishedAt: data.veroeffentlichungszeitraum?.von,
-    contact: undefined,
-  };
-}
-
-function assertOk(res: Response, url: string): void {
-  if (!res.ok) {
-    throw new Error(
-      `Arbeitsagentur API error: ${res.status} ${res.statusText} for ${url}`,
-    );
-  }
-}
-
-class ArbeitsagenturSite implements JobSite {
-  readonly name = "arbeitsagentur";
-  readonly supportedModes = [...SUPPORTED_MODES];
-  private readonly fetch: Fetch;
-
-  constructor(_browser: Browser, fetch?: Fetch) {
-    this.fetch = fetch ?? globalThis.fetch;
-  }
-
-  async getVacancyList(criteria: SearchCriteria, pageId?: string) {
-    const url = buildSearchApiUrl(criteria, pageId);
-    const res = await this.fetch(url, { headers: API_HEADERS });
-    assertOk(res, url);
-    const data: ApiSearchResponse = await res.json();
-    return mapSearchResponse(data);
-  }
-
-  async getVacancyDetails(url: string) {
-    const refnr = url.split("/").pop();
-    if (!refnr) throw new Error(`Cannot extract refnr from URL: ${url}`);
-    const encodedRefnr = btoa(refnr);
-    const apiUrl = `${API_BASE}/pc/v3/jobdetails/${encodedRefnr}`;
-    const res = await this.fetch(apiUrl, { headers: API_HEADERS });
-    assertOk(res, apiUrl);
-    const data: ApiJobDetails = await res.json();
-    return mapDetailsResponse(data, url);
-  }
-}
-
-export function createArbeitsagenturSite(
-  browser: Browser,
-  fetch?: Fetch,
-): JobSite {
-  return new ArbeitsagenturSite(browser, fetch);
+interface ApiSearchResult {
+  refnr: string;
 }

@@ -1,34 +1,41 @@
-import { useInvalidate } from "@/ui/hooks";
-import { ipcFetch } from "./internal/ipc-client";
-import { useIpcMutation } from "./internal/use-ipc-mutation";
-import { useIpcQuery } from "./internal/use-ipc-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import typia from "typia";
+import { api } from "./internal/api";
+import { invalidateQuery, jobSearchQueryKeys } from "./job-search-query-keys";
 
 export function useStartJobSearchCrawl(id: string) {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
-    mutationFn: () =>
-      ipcFetch<{ jobId: string }>(`/job-searches/${id}/crawls`, {
-        method: "POST",
-      }),
-    onSuccess: () => {
-      invalidate(["job-search-vacancies", id]);
-    },
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api().invoke("job-searches:crawl:start", id),
+    onSuccess: () =>
+      invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id)),
   });
 }
 
 export function useAbortJobSearchCrawl(id: string) {
-  return useIpcMutation({
-    mutationFn: () =>
-      ipcFetch(`/job-searches/${id}/crawls/active`, { method: "DELETE" }),
+  return useMutation({
+    mutationFn: () => api().invoke("job-searches:crawl:abort", id),
   });
 }
 
-export function useSites() {
-  return useIpcQuery({
+export function useSiteListView() {
+  const query = useSites();
+  return {
+    ...query,
+    data: query.data ?? EMPTY_SITE_LIST,
+  };
+}
+
+function useSites() {
+  return useQuery({
     queryKey: ["sites"],
-    queryFn: () =>
-      ipcFetch<{
-        sites: { name: string; supportedModes: string[] }[];
-      }>("/sites"),
+    queryFn: async () =>
+      typia.assert<{ sites: { name: string; supportedModes: string[] }[] }>(
+        await api().invoke("sites:list"),
+      ),
   });
 }
+
+const EMPTY_SITE_LIST: { sites: SiteInfo[] } = { sites: [] };
+
+type SiteInfo = { name: string; supportedModes: string[] };

@@ -13,5 +13,3 @@ export type SecretKey =
   | "openrouterApiKey"
   | "requestyApiKey"
   | "googleMapsApiKey";
-
-export const DEFAULT_SECRETS: Secrets = {};

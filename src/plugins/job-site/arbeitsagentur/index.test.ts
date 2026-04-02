@@ -1,41 +1,8 @@
 import { test, describe, expect } from "vitest";
 import { createArbeitsagenturSite } from "./index";
-import { createStubBrowser } from "@/plugins/browser/stub/index";
-import { createStubFetch } from "@/plugins/fetch/stub/index";
+import { createStubBrowser } from "@/plugins/browser/index.js";
+import { createStubFetch } from "@/plugins/fetch/index.js";
 import type { SearchCriteria } from "@/plugins/job-site/types";
-
-const SEARCH_URL_PATTERN = "/pc/v4/jobs";
-const DETAILS_URL_PATTERN = "/pc/v3/jobdetails/";
-
-function searchResponse(
-  overrides: {
-    stellenangebote?: Array<{ refnr: string }>;
-    maxErgebnisse?: number;
-    page?: number;
-    size?: number;
-  } = {},
-) {
-  return {
-    stellenangebote: overrides.stellenangebote ?? [],
-    maxErgebnisse: overrides.maxErgebnisse ?? 0,
-    page: overrides.page ?? 1,
-    size: overrides.size ?? 25,
-  };
-}
-
-function createSite(
-  routes: Record<string, { body: unknown; status?: number }>,
-) {
-  const stubFetch = createStubFetch(routes);
-  const site = createArbeitsagenturSite(createStubBrowser({}), stubFetch);
-  return { site, stubFetch };
-}
-
-const baseCriteria: SearchCriteria = {
-  location: "Berlin",
-  query: "Software",
-  mode: "employment",
-};
 
 describe("arbeitsagentur", () => {
   describe("getVacancyList URL building", () => {
@@ -254,3 +221,36 @@ describe("arbeitsagentur", () => {
     });
   });
 });
+
+const SEARCH_URL_PATTERN = "/pc/v4/jobs";
+const DETAILS_URL_PATTERN = "/pc/v3/jobdetails/";
+
+function searchResponse(
+  overrides: {
+    stellenangebote?: Array<{ refnr: string }>;
+    maxErgebnisse?: number;
+    page?: number;
+    size?: number;
+  } = {},
+) {
+  return {
+    stellenangebote: overrides.stellenangebote ?? [],
+    maxErgebnisse: overrides.maxErgebnisse ?? 0,
+    page: overrides.page ?? 1,
+    size: overrides.size ?? 25,
+  };
+}
+
+function createSite(
+  routes: Record<string, { body: unknown; status?: number }>,
+) {
+  const stubFetch = createStubFetch(routes);
+  const site = createArbeitsagenturSite(createStubBrowser({}), stubFetch);
+  return { site, stubFetch };
+}
+
+const baseCriteria: SearchCriteria = {
+  location: "Berlin",
+  query: "Software",
+  mode: "employment",
+};

@@ -1,18 +1,19 @@
-import { Vacancy } from "@/models/vacancy/vacancy.js";
+import { Vacancy } from "@/models/vacancy/index.js";
 import type { Activity } from "@/models/vacancy/types.js";
 import {
+  EMPTY_VACANCY_LIST_OUTPUT,
   createVacancyListOutput,
   type VacancyListOutput,
   type VacancyRepository,
 } from "@/repositories/vacancy/types.js";
 
-interface StubData {
-  output: VacancyListOutput;
+export function createStubVacancyRepository(
+  initial?: Record<string, { vacancies: Vacancy[]; latestCrawl: string }>,
+): VacancyRepository {
+  return new StubVacancyRepository(initial);
 }
 
 class StubVacancyRepository implements VacancyRepository {
-  private readonly store: Map<string, StubData>;
-
   constructor(
     initial?: Record<string, { vacancies: Vacancy[]; latestCrawl: string }>,
   ) {
@@ -31,9 +32,9 @@ class StubVacancyRepository implements VacancyRepository {
     );
   }
 
-  loadAll(jobSearchId: string): VacancyListOutput | undefined {
+  loadAll(jobSearchId: string): VacancyListOutput {
     const data = this.store.get(jobSearchId);
-    if (!data) return undefined;
+    if (!data) return EMPTY_VACANCY_LIST_OUTPUT;
     const cloned = structuredClone(data.output);
     return {
       ...cloned,
@@ -56,27 +57,23 @@ class StubVacancyRepository implements VacancyRepository {
     return found ? new Vacancy(structuredClone(found)) : undefined;
   }
 
-  async addActivity(
-    jobSearchId: string,
-    hash: string,
-    activity: Activity,
-  ): Promise<void> {
+  addActivity(jobSearchId: string, hash: string, activity: Activity): void {
     const data = this.store.get(jobSearchId);
     if (!data) throw new Error(`No vacancies for job search "${jobSearchId}"`);
 
     const vacancy = data.output.vacancies.find((v) => v.hash === hash);
     if (!vacancy) throw new Error(`Vacancy "${hash}" not found`);
 
-    const idx = data.output.vacancies.indexOf(vacancy);
-    data.output.vacancies[idx] = new Vacancy({
+    const index = data.output.vacancies.indexOf(vacancy);
+    data.output.vacancies[index] = new Vacancy({
       ...structuredClone(vacancy),
       activityHistory: [...vacancy.activityHistory, structuredClone(activity)],
     });
   }
+
+  private readonly store: Map<string, StubData>;
 }
 
-export function createStubVacancyRepository(
-  initial?: Record<string, { vacancies: Vacancy[]; latestCrawl: string }>,
-): VacancyRepository {
-  return new StubVacancyRepository(initial);
+interface StubData {
+  output: VacancyListOutput;
 }

@@ -1,4 +1,4 @@
-import { Vacancy } from "@/models/vacancy/vacancy.js";
+import { Vacancy } from "@/models/vacancy/index.js";
 import type { Activity } from "@/models/vacancy/types.js";
 
 export interface VacancyListOutput {
@@ -6,6 +6,12 @@ export interface VacancyListOutput {
   latestCrawl: string;
   vacancies: Vacancy[];
 }
+
+export const EMPTY_VACANCY_LIST_OUTPUT: VacancyListOutput = {
+  generatedAt: "",
+  latestCrawl: "",
+  vacancies: [],
+};
 
 export function createVacancyListOutput(
   vacancies: Vacancy[],
@@ -19,12 +25,8 @@ export function createVacancyListOutput(
 }
 
 export interface VacancyRepository {
-  loadAll(jobSearchId: string): VacancyListOutput | undefined;
+  loadAll(jobSearchId: string): VacancyListOutput;
   save(jobSearchId: string, vacancies: Vacancy[], latestCrawl: string): void;
   findByHash(jobSearchId: string, hash: string): Vacancy | undefined;
-  addActivity(
-    jobSearchId: string,
-    hash: string,
-    activity: Activity,
-  ): Promise<void>;
+  addActivity(jobSearchId: string, hash: string, activity: Activity): void;
 }

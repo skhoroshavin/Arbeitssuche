@@ -1,165 +1,178 @@
-import { useInvalidate } from "@/ui/hooks";
-import { ipcFetch } from "./internal/ipc-client";
-import { useIpcMutation } from "./internal/use-ipc-mutation";
-import { useIpcQuery } from "./internal/use-ipc-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { JobSearch, JobSearchInfo } from "@/models/job-search/types";
 import type {
   VacancyDTO,
   VacancySource,
   VacancyStatus,
 } from "@/models/vacancy/types";
+import typia from "typia";
+import { api } from "./internal/api";
+import { jobSearchQueryKeys, invalidateQuery } from "./job-search-query-keys";
 
 export type VacancyWithStatus = VacancyDTO & {
   status: VacancyStatus;
   sources: VacancySource[];
 };
 
-interface VacancyListResponse {
-  vacancies: VacancyWithStatus[];
-  totalCount: number;
-  generatedAt?: string;
-  latestCrawl?: string;
-}
-
-export function useJobSearches(applicantId?: string) {
-  const params = applicantId ? `?applicantId=${applicantId}` : "";
-  return useIpcQuery({
-    queryKey: ["job-searches", applicantId ?? "all"],
-    queryFn: () =>
-      ipcFetch<{ jobSearches: JobSearchInfo[] }>(`/job-searches${params}`),
-  });
+export function useJobSearchListView(applicantId?: string) {
+  const query = useJobSearches(applicantId);
+  return {
+    ...query,
+    data: query.data ?? EMPTY_JOB_SEARCH_LIST,
+  };
 }
 
 export function useJobSearch(id: string) {
-  return useIpcQuery({
-    queryKey: ["job-search", id],
-    queryFn: () => ipcFetch<JobSearch>(`/job-searches/${id}`),
+  return useQuery({
+    queryKey: jobSearchQueryKeys.detail(id),
+    queryFn: async () =>
+      typia.assert<JobSearch>(await api().invoke("job-searches:load", id)),
     enabled: !!id,
   });
 }
 
 export function useCreateJobSearch() {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: (body: {
       searchTerm: string;
       applicantId: string;
       searchMode?: string;
     }) =>
-      ipcFetch("/job-searches", {
-        method: "POST",
-        body: JSON.stringify(body),
-      }),
-    onSuccess: () => invalidate(["job-searches"]),
+      api().invoke(
+        "job-searches:create",
+        body.searchTerm,
+        body.applicantId,
+        body.searchMode,
+      ),
+    onSuccess: () =>
+      invalidateQuery(queryClient, jobSearchQueryKeys.listRoot()),
   });
 }
 
 export function useUpdateJobSearch(id: string) {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: (data: JobSearch) =>
-      ipcFetch(`/job-searches/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
-    onSuccess: () => invalidate(["job-search", id]),
+      api().invoke("job-searches:save", id, data),
+    onSuccess: () =>
+      invalidateQuery(queryClient, jobSearchQueryKeys.detail(id)),
   });
 }
 
 export function useDeleteJobSearch() {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
-    mutationFn: (id: string) =>
-      ipcFetch(`/job-searches/${id}`, { method: "DELETE" }),
-    onSuccess: () => invalidate(["job-searches"]),
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api().invoke("job-searches:delete", id),
+    onSuccess: () =>
+      invalidateQuery(queryClient, jobSearchQueryKeys.listRoot()),
   });
 }
 
 export function useJobSearchCoverLetter(id: string) {
-  return useIpcQuery({
-    queryKey: ["job-search-cover-letter", id],
-    queryFn: () =>
-      ipcFetch<{ content: string }>(`/job-searches/${id}/cover-letter`),
+  return useQuery({
+    queryKey: jobSearchQueryKeys.coverLetter(id),
+    queryFn: async () =>
+      typia.assert<{ content: string }>(
+        await api().invoke("job-searches:cover-letter:load", id),
+      ),
     enabled: !!id,
   });
 }
 
 export function useUpdateJobSearchCoverLetter(id: string) {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: (content: string) =>
-      ipcFetch(`/job-searches/${id}/cover-letter`, {
-        method: "PUT",
-        body: JSON.stringify({ content }),
-      }),
-    onSuccess: () => invalidate(["job-search-cover-letter", id]),
+      api().invoke("job-searches:cover-letter:save", id, content),
+    onSuccess: () =>
+      invalidateQuery(queryClient, jobSearchQueryKeys.coverLetter(id)),
   });
 }
 
 export function useGenerateCoverLetter(id: string) {
-  return useIpcMutation({
-    mutationFn: () =>
-      ipcFetch<{ content: string }>(
-        `/job-searches/${id}/cover-letter/generate`,
-        { method: "POST" },
+  return useMutation({
+    mutationFn: async () =>
+      typia.assert<{ content: string }>(
+        await api().invoke("job-searches:cover-letter:generate", id),
       ),
   });
 }
 
 export function useVacancyCoverLetter(id: string, hash: string) {
-  return useIpcQuery({
-    queryKey: ["vacancy-cover-letter", id, hash],
-    queryFn: () =>
-      ipcFetch<{ content: string }>(
-        `/job-searches/${id}/vacancies/${hash}/cover-letter`,
+  return useQuery({
+    queryKey: jobSearchQueryKeys.vacancyCoverLetter(id, hash),
+    queryFn: async () =>
+      typia.assert<{ content: string }>(
+        await api().invoke(
+          "job-searches:vacancies:cover-letter:load",
+          id,
+          hash,
+        ),
       ),
     enabled: !!id && !!hash,
   });
 }
 
 export function useUpdateVacancyCoverLetter(id: string, hash: string) {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: (content: string) =>
-      ipcFetch(`/job-searches/${id}/vacancies/${hash}/cover-letter`, {
-        method: "PUT",
-        body: JSON.stringify({ content }),
-      }),
-    onSuccess: () => invalidate(["vacancy-cover-letter", id, hash]),
-  });
-}
-
-export function useGenerateVacancyCoverLetter(id: string, hash: string) {
-  return useIpcMutation({
-    mutationFn: () =>
-      ipcFetch<{ content: string }>(
-        `/job-searches/${id}/vacancies/${hash}/cover-letter/generate`,
-        { method: "POST" },
+      api().invoke(
+        "job-searches:vacancies:cover-letter:save",
+        id,
+        hash,
+        content,
+      ),
+    onSuccess: () =>
+      invalidateQuery(
+        queryClient,
+        jobSearchQueryKeys.vacancyCoverLetter(id, hash),
       ),
   });
 }
 
-export function useJobSearchVacancies(id: string) {
-  return useIpcQuery({
-    queryKey: ["job-search-vacancies", id],
-    queryFn: () =>
-      ipcFetch<VacancyListResponse>(`/job-searches/${id}/vacancies`),
-    enabled: !!id,
+export function useGenerateVacancyCoverLetter(id: string, hash: string) {
+  return useMutation({
+    mutationFn: async () =>
+      typia.assert<{ content: string }>(
+        await api().invoke(
+          "job-searches:vacancies:cover-letter:generate",
+          id,
+          hash,
+        ),
+      ),
   });
 }
 
+export function useJobSearchVacancyListView(id: string) {
+  const query = useJobSearchVacancies(id);
+  return {
+    ...query,
+    data:
+      query.data === undefined
+        ? EMPTY_VACANCY_LIST
+        : {
+            vacancies: query.data.vacancies,
+            totalCount: query.data.totalCount,
+          },
+  };
+}
+
 export function useJobSearchVacancy(id: string, hash: string) {
-  return useIpcQuery({
-    queryKey: ["job-search-vacancy", id, hash],
-    queryFn: () =>
-      ipcFetch<VacancyWithStatus>(`/job-searches/${id}/vacancies/${hash}`),
+  return useQuery({
+    queryKey: jobSearchQueryKeys.vacancyDetail(id, hash),
+    queryFn: async () =>
+      typia.assert<VacancyWithStatus>(
+        await api().invoke("job-searches:vacancies:load", id, hash),
+      ),
     enabled: !!id && !!hash,
   });
 }
 
 export function useAddActivity(id: string) {
-  const invalidate = useInvalidate();
-  return useIpcMutation({
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: ({
       hash,
       activity,
@@ -167,13 +180,59 @@ export function useAddActivity(id: string) {
       hash: string;
       activity: Record<string, unknown>;
     }) =>
-      ipcFetch(`/job-searches/${id}/vacancies/${hash}/activities`, {
-        method: "POST",
-        body: JSON.stringify(activity),
-      }),
+      api().invoke("job-searches:vacancies:add-activity", id, hash, activity),
     onSuccess: () => {
-      invalidate(["job-search-vacancies", id]);
-      invalidate(["job-search-vacancy", id]);
+      void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id));
+      void invalidateQuery(
+        queryClient,
+        jobSearchQueryKeys.vacancyDetailRoot(id),
+      );
     },
   });
 }
+
+function useJobSearches(applicantId?: string) {
+  return useQuery({
+    queryKey: jobSearchQueryKeys.list(applicantId),
+    queryFn: async () =>
+      typia.assert<{ jobSearches: JobSearchInfo[] }>(
+        await api().invoke("job-searches:list", applicantId),
+      ),
+  });
+}
+
+function useJobSearchVacancies(id: string) {
+  return useQuery({
+    queryKey: jobSearchQueryKeys.vacancyList(id),
+    queryFn: async () =>
+      typia.assert<VacancyListResponse>(
+        await api().invoke("job-searches:vacancies:list", id),
+      ),
+    enabled: !!id,
+  });
+}
+
+const EMPTY_VACANCY_LIST: VacancyListView = {
+  vacancies: [],
+  totalCount: 0,
+};
+
+const EMPTY_JOB_SEARCH_LIST: JobSearchListView = {
+  jobSearches: [],
+};
+
+interface VacancyListResponse {
+  vacancies: VacancyWithStatus[];
+  totalCount: number;
+  generatedAt: string;
+  latestCrawl: string;
+}
+
+type VacancyListView = Readonly<{
+  vacancies: VacancyWithStatus[];
+  totalCount: number;
+}>;
+
+type JobSearchListView = Readonly<{
+  jobSearches: JobSearchInfo[];
+}>;

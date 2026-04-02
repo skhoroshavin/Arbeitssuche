@@ -1,39 +1,39 @@
 import type { Applicant } from "@/models/applicant/types.js";
 import type { JobSearch } from "@/models/job-search/types.js";
-import type { Vacancy } from "@/models/vacancy/vacancy.js";
+import type { Vacancy } from "@/models/vacancy/index.js";
 import type { LlmClient } from "@/plugins/llm/types.js";
-import { formatApplicantSections } from "@/models/applicant/format.js";
+import { formatApplicantSections } from "@/models/applicant/index.js";
+
+export async function generatePersonalizedCoverLetter(
+  applicant: Applicant,
+  vacancy: Vacancy,
+  templateCoverLetter: string,
+  jobSearch: JobSearch,
+  llmClient: LlmClient,
+): Promise<string> {
+  const prompt = buildPersonalizedCoverLetterPrompt(
+    applicant,
+    vacancy,
+    templateCoverLetter,
+    jobSearch,
+  );
+  return llmClient.complete(prompt, 4096);
+}
 
 function buildPersonalizedCoverLetterPrompt(
   applicant: Applicant,
   vacancy: Vacancy,
-  templateCoverLetter: string | undefined,
+  templateCoverLetter: string,
   jobSearch: JobSearch,
 ): string {
   const sections = formatApplicantSections(applicant);
 
-  // Template cover letter
   if (templateCoverLetter) {
     sections.push(`## Example Cover Letter (template)\n${templateCoverLetter}`);
   }
 
-  // Vacancy info
-  const vacancyLines = [
-    `Title: ${vacancy.title}`,
-    `Company: ${vacancy.company}`,
-  ];
-  if (vacancy.contact) {
-    const c = vacancy.contact;
-    if (c.name) vacancyLines.push(`Contact: ${c.name}`);
-    if (c.email) vacancyLines.push(`Contact Email: ${c.email}`);
-    if (c.phone) vacancyLines.push(`Contact Phone: ${c.phone}`);
-  }
-  if (vacancy.description) {
-    vacancyLines.push(`\nJob Description:\n${vacancy.description}`);
-  }
-  sections.push(`## Vacancy\n${vacancyLines.join("\n")}`);
+  sections.push(formatVacancySection(vacancy));
 
-  // Job search preferences
   if (jobSearch.preferences.freeText.length > 0) {
     sections.push(
       `## Preferences\n${jobSearch.preferences.freeText.map((t) => `- ${t}`).join("\n")}`,
@@ -56,18 +56,22 @@ Instructions:
 ${sections.join("\n\n")}`;
 }
 
-export async function generatePersonalizedCoverLetter(
-  applicant: Applicant,
-  vacancy: Vacancy,
-  templateCoverLetter: string | undefined,
-  jobSearch: JobSearch,
-  llmClient: LlmClient,
-): Promise<string> {
-  const prompt = buildPersonalizedCoverLetterPrompt(
-    applicant,
-    vacancy,
-    templateCoverLetter,
-    jobSearch,
-  );
-  return llmClient.complete(prompt, 4096);
+function formatVacancySection(vacancy: Vacancy): string {
+  const lines = [
+    `Title: ${vacancy.title}`,
+    `Company: ${vacancy.company}`,
+    ...formatContactLines(vacancy.contact),
+  ];
+  if (vacancy.description) {
+    lines.push(`\nJob Description:\n${vacancy.description}`);
+  }
+  return `## Vacancy\n${lines.join("\n")}`;
+}
+
+function formatContactLines(contact: Vacancy["contact"]): string[] {
+  const lines: string[] = [];
+  if (contact.name) lines.push(`Contact: ${contact.name}`);
+  if (contact.email) lines.push(`Contact Email: ${contact.email}`);
+  if (contact.phone) lines.push(`Contact Phone: ${contact.phone}`);
+  return lines;
 }

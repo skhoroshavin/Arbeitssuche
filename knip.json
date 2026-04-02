@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "src/app/main.ts",
+    "src/app/preload.ts",
+    "src/ui/main.tsx",
+    "electron.vite.config.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts", ".jscpd.json"],
+  "ignoreDependencies": ["@tailwindcss/typography", "tailwindcss"],
+  "eslint": {
+    "config": ["eslint.config.ts"],
+    "entry": ["eslint/**/*.ts"]
+  },
+  "vitest": {
+    "config": ["vitest.config.ts", "vitest.integration.config.ts"]
+  },
+  "playwright": {
+    "config": [
+      "e2e/playwright.electron.config.ts",
+      "e2e/playwright.visual.config.ts"
+    ],
+    "entry": ["e2e/**/*.ts"]
+  }
+}

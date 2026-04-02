@@ -1,19 +1,84 @@
-import { readFileSync, writeFileSync } from "fs";
-import { join } from "path";
-import { execSync } from "child_process";
+import { readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { execSync } from "node:child_process";
+import typia from "typia";
 
-const ROOT = join(import.meta.dirname, "..");
-const PKG_PATH = join(ROOT, "package.json");
-const LOCK_PATH = join(ROOT, "package-lock.json");
+const ROOT = path.join(import.meta.dirname, "..");
+
+// Only run when executed directly, not when imported for testing
+if (import.meta.url === `file://${process.argv[1]}`) main();
+
+function main() {
+  const arguments_ = process.argv.slice(2);
+  const validCommands: Set<string> = new Set(BUMP_ARGS);
+  const isBumpArgument = (s: string): s is BumpArgument => validCommands.has(s);
+  const command = arguments_.find(isBumpArgument);
+  const noGit = arguments_.includes("--no-git");
+
+  if (!command) {
+    throw new Error(`Missing command. Valid: ${BUMP_ARGS.join(", ")}`);
+  }
+
+  if (arguments_.some((a) => a !== command && a !== "--no-git")) {
+    throw new Error(
+      `Unknown argument. Valid: ${BUMP_ARGS.join(", ")}, --no-git`,
+    );
+  }
+
+  if (!noGit) {
+    // Check clean working tree
+    const status = execSync("git status --porcelain", {
+      cwd: ROOT,
+      encoding: "utf8",
+    }).trim();
+    if (status) {
+      throw new Error(
+        "Working tree is not clean. Commit or stash changes first.",
+      );
+    }
+  }
+
+  // Read current version
+  const packageRaw: unknown = JSON.parse(readFileSync(PKG_PATH, "utf8"));
+  if (!typia.is<PackageJson>(packageRaw))
+    throw new Error("Invalid package.json");
+  const package_ = packageRaw;
+  const currentVersion: string = package_.version;
+  const parsed = parseVersion(currentVersion);
+
+  // Compute next version
+  const next = computeNextVersion(parsed, command);
+  const nextString = formatVersion(next);
+
+  // Update files
+  bumpFiles(package_, nextString);
+
+  if (noGit) {
+    // Output version for CI consumption
+    process.stdout.write(nextString);
+    return;
+  }
+
+  // Git commit
+  execSync(`git add package.json package-lock.json`, {
+    cwd: ROOT,
+    stdio: "inherit",
+  });
+  execSync(`git commit -m "Bump version to ${nextString}"`, {
+    cwd: ROOT,
+    stdio: "inherit",
+  });
+
+  console.log(`\nBumped ${currentVersion} → ${nextString}`);
+  console.log("Push with: git push");
+}
 
 export interface ParsedVersion {
   major: number;
   minor: number;
   patch: number;
-  prerelease: "dev" | null;
+  prerelease: "dev" | undefined;
 }
-
-const VERSION_RE = /^(\d+)\.(\d+)\.(\d+)(?:-(dev))?$/;
 
 export function parseVersion(version: string): ParsedVersion {
   const m = VERSION_RE.exec(version);
@@ -25,21 +90,13 @@ export function parseVersion(version: string): ParsedVersion {
     major: Number(major),
     minor: Number(minor),
     patch: Number(patch),
-    prerelease: pre === "dev" ? "dev" : null,
+    prerelease: pre === "dev" ? "dev" : undefined,
   };
 }
 
-export function formatVersion(v: ParsedVersion): string {
-  const base = `${v.major}.${v.minor}.${v.patch}`;
-  return v.prerelease === "dev" ? `${base}-dev` : base;
-}
-
-const BUMP_ARGS = ["dev", "major", "minor", "patch"] as const;
-type BumpArg = (typeof BUMP_ARGS)[number];
-
 export function computeNextVersion(
   current: ParsedVersion,
-  command: BumpArg,
+  command: BumpArgument,
 ): ParsedVersion {
   if (command === "dev") {
     if (current.prerelease === "dev") {
@@ -56,98 +113,58 @@ export function computeNextVersion(
   }
 
   switch (command) {
-    case "major":
-      return { major: current.major + 1, minor: 0, patch: 0, prerelease: null };
-    case "minor":
+    case "major": {
+      return {
+        major: current.major + 1,
+        minor: 0,
+        patch: 0,
+        prerelease: undefined,
+      };
+    }
+    case "minor": {
       return {
         ...current,
         minor: current.minor + 1,
         patch: 0,
-        prerelease: null,
+        prerelease: undefined,
       };
-    case "patch":
-      return { ...current, patch: current.patch + 1, prerelease: null };
+    }
+    case "patch": {
+      return { ...current, patch: current.patch + 1, prerelease: undefined };
+    }
   }
 }
 
-// --- CLI ---
+export function formatVersion(v: ParsedVersion): string {
+  const base = `${v.major}.${v.minor}.${v.patch}`;
+  return v.prerelease === "dev" ? `${base}-dev` : base;
+}
 
-function bumpFiles(pkg: Record<string, unknown>, nextVersion: string): void {
-  pkg.version = nextVersion;
-  writeFileSync(PKG_PATH, JSON.stringify(pkg, null, 2) + "\n");
+const BUMP_ARGS = ["dev", "major", "minor", "patch"] as const;
+type BumpArgument = (typeof BUMP_ARGS)[number];
 
-  const lock = JSON.parse(readFileSync(LOCK_PATH, "utf-8"));
+const VERSION_RE = /^(\d+)\.(\d+)\.(\d+)(?:-(dev))?$/;
+
+function bumpFiles(package_: PackageJson, nextVersion: string): void {
+  package_.version = nextVersion;
+  writeFileSync(PKG_PATH, JSON.stringify(package_, undefined, 2) + "\n");
+
+  const lockRaw: unknown = JSON.parse(readFileSync(LOCK_PATH, "utf8"));
+  if (!typia.is<PackageJson>(lockRaw))
+    throw new Error("Invalid package-lock.json");
+  const lock = lockRaw;
   lock.version = nextVersion;
   if (lock.packages?.[""]?.version) {
     lock.packages[""].version = nextVersion;
   }
-  writeFileSync(LOCK_PATH, JSON.stringify(lock, null, 2) + "\n");
+  writeFileSync(LOCK_PATH, JSON.stringify(lock, undefined, 2) + "\n");
 }
 
-function main() {
-  const args = process.argv.slice(2);
-  const validCommands: Set<string> = new Set(BUMP_ARGS);
-  const isBumpArg = (s: string): s is BumpArg => validCommands.has(s);
-  const command = args.find(isBumpArg);
-  const noGit = args.includes("--no-git");
+const PKG_PATH = path.join(ROOT, "package.json");
+const LOCK_PATH = path.join(ROOT, "package-lock.json");
 
-  if (!command) {
-    console.error(`Error: Missing command. Valid: ${BUMP_ARGS.join(", ")}`);
-    process.exit(1);
-  }
-
-  if (args.some((a) => a !== command && a !== "--no-git")) {
-    console.error(
-      `Error: Unknown argument. Valid: ${BUMP_ARGS.join(", ")}, --no-git`,
-    );
-    process.exit(1);
-  }
-
-  if (!noGit) {
-    // Check clean working tree
-    const status = execSync("git status --porcelain", {
-      cwd: ROOT,
-      encoding: "utf-8",
-    }).trim();
-    if (status) {
-      console.error(
-        "Error: Working tree is not clean. Commit or stash changes first.",
-      );
-      process.exit(1);
-    }
-  }
-
-  // Read current version
-  const pkg = JSON.parse(readFileSync(PKG_PATH, "utf-8"));
-  const currentVersion = pkg.version;
-  const parsed = parseVersion(currentVersion);
-
-  // Compute next version
-  const next = computeNextVersion(parsed, command);
-  const nextStr = formatVersion(next);
-
-  // Update files
-  bumpFiles(pkg, nextStr);
-
-  if (noGit) {
-    // Output version for CI consumption
-    process.stdout.write(nextStr);
-    return;
-  }
-
-  // Git commit
-  execSync(`git add package.json package-lock.json`, {
-    cwd: ROOT,
-    stdio: "inherit",
-  });
-  execSync(`git commit -m "Bump version to ${nextStr}"`, {
-    cwd: ROOT,
-    stdio: "inherit",
-  });
-
-  console.log(`\nBumped ${currentVersion} → ${nextStr}`);
-  console.log("Push with: git push");
+interface PackageJson {
+  version: string;
+  packages?: Record<string, { version?: string }>;
+  [key: string]: unknown;
 }
-
-// Only run when executed directly, not when imported for testing
-if (import.meta.url === `file://${process.argv[1]}`) main();

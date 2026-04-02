@@ -1,9 +1,7 @@
 import { test, describe, expect } from "vitest";
-import { join } from "path";
+import path from "node:path";
 import { createXingSite } from "./index";
-import { createStubBrowser } from "@/plugins/browser/stub/index";
-
-const SAMPLES_DIR = join(import.meta.dirname ?? __dirname, "html_samples");
+import { createStubBrowser } from "@/plugins/browser/index.js";
 
 describe("xing", () => {
   test("getVacancyList returns absolute URLs from search page", async () => {
@@ -63,3 +61,5 @@ describe("xing", () => {
     ).toBeTruthy();
   });
 });
+
+const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples");

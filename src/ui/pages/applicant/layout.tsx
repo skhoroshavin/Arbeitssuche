@@ -1,13 +1,12 @@
 import { useMemo } from "react";
 import { useParams, Link, Outlet } from "react-router";
-import { useApplicant } from "@/ui/data/applicants";
+import { useApplicantHeaderName } from "@/ui/data/applicants";
 import { useLayoutConfig } from "@/ui/layout";
 import { HomeIcon } from "@/ui/components";
 
 export default function ApplicantLayout() {
-  const { id } = useParams<{ id: string }>();
-  const { data } = useApplicant(id!);
-  const name = data?.personal.name || id!;
+  const { id = "" } = useParams<{ id: string }>();
+  const { displayName } = useApplicantHeaderName(id);
 
   const navItems = useMemo(
     () => [
@@ -27,7 +26,7 @@ export default function ApplicantLayout() {
       sidebarNavItems: navItems,
       headerTitle: (
         <Link to={`/applicants/${id}`} className="hover:underline">
-          {name}
+          {displayName}
         </Link>
       ),
       headerBackLink: (
@@ -36,7 +35,7 @@ export default function ApplicantLayout() {
         </Link>
       ),
     }),
-    [name, navItems],
+    [displayName, navItems],
   );
 
   return <Outlet />;

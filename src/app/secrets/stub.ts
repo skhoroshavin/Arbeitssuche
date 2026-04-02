@@ -1,18 +1,20 @@
-import { DEFAULT_SECRETS, type Secrets } from "@/models/secrets/types.js";
+import { resolveSecrets } from "@/models/secrets/index.js";
+import type { Secrets } from "@/models/secrets/types.js";
 import type { SecretsRepository } from "./types.js";
 
 export function createStubSecretsRepository(
   initial?: Secrets,
 ): SecretsRepository {
-  let stored: Secrets = structuredClone(initial ?? DEFAULT_SECRETS);
+  let stored: Secrets = structuredClone(resolveSecrets(initial));
 
   return {
     load(): Secrets {
       return structuredClone(stored);
     },
 
-    async save(data: Secrets) {
-      stored = structuredClone(data);
+    save(data: Secrets): Promise<void> {
+      stored = structuredClone(resolveSecrets(data));
+      return Promise.resolve();
     },
   };
 }

@@ -1,4 +1,4 @@
-import type { Address } from "@/models/config.js";
+import type { Address } from "@/models/config/types.js";
 
 export interface ApplicantPersonal {
   name: string;
@@ -7,7 +7,7 @@ export interface ApplicantPersonal {
   birthdate?: string;
   gender?: string;
   address?: Address;
-  hobbies?: string[];
+  hobbies: string[];
 }
 
 export interface ApplicantExperience {
@@ -48,16 +48,16 @@ export interface ApplicantCertification {
 }
 
 export interface ApplicantDisclose {
-  birthdate?: boolean;
-  gender?: boolean;
-  address?: boolean;
-  hobbies?: boolean;
+  birthdate: boolean;
+  gender: boolean;
+  address: boolean;
+  hobbies: boolean;
 }
 
 export interface Applicant {
   id: string;
   personal: ApplicantPersonal;
-  disclose?: ApplicantDisclose;
+  disclose: ApplicantDisclose;
   experience: ApplicantExperience[];
   education: ApplicantEducation[];
   skills: ApplicantSkill[];
@@ -81,10 +81,13 @@ export type ResumeTemplate = (typeof RESUME_TEMPLATES)[number];
 
 export const DEFAULT_APPLICANT: Applicant = {
   id: "",
-  personal: { name: "" },
+  personal: { name: "", hobbies: [] },
+  disclose: { birthdate: false, gender: false, address: false, hobbies: false },
   experience: [],
   education: [],
   skills: [],
   languages: [],
   certifications: [],
 };
+
+export { type Address } from "@/models/config/types.js";

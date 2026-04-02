@@ -3,44 +3,28 @@ import { useApplicant, useUpdateApplicant } from "@/ui/data/applicants";
 import { useAutoSaveForm } from "@/ui/hooks/auto-save-form";
 import type {
   Applicant,
-  ApplicantEducation,
-  ApplicantExperience,
-  ApplicantPersonal,
+  ApplicantDisclose,
+  ApplicantSkill,
+  ApplicantLanguage,
+  ApplicantCertification,
+  Address,
 } from "@/models/applicant/types";
+import { arrayToString, stringToArray } from "@/models/utilities";
 
-interface FormExperience extends Omit<ApplicantExperience, "highlights"> {
-  highlights?: string;
-}
+export function useApplicantForm() {
+  const { id = "" } = useParams<{ id: string }>();
+  const { data, isLoading } = useApplicant(id);
+  const update = useUpdateApplicant(id);
 
-interface FormEducation extends Omit<ApplicantEducation, "highlights"> {
-  highlights?: string;
-}
-
-interface FormPersonal extends Omit<ApplicantPersonal, "hobbies"> {
-  hobbies?: string;
-}
-
-interface ApplicantFormValues extends Omit<
-  Applicant,
-  "experience" | "education" | "personal" | "personalNotes"
-> {
-  personal: FormPersonal;
-  experience: FormExperience[];
-  education: FormEducation[];
-  personalNotes?: string;
-}
-
-function joinArray(arr: string[] | undefined): string | undefined {
-  return Array.isArray(arr) ? arr.join("\n") : arr;
-}
-
-function splitLines(val: string | string[] | undefined): string[] | undefined {
-  return typeof val === "string"
-    ? val
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean)
-    : val;
+  return useAutoSaveForm<ApplicantFormValues, Applicant>({
+    queryResult: { data, isLoading },
+    toFormValues,
+    onSave: async (formData) => {
+      const parsed = fromFormValues(formData);
+      if (!data) throw new Error("Applicant data not loaded");
+      await update.mutateAsync({ ...data, ...parsed, id });
+    },
+  });
 }
 
 function toFormValues(applicant: Applicant): ApplicantFormValues {
@@ -48,17 +32,17 @@ function toFormValues(applicant: Applicant): ApplicantFormValues {
     ...applicant,
     personal: {
       ...applicant.personal,
-      hobbies: joinArray(applicant.personal.hobbies),
+      hobbies: arrayToString(applicant.personal.hobbies),
     },
-    experience: applicant.experience.map((e) => ({
-      ...e,
-      highlights: joinArray(e.highlights),
+    experience: applicant.experience.map((entry) => ({
+      ...entry,
+      highlights: arrayToString(entry.highlights),
     })),
-    education: applicant.education.map((e) => ({
-      ...e,
-      highlights: joinArray(e.highlights),
+    education: applicant.education.map((entry) => ({
+      ...entry,
+      highlights: arrayToString(entry.highlights),
     })),
-    personalNotes: joinArray(applicant.personalNotes),
+    personalNotes: arrayToString(applicant.personalNotes),
   };
 }
 
@@ -67,31 +51,58 @@ function fromFormValues(form: ApplicantFormValues): Applicant {
     ...form,
     personal: {
       ...form.personal,
-      hobbies: splitLines(form.personal.hobbies),
+      hobbies: stringToArray(form.personal.hobbies),
     },
-    experience: form.experience.map((e) => ({
-      ...e,
-      highlights: splitLines(e.highlights),
+    experience: form.experience.map((entry) => ({
+      ...entry,
+      highlights: stringToArray(entry.highlights),
     })),
-    education: form.education.map((e) => ({
-      ...e,
-      highlights: splitLines(e.highlights),
+    education: form.education.map((entry) => ({
+      ...entry,
+      highlights: stringToArray(entry.highlights),
     })),
-    personalNotes: splitLines(form.personalNotes),
+    personalNotes: stringToArray(form.personalNotes),
   };
 }
 
-export function useApplicantForm() {
-  const { id } = useParams<{ id: string }>();
-  const { data, isLoading } = useApplicant(id!);
-  const update = useUpdateApplicant(id!);
+interface ApplicantFormValues {
+  id: string;
+  personal: FormPersonal;
+  disclose?: ApplicantDisclose;
+  experience: FormExperience[];
+  education: FormEducation[];
+  skills: ApplicantSkill[];
+  languages: ApplicantLanguage[];
+  certifications: ApplicantCertification[];
+  personalNotes?: string;
+}
 
-  return useAutoSaveForm<ApplicantFormValues, Applicant>({
-    queryResult: { data, isLoading },
-    toFormValues,
-    onSave: async (formData) => {
-      const parsed = fromFormValues(formData);
-      await update.mutateAsync({ ...data!, ...parsed, id: id! });
-    },
-  });
+interface FormExperience {
+  role: string;
+  company: string;
+  startDate: string;
+  endDate: string;
+  location?: string;
+  discloseDates?: boolean;
+  highlights?: string;
+}
+
+interface FormEducation {
+  institution: string;
+  course: string;
+  startDate?: string;
+  endDate?: string;
+  location?: string;
+  discloseDates?: boolean;
+  highlights?: string;
+}
+
+interface FormPersonal {
+  name: string;
+  email?: string;
+  phone?: string;
+  birthdate?: string;
+  gender?: string;
+  address?: Address;
+  hobbies?: string;
 }

@@ -1,5 +1,9 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { createModelRegistry } from "./index";
+import {
+  createModelRegistry,
+  normalizeFlatPricing,
+  normalizeNestedPricing,
+} from "./index";
 
 describe("createModelRegistry", () => {
   const originalFetch = globalThis.fetch;
@@ -9,12 +13,14 @@ describe("createModelRegistry", () => {
   });
 
   function mockFetch(body: unknown, status = 200) {
-    globalThis.fetch = vi.fn(async () => ({
-      ok: status >= 200 && status < 300,
-      status,
-      json: async () => body,
-      text: async () => JSON.stringify(body),
-    })) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: status >= 200 && status < 300,
+        status,
+        json: () => Promise.resolve(body),
+        text: () => Promise.resolve(JSON.stringify(body)),
+      }),
+    ) as unknown as typeof fetch;
   }
 
   it("normalizes OpenRouter-style pricing", async () => {
@@ -33,23 +39,15 @@ describe("createModelRegistry", () => {
       (m) => ({
         id: String(m.id),
         name: String(m.name),
-        pricing: {
-          prompt: String(
-            (m.pricing as Record<string, unknown> | undefined)?.prompt ?? "0",
-          ),
-          completion: String(
-            (m.pricing as Record<string, unknown> | undefined)?.completion ??
-              "0",
-          ),
-        },
+        pricing: normalizeNestedPricing(m.pricing),
       }),
     );
 
     const models = await registry.fetchModels();
     expect(models.length).toBe(1);
-    expect(models[0]!.id).toBe("anthropic/claude-sonnet-4");
-    expect(models[0]!.pricing.prompt).toBe("0.000003");
-    expect(models[0]!.pricing.completion).toBe("0.000015");
+    expect(models[0].id).toBe("anthropic/claude-sonnet-4");
+    expect(models[0].pricing.prompt).toBe("0.000003");
+    expect(models[0].pricing.completion).toBe("0.000015");
   });
 
   it("normalizes Requesty-style pricing (input_price/output_price)", async () => {
@@ -68,23 +66,20 @@ describe("createModelRegistry", () => {
       (m) => ({
         id: String(m.id),
         name: String(m.id),
-        pricing: {
-          prompt: String(m.input_price ?? "0"),
-          completion: String(m.output_price ?? "0"),
-        },
+        pricing: normalizeFlatPricing(m),
       }),
     );
 
     const models = await registry.fetchModels();
     expect(models.length).toBe(1);
-    expect(models[0]!.id).toBe("anthropic/claude-sonnet-4");
-    expect(models[0]!.pricing.prompt).toBe("0.000003");
-    expect(models[0]!.pricing.completion).toBe("0.000015");
+    expect(models[0].id).toBe("anthropic/claude-sonnet-4");
+    expect(models[0].pricing.prompt).toBe("0.000003");
+    expect(models[0].pricing.completion).toBe("0.000015");
   });
 
   it("returns empty array on network error", async () => {
-    globalThis.fetch = vi.fn(async () => {
-      throw new Error("Network error");
+    globalThis.fetch = vi.fn(() => {
+      return Promise.reject(new Error("Network error"));
     }) as unknown as typeof fetch;
 
     const registry = createModelRegistry("https://example.com/models", (m) => ({

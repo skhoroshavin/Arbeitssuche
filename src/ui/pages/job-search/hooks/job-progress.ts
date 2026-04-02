@@ -1,15 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import typia from "typia";
 import type { ProgressEvent } from "@/models/events.js";
 
-interface ProgressPayload extends ProgressEvent {
-  jobSearchId?: string;
-}
-
-function isProgressPayload(data: unknown): data is ProgressPayload {
-  return !!data && typeof data === "object" && "message" in data;
-}
-
-export function useJobProgress(jobSearchId: string | undefined) {
+export function useJobProgress(jobSearchId?: string) {
   const [events, setEvents] = useState<ProgressEvent[]>([]);
   const [done, setDone] = useState(false);
   const [vacancyUpdateCount, setVacancyUpdateCount] = useState(0);
@@ -24,8 +17,10 @@ export function useJobProgress(jobSearchId: string | undefined) {
     if (!jobSearchId) return;
     setDone(false);
 
-    const cleanup = window.electronAPI!.on("job:progress", (data: unknown) => {
-      if (!isProgressPayload(data)) return;
+    if (!electronAPI) return;
+    const api = electronAPI;
+    const cleanup = api.on("job:progress", (data: unknown) => {
+      if (!typia.is<ProgressPayload>(data)) return;
       if (data.jobSearchId && data.jobSearchId !== jobSearchId) return;
 
       if (data.vacanciesUpdated) {
@@ -35,13 +30,13 @@ export function useJobProgress(jobSearchId: string | undefined) {
       const event: ProgressEvent = {
         message: data.message,
         phase: data.phase,
-        current: data.current,
-        total: data.total,
       };
       // Skip empty progress messages (used only for vacanciesUpdated signal)
       if (!event.message) return;
-      setEvents((prev) =>
-        prev.length >= 500 ? [...prev.slice(-250), event] : [...prev, event],
+      setEvents((previous) =>
+        previous.length >= 500
+          ? [...previous.slice(-250), event]
+          : [...previous, event],
       );
       if (event.phase === "done") {
         setDone(true);
@@ -51,4 +46,8 @@ export function useJobProgress(jobSearchId: string | undefined) {
   }, [jobSearchId]);
 
   return { events, done, reset, vacancyUpdateCount };
+}
+
+interface ProgressPayload extends ProgressEvent {
+  jobSearchId?: string;
 }

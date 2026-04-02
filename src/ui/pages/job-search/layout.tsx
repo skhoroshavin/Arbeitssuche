@@ -1,18 +1,14 @@
 import { useMemo } from "react";
 import { useParams, Link, Outlet } from "react-router";
 import { useJobSearch } from "@/ui/data/job-searches";
-import { useApplicant } from "@/ui/data/applicants";
+import { useApplicantHeaderName } from "@/ui/data/applicants";
 import { useLayoutConfig } from "@/ui/layout";
 import { HomeIcon, ChevronRightIcon } from "@/ui/components";
 
 export default function JobSearchLayout() {
-  const { id } = useParams<{ id: string }>();
-  const { data } = useJobSearch(id!);
-  const { data: applicantData } = useApplicant(data?.applicantId ?? "");
-
-  const searchTitle = data?.params.searchTerm || id!;
-  const applicantName = applicantData?.personal.name || data?.applicantId || "";
-  const applicantId = data?.applicantId;
+  const { id = "" } = useParams<{ id: string }>();
+  const { searchTitle, applicantName, applicantId } =
+    useJobSearchLayoutData(id);
 
   const navItems = useMemo(
     () => [
@@ -28,19 +24,11 @@ export default function JobSearchLayout() {
       sidebarTitle: "Stellensuche",
       sidebarNavItems: navItems,
       headerTitle: (
-        <>
-          {applicantId ? (
-            <Link to={`/applicants/${applicantId}`} className="hover:underline">
-              {applicantName}
-            </Link>
-          ) : (
-            applicantName
-          )}
-          {applicantName && (
-            <ChevronRightIcon className="inline w-4 h-4 text-gray-400 dark:text-gray-500 mx-1" />
-          )}
-          {searchTitle}
-        </>
+        <BreadcrumbTitle
+          applicantId={applicantId}
+          applicantName={applicantName}
+          searchTitle={searchTitle}
+        />
       ),
       headerBackLink: (
         <Link to="/" aria-label="Startseite">
@@ -52,4 +40,41 @@ export default function JobSearchLayout() {
   );
 
   return <Outlet />;
+}
+
+function BreadcrumbTitle({
+  applicantId,
+  applicantName,
+  searchTitle,
+}: {
+  applicantId?: string;
+  applicantName: string;
+  searchTitle: string;
+}) {
+  return (
+    <>
+      {applicantId ? (
+        <Link to={`/applicants/${applicantId}`} className="hover:underline">
+          {applicantName}
+        </Link>
+      ) : (
+        applicantName
+      )}
+      {applicantName && (
+        <ChevronRightIcon className="inline w-4 h-4 text-gray-400 dark:text-gray-500 mx-1" />
+      )}
+      {searchTitle}
+    </>
+  );
+}
+
+function useJobSearchLayoutData(id: string) {
+  const { data } = useJobSearch(id);
+  const applicantId = data?.applicantId;
+  const { displayName } = useApplicantHeaderName(applicantId);
+  return {
+    searchTitle: data?.params.searchTerm || id,
+    applicantName: displayName,
+    applicantId,
+  };
 }

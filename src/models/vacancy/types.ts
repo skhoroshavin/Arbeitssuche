@@ -14,11 +14,6 @@ export interface VacancyContact {
   phone?: string;
 }
 
-interface BaseActivity {
-  date: string;
-  notes?: string;
-}
-
 export interface FoundActivity extends BaseActivity {
   type: "found";
   site: string;
@@ -30,6 +25,58 @@ export interface FoundActivity extends BaseActivity {
 export interface NotFoundActivity extends BaseActivity {
   type: "not-found";
   site: string;
+}
+
+export type Activity =
+  | FoundActivity
+  | NotFoundActivity
+  | AppliedActivity
+  | InvitedActivity
+  | InterviewedActivity
+  | OfferedActivity
+  | RejectedActivity
+  | NotInterestedActivity;
+
+export type MatchScore = "very-bad" | "bad" | "ok" | "good" | "excellent";
+
+export type VacancyStatus =
+  | "new"
+  | "gone"
+  | "renewed"
+  | "applied"
+  | "ignored"
+  | "invited"
+  | "interviewed"
+  | "offered"
+  | "rejected"
+  | "not-interested";
+
+export interface CommuteInfo {
+  distance: string;
+  durations: CommuteDurations;
+  fetchedAt: string;
+}
+
+export interface VacancySource {
+  site: string;
+  url: string;
+}
+
+export interface VacancyDTO {
+  hash: string;
+  title: string;
+  company: string;
+  urls: string[];
+  addresses: string[];
+  contact: VacancyContact;
+  startDate: string;
+  description: string;
+  descriptionChanged: boolean;
+  summary: string;
+  matchScore: MatchScore;
+  commute: Record<string, CommuteInfo>;
+  activityHistory: Activity[];
+  active: boolean;
 }
 
 interface AppliedActivity extends BaseActivity {
@@ -60,60 +107,13 @@ interface NotInterestedActivity extends BaseActivity {
   type: "not-interested";
 }
 
-export type Activity =
-  | FoundActivity
-  | NotFoundActivity
-  | AppliedActivity
-  | InvitedActivity
-  | InterviewedActivity
-  | OfferedActivity
-  | RejectedActivity
-  | NotInterestedActivity;
-
-export type MatchScore = "very-bad" | "bad" | "ok" | "good" | "excellent";
-
-export type VacancyStatus =
-  | "new"
-  | "gone"
-  | "renewed"
-  | "applied"
-  | "ignored"
-  | "invited"
-  | "interviewed"
-  | "offered"
-  | "rejected"
-  | "not-interested";
+interface BaseActivity {
+  date: string;
+  notes?: string;
+}
 
 interface CommuteDurations {
   morning: number;
   day: number;
   evening: number;
-}
-
-export interface CommuteInfo {
-  distance: string;
-  durations: CommuteDurations;
-  fetchedAt: string;
-}
-
-export interface VacancySource {
-  site: string;
-  url: string;
-}
-
-export interface VacancyDTO {
-  hash: string;
-  title: string;
-  company: string;
-  urls: string[];
-  addresses: string[];
-  contact?: VacancyContact;
-  startDate?: string;
-  description?: string;
-  descriptionChanged: boolean;
-  summary?: string;
-  matchScore?: MatchScore;
-  commute?: Record<string, CommuteInfo>;
-  activityHistory: Activity[];
-  active: boolean;
 }

@@ -1,9 +1,7 @@
 import { test, describe, expect } from "vitest";
-import { join } from "path";
+import path from "node:path";
 import { createZalandoSite } from "./index";
-import { createStubBrowser } from "@/plugins/browser/stub/index";
-
-const SAMPLES_DIR = join(import.meta.dirname ?? __dirname, "html_samples");
+import { createStubBrowser } from "@/plugins/browser/index.js";
 
 describe("zalando", () => {
   test("getVacancyList returns absolute URLs from search page", async () => {
@@ -40,7 +38,8 @@ describe("zalando", () => {
   test("getVacancyDetails returns raw HTML from section", async () => {
     const items = Array.from(
       { length: 30 },
-      (_, i) => `<li>Requirement number ${i + 1} that is detailed enough</li>`,
+      (_, index) =>
+        `<li>Requirement number ${index + 1} that is detailed enough</li>`,
     ).join("");
     const html = `
       <html><body>
@@ -66,3 +65,5 @@ describe("zalando", () => {
     ).toBeTruthy();
   });
 });
+
+const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples");

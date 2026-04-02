@@ -1,93 +1,22 @@
 import * as cheerio from "cheerio/slim";
 import type { Browser } from "@/plugins/browser/types.js";
 import type {
+  VacancyContact,
   VacancyDetails,
   JobSite,
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
+import { normalizeOptionalText } from "@/utils/text.js";
 
-const BASE_URL = "https://jobs.zalando.com";
-const PAGE_SIZE = 15;
-const BLOCK_PATTERNS = [/usercentrics\.eu/];
-
-export const SUPPORTED_MODES = ["employment"] as const;
-
-const SELECTORS = {
-  jobLink: "a[href*='/en/jobs/']",
-  title: "h1",
-};
-
-const SEARCH_READY_SELECTOR = "a[href*='/en/jobs/']";
-
-function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
-  const q = encodeURIComponent(criteria.query);
-  const location = encodeURIComponent(criteria.location);
-  const offset = Number(pageId ?? "0");
-  return `${BASE_URL}/en/jobs?q=${q}&location=${location}&offset=${offset}`;
-}
-
-function extractLinks(html: string): string[] {
-  const $ = cheerio.load(html);
-  const urls = new Set<string>();
-  $(SELECTORS.jobLink).each((_i, el) => {
-    const href = $(el).attr("href");
-    if (!href) return;
-    if (!/\/en\/jobs\/\d+/.test(href)) return;
-    const full = href.startsWith("http") ? href : `${BASE_URL}${href}`;
-    urls.add(full);
-  });
-  return [...urls];
-}
-
-function extractVacancy(html: string, url: string): VacancyDetails {
-  const $ = cheerio.load(html);
-
-  const title = $(SELECTORS.title).first().text().trim() || undefined;
-
-  const address =
-    $("dt")
-      .filter((_i, el) => $(el).text().trim() === "Location")
-      .first()
-      .next("dd")
-      .text()
-      .trim() || undefined;
-
-  let descriptionHtml: string | undefined;
-  let maxLen = 0;
-  $("section").each((_i, el) => {
-    const text = $(el).text().trim();
-    if (
-      text.length > 500 &&
-      !text.includes("Application Form") &&
-      text.length > maxLen
-    ) {
-      descriptionHtml = $(el).html() || undefined;
-      maxLen = text.length;
-    }
-  });
-
-  const recSection = $("strong")
-    .filter((_i, el) => $(el).text().trim() === "Recruiter")
-    .closest("section");
-  const recName = recSection.find("p").first().text().trim() || undefined;
-  const recEmail = recSection.find("p").eq(1).text().trim() || undefined;
-
-  return {
-    url,
-    title,
-    company: "Zalando",
-    address,
-    descriptionHtml,
-    contact:
-      recName || recEmail ? { name: recName, email: recEmail } : undefined,
-  };
+export function createZalandoSite(browser: Browser): JobSite {
+  return new ZalandoSite(browser);
 }
 
 class ZalandoSite implements JobSite {
+  constructor(private readonly browser: Browser) {}
+
   readonly name = "zalando";
   readonly supportedModes = [...SUPPORTED_MODES];
-
-  constructor(private readonly browser: Browser) {}
 
   async getVacancyList(criteria: SearchCriteria, pageId?: string) {
     const page = await this.browser.openPage(buildSearchUrl(criteria, pageId), {
@@ -120,6 +49,90 @@ class ZalandoSite implements JobSite {
   }
 }
 
-export function createZalandoSite(browser: Browser): JobSite {
-  return new ZalandoSite(browser);
+function extractVacancy(html: string, url: string): VacancyDetails {
+  const $ = cheerio.load(html);
+
+  const title = $(SELECTORS.title).first().text().trim();
+
+  const address = normalizeOptionalText(
+    $("dt")
+      .filter((_index, element) => $(element).text().trim() === "Location")
+      .first()
+      .next("dd")
+      .text(),
+  );
+
+  let descriptionHtml: string | undefined;
+  let maxLength = 0;
+  $("section").each((_index, element) => {
+    const text = $(element).text().trim();
+    if (
+      text.length > 500 &&
+      !text.includes("Application Form") &&
+      text.length > maxLength
+    ) {
+      descriptionHtml = $(element).html() || undefined;
+      maxLength = text.length;
+    }
+  });
+
+  const recSection = $("strong")
+    .filter((_index, element) => $(element).text().trim() === "Recruiter")
+    .closest("section");
+  const recName = normalizeOptionalText(recSection.find("p").first().text());
+  const recEmail = normalizeOptionalText(recSection.find("p").eq(1).text());
+
+  return {
+    url,
+    title,
+    company: "Zalando",
+    address,
+    descriptionHtml,
+    contact: createContact({ name: recName, email: recEmail }),
+  };
 }
+
+function extractLinks(html: string): string[] {
+  const $ = cheerio.load(html);
+  const urls = new Set<string>();
+  $(SELECTORS.jobLink).each((_index, element) => {
+    const href = $(element).attr("href");
+    if (!href) return;
+    if (!/\/en\/jobs\/\d+/.test(href)) return;
+    const full = href.startsWith("http") ? href : `${BASE_URL}${href}`;
+    urls.add(full);
+  });
+  return [...urls];
+}
+
+function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
+  const q = encodeURIComponent(criteria.query);
+  const location = encodeURIComponent(criteria.location);
+  const offset = Number(pageId ?? "0");
+  return `${BASE_URL}/en/jobs?q=${q}&location=${location}&offset=${offset}`;
+}
+
+function createContact(contact: VacancyContact): VacancyContact | undefined {
+  const normalizedContact = {
+    name: normalizeOptionalText(contact.name),
+    email: normalizeOptionalText(contact.email),
+    phone: normalizeOptionalText(contact.phone),
+  };
+  if (Object.values(normalizedContact).every((v) => v === undefined)) {
+    return undefined;
+  }
+  return normalizedContact;
+}
+
+export const SUPPORTED_MODES = ["employment"] as const;
+
+const BASE_URL = "https://jobs.zalando.com";
+const PAGE_SIZE = 15;
+const BLOCK_PATTERNS = [/usercentrics\.eu/];
+
+const SELECTORS = {
+  jobLink: "a[href*='/en/jobs/']",
+  title: "h1",
+};
+
+const SEARCH_READY_SELECTOR = "a[href*='/en/jobs/']";

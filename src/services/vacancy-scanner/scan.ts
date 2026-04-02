@@ -1,11 +1,15 @@
-import type { JobSite, SearchMode } from "@/plugins/job-site/types.js";
+import type {
+  JobSite,
+  SearchCriteria,
+  SearchMode,
+} from "@/plugins/job-site/types.js";
 import type { LlmClient } from "@/plugins/llm/types.js";
 import type { CommuteClient } from "@/plugins/commute/types.js";
 import type { Applicant } from "@/models/applicant/types.js";
 import type { SearchPreferences } from "@/models/job-search/types.js";
-import type { Vacancy } from "@/models/vacancy/vacancy.js";
+import type { Vacancy } from "@/models/vacancy/index.js";
 import type { ProgressEvent } from "@/models/events.js";
-import { processOneCrawlResult } from "./unify.js";
+import { processOneCrawlResult, type ProcessOneResult } from "./unify.js";
 import { computeCommutes } from "./commute.js";
 import { assessVacancy, needsAssessment } from "./assess.js";
 import {
@@ -15,131 +19,124 @@ import {
 } from "./extract-contact.js";
 import { formatError } from "./format-error.js";
 
-export type SearchParams = {
+export type SearchParameters = {
   location: string;
   query: string;
   radiusKm: number;
 };
 
-const MAX_PAGES = 20;
+export async function scanVacancies(
+  options: ScanVacanciesOptions,
+): Promise<ScanVacanciesResult> {
+  const enricher = createVacancyEnricher(buildEnrichDeps(options));
+  const context: ScanContext = {
+    searchParams: options.searchParams,
+    mode: options.mode,
+    limit: options.limit,
+    crawlDate: options.crawlDate,
+    existingByHash: options.existingByHash,
+    signal: options.signal,
+    onProgress: options.onProgress,
+    onVacancyProcessed: options.onVacancyProcessed,
+    enrichDeps: buildEnrichDeps(options),
+    allUrls: new Set<string>(),
+    seenHashes: new Set<string>(),
+    newCount: 0,
+    updatedCount: 0,
+    enrichedCount: 0,
+  };
 
-interface ScanVacanciesOptions {
-  sites: JobSite[];
-  searchParams: SearchParams;
-  mode: SearchMode;
-  limit?: number;
-  crawlDate: string;
-  existingByHash: Map<string, Vacancy>;
-  signal?: AbortSignal;
-  onProgress?: (event: ProgressEvent) => void;
-  llmClient?: LlmClient | null;
-  commuteClient?: CommuteClient | null;
-  commuteOrigin?: string | null;
-  applicant?: Applicant | null;
-  preferences?: SearchPreferences | null;
-  onVacancyProcessed?: (vacancy: Vacancy, hash: string, isNew: boolean) => void;
+  for (const site of options.sites) {
+    if (context.signal?.aborted) break;
+    await scanSitePages(site, context, enricher);
+  }
+
+  return {
+    seenHashes: context.seenHashes,
+    newCount: context.newCount,
+    updatedCount: context.updatedCount,
+    enrichedCount: context.enrichedCount,
+  };
 }
 
-interface ScanVacanciesResult {
-  seenHashes: Set<string>;
-  newCount: number;
-  updatedCount: number;
-  enrichedCount: number;
+function buildEnrichDeps(options: ScanVacanciesOptions): EnrichDeps {
+  return {
+    commuteClient: options.commuteClient,
+    commuteOrigin: options.commuteOrigin,
+    llmClient: options.llmClient,
+    applicant: options.applicant,
+    preferences: options.preferences,
+    signal: options.signal,
+  };
 }
 
-interface EnrichDeps {
-  commuteClient: CommuteClient | null;
-  commuteOrigin: string | null;
-  llmClient: LlmClient | null;
-  applicant: Applicant | null;
-  preferences: SearchPreferences | null;
-  signal?: AbortSignal;
+function createVacancyEnricher(deps: EnrichDeps): VacancyEnricher {
+  return {
+    shouldEnrich(result) {
+      return (
+        result.isNew ||
+        result.descriptionChanged ||
+        needsContactExtraction(result.vacancy)
+      );
+    },
+    enrich(vacancy) {
+      return enrichVacancy(vacancy, deps);
+    },
+  };
 }
 
-interface ScanContext {
-  searchParams: SearchParams;
-  mode: SearchMode;
-  limit?: number;
-  crawlDate: string;
-  existingByHash: Map<string, Vacancy>;
-  signal?: AbortSignal;
-  onProgress?: (event: ProgressEvent) => void;
-  onVacancyProcessed?: (vacancy: Vacancy, hash: string, isNew: boolean) => void;
-  enrichDeps: EnrichDeps;
-  allUrls: Set<string>;
-  seenHashes: Set<string>;
-  newCount: number;
-  updatedCount: number;
-  enrichedCount: number;
+async function scanSitePages(
+  site: JobSite,
+  context: ScanContext,
+  enricher: VacancyEnricher,
+): Promise<void> {
+  const effectiveMode = resolveEffectiveMode(site, context.mode);
+  if (!effectiveMode) return;
+
+  emitProgress(context, {
+    message: `Scanning ${site.name}...`,
+    phase: "search",
+  });
+
+  const siteUrls = new Set<string>();
+  const criteria = { ...context.searchParams, mode: effectiveMode };
+  let pageId: string | undefined;
+
+  for (let page = 0; page < MAX_PAGES; page++) {
+    if (isAborted(context)) break;
+
+    const listResult = await fetchSearchPage(site, criteria, pageId, page + 1);
+    if (!listResult) break;
+
+    const newUrls = collectNewUrls(listResult.urls, siteUrls, context.allUrls);
+    if (newUrls.length === 0) break;
+
+    emitProgress(context, {
+      message: `[${site.name}] Search (${effectiveMode}) page ${page + 1}: ${siteUrls.size} URLs found`,
+      phase: "search",
+    });
+
+    await processPageUrls(
+      site,
+      sliceToLimit(newUrls, siteUrls.size, context.limit),
+      context,
+      enricher,
+    );
+
+    if (
+      !shouldContinuePaging(listResult.nextPageId, siteUrls.size, context.limit)
+    )
+      break;
+    pageId = listResult.nextPageId;
+  }
 }
 
 async function enrichVacancy(
   vacancy: Vacancy,
   deps: EnrichDeps,
 ): Promise<Vacancy> {
-  let updated = vacancy;
-
-  if (
-    deps.commuteClient &&
-    deps.commuteOrigin &&
-    updated.addresses.length > 0
-  ) {
-    try {
-      const result = await computeCommutes({
-        vacancies: [updated],
-        origin: deps.commuteOrigin,
-        commuteClient: deps.commuteClient,
-        signal: deps.signal,
-      });
-      updated = result.vacancies[0];
-    } catch (err) {
-      console.error(
-        `Failed to compute commute for "${vacancy.title}":`,
-        formatError(err),
-      );
-    }
-  }
-
-  if (deps.llmClient && deps.applicant && deps.preferences) {
-    const [assessmentResult, contactResult] = await Promise.all([
-      needsAssessment(updated)
-        ? assessVacancy(
-            updated,
-            deps.applicant,
-            deps.preferences,
-            deps.llmClient,
-          ).catch((err) => {
-            console.error(
-              `Failed to assess "${updated.title}":`,
-              formatError(err),
-            );
-            return null;
-          })
-        : null,
-      needsContactExtraction(updated)
-        ? extractContactInfo(updated, deps.llmClient).catch((err) => {
-            console.error(
-              `Failed to extract contact for "${updated.title}":`,
-              formatError(err),
-            );
-            return null;
-          })
-        : null,
-    ]);
-
-    if (assessmentResult) {
-      updated = updated.with({
-        summary: assessmentResult.summary,
-        matchScore: assessmentResult.matchScore,
-        descriptionChanged: false,
-      });
-    }
-    if (contactResult) {
-      updated = mergeContactInfo(updated, contactResult);
-    }
-  }
-
-  return updated;
+  const commuted = await tryComputeCommute(vacancy, deps);
+  return tryLlmEnrich(commuted, deps);
 }
 
 function resolveEffectiveMode(
@@ -158,152 +155,266 @@ function resolveEffectiveMode(
 async function processPageUrls(
   site: JobSite,
   urls: string[],
-  ctx: ScanContext,
+  context: ScanContext,
+  enricher: VacancyEnricher,
 ): Promise<void> {
   for (const url of urls) {
-    if (ctx.signal?.aborted) break;
-
-    let details;
-    try {
-      details = await site.getVacancyDetails(url);
-    } catch (err) {
-      console.error(
-        `[${site.name}] Failed to extract ${url}:`,
-        formatError(err),
-      );
-      continue;
-    }
-
-    const result = processOneCrawlResult(
-      details,
-      site.name,
-      ctx.existingByHash,
-      ctx.crawlDate,
-    );
-
-    let vacancy = result.vacancy;
-    const shouldEnrich =
-      result.isNew ||
-      result.descriptionChanged ||
-      needsContactExtraction(vacancy);
-
-    if (shouldEnrich) {
-      const enriched = await enrichVacancy(vacancy, ctx.enrichDeps);
-      if (enriched !== vacancy) {
-        vacancy = enriched;
-        ctx.enrichedCount++;
-      }
-    }
-
-    ctx.existingByHash.set(result.hash, vacancy);
-    ctx.seenHashes.add(result.hash);
-
-    if (result.isNew) {
-      ctx.newCount++;
-    } else {
-      ctx.updatedCount++;
-    }
-
-    ctx.onProgress?.({
-      message: `[${site.name}] ${result.isNew ? "New" : "Updated"}: ${details.title ?? url}`,
-      phase: "scan",
-    });
-
-    ctx.onVacancyProcessed?.(vacancy, result.hash, result.isNew);
+    if (context.signal?.aborted) break;
+    await processOneUrl(site, url, context, enricher);
   }
 }
 
-async function scanSitePages(site: JobSite, ctx: ScanContext): Promise<void> {
-  const effectiveMode = resolveEffectiveMode(site, ctx.mode);
-  if (!effectiveMode) return;
+async function processOneUrl(
+  site: JobSite,
+  url: string,
+  context: ScanContext,
+  enricher: VacancyEnricher,
+): Promise<void> {
+  let details;
+  try {
+    details = await site.getVacancyDetails(url);
+  } catch (error) {
+    console.error(
+      `[${site.name}] Failed to extract ${url}:`,
+      formatError(error),
+    );
+    return;
+  }
 
-  ctx.onProgress?.({
-    message: `Scanning ${site.name}...`,
-    phase: "search",
+  const result = processOneCrawlResult(
+    details,
+    site.name,
+    context.existingByHash,
+    context.crawlDate,
+  );
+
+  const vacancy = await tryEnrich(result, context, enricher);
+
+  context.existingByHash.set(result.hash, vacancy);
+  context.seenHashes.add(result.hash);
+
+  if (result.isNew) {
+    context.newCount++;
+  } else {
+    context.updatedCount++;
+  }
+
+  context.onProgress?.({
+    message: `[${site.name}] ${result.isNew ? "New" : "Updated"}: ${details.title || url}`,
+    phase: "scan",
   });
 
-  const siteUrls = new Set<string>();
-  const criteria = { ...ctx.searchParams, mode: effectiveMode };
-  let pageId: string | undefined;
+  context.onVacancyProcessed?.(vacancy, result.hash, result.isNew);
+}
 
-  for (let page = 0; page < MAX_PAGES; page++) {
-    if (ctx.signal?.aborted) break;
+async function tryEnrich(
+  result: ProcessOneResult,
+  context: ScanContext,
+  enricher: VacancyEnricher,
+): Promise<Vacancy> {
+  if (!enricher.shouldEnrich(result)) {
+    return result.vacancy;
+  }
+  const enriched = await enricher.enrich(result.vacancy, result);
+  if (enriched !== result.vacancy) context.enrichedCount++;
+  return enriched;
+}
 
-    let listResult;
-    try {
-      listResult = await site.getVacancyList(criteria, pageId);
-    } catch (err) {
-      console.error(
-        `[${site.name}] Failed to fetch search page ${page + 1}:`,
-        formatError(err),
-      );
-      break;
-    }
+function collectNewUrls(
+  listUrls: string[],
+  siteUrls: Set<string>,
+  allUrls: Set<string>,
+): string[] {
+  const newUrls = listUrls.filter((u) => !siteUrls.has(u) && !allUrls.has(u));
+  for (const u of newUrls) {
+    siteUrls.add(u);
+    allUrls.add(u);
+  }
+  return newUrls;
+}
 
-    const newUrls = listResult.urls.filter(
-      (u) => !siteUrls.has(u) && !ctx.allUrls.has(u),
+function sliceToLimit(
+  newUrls: string[],
+  siteUrlCount: number,
+  limit?: number,
+): string[] {
+  if (!limit) return newUrls;
+  const alreadyProcessed = siteUrlCount - newUrls.length;
+  const remaining = limit - alreadyProcessed;
+  return remaining >= newUrls.length ? newUrls : newUrls.slice(0, remaining);
+}
+
+function shouldContinuePaging(
+  nextPageId: string | undefined,
+  siteUrlCount: number,
+  limit?: number,
+): boolean {
+  return !!nextPageId && (!limit || siteUrlCount < limit);
+}
+
+function fetchSearchPage(
+  site: JobSite,
+  criteria: SearchCriteria,
+  pageId: string | undefined,
+  pageNumber: number,
+) {
+  try {
+    return site.getVacancyList(criteria, pageId);
+  } catch (error) {
+    console.error(
+      `[${site.name}] Failed to fetch search page ${pageNumber}:`,
+      formatError(error),
     );
-    if (newUrls.length === 0) break;
+    return;
+  }
+}
 
-    for (const u of newUrls) {
-      siteUrls.add(u);
-      ctx.allUrls.add(u);
-    }
+function emitProgress(context: ScanContext, event: ProgressEvent): void {
+  context.onProgress?.(event);
+}
 
-    ctx.onProgress?.({
-      message: `[${site.name}] Search (${effectiveMode}) page ${page + 1}: ${siteUrls.size} URLs found`,
-      phase: "search",
-      current: page + 1,
+function isAborted(context: ScanContext): boolean {
+  return context.signal?.aborted ?? false;
+}
+
+async function tryComputeCommute(
+  vacancy: Vacancy,
+  deps: EnrichDeps,
+): Promise<Vacancy> {
+  if (
+    !deps.commuteClient ||
+    !deps.commuteOrigin ||
+    vacancy.addresses.length === 0
+  ) {
+    return vacancy;
+  }
+  try {
+    const result = await computeCommutes({
+      vacancies: [vacancy],
+      origin: deps.commuteOrigin,
+      commuteClient: deps.commuteClient,
+      signal: deps.signal,
     });
-
-    const urlsFromPage = ctx.limit
-      ? newUrls.slice(0, ctx.limit - (siteUrls.size - newUrls.length))
-      : newUrls;
-
-    await processPageUrls(site, urlsFromPage, ctx);
-
-    if (!listResult.nextPageId) break;
-    if (ctx.limit && siteUrls.size >= ctx.limit) break;
-    pageId = listResult.nextPageId;
+    return result.vacancies[0];
+  } catch (error) {
+    console.error(
+      `Failed to compute commute for "${vacancy.title}":`,
+      formatError(error),
+    );
+    return vacancy;
   }
 }
 
-export async function scanVacancies(
-  options: ScanVacanciesOptions,
-): Promise<ScanVacanciesResult> {
-  const ctx: ScanContext = {
-    searchParams: options.searchParams,
-    mode: options.mode,
-    limit: options.limit,
-    crawlDate: options.crawlDate,
-    existingByHash: options.existingByHash,
-    signal: options.signal,
-    onProgress: options.onProgress,
-    onVacancyProcessed: options.onVacancyProcessed,
-    enrichDeps: {
-      commuteClient: options.commuteClient ?? null,
-      commuteOrigin: options.commuteOrigin ?? null,
-      llmClient: options.llmClient ?? null,
-      applicant: options.applicant ?? null,
-      preferences: options.preferences ?? null,
-      signal: options.signal,
-    },
-    allUrls: new Set<string>(),
-    seenHashes: new Set<string>(),
-    newCount: 0,
-    updatedCount: 0,
-    enrichedCount: 0,
-  };
+async function tryLlmEnrich(
+  vacancy: Vacancy,
+  deps: EnrichDeps,
+): Promise<Vacancy> {
+  if (!deps.llmClient || !deps.applicant || !deps.preferences) return vacancy;
 
-  for (const site of options.sites) {
-    if (ctx.signal?.aborted) break;
-    await scanSitePages(site, ctx);
+  const [assessmentResult, contactResult] = await runLlmEnrichment(
+    vacancy,
+    deps.applicant,
+    deps.preferences,
+    deps.llmClient,
+  );
+
+  let updated = vacancy;
+  if (assessmentResult) {
+    updated = updated.with({
+      summary: assessmentResult.summary,
+      matchScore: assessmentResult.matchScore,
+      descriptionChanged: false,
+    });
   }
-
-  return {
-    seenHashes: ctx.seenHashes,
-    newCount: ctx.newCount,
-    updatedCount: ctx.updatedCount,
-    enrichedCount: ctx.enrichedCount,
-  };
+  if (contactResult) {
+    updated = mergeContactInfo(updated, contactResult);
+  }
+  return updated;
 }
+
+function runLlmEnrichment(
+  vacancy: Vacancy,
+  applicant: Applicant,
+  preferences: SearchPreferences,
+  llmClient: LlmClient,
+) {
+  return Promise.all([
+    needsAssessment(vacancy)
+      ? assessVacancy(vacancy, applicant, preferences, llmClient).catch(
+          (error) => {
+            console.error(
+              `Failed to assess "${vacancy.title}":`,
+              formatError(error),
+            );
+            return;
+          },
+        )
+      : undefined,
+    needsContactExtraction(vacancy)
+      ? extractContactInfo(vacancy, llmClient).catch((error) => {
+          console.error(
+            `Failed to extract contact for "${vacancy.title}":`,
+            formatError(error),
+          );
+          return;
+        })
+      : undefined,
+  ]);
+}
+
+interface ScanVacanciesOptions {
+  sites: JobSite[];
+  searchParams: SearchParameters;
+  mode: SearchMode;
+  limit?: number;
+  crawlDate: string;
+  existingByHash: Map<string, Vacancy>;
+  signal?: AbortSignal;
+  onProgress?: (event: ProgressEvent) => void;
+  llmClient?: LlmClient;
+  commuteClient?: CommuteClient;
+  commuteOrigin?: string;
+  applicant?: Applicant;
+  preferences?: SearchPreferences;
+  onVacancyProcessed?: (vacancy: Vacancy, hash: string, isNew: boolean) => void;
+}
+
+interface ScanVacanciesResult {
+  seenHashes: Set<string>;
+  newCount: number;
+  updatedCount: number;
+  enrichedCount: number;
+}
+
+interface VacancyEnricher {
+  shouldEnrich: (result: ProcessOneResult) => boolean;
+  enrich: (vacancy: Vacancy, result: ProcessOneResult) => Promise<Vacancy>;
+}
+
+interface ScanContext {
+  searchParams: SearchParameters;
+  mode: SearchMode;
+  limit?: number;
+  crawlDate: string;
+  existingByHash: Map<string, Vacancy>;
+  signal?: AbortSignal;
+  onProgress?: (event: ProgressEvent) => void;
+  onVacancyProcessed?: (vacancy: Vacancy, hash: string, isNew: boolean) => void;
+  enrichDeps: EnrichDeps;
+  allUrls: Set<string>;
+  seenHashes: Set<string>;
+  newCount: number;
+  updatedCount: number;
+  enrichedCount: number;
+}
+
+interface EnrichDeps {
+  commuteClient?: CommuteClient;
+  commuteOrigin?: string;
+  llmClient?: LlmClient;
+  applicant?: Applicant;
+  preferences?: SearchPreferences;
+  signal?: AbortSignal;
+}
+
+const MAX_PAGES = 20;

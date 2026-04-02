@@ -1,0 +1,19 @@
+{
+  "threshold": 15,
+  "reporters": ["console", "html"],
+  "output": "./test-results/jscpd-report",
+  "format": ["typescript", "tsx"],
+  "pattern": "src/**/*.{ts,tsx}",
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/out/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.test-suite.ts",
+    "**/*.integration-test.ts"
+  ],
+  "gitignore": true,
+  "absolute": false,
+  "silent": false
+}

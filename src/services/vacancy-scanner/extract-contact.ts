@@ -1,51 +1,104 @@
-import type { Vacancy } from "@/models/vacancy/vacancy.js";
+import typia from "typia";
+import type { Vacancy } from "@/models/vacancy/index.js";
 import type { VacancyContact } from "@/models/vacancy/types.js";
-import type { JsonSchema, LlmClient } from "@/plugins/llm/types.js";
-
-interface ContactExtractionResult {
-  addresses: string[];
-  contact: VacancyContact | null;
-}
-
-const EXTRACT_CONTACT_MAX_TOKENS = 512;
-
-const EXTRACT_CONTACT_SCHEMA: JsonSchema = {
-  type: "object",
-  properties: {
-    addresses: {
-      type: "array",
-      items: { type: "string" },
-    },
-    contact: {
-      anyOf: [
-        {
-          type: "object",
-          properties: {
-            name: { type: "string" },
-            email: { type: "string" },
-            phone: { type: "string" },
-          },
-          additionalProperties: false,
-        },
-        { type: "null" },
-      ],
-    },
-  },
-  required: ["addresses", "contact"],
-  additionalProperties: false,
-};
+import type { LlmClient, TypedSchema } from "@/plugins/llm/types.js";
 
 export function needsContactExtraction(vacancy: Vacancy): boolean {
   if (!vacancy.description) return false;
 
   const hasEmptyAddresses = vacancy.addresses.length === 0;
-  const hasPartialContact =
-    !vacancy.contact ||
-    !vacancy.contact.name ||
-    !vacancy.contact.email ||
-    !vacancy.contact.phone;
+  const contact = vacancy.contact;
+  const hasPartialContact = !contact.name || !contact.email || !contact.phone;
 
   return hasEmptyAddresses || hasPartialContact;
+}
+
+export async function extractContactInfo(
+  vacancy: Vacancy,
+  llmClient: LlmClient,
+): Promise<ContactExtractionResult | undefined> {
+  const prompt = buildContactExtractionPrompt(vacancy);
+  const raw = await llmClient.completeJSON(
+    prompt,
+    EXTRACT_CONTACT_MAX_TOKENS,
+    EXTRACT_CONTACT_SCHEMA,
+  );
+
+  const addresses = raw.addresses.map((s) => s.trim()).filter(Boolean);
+  const contact = cleanContact(raw.contact);
+
+  if (addresses.length === 0 && !contact) return undefined;
+  return { addresses, contact };
+}
+
+export function mergeContactInfo(
+  vacancy: Vacancy,
+  extracted: ContactExtractionResult,
+): Vacancy {
+  const addresses =
+    extracted.addresses.length > 0
+      ? mergeAddresses(vacancy.addresses, extracted.addresses)
+      : vacancy.addresses;
+
+  const contact = extracted.contact
+    ? { ...vacancy.contact, ...extracted.contact }
+    : vacancy.contact;
+
+  const addressesChanged =
+    addresses.length !== vacancy.addresses.length ||
+    addresses.some((a, index) => a !== vacancy.addresses[index]);
+
+  if (!addressesChanged && contact === vacancy.contact) return vacancy;
+  return vacancy.with({ addresses, contact });
+}
+
+export function mergeAddresses(
+  existing: string[],
+  extracted: string[],
+): string[] {
+  const merged = [...existing];
+  const mergedLower = merged.map((a) => a.toLowerCase());
+
+  for (const newAddr of extracted) {
+    const newLower = newAddr.toLowerCase();
+
+    const subsumesIndex = mergedLower.findIndex(
+      (lower) => lower !== newLower && newLower.includes(lower),
+    );
+
+    if (subsumesIndex === -1) {
+      const alreadyCovered = mergedLower.some(
+        (lower) => lower === newLower || lower.includes(newLower),
+      );
+      if (!alreadyCovered) {
+        merged.push(newAddr);
+        mergedLower.push(newLower);
+      }
+    } else {
+      merged[subsumesIndex] = newAddr;
+      mergedLower[subsumesIndex] = newLower;
+    }
+  }
+
+  return merged;
+}
+
+interface ContactExtractionResult {
+  addresses: string[];
+  contact?: VacancyContact;
+}
+
+const EXTRACT_CONTACT_MAX_TOKENS = 512;
+
+const EXTRACT_CONTACT_SCHEMA: TypedSchema<RawContactResult> = {
+  schema: typia.json.schema<RawContactResult>(),
+  parse: typia.json.createAssertParse<RawContactResult>(),
+};
+
+// Raw type matching the LLM JSON contract: contact is nullable in the JSON schema
+interface RawContactResult {
+  addresses: string[];
+  contact: VacancyContact | null;
 }
 
 function buildContactExtractionPrompt(vacancy: Vacancy): string {
@@ -54,15 +107,15 @@ function buildContactExtractionPrompt(vacancy: Vacancy): string {
       ? vacancy.addresses.join(", ")
       : "Keine vorhanden";
 
-  const existingContact = vacancy.contact
-    ? [
-        vacancy.contact.name ? `Name: ${vacancy.contact.name}` : null,
-        vacancy.contact.email ? `E-Mail: ${vacancy.contact.email}` : null,
-        vacancy.contact.phone ? `Telefon: ${vacancy.contact.phone}` : null,
-      ]
-        .filter(Boolean)
-        .join(", ") || "Keine vorhanden"
-    : "Keine vorhanden";
+  const contact = vacancy.contact;
+  const existingContact =
+    [
+      contact.name ? `Name: ${contact.name}` : undefined,
+      contact.email ? `E-Mail: ${contact.email}` : undefined,
+      contact.phone ? `Telefon: ${contact.phone}` : undefined,
+    ]
+      .filter(Boolean)
+      .join(", ") || "Keine vorhanden";
 
   return `Extrahieren Sie die Adress- und Kontaktdaten aus der folgenden Stellenausschreibung.
 
@@ -88,117 +141,28 @@ Regeln:
 - Einzelne Felder in contact dürfen weggelassen werden, wenn nicht vorhanden`;
 }
 
-const trimString = (v: unknown): string | undefined =>
-  typeof v === "string" && v.trim() ? v.trim() : undefined;
+function cleanContact(
+  contact: VacancyContact | null,
+): VacancyContact | undefined {
+  if (!contact) return undefined;
+  const cleaned = pickDefined({
+    name: trimOrUndefined(contact.name),
+    email: trimOrUndefined(contact.email),
+    phone: trimOrUndefined(contact.phone),
+  });
+  return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+}
 
-function parseAddresses(parsed: object): string[] {
-  if (!("addresses" in parsed) || !Array.isArray(parsed.addresses)) return [];
+function trimOrUndefined(value?: string): string | undefined {
+  return value?.trim() || undefined;
+}
 
-  const addresses: string[] = [];
-  for (const addr of parsed.addresses) {
-    const trimmed = trimString(addr);
-    if (trimmed) addresses.push(trimmed);
+function pickDefined(
+  object: Record<string, string | undefined>,
+): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(object)) {
+    if (value) result[key] = value;
   }
-  return addresses;
-}
-
-function parseContact(parsed: object): VacancyContact | null {
-  if (
-    !("contact" in parsed) ||
-    !parsed.contact ||
-    typeof parsed.contact !== "object"
-  )
-    return null;
-
-  const c = parsed.contact;
-  const name = trimString("name" in c ? c.name : undefined);
-  const email = trimString("email" in c ? c.email : undefined);
-  const phone = trimString("phone" in c ? c.phone : undefined);
-
-  if (!name && !email && !phone) return null;
-
-  const contact: VacancyContact = {};
-  if (name) contact.name = name;
-  if (email) contact.email = email;
-  if (phone) contact.phone = phone;
-  return contact;
-}
-
-function parseContactExtractionResult(
-  parsed: unknown,
-): ContactExtractionResult | null {
-  if (!parsed || typeof parsed !== "object") return null;
-
-  const addresses = parseAddresses(parsed);
-  const contact = parseContact(parsed);
-
-  if (addresses.length === 0 && !contact) return null;
-
-  return { addresses, contact };
-}
-
-export async function extractContactInfo(
-  vacancy: Vacancy,
-  llmClient: LlmClient,
-): Promise<ContactExtractionResult | null> {
-  const prompt = buildContactExtractionPrompt(vacancy);
-  const parsed = await llmClient.completeJSON(
-    prompt,
-    EXTRACT_CONTACT_MAX_TOKENS,
-    EXTRACT_CONTACT_SCHEMA,
-  );
-  return parseContactExtractionResult(parsed);
-}
-
-export function mergeContactInfo(
-  vacancy: Vacancy,
-  extracted: ContactExtractionResult,
-): Vacancy {
-  let addresses = vacancy.addresses;
-
-  if (extracted.addresses.length > 0) {
-    const merged = [...vacancy.addresses];
-
-    for (const newAddr of extracted.addresses) {
-      const newLower = newAddr.toLowerCase();
-
-      const existingIndex = merged.findIndex(
-        (existing) =>
-          existing.toLowerCase() !== newLower &&
-          newLower.includes(existing.toLowerCase()),
-      );
-
-      if (existingIndex >= 0) {
-        merged[existingIndex] = newAddr;
-      } else {
-        const alreadyCovered = merged.some(
-          (existing) =>
-            existing.toLowerCase() === newLower ||
-            existing.toLowerCase().includes(newLower),
-        );
-        if (!alreadyCovered) {
-          merged.push(newAddr);
-        }
-      }
-    }
-
-    addresses = merged;
-  }
-
-  let contact = vacancy.contact;
-  if (extracted.contact) {
-    contact = {
-      ...vacancy.contact,
-      ...extracted.contact,
-    };
-  }
-
-  const addressesChanged =
-    addresses.length !== vacancy.addresses.length ||
-    addresses.some((a, i) => a !== vacancy.addresses[i]);
-  const contactChanged = contact !== vacancy.contact;
-
-  if (!addressesChanged && !contactChanged) return vacancy;
-
-  return vacancy.with({ addresses, contact });
+  return result;
 }

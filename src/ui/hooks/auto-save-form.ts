@@ -7,15 +7,6 @@ import {
 } from "react-hook-form";
 import { useAutoSave, type AutoSaveStatus } from "./internal/auto-save";
 
-export type { AutoSaveStatus };
-
-interface UseAutoSaveFormOptions<TForm extends FieldValues, TData> {
-  queryResult: { data: TData | undefined; isLoading: boolean };
-  toFormValues: (data: TData) => TForm;
-  onSave: (formData: TForm) => Promise<unknown>;
-  formOptions?: UseFormProps<TForm>;
-}
-
 export function useAutoSaveForm<TForm extends FieldValues, TData>({
   queryResult: { data, isLoading },
   toFormValues,
@@ -26,7 +17,7 @@ export function useAutoSaveForm<TForm extends FieldValues, TData>({
   saveStatus: AutoSaveStatus;
 } {
   const form = useForm<TForm>(formOptions);
-  const hasLoadedRef = useRef(false);
+  const hasLoadedReference = useRef(false);
 
   const { status: saveStatus, resetBaseline } = useAutoSave({
     control: form.control,
@@ -34,12 +25,21 @@ export function useAutoSaveForm<TForm extends FieldValues, TData>({
   });
 
   useEffect(() => {
-    if (data && !hasLoadedRef.current) {
-      hasLoadedRef.current = true;
+    if (data && !hasLoadedReference.current) {
+      hasLoadedReference.current = true;
       form.reset(toFormValues(data));
       resetBaseline();
     }
   }, [data, form.reset, resetBaseline, toFormValues]);
 
   return { ...form, isLoading, saveStatus };
+}
+
+export { type AutoSaveStatus } from "./internal/auto-save";
+
+interface UseAutoSaveFormOptions<TForm extends FieldValues, TData> {
+  queryResult: { data?: TData; isLoading: boolean };
+  toFormValues: (data: TData) => TForm;
+  onSave: (formData: TForm) => Promise<unknown>;
+  formOptions?: UseFormProps<TForm>;
 }

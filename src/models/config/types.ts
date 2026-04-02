@@ -39,3 +39,9 @@ export interface CommuteProviderInfo {
   name: string;
   instructions: string;
 }
+
+export interface Address {
+  street: string;
+  zip: string;
+  city: string;
+}

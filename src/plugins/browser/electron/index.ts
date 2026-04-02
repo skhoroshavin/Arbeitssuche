@@ -5,7 +5,62 @@ import type {
   OpenPageOptions,
 } from "@/plugins/browser/types.js";
 
-type WaitUntil = "commit" | "domcontentloaded" | "load";
+export function createElectronBrowser(): Browser {
+  return new ElectronBrowser();
+}
+
+class ElectronBrowser implements Browser {
+  async openPage(url: string, options?: OpenPageOptions): Promise<Page> {
+    const partition = `crawl-${++this.partitionCounter}`;
+    const ep = createElectronPage(partition);
+    const pages = this.pages;
+    pages.push(ep);
+
+    if (options?.blockPatterns) {
+      ep.blockUrlPatterns(options.blockPatterns);
+    }
+
+    let html = await navigateAndCapture(ep, url, options?.waitFor);
+
+    return {
+      get html() {
+        return html;
+      },
+      async navigate(nextUrl: string, navOptions?: { waitFor?: string }) {
+        html = await navigateAndCapture(ep, nextUrl, navOptions?.waitFor);
+      },
+      async close() {
+        await ep.close();
+        const index = pages.indexOf(ep);
+        if (index !== -1) pages.splice(index, 1);
+      },
+    };
+  }
+
+  async close() {
+    for (const ep of this.pages) {
+      await ep.close();
+    }
+    this.pages.length = 0;
+  }
+
+  private partitionCounter = 0;
+  private readonly pages: ReturnType<typeof createElectronPage>[] = [];
+}
+
+async function navigateAndCapture(
+  ep: ReturnType<typeof createElectronPage>,
+  url: string,
+  waitFor?: string,
+): Promise<string> {
+  if (waitFor) {
+    await ep.goto(url, "commit", 10_000);
+    await ep.waitForSelector(waitFor, 15_000).catch(() => {});
+  } else {
+    await ep.goto(url, "domcontentloaded", 10_000);
+  }
+  return ep.content();
+}
 
 function createElectronPage(partition: string): {
   goto: (url: string, waitUntil: WaitUntil, timeout: number) => Promise<void>;
@@ -58,7 +113,7 @@ function createElectronPage(partition: string): {
         wc.once("dom-ready", onSuccess);
       else wc.once("did-finish-load", onSuccess);
 
-      wc.once("did-fail-load", (_e, code, desc) => {
+      wc.once("did-fail-load", (_error, code, desc) => {
         cleanup();
         reject(new Error(`Navigation failed: ${desc} (${code})`));
       });
@@ -71,7 +126,7 @@ function createElectronPage(partition: string): {
         return;
       }
 
-      wc.loadURL(url);
+      void wc.loadURL(url);
     });
   }
 
@@ -80,10 +135,14 @@ function createElectronPage(partition: string): {
     timeout: number,
   ): Promise<void> {
     const start = Date.now();
-    const escaped = selector.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    const escaped = selector
+      .replaceAll("\\", "\\\\")
+      .replaceAll("'", String.raw`\'`);
     while (Date.now() - start < timeout) {
-      const found = await win.webContents.executeJavaScript(
-        `!!document.querySelector('${escaped}')`,
+      const found = Boolean(
+        await win.webContents.executeJavaScript(
+          `!!document.querySelector('${escaped}')`,
+        ),
       );
       if (found) return;
       await new Promise((r) => setTimeout(r, 100));
@@ -94,8 +153,10 @@ function createElectronPage(partition: string): {
   }
 
   async function content(): Promise<string> {
-    return win.webContents.executeJavaScript(
-      "document.documentElement.outerHTML",
+    return String(
+      await win.webContents.executeJavaScript(
+        "document.documentElement.outerHTML",
+      ),
     );
   }
 
@@ -121,59 +182,4 @@ function createElectronPage(partition: string): {
   return { goto, waitForSelector, content, blockUrlPatterns, close };
 }
 
-async function navigateAndCapture(
-  ep: ReturnType<typeof createElectronPage>,
-  url: string,
-  waitFor?: string,
-): Promise<string> {
-  if (waitFor) {
-    await ep.goto(url, "commit", 10_000);
-    await ep.waitForSelector(waitFor, 15_000).catch(() => null);
-  } else {
-    await ep.goto(url, "domcontentloaded", 10_000);
-  }
-  return ep.content();
-}
-
-class ElectronBrowser implements Browser {
-  private partitionCounter = 0;
-  private readonly pages: ReturnType<typeof createElectronPage>[] = [];
-
-  async openPage(url: string, opts?: OpenPageOptions): Promise<Page> {
-    const partition = `crawl-${++this.partitionCounter}`;
-    const ep = createElectronPage(partition);
-    const pages = this.pages;
-    pages.push(ep);
-
-    if (opts?.blockPatterns) {
-      ep.blockUrlPatterns(opts.blockPatterns);
-    }
-
-    let html = await navigateAndCapture(ep, url, opts?.waitFor);
-
-    return {
-      get html() {
-        return html;
-      },
-      async navigate(nextUrl: string, navOpts?: { waitFor?: string }) {
-        html = await navigateAndCapture(ep, nextUrl, navOpts?.waitFor);
-      },
-      async close() {
-        await ep.close();
-        const idx = pages.indexOf(ep);
-        if (idx !== -1) pages.splice(idx, 1);
-      },
-    };
-  }
-
-  async close() {
-    for (const ep of this.pages) {
-      await ep.close();
-    }
-    this.pages.length = 0;
-  }
-}
-
-export function createElectronBrowser(): Browser {
-  return new ElectronBrowser();
-}
+type WaitUntil = "commit" | "domcontentloaded" | "load";

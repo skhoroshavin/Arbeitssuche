@@ -3,37 +3,28 @@ import type { Applicant } from "@/models/applicant/types.js";
 export function prepareResumeData(applicant: Applicant) {
   const { personal, disclose } = applicant;
 
-  const locationParts = [
-    personal.address?.street,
-    personal.address?.zip,
-    personal.address?.city,
-  ].filter(Boolean);
-
   return {
     personal: {
       name: personal.name,
       email: personal.email,
       phone: personal.phone,
-      location:
-        disclose?.address && locationParts.length > 0
-          ? locationParts.join(", ")
-          : undefined,
+      location: prepareLocation(applicant),
     },
-    experience: applicant.experience.map((e) => ({
-      role: e.role,
-      company: e.company,
-      startDate: e.discloseDates ? e.startDate : undefined,
-      endDate: e.discloseDates ? e.endDate : undefined,
-      location: e.location,
-      highlights: e.highlights,
+    experience: applicant.experience.map((exp) => ({
+      role: exp.role,
+      company: exp.company,
+      startDate: conditionalDate(exp.discloseDates, exp.startDate),
+      endDate: conditionalDate(exp.discloseDates, exp.endDate),
+      location: exp.location,
+      highlights: exp.highlights,
     })),
-    education: applicant.education.map((e) => ({
-      institution: e.institution,
-      course: e.course,
-      startDate: e.discloseDates ? e.startDate : undefined,
-      endDate: e.discloseDates ? e.endDate : undefined,
-      location: e.location,
-      highlights: e.highlights,
+    education: applicant.education.map((edu) => ({
+      institution: edu.institution,
+      course: edu.course,
+      startDate: conditionalDate(edu.discloseDates, edu.startDate),
+      endDate: conditionalDate(edu.discloseDates, edu.endDate),
+      location: edu.location,
+      highlights: edu.highlights,
     })),
     skills: applicant.skills.map((s) => s.name),
     languages: applicant.languages.map((l) => ({
@@ -43,9 +34,26 @@ export function prepareResumeData(applicant: Applicant) {
     certifications: applicant.certifications.map((c) => ({
       name: c.name,
       issuer: c.issuer,
-      date: c.discloseDates ? c.date : undefined,
+      date: conditionalDate(c.discloseDates, c.date),
       description: c.description,
     })),
-    hobbies: disclose?.hobbies ? personal.hobbies : undefined,
+    hobbies: disclose.hobbies ? personal.hobbies : undefined,
   };
+}
+
+function conditionalDate(
+  disclose?: boolean,
+  date?: string,
+): string | undefined {
+  return disclose ? date : undefined;
+}
+
+function prepareLocation(applicant: Applicant): string | undefined {
+  const { personal, disclose } = applicant;
+  const parts = [
+    personal.address?.street,
+    personal.address?.zip,
+    personal.address?.city,
+  ].filter(Boolean);
+  return disclose.address && parts.length > 0 ? parts.join(", ") : undefined;
 }

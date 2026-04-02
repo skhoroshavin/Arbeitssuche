@@ -1,14 +1,16 @@
 import { defineConfig } from "vitest/config";
-import { resolve } from "node:path";
+import UnpluginTypia from "@typia/unplugin/vite";
+import path from "node:path";
 
 export default defineConfig({
+  plugins: [UnpluginTypia()],
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   test: {
-    include: ["src/**/*.integration-test.ts"],
+    include: ["src/plugins/job-site/*.integration-test.ts"],
     testTimeout: 60_000,
   },
 });
