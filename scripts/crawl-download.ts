@@ -1,8 +1,8 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
+import { SEARCH_MODES } from "@/models/job-search/index.js";
 import { createPlaywrightBrowser } from "@/plugins/browser/index.js";
 import { createJobSite, getJobSiteNames } from "@/plugins/job-site/index.js";
-import { SEARCH_MODES } from "@/models/job-search/types.js";
 import type { SearchMode } from "@/models/job-search/types.js";
 
 const { values } = parseArgs({
@@ -15,8 +15,10 @@ const { values } = parseArgs({
   },
 });
 
+const SEARCH_MODE_SET: ReadonlySet<string> = new Set(SEARCH_MODES);
+
 function isSearchMode(value: string | undefined): value is SearchMode {
-  return value !== undefined && SEARCH_MODES.includes(value);
+  return value !== undefined && SEARCH_MODE_SET.has(value);
 }
 
 if (!isSearchMode(values.mode)) {
