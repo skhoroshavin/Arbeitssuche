@@ -1,4 +1,4 @@
-import type { ProgressEvent } from "@/models/events.js";
+import type { ProgressEvent } from "@/models/index.js";
 
 export function ProgressLog({
   events,

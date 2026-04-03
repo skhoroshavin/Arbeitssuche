@@ -71,23 +71,10 @@ export interface ApplicantInfo {
   name?: string;
 }
 
-export const RESUME_TEMPLATES = [
-  "resume_classic",
-  "resume_modern",
-  "resume_elegant",
-  "resume_minimal",
-] as const;
-export type ResumeTemplate = (typeof RESUME_TEMPLATES)[number];
-
-export const DEFAULT_APPLICANT: Applicant = {
-  id: "",
-  personal: { name: "", hobbies: [] },
-  disclose: { birthdate: false, gender: false, address: false, hobbies: false },
-  experience: [],
-  education: [],
-  skills: [],
-  languages: [],
-  certifications: [],
-};
+export type ResumeTemplate =
+  | "resume_classic"
+  | "resume_modern"
+  | "resume_elegant"
+  | "resume_minimal";
 
 export { type Address } from "@/models/config/types.js";

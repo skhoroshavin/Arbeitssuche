@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router";
-import type { VacancyWithStatus } from "@/ui/data/job-searches";
+import type { VacancyWithStatus } from "@/ui/data";
 import { isSortKey, type SortKey } from "./filter-bar";
 import { compareVacancies } from "./vacancy-utilities";
 

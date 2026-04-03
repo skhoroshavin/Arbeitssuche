@@ -12,7 +12,7 @@ import {
   DEFAULT_CONSULTATION_MODEL,
   DEFAULT_COVER_LETTER_MODEL,
   DEFAULT_PROVIDER,
-} from "@/models/config/types";
+} from "@/models/config/index";
 import type { ResolvedConfig } from "@/models/config/index.js";
 import typia from "typia";
 import { api } from "./internal/api";

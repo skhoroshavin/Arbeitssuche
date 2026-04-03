@@ -3,7 +3,7 @@ import {
   useApplicantListView,
   useCreateApplicant,
   useDeleteApplicant,
-} from "@/ui/data/applicants";
+} from "@/ui/data";
 import { EntityList } from "@/ui/pages/applicant/components";
 import { useLayoutConfig } from "@/ui/layout";
 

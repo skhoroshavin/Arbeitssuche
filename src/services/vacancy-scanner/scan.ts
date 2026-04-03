@@ -8,7 +8,7 @@ import type { CommuteClient } from "@/plugins/commute/types.js";
 import type { Applicant } from "@/models/applicant/types.js";
 import type { SearchPreferences } from "@/models/job-search/types.js";
 import type { Vacancy } from "@/models/vacancy/index.js";
-import type { ProgressEvent } from "@/models/events.js";
+import type { ProgressEvent } from "@/models/index.js";
 import { processOneCrawlResult, type ProcessOneResult } from "./unify.js";
 import { computeCommutes } from "./commute.js";
 import { assessVacancy, needsAssessment } from "./assess.js";

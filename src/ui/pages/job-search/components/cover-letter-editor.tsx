@@ -1,4 +1,4 @@
-import { useAutoSaveForm } from "@/ui/hooks/auto-save-form";
+import { useAutoSaveForm } from "@/ui/hooks";
 import { Textarea } from "@/ui/components";
 import { useAutoSaveHeader } from "@/ui/layout";
 import { Link, useLocation } from "react-router";

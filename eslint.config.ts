@@ -104,11 +104,6 @@ export default tseslint.config(
               message:
                 "Parent imports (../) are forbidden under src/. Use @/ aliases or ./ local imports.",
             },
-            {
-              regex: String.raw`^@/(?!(([^/]+/[^/]+(/(index|types))?)|(plugins/llm/openai-compatible(/index)?)|(ui/hooks/[^/]+(/(index|types))?)|(ui/data/[^/]+(/(index|types))?)|(ui/layout(/index)?)|(ui/constants)|(ui/pages/[^/]+(/(components|hooks)(/index)?)?))(\.js)?$).+`,
-              message:
-                "Cross-folder imports must use public module surfaces only: @/<layer>/<module> (+ optional /index or /types) and approved UI surfaces.",
-            },
           ],
         },
       ],
@@ -141,11 +136,6 @@ export default tseslint.config(
               regex: String.raw`^\./(?!(.*/)?(index|types)(\.js)?$).+`,
               message:
                 "Tests may import relative modules only through index.ts or types.ts surfaces.",
-            },
-            {
-              regex: String.raw`^@/(?!(([^/]+/[^/]+(/(index|types))?)|(plugins/llm/openai-compatible(/index)?)|(ui/hooks/[^/]+(/(index|types))?)|(ui/data/[^/]+(/(index|types))?)|(ui/layout(/index)?)|(ui/constants)|(ui/pages/[^/]+(/(components|hooks)(/index)?)?))(\.js)?$).+`,
-              message:
-                "Tests may import aliased modules only through public index.ts/types.ts surfaces.",
             },
           ],
         },

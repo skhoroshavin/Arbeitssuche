@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
-import { useApplicant, useUpdateApplicant } from "@/ui/data/applicants";
-import { useAutoSaveForm } from "@/ui/hooks/auto-save-form";
+import { useApplicant, useUpdateApplicant } from "@/ui/data";
+import { useAutoSaveForm } from "@/ui/hooks";
 import type {
   Applicant,
   ApplicantDisclose,
@@ -9,7 +9,8 @@ import type {
   ApplicantCertification,
   Address,
 } from "@/models/applicant/types";
-import { arrayToString, stringToArray } from "@/models/utilities";
+import { DEFAULT_APPLICANT } from "@/models/applicant/index";
+import { arrayToString, stringToArray } from "@/models/index";
 
 export function useApplicantForm() {
   const { id = "" } = useParams<{ id: string }>();
@@ -49,9 +50,10 @@ function toFormValues(applicant: Applicant): ApplicantFormValues {
 function fromFormValues(form: ApplicantFormValues): Applicant {
   return {
     ...form,
+    disclose: form.disclose ?? DEFAULT_APPLICANT.disclose,
     personal: {
       ...form.personal,
-      hobbies: stringToArray(form.personal.hobbies),
+      hobbies: stringToArray(form.personal.hobbies) ?? [],
     },
     experience: form.experience.map((entry) => ({
       ...entry,

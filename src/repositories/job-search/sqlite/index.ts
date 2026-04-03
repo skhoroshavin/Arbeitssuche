@@ -1,14 +1,15 @@
 import {
   DEFAULT_SEARCH_PARAMS,
   DEFAULT_PREFERENCES,
-  type JobSearch,
-  type JobSearchInfo,
-  type SearchMode,
+} from "@/models/job-search/index.js";
+import type {
+  JobSearch,
+  JobSearchInfo,
+  SearchMode,
 } from "@/models/job-search/types.js";
 import { resolveJobSearch } from "@/models/job-search/index.js";
 import type { JobSearchRepository } from "@/repositories/job-search/types.js";
-import { createUniqueDerivedId } from "@/utils/id.js";
-import { Database, parseRow } from "@/utils/database.js";
+import { Database, createUniqueDerivedId, parseRow } from "@/utils/index.js";
 import typia from "typia";
 
 export function createSqliteJobSearchRepository(

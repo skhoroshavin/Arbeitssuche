@@ -1,4 +1,5 @@
-import { getStatusLabel } from "@/ui/constants";
+import { STATUS_LABELS } from "@/models/vacancy/index";
+import type { StatusLabelKey } from "@/models/vacancy/index";
 
 export type { SortKey };
 
@@ -53,7 +54,7 @@ export function FilterBar({
                   : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
               }`}
             >
-              {getStatusLabel(status)} ({count})
+              {STATUS_LABELS[status]} ({count})
             </button>
           );
         })}
@@ -69,7 +70,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "score", label: "Bewertung" },
 ];
 
-const FILTER_ORDER = [
+const FILTER_ORDER: StatusLabelKey[] = [
   "all",
   "new",
   "gone",

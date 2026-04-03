@@ -1,6 +1,6 @@
 import type { ApplicantRepository } from "@/repositories/applicant/types.js";
 import type { PdfRenderer } from "@/plugins/pdf-renderer/types.js";
-import { RESUME_TEMPLATES } from "@/models/applicant/types.js";
+import { RESUME_TEMPLATES } from "@/models/applicant/index.js";
 import { prepareResumeData } from "./prepare-resume-data.js";
 import { renderHTML, templatesDirectory } from "./renderer.js";
 
@@ -14,7 +14,7 @@ export class ResumeRenderer {
     applicantId: string,
     template: string,
   ): Promise<Buffer | Uint8Array> {
-    if (!template || !RESUME_TEMPLATES.includes(template)) {
+    if (!template || !isSupportedTemplate(template)) {
       throw new Error(
         `Invalid template. Must be one of: ${RESUME_TEMPLATES.join(", ")}`,
       );
@@ -25,4 +25,11 @@ export class ResumeRenderer {
     const html = renderHTML(templatesDirectory, template, resumeData);
     return this.pdfRenderer.htmlToPdf(html);
   }
+}
+
+function isSupportedTemplate(template: string): boolean {
+  for (const candidate of RESUME_TEMPLATES) {
+    if (candidate === template) return true;
+  }
+  return false;
 }

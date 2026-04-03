@@ -5,13 +5,11 @@ import {
   useApplicant,
   useDownloadResume,
   useConsultSearches,
-} from "@/ui/data/applicants";
-import { useApiKeyStatus } from "@/ui/data/settings";
-import {
+  useApiKeyStatus,
   useJobSearchListView,
   useCreateJobSearch,
   useDeleteJobSearch,
-} from "@/ui/data/job-searches";
+} from "@/ui/data";
 import { PageHeader, Loading } from "@/ui/components";
 import { EntityList } from "@/ui/pages/applicant/components";
 import { TemplateSelector } from "@/ui/pages/applicant/components";

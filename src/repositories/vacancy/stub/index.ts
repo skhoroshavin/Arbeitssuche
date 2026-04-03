@@ -3,8 +3,10 @@ import type { Activity } from "@/models/vacancy/types.js";
 import {
   EMPTY_VACANCY_LIST_OUTPUT,
   createVacancyListOutput,
-  type VacancyListOutput,
-  type VacancyRepository,
+} from "@/repositories/vacancy/output.js";
+import type {
+  VacancyListOutput,
+  VacancyRepository,
 } from "@/repositories/vacancy/types.js";
 
 export function createStubVacancyRepository(

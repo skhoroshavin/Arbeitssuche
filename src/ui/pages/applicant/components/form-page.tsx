@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { PageHeader, Loading } from "@/ui/components";
-import type { AutoSaveStatus } from "@/ui/hooks/auto-save-form";
+import type { AutoSaveStatus } from "@/ui/hooks";
 import { useAutoSaveHeader } from "@/ui/layout";
 
 export function ApplicantFormPage({

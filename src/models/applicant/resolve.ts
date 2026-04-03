@@ -1,5 +1,5 @@
 import type { Applicant, ApplicantPersonal } from "@/models/applicant/types.js";
-import { DEFAULT_APPLICANT } from "@/models/applicant/types.js";
+import { DEFAULT_APPLICANT } from "@/models/applicant/constants.js";
 
 export function resolveApplicant(data: ApplicantInput): Applicant {
   return {

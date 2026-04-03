@@ -6,17 +6,20 @@ import {
   useVacancyCoverLetter,
   useUpdateVacancyCoverLetter,
   useGenerateVacancyCoverLetter,
-} from "@/ui/data/job-searches";
-import type { VacancyWithStatus } from "@/ui/data/job-searches";
-import { useApiKeyStatus } from "@/ui/data/settings";
+} from "@/ui/data";
+import type { VacancyWithStatus } from "@/ui/data";
+import { useApiKeyStatus } from "@/ui/data";
 import { Card, SectionHeader, Loading, ArrowLeftIcon } from "@/ui/components";
 import { CoverLetterEditor } from "@/ui/pages/job-search/components";
 import { Markdown } from "@/ui/components";
 import { StatusBadge } from "@/ui/pages/job-search/components";
 import { useLayoutConfig } from "@/ui/layout";
 import type { ActivityType } from "@/models/vacancy/types";
-import { MATCH_SCORE_LABELS, getStatusLabel } from "@/ui/constants";
-import { TRANSITIONS } from "@/models/vacancy/index";
+import {
+  MATCH_SCORE_LABELS,
+  STATUS_LABELS,
+  TRANSITIONS,
+} from "@/models/vacancy/index";
 import { VacancyCommuteSection } from "./vacancy-commute-section";
 import { VacancyContactSection } from "./vacancy-contact-section";
 import { VacancyActivityForm } from "./vacancy-activity-form";
@@ -61,7 +64,7 @@ export default function JobSearchVacancyDetail() {
         <span className="font-mono text-sm text-gray-400 dark:text-gray-500">
           {hash}
         </span>
-        <StatusBadge status={status}>{getStatusLabel(status)}</StatusBadge>
+        <StatusBadge status={status}>{STATUS_LABELS[status]}</StatusBadge>
         <span className="text-sm text-gray-500 dark:text-gray-400">
           {MATCH_SCORE_LABELS[data.matchScore]}
         </span>

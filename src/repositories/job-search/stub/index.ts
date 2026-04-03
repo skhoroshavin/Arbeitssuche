@@ -1,13 +1,15 @@
 import {
   DEFAULT_SEARCH_PARAMS,
   DEFAULT_PREFERENCES,
-  type JobSearch,
-  type JobSearchInfo,
-  type SearchMode,
+} from "@/models/job-search/index.js";
+import type {
+  JobSearch,
+  JobSearchInfo,
+  SearchMode,
 } from "@/models/job-search/types.js";
 import { resolveJobSearch } from "@/models/job-search/index.js";
 import type { JobSearchRepository } from "@/repositories/job-search/types.js";
-import { createUniqueDerivedId } from "@/utils/id.js";
+import { createUniqueDerivedId } from "@/utils/index.js";
 
 export function createStubJobSearchRepository(
   initial?: Record<string, Partial<StubData>>,

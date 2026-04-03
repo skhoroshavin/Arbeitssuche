@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useParams, Link, Outlet } from "react-router";
-import { useJobSearch } from "@/ui/data/job-searches";
-import { useApplicantHeaderName } from "@/ui/data/applicants";
+import { useJobSearch, useApplicantHeaderName } from "@/ui/data";
 import { useLayoutConfig } from "@/ui/layout";
 import { HomeIcon, ChevronRightIcon } from "@/ui/components";
 

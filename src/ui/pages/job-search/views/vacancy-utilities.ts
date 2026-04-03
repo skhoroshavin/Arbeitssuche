@@ -1,4 +1,4 @@
-import type { VacancyWithStatus } from "@/ui/data/job-searches";
+import type { VacancyWithStatus } from "@/ui/data";
 import type { SortKey } from "./filter-bar";
 
 export function getCommuteSummary(

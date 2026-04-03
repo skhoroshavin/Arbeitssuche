@@ -1,8 +1,8 @@
 import { Link } from "react-router";
 import { Markdown } from "@/ui/components";
 import { StatusBadge } from "@/ui/pages/job-search/components";
-import { MATCH_SCORE_LABELS, getStatusLabel } from "@/ui/constants";
-import type { VacancyWithStatus } from "@/ui/data/job-searches";
+import { MATCH_SCORE_LABELS, STATUS_LABELS } from "@/models/vacancy/index";
+import type { VacancyWithStatus } from "@/ui/data";
 import { getCommuteSummary, getLatestActivityDate } from "./vacancy-utilities";
 
 export function VacancyCard({
@@ -27,7 +27,7 @@ export function VacancyCard({
               {v.hash}
             </span>
             <StatusBadge status={v.status}>
-              {getStatusLabel(v.status)}
+              {STATUS_LABELS[v.status]}
             </StatusBadge>
             <span className="text-xs text-gray-500 dark:text-gray-400">
               {MATCH_SCORE_LABELS[v.matchScore]}

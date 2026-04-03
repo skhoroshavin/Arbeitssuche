@@ -1,5 +1,5 @@
 import { Card, SectionHeader } from "@/ui/components";
-import { getStatusLabel } from "@/ui/constants";
+import { STATUS_LABELS } from "@/models/vacancy/index";
 import type { ActivityType } from "@/models/vacancy/types";
 
 export function ActivityHistory({
@@ -21,7 +21,7 @@ export function ActivityHistory({
               {a.date}
             </span>
             <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-200">
-              {getStatusLabel(a.type)}
+              {STATUS_LABELS[a.type]}
             </span>
             {a.notes && <span>{a.notes}</span>}
           </div>

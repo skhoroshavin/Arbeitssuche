@@ -3,8 +3,8 @@ import {
   useJobSearchCoverLetter,
   useUpdateJobSearchCoverLetter,
   useGenerateCoverLetter,
-} from "@/ui/data/job-searches";
-import { useApiKeyStatus } from "@/ui/data/settings";
+} from "@/ui/data";
+import { useApiKeyStatus } from "@/ui/data";
 import { Card, PageHeader, Loading } from "@/ui/components";
 import { CoverLetterEditor } from "@/ui/pages/job-search/components";
 

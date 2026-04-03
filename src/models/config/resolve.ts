@@ -4,7 +4,7 @@ import {
   DEFAULT_ASSESSMENT_MODEL,
   DEFAULT_COVER_LETTER_MODEL,
   DEFAULT_CONSULTATION_MODEL,
-} from "@/models/config/types.js";
+} from "@/models/config/constants.js";
 
 export interface ResolvedConfig {
   provider: LlmProvider;

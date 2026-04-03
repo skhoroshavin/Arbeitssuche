@@ -8,8 +8,11 @@ import type {
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
 import { withOpenedPage } from "@/plugins/page-utilities/index.js";
-import { extractAddressFromJsonLd, extractJsonLd } from "@/utils/json-ld.js";
-import { normalizeOptionalText } from "@/utils/text.js";
+import {
+  extractAddressFromJsonLd,
+  extractJsonLd,
+  normalizeOptionalText,
+} from "@/utils/index.js";
 
 export function createDmSite(browser: Browser): JobSite {
   return new DmSite(browser);

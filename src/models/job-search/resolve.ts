@@ -6,7 +6,7 @@ import type {
 import {
   DEFAULT_PREFERENCES,
   DEFAULT_SEARCH_PARAMS,
-} from "@/models/job-search/types.js";
+} from "@/models/job-search/constants.js";
 
 export function resolveJobSearch(data: JobSearchInput): JobSearch {
   return {

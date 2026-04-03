@@ -1,7 +1,6 @@
 import { useParams } from "react-router";
-import { useJobSearch, useUpdateJobSearch } from "@/ui/data/job-searches";
-import { useAutoSaveForm } from "@/ui/hooks/auto-save-form";
-import { useSiteListView } from "@/ui/data/job-search-crawl";
+import { useJobSearch, useUpdateJobSearch, useSiteListView } from "@/ui/data";
+import { useAutoSaveForm } from "@/ui/hooks";
 import type { SearchMode } from "@/models/job-search/types";
 import {
   Card,

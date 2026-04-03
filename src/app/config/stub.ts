@@ -1,4 +1,5 @@
-import { DEFAULT_CONFIG, type AppConfig } from "@/models/config/types.js";
+import { DEFAULT_CONFIG } from "@/models/config/index.js";
+import type { AppConfig } from "@/models/config/types.js";
 import type { ConfigRepository } from "./types.js";
 
 export function createStubConfigRepository(

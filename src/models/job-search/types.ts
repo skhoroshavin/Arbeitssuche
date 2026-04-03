@@ -1,10 +1,4 @@
-export const SEARCH_MODES = [
-  "employment",
-  "entry-level",
-  "apprenticeship",
-] as const;
-
-export type SearchMode = (typeof SEARCH_MODES)[number];
+export type SearchMode = "employment" | "entry-level" | "apprenticeship";
 
 export interface SearchParameters {
   searchTerm: string;
@@ -38,14 +32,3 @@ export interface ConsultationSuggestion {
   searchMode: SearchMode;
   reason: string;
 }
-
-export const DEFAULT_SEARCH_PARAMS: SearchParameters = {
-  searchTerm: "",
-  radiusKm: 30,
-  searchMode: "employment",
-  sources: [],
-};
-
-export const DEFAULT_PREFERENCES: SearchPreferences = {
-  freeText: [],
-};

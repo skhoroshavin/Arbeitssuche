@@ -6,7 +6,7 @@ import type { LlmClient } from "@/plugins/llm/types.js";
 import type { CommuteClient } from "@/plugins/commute/types.js";
 import type { JobSite } from "@/plugins/job-site/types.js";
 import type { Vacancy } from "@/models/vacancy/index.js";
-import type { ProgressEvent } from "@/models/events.js";
+import type { ProgressEvent } from "@/models/index.js";
 import { resolveSearchParameters } from "./resolve-search-parameters.js";
 import { scanVacancies } from "./scan.js";
 import { markUnseenAsGone } from "./unify.js";

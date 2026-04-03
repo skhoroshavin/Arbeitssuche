@@ -1,4 +1,4 @@
-import { STATUS_COLORS } from "@/ui/constants";
+import { STATUS_COLORS } from "@/models/vacancy/index";
 import type { VacancyStatus } from "@/models/vacancy/types";
 
 export function StatusBadge({

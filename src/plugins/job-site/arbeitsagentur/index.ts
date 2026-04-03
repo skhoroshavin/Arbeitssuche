@@ -6,7 +6,7 @@ import type {
   JobSite,
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
-import { formatAddressParts } from "@/utils/text.js";
+import { formatAddressParts } from "@/utils/index.js";
 
 export function createArbeitsagenturSite(
   browser: Browser,

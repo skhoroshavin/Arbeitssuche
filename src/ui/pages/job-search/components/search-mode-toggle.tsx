@@ -1,6 +1,5 @@
-import { SEARCH_MODES } from "@/models/job-search/types";
+import { SEARCH_MODES, SEARCH_MODE_LABELS } from "@/models/job-search/index";
 import type { SearchMode } from "@/models/job-search/types";
-import { SEARCH_MODE_LABELS } from "@/ui/constants";
 import { ToggleButton } from "@/ui/pages/job-search/components";
 
 export function SearchModeToggle({

@@ -1,16 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useApiKeyStatus } from "@/ui/data/settings";
-import { useJobSearchVacancyListView } from "@/ui/data/job-searches";
-import {
-  invalidateQuery,
-  jobSearchQueryKeys,
-} from "@/ui/data/job-search-query-keys";
-import {
-  useStartJobSearchCrawl,
-  useAbortJobSearchCrawl,
-} from "@/ui/data/job-search-crawl";
+import { useApiKeyStatus, useJobSearchVacancyListView } from "@/ui/data";
+import { invalidateQuery, jobSearchQueryKeys } from "@/ui/data";
+import { useStartJobSearchCrawl, useAbortJobSearchCrawl } from "@/ui/data";
 import { useJobProgress } from "@/ui/pages/job-search/hooks";
 import { PageHeader, EmptyState, Loading } from "@/ui/components";
 import { FilterBar } from "./filter-bar";

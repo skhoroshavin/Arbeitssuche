@@ -7,23 +7,6 @@ export interface VacancyListOutput {
   vacancies: Vacancy[];
 }
 
-export const EMPTY_VACANCY_LIST_OUTPUT: VacancyListOutput = {
-  generatedAt: "",
-  latestCrawl: "",
-  vacancies: [],
-};
-
-export function createVacancyListOutput(
-  vacancies: Vacancy[],
-  latestCrawl: string,
-): VacancyListOutput {
-  return {
-    generatedAt: new Date().toISOString(),
-    latestCrawl,
-    vacancies,
-  };
-}
-
 export interface VacancyRepository {
   loadAll(jobSearchId: string): VacancyListOutput;
   save(jobSearchId: string, vacancies: Vacancy[], latestCrawl: string): void;

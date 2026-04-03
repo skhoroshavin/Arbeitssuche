@@ -3,7 +3,7 @@ import {
   useLlmProviders,
   useProviderSecretActions,
   resolveSecret,
-} from "@/ui/data/settings";
+} from "@/ui/data";
 import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config/types";
 import { Card, PageHeader, SectionHeader, Loading } from "@/ui/components";
 import { ModelCombobox } from "@/ui/pages/settings/components";

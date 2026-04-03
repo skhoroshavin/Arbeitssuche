@@ -6,8 +6,8 @@ import {
   DialogTitle,
 } from "@headlessui/react";
 import type { ConsultationSuggestion } from "@/models/job-search/types";
+import { SEARCH_MODE_LABELS } from "@/models/job-search/index";
 import { Loading } from "@/ui/components";
-import { SEARCH_MODE_LABELS } from "@/ui/constants";
 import { useSelectionSet } from "@/ui/pages/applicant/hooks";
 
 export function ConsultationModal({

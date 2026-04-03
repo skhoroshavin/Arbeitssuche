@@ -1,12 +1,14 @@
 import {
-  DEFAULT_APPLICANT,
   type ApplicantPersonal,
   type Applicant,
   type ApplicantInfo,
 } from "@/models/applicant/types.js";
-import { resolveApplicant } from "@/models/applicant/index.js";
+import {
+  DEFAULT_APPLICANT,
+  resolveApplicant,
+} from "@/models/applicant/index.js";
 import type { ApplicantRepository } from "@/repositories/applicant/types.js";
-import { createUniqueDerivedId } from "@/utils/id.js";
+import { createUniqueDerivedId } from "@/utils/index.js";
 
 export function createStubApplicantRepository(
   initial?: Record<string, Applicant>,

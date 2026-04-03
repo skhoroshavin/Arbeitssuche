@@ -7,7 +7,7 @@ import type {
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
 import { extractAbsoluteLinks } from "@/plugins/page-utilities/index.js";
-import { normalizeOptionalText } from "@/utils/text.js";
+import { normalizeOptionalText } from "@/utils/index.js";
 
 export function createZalandoSite(browser: Browser): JobSite {
   return new ZalandoSite(browser);

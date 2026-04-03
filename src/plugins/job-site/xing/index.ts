@@ -11,8 +11,12 @@ import {
   extractAbsoluteLinks,
   withOpenedPage,
 } from "@/plugins/page-utilities/index.js";
-import { extractAddressFromJsonLd, extractJsonLd } from "@/utils/json-ld.js";
-import { normalizeMailtoHref, normalizeOptionalText } from "@/utils/text.js";
+import {
+  extractAddressFromJsonLd,
+  extractJsonLd,
+  normalizeMailtoHref,
+  normalizeOptionalText,
+} from "@/utils/index.js";
 
 export function createXingSite(browser: Browser): JobSite {
   return new XingSite(browser);

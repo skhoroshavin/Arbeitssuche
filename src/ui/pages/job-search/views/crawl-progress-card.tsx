@@ -1,6 +1,6 @@
 import { Card, SectionHeader } from "@/ui/components";
 import { ProgressLog } from "@/ui/pages/job-search/components";
-import type { ProgressEvent as CrawlEvent } from "@/models/events";
+import type { ProgressEvent as CrawlEvent } from "@/models/index";
 
 export function CrawlProgressCard({
   events,

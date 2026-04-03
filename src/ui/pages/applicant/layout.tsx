@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useParams, Link, Outlet } from "react-router";
-import { useApplicantHeaderName } from "@/ui/data/applicants";
+import { useApplicantHeaderName } from "@/ui/data";
 import { useLayoutConfig } from "@/ui/layout";
 import { HomeIcon } from "@/ui/components";
 

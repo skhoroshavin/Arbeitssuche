@@ -3,7 +3,7 @@ import {
   useCommuteProviderListView,
   useProviderSecretActions,
   resolveSecret,
-} from "@/ui/data/settings";
+} from "@/ui/data";
 import { PageHeader, Loading } from "@/ui/components";
 import { ProviderSecretCard } from "@/ui/pages/settings/components";
 
