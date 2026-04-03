@@ -1,9 +1,10 @@
-import { getStatusLabel } from "@/ui/constants";
+import { STATUS_LABELS } from "@/models/vacancy/index"
+import type { StatusLabelKey } from "@/models/vacancy/index"
 
-export type { SortKey };
+export type { SortKey }
 
 export function isSortKey(s: string): s is SortKey {
-  return SORT_OPTIONS.some((o) => o.key === s);
+  return SORT_OPTIONS.some((o) => o.key === s)
 }
 
 export function FilterBar({
@@ -13,11 +14,11 @@ export function FilterBar({
   setFilter,
   setSortBy,
 }: {
-  statusCounts: Record<string, number>;
-  filter: string;
-  sortBy: SortKey;
-  setFilter: (v: string) => void;
-  setSortBy: (v: SortKey) => void;
+  statusCounts: Record<string, number>
+  filter: string
+  sortBy: SortKey
+  setFilter: (v: string) => void
+  setSortBy: (v: SortKey) => void
 }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -41,8 +42,8 @@ export function FilterBar({
       </div>
       <div className="flex flex-wrap gap-2">
         {FILTER_ORDER.map((status) => {
-          const count = statusCounts[status] ?? 0;
-          if (status !== "all" && count === 0) return;
+          const count = statusCounts[status] ?? 0
+          if (status !== "all" && count === 0) return
           return (
             <button
               key={status}
@@ -53,13 +54,13 @@ export function FilterBar({
                   : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
               }`}
             >
-              {getStatusLabel(status)} ({count})
+              {STATUS_LABELS[status]} ({count})
             </button>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -67,9 +68,9 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "company", label: "Unternehmen" },
   { key: "commute", label: "Fahrtzeit" },
   { key: "score", label: "Bewertung" },
-];
+]
 
-const FILTER_ORDER = [
+const FILTER_ORDER: StatusLabelKey[] = [
   "all",
   "new",
   "gone",
@@ -81,6 +82,6 @@ const FILTER_ORDER = [
   "offered",
   "rejected",
   "not-interested",
-];
+]
 
-type SortKey = "date" | "company" | "commute" | "score";
+type SortKey = "date" | "company" | "commute" | "score"

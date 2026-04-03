@@ -34,5 +34,5 @@ export function ResumeModernPreview() {
       <rect x="90" y="76" width="22" height="2" rx="0.5" fill="#bbb" />
       <rect x="46" y="81" width="30" height="2" rx="0.5" fill="#888" />
     </svg>
-  );
+  )
 }

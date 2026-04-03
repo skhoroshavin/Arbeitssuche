@@ -1,10 +1,10 @@
 interface Window {
-  electronAPI?: ElectronAPI;
+  electronAPI?: ElectronAPI
 }
 
-declare const electronAPI: ElectronAPI | undefined;
+declare const electronAPI: ElectronAPI | undefined
 
 interface ElectronAPI {
-  invoke(channel: string, ...arguments_: unknown[]): Promise<unknown>;
-  on(channel: string, callback: (...arguments_: unknown[]) => void): () => void;
+  invoke(channel: string, ...arguments_: unknown[]): Promise<unknown>
+  on(channel: string, callback: (...arguments_: unknown[]) => void): () => void
 }

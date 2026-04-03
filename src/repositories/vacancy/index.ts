@@ -1,2 +1,2 @@
-export { createStubVacancyRepository } from "./stub/index.js";
-export { createSqliteVacancyRepository } from "./sqlite/index.js";
+export { createStubVacancyRepository } from "./stub"
+export { createSqliteVacancyRepository } from "./sqlite"

@@ -1,3 +1,3 @@
-import type { LlmClient } from "@/plugins/llm/types.js";
+import type { LlmClient } from "@/plugins/llm/types.js"
 
-export type LlmClientFactory = (model: string) => LlmClient;
+export type LlmClientFactory = (model: string) => LlmClient

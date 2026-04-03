@@ -1,16 +1,16 @@
-import { Card } from "@/ui/components";
-import type { ResumeTemplate } from "@/models/applicant/types";
-import { ResumeClassicPreview } from "./templates/resume-classic-preview";
-import { ResumeElegantPreview } from "./templates/resume-elegant-preview";
-import { ResumeModernPreview } from "./templates/resume-modern-preview";
-import { ResumeMinimalPreview } from "./templates/resume-minimal-preview";
+import { Card } from "@/ui/components"
+import type { ResumeTemplate } from "@/models/applicant/types"
+import { ResumeClassicPreview } from "./templates/resume-classic-preview"
+import { ResumeElegantPreview } from "./templates/resume-elegant-preview"
+import { ResumeModernPreview } from "./templates/resume-modern-preview"
+import { ResumeMinimalPreview } from "./templates/resume-minimal-preview"
 
 export function TemplateSelector({
   onSelect,
   isPending,
 }: {
-  onSelect: (template: ResumeTemplate) => void;
-  isPending: boolean;
+  onSelect: (template: ResumeTemplate) => void
+  isPending: boolean
 }) {
   return (
     <Card className="p-4">
@@ -31,7 +31,7 @@ export function TemplateSelector({
         ))}
       </div>
     </Card>
-  );
+  )
 }
 
 const TEMPLATE_OPTIONS: TemplateOption[] = [
@@ -59,11 +59,11 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     description: "Kopfleiste, Farbverlauf",
     preview: <ResumeMinimalPreview />,
   },
-];
+]
 
 interface TemplateOption {
-  value: ResumeTemplate;
-  label: string;
-  description: string;
-  preview: React.ReactNode;
+  value: ResumeTemplate
+  label: string
+  description: string
+  preview: React.ReactNode
 }

@@ -1,6 +1,6 @@
-import type { ActivityType, MatchScore, VacancyStatus } from "./types.js";
+import type { ActivityType, MatchScore, VacancyStatus } from "./types.js"
 
-export type StatusLabelKey = VacancyStatus | "all" | ActivityType;
+export type StatusLabelKey = VacancyStatus | "all" | ActivityType
 
 export const STATUS_LABELS: Record<StatusLabelKey, string> = {
   all: "Alle",
@@ -16,7 +16,7 @@ export const STATUS_LABELS: Record<StatusLabelKey, string> = {
   "not-interested": "Nicht interessant",
   found: "Gefunden",
   "not-found": "Nicht gefunden",
-};
+}
 
 export const MATCH_SCORE_LABELS: Record<MatchScore, string> = {
   "very-bad": "Sehr schlecht",
@@ -24,7 +24,7 @@ export const MATCH_SCORE_LABELS: Record<MatchScore, string> = {
   ok: "OK",
   good: "Gut",
   excellent: "Ausgezeichnet",
-};
+}
 
 export const STATUS_COLORS: Record<VacancyStatus, string> = {
   new: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
@@ -41,7 +41,7 @@ export const STATUS_COLORS: Record<VacancyStatus, string> = {
   rejected: "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300",
   "not-interested":
     "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300",
-};
+}
 
 const COLORS = {
   apply: "bg-blue-600 hover:bg-blue-700",
@@ -50,25 +50,25 @@ const COLORS = {
   reject: "bg-red-600 hover:bg-red-700",
   interview: "bg-indigo-600 hover:bg-indigo-700",
   dismiss: "bg-orange-600 hover:bg-orange-700",
-} as const;
+} as const
 
 export interface StatusAction {
-  type: ActivityType;
-  label: string;
-  color: string;
+  type: ActivityType
+  label: string
+  color: string
 }
 
 const NOT_INTERESTED_ACTION: StatusAction = {
   type: "not-interested",
   label: "Nicht interessant",
   color: COLORS.dismiss,
-};
+}
 
 const FOLLOW_UP_ACTIONS: StatusAction[] = [
   { type: "invited", label: "Einladen", color: COLORS.invite },
   { type: "offered", label: "Angebot", color: COLORS.offer },
   { type: "rejected", label: "Ablehnen", color: COLORS.reject },
-];
+]
 
 export const TRANSITIONS: Record<VacancyStatus, StatusAction[]> = {
   new: [
@@ -97,4 +97,4 @@ export const TRANSITIONS: Record<VacancyStatus, StatusAction[]> = {
   "not-interested": [
     { type: "applied", label: "Bewerben", color: COLORS.apply },
   ],
-};
+}

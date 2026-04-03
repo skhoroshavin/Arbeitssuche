@@ -1,11 +1,11 @@
-import { useRef } from "react";
-import { Link, Outlet, useLocation } from "react-router";
-import { useLayoutConfig } from "@/ui/layout";
-import { ArrowLeftIcon } from "@/ui/components";
+import { useRef } from "react"
+import { Link, Outlet, useLocation } from "react-router"
+import { useLayoutConfig } from "@/ui/layout"
+import { ArrowLeftIcon } from "@/ui/components"
 
 export default function SettingsLayout() {
-  const location = useLocation();
-  const returnTo = useRef(extractReturnTo(location.state));
+  const location = useLocation()
+  const returnTo = useRef(extractReturnTo(location.state))
 
   useLayoutConfig(
     () => ({
@@ -23,15 +23,15 @@ export default function SettingsLayout() {
       ),
     }),
     [],
-  );
+  )
 
-  return <Outlet />;
+  return <Outlet />
 }
 
 const navItems = [
   { to: "/settings", label: "Künstliche Intelligenz", end: true },
   { to: "/settings/maps", label: "Karten" },
-];
+]
 
 function extractReturnTo(state: unknown): string {
   if (
@@ -40,7 +40,7 @@ function extractReturnTo(state: unknown): string {
     "returnTo" in state &&
     typeof state.returnTo === "string"
   ) {
-    return state.returnTo;
+    return state.returnTo
   }
-  return "/";
+  return "/"
 }

@@ -1,14 +1,14 @@
-import { useEffect } from "react";
+import { useEffect } from "react"
 import {
   Dialog,
   DialogBackdrop,
   DialogPanel,
   DialogTitle,
-} from "@headlessui/react";
-import type { ConsultationSuggestion } from "@/models/job-search/types";
-import { Loading } from "@/ui/components";
-import { SEARCH_MODE_LABELS } from "@/ui/constants";
-import { useSelectionSet } from "@/ui/pages/applicant/hooks";
+} from "@headlessui/react"
+import type { ConsultationSuggestion } from "@/models/job-search/types"
+import { SEARCH_MODE_LABELS } from "@/models/job-search/index"
+import { Loading } from "@/ui/components"
+import { useSelectionSet } from "@/ui/pages/applicant/hooks"
 
 export function ConsultationModal({
   open,
@@ -19,24 +19,24 @@ export function ConsultationModal({
   onCreateSelected,
   isCreating,
 }: ConsultationModalProperties) {
-  const selection = useSelectionSet();
-  const { reset } = selection;
+  const selection = useSelectionSet()
+  const { reset } = selection
 
   useEffect(() => {
-    reset();
-  }, [suggestions, reset]);
+    reset()
+  }, [suggestions, reset])
 
   const toggleAll = () => {
-    if (selection.selected.size === suggestions.length) reset();
-    else selection.setAll(suggestions.length);
-  };
+    if (selection.selected.size === suggestions.length) reset()
+    else selection.setAll(suggestions.length)
+  }
 
   const handleCreate = () => {
     const items = suggestions.filter((_, index) =>
       selection.selected.has(index),
-    );
-    if (items.length > 0) onCreateSelected(items);
-  };
+    )
+    if (items.length > 0) onCreateSelected(items)
+  }
 
   return (
     <Dialog open={open} onClose={onClose} className="relative z-50">
@@ -95,17 +95,17 @@ export function ConsultationModal({
         </DialogPanel>
       </div>
     </Dialog>
-  );
+  )
 }
 
 interface ConsultationModalProperties {
-  open: boolean;
-  suggestions: ConsultationSuggestion[];
-  isLoading: boolean;
-  error?: Error | null;
-  onClose: () => void;
-  onCreateSelected: (selected: ConsultationSuggestion[]) => void;
-  isCreating: boolean;
+  open: boolean
+  suggestions: ConsultationSuggestion[]
+  isLoading: boolean
+  error?: Error | null
+  onClose: () => void
+  onCreateSelected: (selected: ConsultationSuggestion[]) => void
+  isCreating: boolean
 }
 
 function ModalBody({
@@ -115,13 +115,13 @@ function ModalBody({
   selected,
   onToggleItem,
 }: {
-  isLoading: boolean;
-  error?: Error | null;
-  suggestions: ConsultationSuggestion[];
-  selected: Set<number>;
-  onToggleItem: (index: number) => void;
+  isLoading: boolean
+  error?: Error | null
+  suggestions: ConsultationSuggestion[]
+  selected: Set<number>
+  onToggleItem: (index: number) => void
 }) {
-  let content: React.ReactNode;
+  let content: React.ReactNode
 
   if (isLoading) {
     content = (
@@ -131,19 +131,19 @@ function ModalBody({
           Analysiere Bewerberprofil...
         </p>
       </div>
-    );
+    )
   } else if (error) {
     content = (
       <p className="text-red-600 dark:text-red-400 text-center py-8">
         {error.message}
       </p>
-    );
+    )
   } else if (suggestions.length === 0) {
     content = (
       <p className="text-gray-500 dark:text-gray-400 text-center py-8">
         Keine Vorschläge verfügbar.
       </p>
-    );
+    )
   } else {
     content = (
       <div className="space-y-3">
@@ -174,8 +174,8 @@ function ModalBody({
           </label>
         ))}
       </div>
-    );
+    )
   }
 
-  return <div className="flex-1 overflow-y-auto p-4">{content}</div>;
+  return <div className="flex-1 overflow-y-auto p-4">{content}</div>
 }

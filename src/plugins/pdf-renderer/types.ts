@@ -1,3 +1,3 @@
 export interface PdfRenderer {
-  htmlToPdf(html: string): Promise<Buffer | Uint8Array>;
+  htmlToPdf(html: string): Promise<Buffer | Uint8Array>
 }

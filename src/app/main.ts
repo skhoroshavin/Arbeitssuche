@@ -6,27 +6,27 @@ import {
   safeStorage,
   session,
   shell,
-} from "electron";
-import path from "node:path";
-import { registerIpcHandlers } from "./ipc-handlers.js";
-import { registerAppProtocol } from "./protocol.js";
-import { createAppServices, createSqliteServiceContext } from "./index.js";
+} from "electron"
+import path from "node:path"
+import { registerIpcHandlers } from "./ipc.js"
+import { registerAppProtocol } from "./protocol.js"
+import { createAppServices, createSqliteServiceContext } from "."
 import {
   createStubSecretsRepository,
   createEncryptedSecretsRepository,
-} from "./secrets/index.js";
-import { createElectronStoreConfigRepository } from "./config/index.js";
-import { Database } from "@/utils/database.js";
-import { getDataDirectory, getSecretsPath } from "./data-paths.js";
+} from "./secrets"
+import { createElectronStoreConfigRepository } from "./config"
+import { Database } from "@/utils/index.js"
+import { getDataDirectory, getSecretsPath } from "./data-paths.js"
 
-let mainWindow: BrowserWindow | undefined;
+let mainWindow: BrowserWindow | undefined
 
-const isDevelopment = process.env.NODE_ENV === "development";
-const isTest = process.env.ELECTRON_TEST === "1";
+const isDevelopment = process.env.NODE_ENV === "development"
+const isTest = process.env.ELECTRON_TEST === "1"
 
 // Isolate Chrome user-data per test instance to avoid lock conflicts
 if (isTest && process.env.ELECTRON_TEST_DATA_DIR) {
-  app.setPath("userData", process.env.ELECTRON_TEST_DATA_DIR);
+  app.setPath("userData", process.env.ELECTRON_TEST_DATA_DIR)
 }
 
 // Register custom protocol before app is ready
@@ -40,90 +40,88 @@ if (!isDevelopment) {
         supportFetchAPI: true,
       },
     },
-  ]);
+  ])
 }
 
 void (async () => {
-  await app.whenReady();
+  await app.whenReady()
 
-  Menu.setApplicationMenu(null);
+  Menu.setApplicationMenu(null)
   const dataDirectory = isTest
     ? (process.env.ELECTRON_TEST_DATA_DIR ?? "data")
-    : getDataDirectory();
+    : getDataDirectory()
 
   // Register custom protocol handler for serving renderer files
   if (!isDevelopment) {
-    registerAppProtocol(getRendererDirectory());
+    registerAppProtocol(getRendererDirectory())
   }
 
   // Deny all permission requests (camera, microphone, geolocation, etc.)
   session.defaultSession.setPermissionRequestHandler((_wc, _perm, callback) =>
     callback(false),
-  );
+  )
 
-  const appDatabase = Database.open(
-    path.join(dataDirectory, "arbeitssuche.db"),
-  );
+  const appDatabase = Database.open(path.join(dataDirectory, "arbeitssuche.db"))
 
   const secretsRepo = isTest
     ? createStubSecretsRepository()
-    : createEncryptedSecretsRepository(getSecretsPath(), safeStorage);
+    : createEncryptedSecretsRepository(getSecretsPath(), safeStorage)
 
-  const configRepo = createElectronStoreConfigRepository();
+  const configRepo = createElectronStoreConfigRepository()
 
   const services = createAppServices(
     createSqliteServiceContext(appDatabase, secretsRepo, configRepo),
-  );
+  )
 
   registerIpcHandlers({
     services,
     getWebContents: () => mainWindow?.webContents,
-  });
+  })
 
-  await createAndShowWindow();
+  await createAndShowWindow()
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createAndShowWindow().catch(console.error);
+      createAndShowWindow().catch(console.error)
     }
-  });
+  })
 
   app.on("window-all-closed", () => {
-    app.quit();
-  });
+    app.quit()
+  })
 
   app.on("before-quit", () => {
-    appDatabase.close();
-  });
-})();
+    appDatabase.close()
+  })
+})()
 
 function getRendererDirectory(): string {
-  return path.join(__dirname, "../renderer");
+  return path.join(__dirname, "../renderer")
 }
 
 async function createAndShowWindow(): Promise<void> {
-  mainWindow = createBrowserWindow();
+  mainWindow = createBrowserWindow()
   await (isDevelopment
     ? mainWindow.loadURL("http://localhost:5173")
-    : mainWindow.loadURL("app://./"));
+    : mainWindow.loadURL("app://./"))
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("http://") || url.startsWith("https://")) {
-      shell.openExternal(url).catch(console.error);
+      shell.openExternal(url).catch(console.error)
     }
-    return { action: "deny" };
-  });
+    return { action: "deny" }
+  })
 
   mainWindow.webContents.on("will-navigate", (event, url) => {
     const isInternal =
-      url.startsWith("http://localhost:") || url.startsWith("app://");
+      url.startsWith("http://localhost:") || url.startsWith("app://")
     if (!isInternal) {
-      event.preventDefault();
+      event.preventDefault()
     }
-  });
+  })
 
   mainWindow.on("closed", () => {
-    mainWindow = undefined;
-  });
+    mainWindow = undefined
+  })
 }
 
 function createBrowserWindow(): BrowserWindow {
@@ -139,5 +137,5 @@ function createBrowserWindow(): BrowserWindow {
       sandbox: true,
       devTools: isDevelopment || isTest,
     },
-  });
+  })
 }

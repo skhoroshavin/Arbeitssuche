@@ -1,4 +1,4 @@
-import type { QueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query"
 
 export const jobSearchQueryKeys = {
   listRoot: () => ["job-searches"] as const,
@@ -12,11 +12,11 @@ export const jobSearchQueryKeys = {
     ["job-search-vacancy", id, hash] as const,
   vacancyCoverLetter: (id: string, hash: string) =>
     ["vacancy-cover-letter", id, hash] as const,
-};
+}
 
 export function invalidateQuery(
   queryClient: QueryClient,
   key: readonly unknown[],
 ) {
-  return queryClient.invalidateQueries({ queryKey: key });
+  return queryClient.invalidateQueries({ queryKey: key })
 }

@@ -4,7 +4,7 @@ import type {
   MatchScore,
   VacancyContact,
   VacancyDTO,
-} from "@/models/vacancy/types.js";
+} from "@/models/vacancy/types.js"
 
 export function resolveVacancy(data: Partial<VacancyDTO>): VacancyDTO {
   return {
@@ -22,47 +22,47 @@ export function resolveVacancy(data: Partial<VacancyDTO>): VacancyDTO {
     commute: resolveCommute(data.commute),
     activityHistory: resolveActivityHistory(data.activityHistory),
     active: resolveFlag(data.active, true),
-  };
+  }
 }
 
-const DEFAULT_CONTACT: VacancyContact = {};
+const DEFAULT_CONTACT: VacancyContact = {}
 
 function resolveStringList(values?: string[]): string[] {
-  return values ?? [];
+  return values ?? []
 }
 
 function resolveText(value?: string): string {
-  return value ?? "";
+  return value ?? ""
 }
 
 function resolveCommute(
   commute?: Record<string, CommuteInfo>,
 ): Record<string, CommuteInfo> {
-  return commute ?? DEFAULT_COMMUTE;
+  return commute ?? DEFAULT_COMMUTE
 }
 
-const DEFAULT_COMMUTE: Record<string, CommuteInfo> = {};
+const DEFAULT_COMMUTE: Record<string, CommuteInfo> = {}
 
 function resolveActivityHistory(activityHistory?: Activity[]): Activity[] {
-  return activityHistory ?? DEFAULT_ACTIVITY_HISTORY;
+  return activityHistory ?? DEFAULT_ACTIVITY_HISTORY
 }
 
-const DEFAULT_ACTIVITY_HISTORY: Activity[] = [];
+const DEFAULT_ACTIVITY_HISTORY: Activity[] = []
 
 function resolveFlag(value: boolean | undefined, fallback: boolean): boolean {
-  return value ?? fallback;
+  return value ?? fallback
 }
 
 function resolveMatchScore(value?: MatchScore): MatchScore {
-  return value ?? DEFAULT_MATCH_SCORE;
+  return value ?? DEFAULT_MATCH_SCORE
 }
 
-const DEFAULT_MATCH_SCORE: MatchScore = "ok";
+const DEFAULT_MATCH_SCORE: MatchScore = "ok"
 
 function resolveVacancyContact(contact?: VacancyContact): VacancyContact {
   return {
     name: contact?.name,
     email: contact?.email,
     phone: contact?.phone,
-  };
+  }
 }

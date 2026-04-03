@@ -43,5 +43,5 @@ export function ResumeClassicPreview() {
       <rect x="10" y="140" width="25" height="2" rx="0.5" fill="#999" />
       <rect x="45" y="140" width="25" height="2" rx="0.5" fill="#999" />
     </svg>
-  );
+  )
 }

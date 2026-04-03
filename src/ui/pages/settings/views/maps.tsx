@@ -3,15 +3,15 @@ import {
   useCommuteProviderListView,
   useProviderSecretActions,
   resolveSecret,
-} from "@/ui/data/settings";
-import { PageHeader, Loading } from "@/ui/components";
-import { ProviderSecretCard } from "@/ui/pages/settings/components";
+} from "@/ui/data"
+import { PageHeader, Loading } from "@/ui/components"
+import { ProviderSecretCard } from "@/ui/pages/settings/components"
 
 export default function SettingsMaps() {
-  const mapData = useMapSettingsData();
-  const actions = useProviderSecretActions("commute", mapData.providerId);
+  const mapData = useMapSettingsData()
+  const actions = useProviderSecretActions("commute", mapData.providerId)
 
-  if (mapData.isLoading) return <Loading />;
+  if (mapData.isLoading) return <Loading />
 
   return (
     <>
@@ -28,16 +28,14 @@ export default function SettingsMaps() {
         />
       )}
     </>
-  );
+  )
 }
 
 function useMapSettingsData() {
-  const { data: secrets, isLoading } = useCommuteSecrets();
-  const { data: providers } = useCommuteProviderListView();
-  const provider = providers.find(
-    (candidate) => candidate.id === "google-maps",
-  );
-  const providerId = provider ? provider.id : "google-maps";
-  const secret = resolveSecret(secrets, providerId);
-  return { isLoading, provider, providerId, ...secret };
+  const { data: secrets, isLoading } = useCommuteSecrets()
+  const { data: providers } = useCommuteProviderListView()
+  const provider = providers.find((candidate) => candidate.id === "google-maps")
+  const providerId = provider ? provider.id : "google-maps"
+  const secret = resolveSecret(secrets, providerId)
+  return { isLoading, provider, providerId, ...secret }
 }

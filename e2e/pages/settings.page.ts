@@ -1,50 +1,50 @@
-import type { Locator, Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test"
 
 export class SettingsPage {
-  readonly page: Page;
-  readonly heading: Locator;
+  readonly page: Page
+  readonly heading: Locator
 
   constructor(page: Page) {
-    this.page = page;
-    this.heading = page.getByRole("heading", { name: "Einstellungen" });
+    this.page = page
+    this.heading = page.getByRole("heading", { name: "Einstellungen" })
   }
 
   async goto() {
-    await this.page.goto("/settings");
+    await this.page.goto("/settings")
   }
 
   navLink(name: string): Locator {
-    return this.page.getByRole("link", { name, exact: true });
+    return this.page.getByRole("link", { name, exact: true })
   }
 
   replaceButton(label: string): Locator {
-    return this.page.getByRole("button", { name: `${label} ersetzen` });
+    return this.page.getByRole("button", { name: `${label} ersetzen` })
   }
 
   clearButton(label: string): Locator {
-    return this.page.getByRole("button", { name: `${label} löschen` });
+    return this.page.getByRole("button", { name: `${label} löschen` })
   }
 
   addButton(label: string): Locator {
-    return this.page.getByRole("button", { name: `${label} hinzufügen` });
+    return this.page.getByRole("button", { name: `${label} hinzufügen` })
   }
 
   tokenInput(label: string): Locator {
-    return this.page.getByRole("textbox", { name: label });
+    return this.page.getByRole("textbox", { name: label })
   }
 
   saveFieldButton(label: string): Locator {
-    return this.page.getByRole("button", { name: `${label} speichern` });
+    return this.page.getByRole("button", { name: `${label} speichern` })
   }
 
   cancelButton(label: string): Locator {
-    return this.page.getByRole("button", { name: `${label} abbrechen` });
+    return this.page.getByRole("button", { name: `${label} abbrechen` })
   }
 
   providerButton(name: string): Locator {
     return this.page.getByRole("button", { name, exact: false }).filter({
       has: this.page.locator("div.font-medium"),
-    });
+    })
   }
 
   modelSelect(label: string): Locator {
@@ -52,15 +52,15 @@ export class SettingsPage {
       has: this.page.locator("..").filter({
         has: this.page.getByText(label, { exact: true }),
       }),
-    });
+    })
   }
 
   async selectProvider(name: string) {
-    await this.providerButton(name).click();
+    await this.providerButton(name).click()
   }
 
   testButton(label: string): Locator {
-    return this.page.getByRole("button", { name: `${label} testen` });
+    return this.page.getByRole("button", { name: `${label} testen` })
   }
 
   testResult(): Locator {
@@ -68,12 +68,12 @@ export class SettingsPage {
       .locator("[class*='text-green'], [class*='text-red']")
       .filter({
         hasText: /(Gültig|HTTP|API-Status|Kein Schlüssel)/,
-      });
+      })
   }
 
   async replaceAndSave(label: string, value: string) {
-    await this.replaceButton(label).click();
-    await this.tokenInput(label).fill(value);
-    await this.saveFieldButton(label).click();
+    await this.replaceButton(label).click()
+    await this.tokenInput(label).fill(value)
+    await this.saveFieldButton(label).click()
   }
 }

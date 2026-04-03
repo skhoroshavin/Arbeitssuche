@@ -2,13 +2,13 @@ import {
   createModelRegistry,
   createOpenAICompatibleClient,
   normalizeFlatPricing,
-} from "@/plugins/openai-compatible/index.js";
+} from "@/plugins/openai-compatible/index.js"
 import type {
   LlmClient,
   LlmModelInfo,
   LlmModelRegistry,
   LlmProviderInfo,
-} from "@/plugins/llm/types.js";
+} from "@/plugins/llm/types.js"
 
 export function createRequestyClient(apiKey: string, model: string): LlmClient {
   return createOpenAICompatibleClient(
@@ -16,7 +16,7 @@ export function createRequestyClient(apiKey: string, model: string): LlmClient {
     apiKey,
     model,
     "Requesty",
-  );
+  )
 }
 
 export const requestyProviderInfo: LlmProviderInfo = {
@@ -31,7 +31,7 @@ export const requestyProviderInfo: LlmProviderInfo = {
     "5. Kopiere den Schlüssel",
     "6. Füge ihn oben ein",
   ].join("\n"),
-};
+}
 
 export function createRequestyModelRegistry(): LlmModelRegistry {
   const inner = createModelRegistry(
@@ -41,59 +41,59 @@ export function createRequestyModelRegistry(): LlmModelRegistry {
       name: typeof m.name === "string" ? m.name : deriveModelName(String(m.id)),
       pricing: normalizeFlatPricing(m),
     }),
-  );
+  )
 
-  return new EuFilteredModelRegistry(inner);
+  return new EuFilteredModelRegistry(inner)
 }
 
 class EuFilteredModelRegistry implements LlmModelRegistry {
   constructor(private readonly inner: LlmModelRegistry) {}
 
   async fetchModels(): Promise<LlmModelInfo[]> {
-    const all = await this.inner.fetchModels();
-    return filterEuAndDeduplicate(all);
+    const all = await this.inner.fetchModels()
+    return filterEuAndDeduplicate(all)
   }
 }
 
 function filterEuAndDeduplicate(models: LlmModelInfo[]): LlmModelInfo[] {
-  const seen = new Map<string, LlmModelInfo>();
+  const seen = new Map<string, LlmModelInfo>()
   for (const model of models) {
-    const { baseId, region } = splitRegion(model.id);
-    if (region !== undefined && !isEuRegion(region)) continue;
+    const { baseId, region } = splitRegion(model.id)
+    if (region !== undefined && !isEuRegion(region)) continue
     if (!seen.has(baseId)) {
-      seen.set(baseId, { ...model, id: baseId });
+      seen.set(baseId, { ...model, id: baseId })
     }
   }
-  return [...seen.values()];
+  return [...seen.values()]
 }
 
 function deriveModelName(id: string): string {
-  const slash = id.indexOf("/");
-  const base = slash === -1 ? id : id.slice(slash + 1);
-  const { baseId: withoutRegion } = splitRegion(base);
-  const parts = withoutRegion.split("-");
-  const result: string[] = [];
+  const slash = id.indexOf("/")
+  const base = slash === -1 ? id : id.slice(slash + 1)
+  const { baseId: withoutRegion } = splitRegion(base)
+  const parts = withoutRegion.split("-")
+  const result: string[] = []
   for (const part of parts) {
-    const isNumeric = /^\d/.test(part);
-    const previous = result.at(-1);
+    const isNumeric = /^\d/.test(part)
+    const previous = result.at(-1)
     if (isNumeric && previous && /^\d/.test(previous)) {
-      result[result.length - 1] += `.${part}`;
+      result[result.length - 1] += `.${part}`
     } else {
-      result.push(part.charAt(0).toUpperCase() + part.slice(1));
+      result.push(part.charAt(0).toUpperCase() + part.slice(1))
     }
   }
-  return result.join(" ");
+  return result.join(" ")
 }
 
 function isEuRegion(region: string): boolean {
-  return EU_REGIONS.has(region) || region.startsWith("eu-");
+  return EU_REGIONS.has(region) || region.startsWith("eu-")
 }
 
 function splitRegion(id: string): { baseId: string; region?: string } {
-  const at = id.lastIndexOf("@");
+  const at = id.lastIndexOf("@")
   return at === -1
     ? { baseId: id, region: undefined }
-    : { baseId: id.slice(0, at), region: id.slice(at + 1) };
+    : { baseId: id.slice(0, at), region: id.slice(at + 1) }
 }
 
 const EU_REGIONS = new Set([
@@ -107,4 +107,4 @@ const EU_REGIONS = new Set([
   "italynorth",
   "polandcentral",
   "spaincentral",
-]);
+])

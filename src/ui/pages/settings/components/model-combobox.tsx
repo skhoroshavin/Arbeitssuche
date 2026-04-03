@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo } from "react"
 import {
   Combobox,
   ComboboxInput,
   ComboboxOptions,
   ComboboxOption,
-} from "@headlessui/react";
-import type { LlmModel } from "@/models/config/types";
+} from "@headlessui/react"
+import type { LlmModel } from "@/models/config/types"
 
 export function ModelCombobox({
   models,
@@ -14,28 +14,28 @@ export function ModelCombobox({
   label,
   isLoading,
 }: {
-  models: LlmModel[];
-  value: string;
-  onChange: (id: string) => void;
-  label: string;
-  isLoading: boolean;
+  models: LlmModel[]
+  value: string
+  onChange: (id: string) => void
+  label: string
+  isLoading: boolean
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState("")
 
   const filtered = useMemo(() => {
-    const q = query.toLowerCase();
+    const q = query.toLowerCase()
     const list = q
       ? models.filter(
           (m) =>
             m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q),
         )
-      : models;
-    return list.slice(0, MAX_VISIBLE);
-  }, [models, query]);
+      : models
+    return list.slice(0, MAX_VISIBLE)
+  }, [models, query])
 
-  const grouped = useMemo(() => groupByProvider(filtered), [filtered]);
+  const grouped = useMemo(() => groupByProvider(filtered), [filtered])
 
-  const selected = models.find((m) => m.id === value);
+  const selected = models.find((m) => m.id === value)
 
   return (
     <div className="space-y-1">
@@ -45,7 +45,7 @@ export function ModelCombobox({
       <Combobox
         value={value}
         onChange={(v: string | null) => {
-          if (v !== null) onChange(v);
+          if (v !== null) onChange(v)
         }}
         onClose={() => setQuery("")}
         immediate
@@ -102,28 +102,28 @@ export function ModelCombobox({
         </div>
       </Combobox>
     </div>
-  );
+  )
 }
 
 function formatPrice(price: string): string {
-  const n = Number.parseFloat(price);
-  if (Number.isNaN(n) || n === 0) return "kostenlos";
-  return `$${(n * 1_000_000).toFixed(2)}`;
+  const n = Number.parseFloat(price)
+  if (Number.isNaN(n) || n === 0) return "kostenlos"
+  return `$${(n * 1_000_000).toFixed(2)}`
 }
 
 function groupByProvider(models: LlmModel[]): Map<string, LlmModel[]> {
-  const groups = new Map<string, LlmModel[]>();
+  const groups = new Map<string, LlmModel[]>()
   for (const m of models) {
-    const slash = m.id.indexOf("/");
-    const provider = slash > 0 ? m.id.slice(0, slash) : "other";
-    let list = groups.get(provider);
+    const slash = m.id.indexOf("/")
+    const provider = slash > 0 ? m.id.slice(0, slash) : "other"
+    let list = groups.get(provider)
     if (!list) {
-      list = [];
-      groups.set(provider, list);
+      list = []
+      groups.set(provider, list)
     }
-    list.push(m);
+    list.push(m)
   }
-  return groups;
+  return groups
 }
 
-const MAX_VISIBLE = 50;
+const MAX_VISIBLE = 50

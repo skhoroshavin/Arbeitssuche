@@ -2,8 +2,8 @@ export function Section({
   title,
   children,
 }: {
-  title: string;
-  children: React.ReactNode;
+  title: string
+  children: React.ReactNode
 }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
@@ -12,15 +12,15 @@ export function Section({
       </h3>
       <div className="space-y-3">{children}</div>
     </div>
-  );
+  )
 }
 
 export function AddButton({
   onClick,
   children,
 }: {
-  onClick: () => void;
-  children: React.ReactNode;
+  onClick: () => void
+  children: React.ReactNode
 }) {
   return (
     <button
@@ -30,7 +30,7 @@ export function AddButton({
     >
       + {children}
     </button>
-  );
+  )
 }
 
 export function FieldArrayCard({
@@ -38,9 +38,9 @@ export function FieldArrayCard({
   footer,
   children,
 }: {
-  onRemove: () => void;
-  footer?: React.ReactNode;
-  children: React.ReactNode;
+  onRemove: () => void
+  footer?: React.ReactNode
+  children: React.ReactNode
 }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-2">
@@ -52,11 +52,11 @@ export function FieldArrayCard({
         <RemoveButton onClick={onRemove} />
       </div>
     </div>
-  );
+  )
 }
 
 export function FieldGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 gap-2">{children}</div>;
+  return <div className="grid grid-cols-2 gap-2">{children}</div>
 }
 
 export function RemoveButton({ onClick }: { onClick: () => void }) {
@@ -68,5 +68,5 @@ export function RemoveButton({ onClick }: { onClick: () => void }) {
     >
       Entfernen
     </button>
-  );
+  )
 }

@@ -1,5 +1,5 @@
-import * as cheerio from "cheerio/slim";
-import type { Browser, OpenPageOptions } from "@/plugins/browser/types.js";
+import * as cheerio from "cheerio/slim"
+import type { Browser, OpenPageOptions } from "@/plugins/browser/types.js"
 
 export async function withOpenedPage<T>(
   browser: Browser,
@@ -7,11 +7,11 @@ export async function withOpenedPage<T>(
   extract: (html: string) => T | Promise<T>,
   options?: OpenPageOptions,
 ): Promise<T> {
-  const page = await browser.openPage(url, options);
+  const page = await browser.openPage(url, options)
   try {
-    return await extract(page.html);
+    return await extract(page.html)
   } finally {
-    await page.close();
+    await page.close()
   }
 }
 
@@ -19,22 +19,22 @@ export function extractAbsoluteLinks(
   html: string,
   options: LinkExtractionOptions,
 ): string[] {
-  const $ = cheerio.load(html);
-  const urls = new Set<string>();
+  const $ = cheerio.load(html)
+  const urls = new Set<string>()
   $(options.selector).each((_index, element) => {
-    const href = $(element).attr("href");
+    const href = $(element).attr("href")
     if (!href || !options.hrefPattern.test(href)) {
-      return;
+      return
     }
 
-    const full = href.startsWith("http") ? href : `${options.baseUrl}${href}`;
-    urls.add(full);
-  });
-  return [...urls];
+    const full = href.startsWith("http") ? href : `${options.baseUrl}${href}`
+    urls.add(full)
+  })
+  return [...urls]
 }
 
 interface LinkExtractionOptions {
-  selector: string;
-  hrefPattern: RegExp;
-  baseUrl: string;
+  selector: string
+  hrefPattern: RegExp
+  baseUrl: string
 }

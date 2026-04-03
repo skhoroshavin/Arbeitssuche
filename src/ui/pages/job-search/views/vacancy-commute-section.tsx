@@ -1,11 +1,11 @@
-import type { CommuteInfo } from "@/models/vacancy/types";
+import type { CommuteInfo } from "@/models/vacancy/types"
 
 export function VacancyCommuteSection({
   commute,
 }: {
-  commute: Record<string, CommuteInfo>;
+  commute: Record<string, CommuteInfo>
 }) {
-  if (Object.keys(commute).length === 0) return;
+  if (Object.keys(commute).length === 0) return
 
   return (
     <div className="mt-4">
@@ -27,5 +27,5 @@ export function VacancyCommuteSection({
         ))}
       </div>
     </div>
-  );
+  )
 }

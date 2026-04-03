@@ -2,8 +2,8 @@ export function SectionHeader({
   className = "",
   children,
 }: {
-  className?: string;
-  children: React.ReactNode;
+  className?: string
+  children: React.ReactNode
 }) {
   return (
     <h2
@@ -11,5 +11,5 @@ export function SectionHeader({
     >
       {children}
     </h2>
-  );
+  )
 }

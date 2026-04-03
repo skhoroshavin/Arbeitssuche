@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { PageHeader, EmptyState, Card, Loading } from "@/ui/components";
+import { useState } from "react"
+import { PageHeader, EmptyState, Card, Loading } from "@/ui/components"
 
 export function EntityList({
   title,
@@ -14,10 +14,10 @@ export function EntityList({
   onNavigate,
   headerExtra,
 }: EntityListProperties) {
-  const [newName, setNewName] = useState("");
-  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("")
+  const [showCreate, setShowCreate] = useState(false)
 
-  if (isLoading) return <Loading />;
+  if (isLoading) return <Loading />
 
   const createButton = (
     <button
@@ -26,7 +26,7 @@ export function EntityList({
     >
       {buttonLabel}
     </button>
-  );
+  )
 
   return (
     <div className="space-y-4">
@@ -42,12 +42,12 @@ export function EntityList({
         <Card className="p-4">
           <form
             onSubmit={async (event) => {
-              event.preventDefault();
-              if (!newName) return;
+              event.preventDefault()
+              if (!newName) return
               try {
-                await onCreateSubmit(newName);
-                setNewName("");
-                setShowCreate(false);
+                await onCreateSubmit(newName)
+                setNewName("")
+                setShowCreate(false)
               } catch {
                 // error displayed via createError prop
               }
@@ -62,8 +62,8 @@ export function EntityList({
                 onChange={(event) => setNewName(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Escape") {
-                    setNewName("");
-                    setShowCreate(false);
+                    setNewName("")
+                    setShowCreate(false)
                   }
                 }}
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -94,8 +94,8 @@ export function EntityList({
             </span>
             <button
               onClick={(event) => {
-                event.stopPropagation();
-                onDelete(item);
+                event.stopPropagation()
+                onDelete(item)
               }}
               className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
             >
@@ -106,19 +106,19 @@ export function EntityList({
         {items.length === 0 && <EmptyState message={emptyMessage} />}
       </div>
     </div>
-  );
+  )
 }
 
 interface EntityListProperties {
-  title?: string;
-  buttonLabel: string;
-  placeholder: string;
-  emptyMessage: string;
-  items: { id: string; label: string }[];
-  isLoading: boolean;
-  onCreateSubmit: (name: string) => Promise<void>;
-  createError?: Error;
-  onDelete: (item: { id: string; label: string }) => void;
-  onNavigate: (id: string) => void;
-  headerExtra?: React.ReactNode;
+  title?: string
+  buttonLabel: string
+  placeholder: string
+  emptyMessage: string
+  items: { id: string; label: string }[]
+  isLoading: boolean
+  onCreateSubmit: (name: string) => Promise<void>
+  createError?: Error
+  onDelete: (item: { id: string; label: string }) => void
+  onNavigate: (id: string) => void
+  headerExtra?: React.ReactNode
 }

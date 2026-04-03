@@ -1,11 +1,11 @@
-import type { ProgressEvent } from "@/models/events.js";
+import type { ProgressEvent } from "@/models/index.js"
 
 export function ProgressLog({
   events,
   scrollable,
 }: {
-  events: ProgressEvent[];
-  scrollable?: boolean;
+  events: ProgressEvent[]
+  scrollable?: boolean
 }) {
   return (
     <div
@@ -15,5 +15,5 @@ export function ProgressLog({
         <div key={index}>{progressEvent.message}</div>
       ))}
     </div>
-  );
+  )
 }

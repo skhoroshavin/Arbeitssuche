@@ -1,16 +1,16 @@
-import { useRef, useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router";
-import { useScrollRestoration } from "./use-scroll-restoration";
+import { useRef, useState } from "react"
+import { Link, NavLink, Outlet, useLocation } from "react-router"
+import { useScrollRestoration } from "./use-scroll-restoration"
 import {
   LayoutContext,
   useLayout,
   defaultLayoutConfig,
   type LayoutConfig,
-} from "./layout-context";
-import { CogIcon } from "@/ui/components";
+} from "./layout-context"
+import { CogIcon } from "@/ui/components"
 
 export function AppLayout() {
-  const [config, setConfig] = useState<LayoutConfig>(defaultLayoutConfig);
+  const [config, setConfig] = useState<LayoutConfig>(defaultLayoutConfig)
 
   return (
     <LayoutContext.Provider value={{ config, setConfig }}>
@@ -19,13 +19,13 @@ export function AppLayout() {
         <MainArea />
       </div>
     </LayoutContext.Provider>
-  );
+  )
 }
 
 function Sidebar() {
-  const { sidebarTitle, sidebarNavItems } = useLayout();
-  const { pathname, search } = useLocation();
-  const isSettings = pathname.startsWith("/settings");
+  const { sidebarTitle, sidebarNavItems } = useLayout()
+  const { pathname, search } = useLocation()
+  const isSettings = pathname.startsWith("/settings")
 
   return (
     <aside className="w-64 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-screen">
@@ -64,14 +64,14 @@ function Sidebar() {
         </NavLink>
       </div>
     </aside>
-  );
+  )
 }
 
 function MainArea() {
-  const { headerTitle, headerBackLink, headerExtra } = useLayout();
-  const location = useLocation();
-  const mainReference = useRef<HTMLElement>(null);
-  useScrollRestoration(mainReference, location.pathname + location.search);
+  const { headerTitle, headerBackLink, headerExtra } = useLayout()
+  const location = useLocation()
+  const mainReference = useRef<HTMLElement>(null)
+  useScrollRestoration(mainReference, location.pathname + location.search)
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
@@ -95,7 +95,7 @@ function MainArea() {
         </div>
       </main>
     </div>
-  );
+  )
 }
 
 function navLinkClassName({ isActive }: { isActive: boolean }) {
@@ -103,5 +103,5 @@ function navLinkClassName({ isActive }: { isActive: boolean }) {
     isActive
       ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium"
       : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-  }`;
+  }`
 }

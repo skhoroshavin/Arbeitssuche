@@ -1,39 +1,39 @@
-import { test, describe, expect } from "vitest";
-import path from "node:path";
-import { createDmSite } from "./index";
-import { createStubBrowser } from "@/plugins/browser/index.js";
+import { test, describe, expect } from "vitest"
+import path from "node:path"
+import { createDmSite } from "."
+import { createStubBrowser } from "@/plugins/browser/index.js"
 
 describe("dm", () => {
   test("getVacancyList returns absolute URLs from search page", async () => {
-    const browser = createStubBrowser(SAMPLES_DIR);
-    const site = createDmSite(browser);
+    const browser = createStubBrowser(SAMPLES_DIR)
+    const site = createDmSite(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
       query: "",
       mode: "employment",
-    });
-    expect(urls.length > 0).toBeTruthy();
+    })
+    expect(urls.length > 0).toBeTruthy()
     for (const url of urls) {
-      expect(url).toMatch(/^https?:\/\//);
+      expect(url).toMatch(/^https?:\/\//)
     }
-  });
+  })
 
   test("getVacancyDetails returns title and company", async () => {
-    const browser = createStubBrowser(SAMPLES_DIR);
-    const site = createDmSite(browser);
+    const browser = createStubBrowser(SAMPLES_DIR)
+    const site = createDmSite(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
       query: "",
       mode: "employment",
-    });
-    const vacancy = await site.getVacancyDetails(urls[0]);
+    })
+    const vacancy = await site.getVacancyDetails(urls[0])
     expect(
       typeof vacancy.title === "string" && vacancy.title.length > 0,
-    ).toBeTruthy();
+    ).toBeTruthy()
     expect(
       typeof vacancy.company === "string" && vacancy.company.length > 0,
-    ).toBeTruthy();
-  });
+    ).toBeTruthy()
+  })
 
   test("getVacancyDetails returns raw HTML description from JSON-LD", async () => {
     const html = `
@@ -49,19 +49,19 @@ describe("dm", () => {
         }
         </script>
       </body></html>
-    `;
-    const vacancyUrl = "https://www.dm-jobs.de/job/test/123";
-    const browser = createStubBrowser({ [vacancyUrl]: html });
-    const site = createDmSite(browser);
-    const vacancy = await site.getVacancyDetails(vacancyUrl);
-    expect(vacancy.descriptionHtml).toBeTruthy();
+    `
+    const vacancyUrl = "https://www.dm-jobs.de/job/test/123"
+    const browser = createStubBrowser({ [vacancyUrl]: html })
+    const site = createDmSite(browser)
+    const vacancy = await site.getVacancyDetails(vacancyUrl)
+    expect(vacancy.descriptionHtml).toBeTruthy()
     expect(
       vacancy.descriptionHtml!.includes("<strong>Drogist</strong>"),
-    ).toBeTruthy();
+    ).toBeTruthy()
     expect(
       vacancy.descriptionHtml!.includes("<li>Training provided</li>"),
-    ).toBeTruthy();
-  });
+    ).toBeTruthy()
+  })
 
   test("getVacancyDetails DOM fallback produces HTML with headings", async () => {
     const html = `
@@ -72,27 +72,27 @@ describe("dm", () => {
         <h2>Benefits</h2>
         <div><p>Great <strong>benefits</strong> package</p></div>
       </body></html>
-    `;
-    const vacancyUrl = "https://www.dm-jobs.de/job/test/456";
-    const browser = createStubBrowser({ [vacancyUrl]: html });
-    const site = createDmSite(browser);
-    const vacancy = await site.getVacancyDetails(vacancyUrl);
-    expect(vacancy.descriptionHtml).toBeTruthy();
-    expect(vacancy.descriptionHtml!.includes("<h2>Aufgaben</h2>")).toBeTruthy();
-    expect(vacancy.descriptionHtml!.includes("<li>Task one</li>")).toBeTruthy();
-  });
+    `
+    const vacancyUrl = "https://www.dm-jobs.de/job/test/456"
+    const browser = createStubBrowser({ [vacancyUrl]: html })
+    const site = createDmSite(browser)
+    const vacancy = await site.getVacancyDetails(vacancyUrl)
+    expect(vacancy.descriptionHtml).toBeTruthy()
+    expect(vacancy.descriptionHtml!.includes("<h2>Aufgaben</h2>")).toBeTruthy()
+    expect(vacancy.descriptionHtml!.includes("<li>Task one</li>")).toBeTruthy()
+  })
 
   test("getVacancyList returns no pagination (single page)", async () => {
-    const html = "<html><body></body></html>";
-    const browser = createStubBrowser({ "dm-jobs.de/job-listing": html });
-    const site = createDmSite(browser);
+    const html = "<html><body></body></html>"
+    const browser = createStubBrowser({ "dm-jobs.de/job-listing": html })
+    const site = createDmSite(browser)
     const result = await site.getVacancyList({
       location: "Berlin",
       query: "",
       mode: "employment",
-    });
-    expect(result.nextPageId).toBe(undefined);
-  });
-});
+    })
+    expect(result.nextPageId).toBe(undefined)
+  })
+})
 
-const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples");
+const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples")

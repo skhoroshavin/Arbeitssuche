@@ -1,17 +1,17 @@
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router"
 import {
   useApplicantListView,
   useCreateApplicant,
   useDeleteApplicant,
-} from "@/ui/data/applicants";
-import { EntityList } from "@/ui/pages/applicant/components";
-import { useLayoutConfig } from "@/ui/layout";
+} from "@/ui/data"
+import { EntityList } from "@/ui/pages/applicant/components"
+import { useLayoutConfig } from "@/ui/layout"
 
 export default function ApplicantList() {
-  const { data, isLoading } = useApplicantListView();
-  const create = useCreateApplicant();
-  const remove = useDeleteApplicant();
-  const navigate = useNavigate();
+  const { data, isLoading } = useApplicantListView()
+  const create = useCreateApplicant()
+  const remove = useDeleteApplicant()
+  const navigate = useNavigate()
 
   useLayoutConfig(
     () => ({
@@ -21,12 +21,12 @@ export default function ApplicantList() {
       headerBackLink: undefined,
     }),
     [],
-  );
+  )
 
   const items = data.map((applicant) => ({
     id: applicant.id,
     label: applicant.name || applicant.id,
-  }));
+  }))
 
   return (
     <EntityList
@@ -36,15 +36,15 @@ export default function ApplicantList() {
       items={items}
       isLoading={isLoading}
       onCreateSubmit={async (name) => {
-        await create.mutateAsync({ name });
+        await create.mutateAsync({ name })
       }}
       createError={create.error ?? undefined}
       onDelete={(item) => {
         if (confirm(`Bewerber "${item.label}" löschen?`)) {
-          remove.mutate(item.id);
+          remove.mutate(item.id)
         }
       }}
       onNavigate={(id) => navigate(`/applicants/${id}`)}
     />
-  );
+  )
 }

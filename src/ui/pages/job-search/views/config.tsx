@@ -1,8 +1,7 @@
-import { useParams } from "react-router";
-import { useJobSearch, useUpdateJobSearch } from "@/ui/data/job-searches";
-import { useAutoSaveForm } from "@/ui/hooks/auto-save-form";
-import { useSiteListView } from "@/ui/data/job-search-crawl";
-import type { SearchMode } from "@/models/job-search/types";
+import { useParams } from "react-router"
+import { useJobSearch, useUpdateJobSearch, useSiteListView } from "@/ui/data"
+import { useAutoSaveForm } from "@/ui/hooks"
+import type { SearchMode } from "@/models/job-search/types"
 import {
   Card,
   SectionHeader,
@@ -10,16 +9,16 @@ import {
   Input,
   Textarea,
   Loading,
-} from "@/ui/components";
-import { useAutoSaveHeader } from "@/ui/layout";
-import { SiteToggle } from "@/ui/pages/job-search/components";
-import { SearchModeToggle } from "@/ui/pages/job-search/components";
+} from "@/ui/components"
+import { useAutoSaveHeader } from "@/ui/layout"
+import { SiteToggle } from "@/ui/pages/job-search/components"
+import { SearchModeToggle } from "@/ui/pages/job-search/components"
 
 export default function JobSearchConfig() {
-  const { id = "" } = useParams<{ id: string }>();
-  const { data, isLoading } = useJobSearch(id);
-  const update = useUpdateJobSearch(id);
-  const sitesQuery = useSiteListView();
+  const { id = "" } = useParams<{ id: string }>()
+  const { data, isLoading } = useJobSearch(id)
+  const update = useUpdateJobSearch(id)
+  const sitesQuery = useSiteListView()
 
   const { register, setValue, watch, saveStatus } = useAutoSaveForm({
     queryResult: { data, isLoading },
@@ -34,7 +33,7 @@ export default function JobSearchConfig() {
       freeText: d.preferences.freeText.join("\n"),
     }),
     onSave: async (form: ConfigFormValues) => {
-      if (!data) throw new Error("Job search data not loaded");
+      if (!data) throw new Error("Job search data not loaded")
       await update.mutateAsync({
         ...data,
         params: {
@@ -56,19 +55,19 @@ export default function JobSearchConfig() {
             .map((l) => l.trim())
             .filter(Boolean),
         },
-      });
+      })
     },
-  });
+  })
 
-  useAutoSaveHeader(saveStatus);
+  useAutoSaveHeader(saveStatus)
 
-  const selectedSites = watch("sources");
-  const selectedMode = watch("searchMode");
+  const selectedSites = watch("sources")
+  const selectedMode = watch("searchMode")
 
-  if (isLoading) return <Loading />;
-  if (!data) return <div>Jobsuche nicht gefunden</div>;
+  if (isLoading) return <Loading />
+  if (!data) return <div>Jobsuche nicht gefunden</div>
 
-  const allSites = sitesQuery.data.sites;
+  const allSites = sitesQuery.data.sites
 
   return (
     <div className="space-y-4">
@@ -137,16 +136,16 @@ export default function JobSearchConfig() {
         />
       </Card>
     </div>
-  );
+  )
 }
 
 interface ConfigFormValues {
-  searchTerm: string;
-  radiusKm: number;
-  searchMode: SearchMode;
-  sources: string[];
-  maxResults: string;
-  maxDistanceKm: string;
-  maxCommuteMinutes: string;
-  freeText: string;
+  searchTerm: string
+  radiusKm: number
+  searchMode: SearchMode
+  sources: string[]
+  maxResults: string
+  maxDistanceKm: string
+  maxCommuteMinutes: string
+  freeText: string
 }

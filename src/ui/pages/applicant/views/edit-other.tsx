@@ -1,18 +1,18 @@
-import { useFieldArray } from "react-hook-form";
-import { useApplicantForm } from "@/ui/pages/applicant/hooks";
-import { Input, Textarea } from "@/ui/components";
-import { Checkbox } from "@/ui/pages/applicant/components";
-import { ApplicantFormPage } from "@/ui/pages/applicant/components";
+import { useFieldArray } from "react-hook-form"
+import { useApplicantForm } from "@/ui/pages/applicant/hooks"
+import { Input, Textarea } from "@/ui/components"
+import { Checkbox } from "@/ui/pages/applicant/components"
+import { ApplicantFormPage } from "@/ui/pages/applicant/components"
 import {
   Section,
   AddButton,
   RemoveButton,
-} from "@/ui/pages/applicant/components";
+} from "@/ui/pages/applicant/components"
 
 export default function ApplicantEditOther() {
-  const { register, control, isLoading, saveStatus } = useApplicantForm();
-  const skills = useFieldArray({ control, name: "skills" });
-  const languages = useFieldArray({ control, name: "languages" });
+  const { register, control, isLoading, saveStatus } = useApplicantForm()
+  const skills = useFieldArray({ control, name: "skills" })
+  const languages = useFieldArray({ control, name: "languages" })
 
   return (
     <ApplicantFormPage
@@ -70,5 +70,5 @@ export default function ApplicantEditOther() {
         </p>
       </Section>
     </ApplicantFormPage>
-  );
+  )
 }

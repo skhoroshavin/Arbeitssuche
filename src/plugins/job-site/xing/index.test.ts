@@ -1,39 +1,39 @@
-import { test, describe, expect } from "vitest";
-import path from "node:path";
-import { createXingSite } from "./index";
-import { createStubBrowser } from "@/plugins/browser/index.js";
+import { test, describe, expect } from "vitest"
+import path from "node:path"
+import { createXingSite } from "."
+import { createStubBrowser } from "@/plugins/browser/index.js"
 
 describe("xing", () => {
   test("getVacancyList returns absolute URLs from search page", async () => {
-    const browser = createStubBrowser(SAMPLES_DIR);
-    const site = createXingSite(browser);
+    const browser = createStubBrowser(SAMPLES_DIR)
+    const site = createXingSite(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
       query: "",
       mode: "employment",
-    });
-    expect(urls.length > 0).toBeTruthy();
+    })
+    expect(urls.length > 0).toBeTruthy()
     for (const url of urls) {
-      expect(url).toMatch(/^https?:\/\//);
+      expect(url).toMatch(/^https?:\/\//)
     }
-  });
+  })
 
   test("getVacancyDetails returns title and company", async () => {
-    const browser = createStubBrowser(SAMPLES_DIR);
-    const site = createXingSite(browser);
+    const browser = createStubBrowser(SAMPLES_DIR)
+    const site = createXingSite(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
       query: "",
       mode: "employment",
-    });
-    const vacancy = await site.getVacancyDetails(urls[0]);
+    })
+    const vacancy = await site.getVacancyDetails(urls[0])
     expect(
       typeof vacancy.title === "string" && vacancy.title.length > 0,
-    ).toBeTruthy();
+    ).toBeTruthy()
     expect(
       typeof vacancy.company === "string" && vacancy.company.length > 0,
-    ).toBeTruthy();
-  });
+    ).toBeTruthy()
+  })
 
   test("getVacancyDetails returns raw HTML description from JSON-LD", async () => {
     const html = `
@@ -49,17 +49,17 @@ describe("xing", () => {
         }
         </script>
       </body></html>
-    `;
-    const vacancyUrl = "https://www.xing.com/jobs/test-job-123";
-    const browser = createStubBrowser({ [vacancyUrl]: html });
-    const site = createXingSite(browser);
-    const vacancy = await site.getVacancyDetails(vacancyUrl);
-    expect(vacancy.descriptionHtml).toBeTruthy();
-    expect(vacancy.descriptionHtml!.includes("<li>React</li>")).toBeTruthy();
+    `
+    const vacancyUrl = "https://www.xing.com/jobs/test-job-123"
+    const browser = createStubBrowser({ [vacancyUrl]: html })
+    const site = createXingSite(browser)
+    const vacancy = await site.getVacancyDetails(vacancyUrl)
+    expect(vacancy.descriptionHtml).toBeTruthy()
+    expect(vacancy.descriptionHtml!.includes("<li>React</li>")).toBeTruthy()
     expect(
       vacancy.descriptionHtml!.includes("<strong>TypeScript</strong>"),
-    ).toBeTruthy();
-  });
-});
+    ).toBeTruthy()
+  })
+})
 
-const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples");
+const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples")

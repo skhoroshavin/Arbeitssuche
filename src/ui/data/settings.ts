@@ -1,21 +1,21 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { MaskedSecret } from "@/models/secrets/types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import type { MaskedSecret } from "@/models/secrets/types"
 import type {
   ConfigKey,
   LlmModel,
   LlmProvider,
   LlmProviderInfo,
   CommuteProviderInfo,
-} from "@/models/config/types";
+} from "@/models/config/types"
 import {
   DEFAULT_ASSESSMENT_MODEL,
   DEFAULT_CONSULTATION_MODEL,
   DEFAULT_COVER_LETTER_MODEL,
   DEFAULT_PROVIDER,
-} from "@/models/config/types";
-import type { ResolvedConfig } from "@/models/config/index.js";
-import typia from "typia";
-import { api } from "./internal/api";
+} from "@/models/config/index"
+import type { ResolvedConfig } from "@/models/config/index.js"
+import typia from "typia"
+import { api } from "./internal/api"
 
 // --- Provider secrets (factory) ---
 
@@ -23,67 +23,67 @@ export function useProviderSecretActions(
   type: "llm" | "commute",
   providerId: string,
 ) {
-  const hooks = type === "llm" ? llmHooks : commuteHooks;
-  const saveMutation = hooks.useSave();
-  const clearMutation = hooks.useClear();
-  const testMutation = hooks.useTest();
+  const hooks = type === "llm" ? llmHooks : commuteHooks
+  const saveMutation = hooks.useSave()
+  const clearMutation = hooks.useClear()
+  const testMutation = hooks.useTest()
 
   return {
     onSave: async (value: string) => {
-      await saveMutation.mutateAsync({ providerId, value });
+      await saveMutation.mutateAsync({ providerId, value })
     },
     onClear: async () => {
-      await clearMutation.mutateAsync(providerId);
+      await clearMutation.mutateAsync(providerId)
     },
     onTest: () => testMutation.mutateAsync(providerId),
-  };
+  }
 }
 
 export function resolveSecret(
   secrets: Record<string, MaskedSecret> | undefined,
   providerId: string,
 ): MaskedSecret {
-  return secrets?.[providerId] ?? EMPTY_MASKED_SECRET;
+  return secrets?.[providerId] ?? EMPTY_MASKED_SECRET
 }
 
 // --- Provider info ---
 
 export function useCommuteProviderListView() {
-  const query = useCommuteProviders();
+  const query = useCommuteProviders()
   return {
     ...query,
     data: query.data ?? EMPTY_COMMUTE_PROVIDERS,
-  };
+  }
 }
 
 // --- API key status (used across the app) ---
 
 export function useApiKeyStatus(): {
-  hasLlmKey: boolean;
-  hasMapsKey: boolean;
-  isLoading: boolean;
+  hasLlmKey: boolean
+  hasMapsKey: boolean
+  isLoading: boolean
 } {
-  const { data: llmSecrets, isLoading: llmLoading } = useLlmSecrets();
+  const { data: llmSecrets, isLoading: llmLoading } = useLlmSecrets()
   const { data: commuteSecrets, isLoading: commuteLoading } =
-    useCommuteSecrets();
-  const { data: config, isLoading: configLoading } = useConfig();
+    useCommuteSecrets()
+  const { data: config, isLoading: configLoading } = useConfig()
 
-  const provider: LlmProvider = config?.provider ?? DEFAULT_PROVIDER;
-  const isLoading = llmLoading || commuteLoading || configLoading;
+  const provider: LlmProvider = config?.provider ?? DEFAULT_PROVIDER
+  const isLoading = llmLoading || commuteLoading || configLoading
 
   return {
     hasLlmKey: hasSecret(llmSecrets, provider),
     hasMapsKey: hasSecret(commuteSecrets, "google-maps"),
     isLoading,
-  };
+  }
 }
 
 export function useAISettingsView(fallbackModels: LlmModel[]) {
-  const { data: secrets, isLoading: secretsLoading } = useLlmSecrets();
-  const { data: config, isLoading: configLoading } = useResolvedConfig();
-  const { data: remoteModels, isLoading: modelsLoading } = useLlmModels();
-  const { data: providers } = useLlmProviders();
-  const saveConfig = useSaveConfig();
+  const { data: secrets, isLoading: secretsLoading } = useLlmSecrets()
+  const { data: config, isLoading: configLoading } = useResolvedConfig()
+  const { data: remoteModels, isLoading: modelsLoading } = useLlmModels()
+  const { data: providers } = useLlmProviders()
+  const saveConfig = useSaveConfig()
 
   return {
     secrets,
@@ -95,11 +95,11 @@ export function useAISettingsView(fallbackModels: LlmModel[]) {
     modelsLoading,
     saveConfig,
     isLoading: secretsLoading || configLoading,
-  };
+  }
 }
 
 export function useCommuteSecrets() {
-  return commuteHooks.useSecrets();
+  return commuteHooks.useSecrets()
 }
 
 export function useLlmProviders() {
@@ -109,14 +109,14 @@ export function useLlmProviders() {
       typia.assert<LlmProviderInfo[]>(
         await api().invoke("settings:llm-providers"),
       ),
-  });
+  })
 }
 
-const EMPTY_MASKED_SECRET: MaskedSecret = { masked: "", isSet: false };
-const EMPTY_COMMUTE_PROVIDERS: CommuteProviderInfo[] = [];
+const EMPTY_MASKED_SECRET: MaskedSecret = { masked: "", isSet: false }
+const EMPTY_COMMUTE_PROVIDERS: CommuteProviderInfo[] = []
 
 function useLlmSecrets() {
-  return llmHooks.useSecrets();
+  return llmHooks.useSecrets()
 }
 
 function useCommuteProviders() {
@@ -126,11 +126,11 @@ function useCommuteProviders() {
       typia.assert<CommuteProviderInfo[]>(
         await api().invoke("settings:commute-providers"),
       ),
-  });
+  })
 }
 
 function useResolvedConfig() {
-  const query = useConfig();
+  const query = useConfig()
   return {
     ...query,
     data: query.data ?? {
@@ -139,30 +139,30 @@ function useResolvedConfig() {
       coverLetterModel: DEFAULT_COVER_LETTER_MODEL,
       consultationModel: DEFAULT_CONSULTATION_MODEL,
     },
-  };
+  }
 }
 
 function useSaveConfig() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ key, value }: { key: ConfigKey; value: string }) =>
       api().invoke("settings:config:save", key, value),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["config"] });
-      void queryClient.invalidateQueries({ queryKey: ["llm-models"] });
+      void queryClient.invalidateQueries({ queryKey: ["config"] })
+      void queryClient.invalidateQueries({ queryKey: ["llm-models"] })
     },
-  });
+  })
 }
 
 function hasSecret(
   secrets: Record<string, MaskedSecret> | undefined,
   key: string,
 ): boolean {
-  return secrets?.[key]?.isSet ?? false;
+  return secrets?.[key]?.isSet ?? false
 }
 
 function createProviderSecretHooks(type: "llm" | "commute") {
-  const queryKey = [`${type}-secrets`];
+  const queryKey = [`${type}-secrets`]
 
   function useSecrets() {
     return useQuery({
@@ -171,30 +171,30 @@ function createProviderSecretHooks(type: "llm" | "commute") {
         typia.assert<Record<string, MaskedSecret>>(
           await api().invoke(`settings:${type}:secrets`),
         ),
-    });
+    })
   }
 
   function useSave() {
-    const queryClient = useQueryClient();
+    const queryClient = useQueryClient()
     return useMutation({
       mutationFn: ({
         providerId,
         value,
       }: {
-        providerId: string;
-        value: string;
+        providerId: string
+        value: string
       }) => api().invoke(`settings:${type}:secret:save`, providerId, value),
       onSuccess: () => queryClient.invalidateQueries({ queryKey }),
-    });
+    })
   }
 
   function useClear() {
-    const queryClient = useQueryClient();
+    const queryClient = useQueryClient()
     return useMutation({
       mutationFn: (providerId: string) =>
         api().invoke(`settings:${type}:secret:clear`, providerId),
       onSuccess: () => queryClient.invalidateQueries({ queryKey }),
-    });
+    })
   }
 
   function useTest() {
@@ -203,14 +203,14 @@ function createProviderSecretHooks(type: "llm" | "commute") {
         typia.assert<{ ok: boolean; error?: string }>(
           await api().invoke(`settings:${type}:secret:test`, providerId),
         ),
-    });
+    })
   }
 
-  return { useSecrets, useSave, useClear, useTest };
+  return { useSecrets, useSave, useClear, useTest }
 }
 
-const llmHooks = createProviderSecretHooks("llm");
-const commuteHooks = createProviderSecretHooks("commute");
+const llmHooks = createProviderSecretHooks("llm")
+const commuteHooks = createProviderSecretHooks("commute")
 
 // --- Config ---
 
@@ -219,7 +219,7 @@ function useConfig() {
     queryKey: ["config"],
     queryFn: async () =>
       typia.assert<ResolvedConfig>(await api().invoke("settings:config:load")),
-  });
+  })
 }
 
 function useLlmModels() {
@@ -227,5 +227,5 @@ function useLlmModels() {
     queryKey: ["llm-models"],
     queryFn: async () =>
       typia.assert<LlmModel[]>(await api().invoke("settings:llm-models")),
-  });
+  })
 }

@@ -2,37 +2,37 @@ import type {
   Applicant,
   ApplicantExperience,
   ApplicantEducation,
-} from "@/models/applicant/types.js";
+} from "@/models/applicant/types.js"
 
 export function formatApplicantSections(applicant: Applicant): string[] {
-  const sections: string[] = [formatPersonalSection(applicant.personal)];
+  const sections: string[] = [formatPersonalSection(applicant.personal)]
 
   for (const section of OPTIONAL_SECTIONS) {
     if (section.items(applicant).length > 0) {
-      sections.push(section.format(applicant));
+      sections.push(section.format(applicant))
     }
   }
 
-  const notes = formatPersonalNotes(applicant.personalNotes);
-  if (notes) sections.push(notes);
+  const notes = formatPersonalNotes(applicant.personalNotes)
+  if (notes) sections.push(notes)
 
-  return sections;
+  return sections
 }
 
 function formatPersonalSection(p: Applicant["personal"]): string {
-  const lines = [`Name: ${p.name}`];
+  const lines = [`Name: ${p.name}`]
   if (p.address) {
-    const a = p.address;
-    lines.push(`Adresse: ${a.street}, ${a.zip} ${a.city}`);
+    const a = p.address
+    lines.push(`Adresse: ${a.street}, ${a.zip} ${a.city}`)
   }
-  if (p.email) lines.push(`E-Mail: ${p.email}`);
-  if (p.phone) lines.push(`Telefon: ${p.phone}`);
-  return `## Applicant\n${lines.join("\n")}`;
+  if (p.email) lines.push(`E-Mail: ${p.email}`)
+  if (p.phone) lines.push(`Telefon: ${p.phone}`)
+  return `## Applicant\n${lines.join("\n")}`
 }
 
 const OPTIONAL_SECTIONS: Array<{
-  items: (a: Applicant) => unknown[];
-  format: (a: Applicant) => string;
+  items: (a: Applicant) => unknown[]
+  format: (a: Applicant) => string
 }> = [
   {
     items: (a) => a.experience,
@@ -58,35 +58,35 @@ const OPTIONAL_SECTIONS: Array<{
     format: (a) => {
       const lines = a.certifications.map(
         (c) => `- ${c.name}${c.issuer ? ` (${c.issuer})` : ""}`,
-      );
-      return `## Certifications\n${lines.join("\n")}`;
+      )
+      return `## Certifications\n${lines.join("\n")}`
     },
   },
-];
+]
 
 function formatPersonalNotes(
   notes: Applicant["personalNotes"],
 ): string | undefined {
-  if (!notes || notes.length === 0) return undefined;
-  const lines = Array.isArray(notes) ? notes : [notes];
-  return `## Personal Notes\n${lines.map((n) => `- ${n}`).join("\n")}`;
+  if (!notes || notes.length === 0) return undefined
+  const lines = Array.isArray(notes) ? notes : [notes]
+  return `## Personal Notes\n${lines.map((n) => `- ${n}`).join("\n")}`
 }
 
 function formatExperienceLine(entry: ApplicantExperience): string {
-  const hl = formatHighlights(entry.highlights);
-  return `- ${entry.role} bei ${entry.company} (${entry.startDate}-${entry.endDate})${hl ? ": " + hl : ""}`;
+  const hl = formatHighlights(entry.highlights)
+  return `- ${entry.role} bei ${entry.company} (${entry.startDate}-${entry.endDate})${hl ? ": " + hl : ""}`
 }
 
 function formatEducationLine(entry: ApplicantEducation): string {
-  const hl = formatHighlights(entry.highlights);
-  return `- ${entry.course} an ${entry.institution}${entry.endDate ? ` (${entry.endDate})` : ""}${hl ? ": " + hl : ""}`;
+  const hl = formatHighlights(entry.highlights)
+  return `- ${entry.course} an ${entry.institution}${entry.endDate ? ` (${entry.endDate})` : ""}${hl ? ": " + hl : ""}`
 }
 
 function formatHighlights(
   highlights: string[] | string | undefined,
   separator = "; ",
 ): string {
-  if (!highlights) return "";
-  if (typeof highlights === "string") return highlights;
-  return highlights.join(separator);
+  if (!highlights) return ""
+  if (typeof highlights === "string") return highlights
+  return highlights.join(separator)
 }

@@ -5,6 +5,6 @@ export {
   TRANSITIONS,
   type StatusAction,
   type StatusLabelKey,
-} from "./constants.js";
-export { resolveVacancy } from "./resolve.js";
-export { Vacancy } from "./vacancy.js";
+} from "./constants.js"
+export { resolveVacancy } from "./resolve.js"
+export { Vacancy } from "./vacancy.js"

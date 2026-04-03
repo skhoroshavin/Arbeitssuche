@@ -1,26 +1,26 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest"
 import {
   createModelRegistry,
   normalizeFlatPricing,
   normalizeNestedPricing,
-} from "./index";
+} from "."
 
 describe("createModelRegistry", () => {
-  const originalFetch = globalThis.fetch;
+  const originalFetch = globalThis.fetch
 
   afterEach(() => {
-    globalThis.fetch = originalFetch;
-  });
+    globalThis.fetch = originalFetch
+  })
 
   function mockFetch(body: unknown, status = 200) {
-    globalThis.fetch = vi.fn(() =>
+    globalThis.fetch = vi.fn<typeof fetch>(() =>
       Promise.resolve({
         ok: status >= 200 && status < 300,
         status,
         json: () => Promise.resolve(body),
         text: () => Promise.resolve(JSON.stringify(body)),
-      }),
-    ) as unknown as typeof fetch;
+      } as Response),
+    )
   }
 
   it("normalizes OpenRouter-style pricing", async () => {
@@ -32,7 +32,7 @@ describe("createModelRegistry", () => {
           pricing: { prompt: "0.000003", completion: "0.000015" },
         },
       ],
-    });
+    })
 
     const registry = createModelRegistry(
       "https://openrouter.ai/api/v1/models",
@@ -41,14 +41,14 @@ describe("createModelRegistry", () => {
         name: String(m.name),
         pricing: normalizeNestedPricing(m.pricing),
       }),
-    );
+    )
 
-    const models = await registry.fetchModels();
-    expect(models.length).toBe(1);
-    expect(models[0].id).toBe("anthropic/claude-sonnet-4");
-    expect(models[0].pricing.prompt).toBe("0.000003");
-    expect(models[0].pricing.completion).toBe("0.000015");
-  });
+    const models = await registry.fetchModels()
+    expect(models.length).toBe(1)
+    expect(models[0].id).toBe("anthropic/claude-sonnet-4")
+    expect(models[0].pricing.prompt).toBe("0.000003")
+    expect(models[0].pricing.completion).toBe("0.000015")
+  })
 
   it("normalizes Requesty-style pricing (input_price/output_price)", async () => {
     mockFetch({
@@ -59,7 +59,7 @@ describe("createModelRegistry", () => {
           output_price: "0.000015",
         },
       ],
-    });
+    })
 
     const registry = createModelRegistry(
       "https://router.eu.requesty.ai/v1/models",
@@ -68,40 +68,40 @@ describe("createModelRegistry", () => {
         name: String(m.id),
         pricing: normalizeFlatPricing(m),
       }),
-    );
+    )
 
-    const models = await registry.fetchModels();
-    expect(models.length).toBe(1);
-    expect(models[0].id).toBe("anthropic/claude-sonnet-4");
-    expect(models[0].pricing.prompt).toBe("0.000003");
-    expect(models[0].pricing.completion).toBe("0.000015");
-  });
+    const models = await registry.fetchModels()
+    expect(models.length).toBe(1)
+    expect(models[0].id).toBe("anthropic/claude-sonnet-4")
+    expect(models[0].pricing.prompt).toBe("0.000003")
+    expect(models[0].pricing.completion).toBe("0.000015")
+  })
 
   it("returns empty array on network error", async () => {
-    globalThis.fetch = vi.fn(() => {
-      return Promise.reject(new Error("Network error"));
-    }) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn<typeof fetch>(() => {
+      return Promise.reject(new Error("Network error"))
+    })
 
     const registry = createModelRegistry("https://example.com/models", (m) => ({
       id: String(m.id),
       name: String(m.name),
       pricing: { prompt: "0", completion: "0" },
-    }));
+    }))
 
-    const models = await registry.fetchModels();
-    expect(models).toEqual([]);
-  });
+    const models = await registry.fetchModels()
+    expect(models).toEqual([])
+  })
 
   it("returns empty array on non-OK response", async () => {
-    mockFetch({}, 500);
+    mockFetch({}, 500)
 
     const registry = createModelRegistry("https://example.com/models", (m) => ({
       id: String(m.id),
       name: String(m.name),
       pricing: { prompt: "0", completion: "0" },
-    }));
+    }))
 
-    const models = await registry.fetchModels();
-    expect(models).toEqual([]);
-  });
-});
+    const models = await registry.fetchModels()
+    expect(models).toEqual([])
+  })
+})

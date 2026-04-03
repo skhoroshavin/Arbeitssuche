@@ -1,8 +1,9 @@
-import eslint from "@eslint/js";
-import tseslint from "typescript-eslint";
-import checkFile from "eslint-plugin-check-file";
-import unicorn from "eslint-plugin-unicorn";
-import unslop from "eslint-plugin-unslop";
+import eslint from "@eslint/js"
+import tseslint from "typescript-eslint"
+import checkFile from "eslint-plugin-check-file"
+import importX from "eslint-plugin-import-x"
+import unicorn from "eslint-plugin-unicorn"
+import unslop from "eslint-plugin-unslop"
 
 // =============================================================================
 // Config
@@ -42,6 +43,9 @@ export default tseslint.config(
 
   {
     files: ["**/*.{ts,tsx}"],
+    plugins: {
+      "import-x": importX,
+    },
     rules: {
       "unslop/read-friendly-order": "error",
       "unslop/no-false-sharing": [
@@ -90,6 +94,7 @@ export default tseslint.config(
         { assertionStyle: "never" },
       ],
       "@typescript-eslint/no-non-null-assertion": "error",
+      "import-x/no-useless-path-segments": ["error", { noUselessIndex: true }],
     },
   },
   {
@@ -103,11 +108,6 @@ export default tseslint.config(
               regex: String.raw`^\.\./`,
               message:
                 "Parent imports (../) are forbidden under src/. Use @/ aliases or ./ local imports.",
-            },
-            {
-              regex: String.raw`^@/(?!(([^/]+/[^/]+(/(index|types))?)|(plugins/llm/openai-compatible(/index)?)|(ui/hooks/[^/]+(/(index|types))?)|(ui/data/[^/]+(/(index|types))?)|(ui/layout(/index)?)|(ui/constants)|(ui/pages/[^/]+(/(components|hooks)(/index)?)?))(\.js)?$).+`,
-              message:
-                "Cross-folder imports must use public module surfaces only: @/<layer>/<module> (+ optional /index or /types) and approved UI surfaces.",
             },
           ],
         },
@@ -141,11 +141,6 @@ export default tseslint.config(
               regex: String.raw`^\./(?!(.*/)?(index|types)(\.js)?$).+`,
               message:
                 "Tests may import relative modules only through index.ts or types.ts surfaces.",
-            },
-            {
-              regex: String.raw`^@/(?!(([^/]+/[^/]+(/(index|types))?)|(plugins/llm/openai-compatible(/index)?)|(ui/hooks/[^/]+(/(index|types))?)|(ui/data/[^/]+(/(index|types))?)|(ui/layout(/index)?)|(ui/constants)|(ui/pages/[^/]+(/(components|hooks)(/index)?)?))(\.js)?$).+`,
-              message:
-                "Tests may import aliased modules only through public index.ts/types.ts surfaces.",
             },
           ],
         },
@@ -186,4 +181,4 @@ export default tseslint.config(
       ],
     },
   },
-);
+)

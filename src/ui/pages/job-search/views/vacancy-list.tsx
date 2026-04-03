@@ -1,40 +1,33 @@
-import { useState, useEffect } from "react";
-import { useParams, useLocation } from "react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { useApiKeyStatus } from "@/ui/data/settings";
-import { useJobSearchVacancyListView } from "@/ui/data/job-searches";
-import {
-  invalidateQuery,
-  jobSearchQueryKeys,
-} from "@/ui/data/job-search-query-keys";
-import {
-  useStartJobSearchCrawl,
-  useAbortJobSearchCrawl,
-} from "@/ui/data/job-search-crawl";
-import { useJobProgress } from "@/ui/pages/job-search/hooks";
-import { PageHeader, EmptyState, Loading } from "@/ui/components";
-import { FilterBar } from "./filter-bar";
-import { VacancyCard } from "./vacancy-card";
-import { KeyWarnings } from "./key-warnings";
-import { CrawlProgressCard } from "./crawl-progress-card";
-import { useVacancyFilters, useFilteredVacancies } from "./use-vacancy-filters";
+import { useState, useEffect } from "react"
+import { useParams, useLocation } from "react-router"
+import { useQueryClient } from "@tanstack/react-query"
+import { useApiKeyStatus, useJobSearchVacancyListView } from "@/ui/data"
+import { invalidateQuery, jobSearchQueryKeys } from "@/ui/data"
+import { useStartJobSearchCrawl, useAbortJobSearchCrawl } from "@/ui/data"
+import { useJobProgress } from "@/ui/pages/job-search/hooks"
+import { PageHeader, EmptyState, Loading } from "@/ui/components"
+import { FilterBar } from "./filter-bar"
+import { VacancyCard } from "./vacancy-card"
+import { KeyWarnings } from "./key-warnings"
+import { CrawlProgressCard } from "./crawl-progress-card"
+import { useVacancyFilters, useFilteredVacancies } from "./use-vacancy-filters"
 
 export default function JobSearchVacancyList() {
-  const { id = "" } = useParams<{ id: string }>();
-  const location = useLocation();
-  const listData = useVacancyListData(id);
-  const crawl = useCrawlControl(id);
-  const { filter, sortBy, setFilter, setSortBy } = useVacancyFilters();
+  const { id = "" } = useParams<{ id: string }>()
+  const location = useLocation()
+  const listData = useVacancyListData(id)
+  const crawl = useCrawlControl(id)
+  const { filter, sortBy, setFilter, setSortBy } = useVacancyFilters()
 
   const { statusCounts, filtered } = useFilteredVacancies(
     listData.vacancies,
     filter,
     sortBy,
-  );
+  )
 
-  const { hasLlmKey, hasMapsKey } = useApiKeyStatus();
+  const { hasLlmKey, hasMapsKey } = useApiKeyStatus()
 
-  if (listData.isLoading) return <Loading />;
+  if (listData.isLoading) return <Loading />
 
   return (
     <div className="space-y-4">
@@ -96,36 +89,36 @@ export default function JobSearchVacancyList() {
         )}
       </div>
     </div>
-  );
+  )
 }
 
 function useCrawlControl(id: string) {
-  const queryClient = useQueryClient();
-  const startCrawl = useStartJobSearchCrawl(id);
-  const abortCrawl = useAbortJobSearchCrawl(id);
-  const [progressJobId, setProgressJobId] = useState<string>();
+  const queryClient = useQueryClient()
+  const startCrawl = useStartJobSearchCrawl(id)
+  const abortCrawl = useAbortJobSearchCrawl(id)
+  const [progressJobId, setProgressJobId] = useState<string>()
   const { events, done, reset, vacancyUpdateCount } =
-    useJobProgress(progressJobId);
+    useJobProgress(progressJobId)
 
   useEffect(() => {
     if (vacancyUpdateCount > 0) {
-      void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id));
+      void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
     }
-  }, [vacancyUpdateCount, queryClient, id]);
+  }, [vacancyUpdateCount, queryClient, id])
 
   const handleStartCrawl = () => {
-    reset();
+    reset()
     startCrawl.mutate(undefined, {
       onSuccess: () => {
-        setProgressJobId(id);
+        setProgressJobId(id)
       },
-    });
-  };
+    })
+  }
 
   const handleClose = () => {
-    setProgressJobId(undefined);
-    void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id));
-  };
+    setProgressJobId(undefined)
+    void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
+  }
 
   return {
     progressJobId,
@@ -135,14 +128,14 @@ function useCrawlControl(id: string) {
     handleAbort: () => abortCrawl.mutate(),
     handleClose,
     isCrawling: !!(progressJobId && !done),
-  };
+  }
 }
 
 function useVacancyListData(id: string) {
-  const { data, isLoading } = useJobSearchVacancyListView(id);
+  const { data, isLoading } = useJobSearchVacancyListView(id)
   return {
     vacancies: data.vacancies,
     totalCount: data.totalCount,
     isLoading,
-  };
+  }
 }

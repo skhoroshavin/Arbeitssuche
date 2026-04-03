@@ -1,15 +1,15 @@
-import { Link } from "react-router";
+import { Link } from "react-router"
 
 export function KeyWarnings({
   hasLlmKey,
   hasMapsKey,
   returnTo,
 }: {
-  hasLlmKey: boolean;
-  hasMapsKey: boolean;
-  returnTo: string;
+  hasLlmKey: boolean
+  hasMapsKey: boolean
+  returnTo: string
 }) {
-  if (hasLlmKey && hasMapsKey) return;
+  if (hasLlmKey && hasMapsKey) return
   return (
     <div className="mt-2 space-y-1 text-right">
       {!hasLlmKey && (
@@ -37,5 +37,5 @@ export function KeyWarnings({
         </p>
       )}
     </div>
-  );
+  )
 }

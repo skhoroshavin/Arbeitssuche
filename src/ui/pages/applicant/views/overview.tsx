@@ -1,37 +1,35 @@
-import { useState } from "react";
-import { useParams, useNavigate, useLocation, Link } from "react-router";
+import { useState } from "react"
+import { useParams, useNavigate, useLocation, Link } from "react-router"
 import {
   useApplicantHeaderName,
   useApplicant,
   useDownloadResume,
   useConsultSearches,
-} from "@/ui/data/applicants";
-import { useApiKeyStatus } from "@/ui/data/settings";
-import {
+  useApiKeyStatus,
   useJobSearchListView,
   useCreateJobSearch,
   useDeleteJobSearch,
-} from "@/ui/data/job-searches";
-import { PageHeader, Loading } from "@/ui/components";
-import { EntityList } from "@/ui/pages/applicant/components";
-import { TemplateSelector } from "@/ui/pages/applicant/components";
-import { ConsultationModal } from "@/ui/pages/applicant/components";
-import type { ConsultationSuggestion } from "@/models/job-search/types";
+} from "@/ui/data"
+import { PageHeader, Loading } from "@/ui/components"
+import { EntityList } from "@/ui/pages/applicant/components"
+import { TemplateSelector } from "@/ui/pages/applicant/components"
+import { ConsultationModal } from "@/ui/pages/applicant/components"
+import type { ConsultationSuggestion } from "@/models/job-search/types"
 
 export default function ApplicantOverview() {
-  const { id = "" } = useParams<{ id: string }>();
-  const overview = useOverviewData(id);
-  const createJobSearch = useCreateJobSearch();
-  const deleteJobSearch = useDeleteJobSearch();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { id = "" } = useParams<{ id: string }>()
+  const overview = useOverviewData(id)
+  const createJobSearch = useCreateJobSearch()
+  const deleteJobSearch = useDeleteJobSearch()
+  const navigate = useNavigate()
+  const location = useLocation()
 
-  const downloadResume = useDownloadResume(id, overview.displayName);
-  const { hasLlmKey } = useApiKeyStatus();
-  const consultation = useConsultationFlow(id);
+  const downloadResume = useDownloadResume(id, overview.displayName)
+  const { hasLlmKey } = useApiKeyStatus()
+  const consultation = useConsultationFlow(id)
 
-  if (overview.isLoading) return <Loading />;
-  if (!overview.data) return <div>Bewerber nicht gefunden</div>;
+  if (overview.isLoading) return <Loading />
+  if (!overview.data) return <div>Bewerber nicht gefunden</div>
 
   return (
     <ApplicantOverviewContent
@@ -45,7 +43,7 @@ export default function ApplicantOverview() {
       hasLlmKey={hasLlmKey}
       consultation={consultation}
     />
-  );
+  )
 }
 
 function ApplicantOverviewContent({
@@ -59,15 +57,15 @@ function ApplicantOverviewContent({
   hasLlmKey,
   consultation,
 }: {
-  applicantId: string;
-  overview: ReturnType<typeof useOverviewData>;
-  createJobSearch: ReturnType<typeof useCreateJobSearch>;
-  deleteJobSearch: ReturnType<typeof useDeleteJobSearch>;
-  navigate: ReturnType<typeof useNavigate>;
-  locationPathname: string;
-  downloadResume: ReturnType<typeof useDownloadResume>;
-  hasLlmKey: boolean;
-  consultation: ReturnType<typeof useConsultationFlow>;
+  applicantId: string
+  overview: ReturnType<typeof useOverviewData>
+  createJobSearch: ReturnType<typeof useCreateJobSearch>
+  deleteJobSearch: ReturnType<typeof useDeleteJobSearch>
+  navigate: ReturnType<typeof useNavigate>
+  locationPathname: string
+  downloadResume: ReturnType<typeof useDownloadResume>
+  hasLlmKey: boolean
+  consultation: ReturnType<typeof useConsultationFlow>
 }) {
   return (
     <div className="space-y-4">
@@ -89,12 +87,12 @@ function ApplicantOverviewContent({
           await createJobSearch.mutateAsync({
             searchTerm: name,
             applicantId,
-          });
+          })
         }}
         createError={createJobSearch.error ?? undefined}
         onDelete={(item) => {
           if (confirm(`Jobsuche "${item.label}" löschen?`)) {
-            deleteJobSearch.mutate(item.id);
+            deleteJobSearch.mutate(item.id)
           }
         }}
         onNavigate={(jobSearchId) => navigate(`/job-searches/${jobSearchId}`)}
@@ -118,7 +116,7 @@ function ApplicantOverviewContent({
         isCreating={consultation.isCreatingSuggestions}
       />
     </div>
-  );
+  )
 }
 
 function ConsultationButton({
@@ -127,10 +125,10 @@ function ConsultationButton({
   hasLlmKey,
   returnTo,
 }: {
-  onConsult: () => void;
-  isPending: boolean;
-  hasLlmKey: boolean;
-  returnTo: string;
+  onConsult: () => void
+  isPending: boolean
+  hasLlmKey: boolean
+  returnTo: string
 }) {
   return (
     <div>
@@ -154,23 +152,23 @@ function ConsultationButton({
         </p>
       )}
     </div>
-  );
+  )
 }
 
 function useConsultationFlow(id: string) {
-  const consultSearches = useConsultSearches(id);
-  const createJobSearch = useCreateJobSearch();
-  const [showConsultation, setShowConsultation] = useState(false);
-  const [isCreatingSuggestions, setIsCreatingSuggestions] = useState(false);
-  const suggestions = consultSearches.data?.suggestions ?? [];
+  const consultSearches = useConsultSearches(id)
+  const createJobSearch = useCreateJobSearch()
+  const [showConsultation, setShowConsultation] = useState(false)
+  const [isCreatingSuggestions, setIsCreatingSuggestions] = useState(false)
+  const suggestions = consultSearches.data?.suggestions ?? []
 
   const handleConsult = () => {
-    setShowConsultation(true);
-    consultSearches.mutate();
-  };
+    setShowConsultation(true)
+    consultSearches.mutate()
+  }
 
   const handleCreateSelected = async (selected: ConsultationSuggestion[]) => {
-    setIsCreatingSuggestions(true);
+    setIsCreatingSuggestions(true)
     try {
       await Promise.all(
         selected.map((suggestion) =>
@@ -180,18 +178,18 @@ function useConsultationFlow(id: string) {
             searchMode: suggestion.searchMode,
           }),
         ),
-      );
-      setShowConsultation(false);
-      consultSearches.reset();
+      )
+      setShowConsultation(false)
+      consultSearches.reset()
     } finally {
-      setIsCreatingSuggestions(false);
+      setIsCreatingSuggestions(false)
     }
-  };
+  }
 
   const handleClose = () => {
-    setShowConsultation(false);
-    consultSearches.reset();
-  };
+    setShowConsultation(false)
+    consultSearches.reset()
+  }
 
   return {
     showConsultation,
@@ -201,22 +199,22 @@ function useConsultationFlow(id: string) {
     handleConsult,
     handleCreateSelected,
     handleClose,
-  };
+  }
 }
 
 function useOverviewData(id: string) {
-  const { data, isLoading } = useApplicant(id);
-  const { displayName } = useApplicantHeaderName(id);
-  const jobSearches = useJobSearchListView(id);
+  const { data, isLoading } = useApplicant(id)
+  const { displayName } = useApplicantHeaderName(id)
+  const jobSearches = useJobSearchListView(id)
   const jobSearchItems = jobSearches.data.jobSearches.map((js) => ({
     id: js.id,
     label: js.searchTerm || js.id,
-  }));
+  }))
   return {
     data,
     isLoading,
     displayName,
     jobSearchItems,
     jobSearchesLoading: jobSearches.isLoading,
-  };
+  }
 }

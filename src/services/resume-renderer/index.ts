@@ -1,1 +1,1 @@
-export { ResumeRenderer } from "./resume-renderer.js";
+export { ResumeRenderer } from "./resume-renderer.js"

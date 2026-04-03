@@ -1,6 +1,6 @@
-import { Card, SectionHeader, Markdown } from "@/ui/components";
-import { Disclosure } from "@/ui/pages/settings/components";
-import { SecretField } from "@/ui/pages/settings/components";
+import { Card, SectionHeader, Markdown } from "@/ui/components"
+import { Disclosure } from "@/ui/pages/settings/components"
+import { SecretField } from "@/ui/pages/settings/components"
 
 export function ProviderSecretCard({
   providerName,
@@ -12,14 +12,14 @@ export function ProviderSecretCard({
   onTest,
   className = "p-6",
 }: {
-  providerName: string;
-  instructions: string;
-  masked: string;
-  isSet: boolean;
-  onSave: (value: string) => Promise<void>;
-  onClear: () => Promise<void>;
-  onTest: () => Promise<{ ok: boolean; error?: string }>;
-  className?: string;
+  providerName: string
+  instructions: string
+  masked: string
+  isSet: boolean
+  onSave: (value: string) => Promise<void>
+  onClear: () => Promise<void>
+  onTest: () => Promise<{ ok: boolean; error?: string }>
+  className?: string
 }) {
   return (
     <Card className={className}>
@@ -38,5 +38,5 @@ export function ProviderSecretCard({
         </Disclosure>
       </div>
     </Card>
-  );
+  )
 }

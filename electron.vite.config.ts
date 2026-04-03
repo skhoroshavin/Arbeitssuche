@@ -1,28 +1,28 @@
-import { defineConfig } from "electron-vite";
-import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
-import UnpluginTypia from "@typia/unplugin/vite";
-import path from "node:path";
-import { cpSync, readdirSync } from "node:fs";
-import type { Plugin } from "vite";
+import { defineConfig } from "electron-vite"
+import react from "@vitejs/plugin-react"
+import tailwindcss from "@tailwindcss/vite"
+import UnpluginTypia from "@typia/unplugin/vite"
+import path from "node:path"
+import { cpSync, readdirSync } from "node:fs"
+import type { Plugin } from "vite"
 
 function copyTemplatesPlugin(): Plugin {
   const sourceDirectory = path.resolve(
     __dirname,
     "src/services/resume-renderer/templates",
-  );
-  const outputDirectory = path.resolve(__dirname, "out/main/templates");
+  )
+  const outputDirectory = path.resolve(__dirname, "out/main/templates")
   return {
     name: "copy-templates",
     buildStart() {
       for (const file of readdirSync(sourceDirectory)) {
-        this.addWatchFile(path.resolve(sourceDirectory, file));
+        this.addWatchFile(path.resolve(sourceDirectory, file))
       }
     },
     closeBundle() {
-      cpSync(sourceDirectory, outputDirectory, { recursive: true });
+      cpSync(sourceDirectory, outputDirectory, { recursive: true })
     },
-  };
+  }
 }
 
 export default defineConfig({
@@ -82,4 +82,4 @@ export default defineConfig({
       },
     },
   },
-});
+})

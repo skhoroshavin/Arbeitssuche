@@ -1,11 +1,11 @@
-import { useApplicantForm } from "@/ui/pages/applicant/hooks";
-import { Input } from "@/ui/components";
-import { Checkbox } from "@/ui/pages/applicant/components";
-import { Section } from "@/ui/pages/applicant/components";
-import { ApplicantFormPage } from "@/ui/pages/applicant/components";
+import { useApplicantForm } from "@/ui/pages/applicant/hooks"
+import { Input } from "@/ui/components"
+import { Checkbox } from "@/ui/pages/applicant/components"
+import { Section } from "@/ui/pages/applicant/components"
+import { ApplicantFormPage } from "@/ui/pages/applicant/components"
 
 export default function ApplicantEditPersonal() {
-  const { register, isLoading, saveStatus } = useApplicantForm();
+  const { register, isLoading, saveStatus } = useApplicantForm()
 
   return (
     <ApplicantFormPage
@@ -47,5 +47,5 @@ export default function ApplicantEditPersonal() {
         <Checkbox {...register("disclose.address")} />
       </Section>
     </ApplicantFormPage>
-  );
+  )
 }
