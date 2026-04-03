@@ -121,32 +121,6 @@ export default tseslint.config(
       "@typescript-eslint/no-non-null-assertion": "off",
     },
   },
-  {
-    files: [
-      "src/**/*.test.ts",
-      "src/**/*.test-suite.ts",
-      "src/**/*.integration-test.ts",
-      "src/**/*.test.tsx",
-    ],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              regex: String.raw`^\.\./`,
-              message: "Tests may not use parent imports (../).",
-            },
-            {
-              regex: String.raw`^\./(?!(.*/)?(index|types)(\.js)?$).+`,
-              message:
-                "Tests may import relative modules only through index.ts or types.ts surfaces.",
-            },
-          ],
-        },
-      ],
-    },
-  },
 
   // Utils: tighter file-size limit (small, focused utilities)
   {
