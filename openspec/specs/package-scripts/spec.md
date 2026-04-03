@@ -19,15 +19,22 @@ The system MUST provide a single `fix` command that auto-fixes all static analys
 
 ### Requirement: Consolidated verify command
 
-The system MUST provide a single `verify` command that checks all static analysis without modifying files.
+The system MUST provide a `verify` command that checks static analysis without modifying files and fails on calibrated code duplication.
 
-#### Scenario: Developer runs verify command
+#### Scenario: verify enforces calibrated duplicate gate
 
-**GIVEN** the codebase may have any static analysis issues
+**GIVEN** duplicate detection is configured via `.jscpd.json`
 **WHEN** the developer runs `npm run verify`
-**THEN** prettier, knip, depcruise, jscpd, eslint, and electron-vite build all run sequentially
-**AND** the command fails fast on the first issue found
-**AND** the build step verifies the application compiles
+**THEN** `jscpd` runs in `mild` mode with `minTokens: 60` and `minLines: 5`
+**AND** the command fails when any duplication is detected at that calibration (`threshold: 0`)
+**AND** duplicate detection output is console-only (no HTML report artifacts)
+
+#### Scenario: verify passes when calibrated duplicates are absent
+
+**GIVEN** the codebase has no duplicate blocks at the configured calibration
+**WHEN** the developer runs `npm run verify`
+**THEN** duplicate detection does not fail the command
+**AND** no HTML duplication report directory is produced
 
 ### Requirement: Kitchen sink test command
 
