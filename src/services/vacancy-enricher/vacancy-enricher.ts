@@ -22,8 +22,11 @@ export class VacancyEnricher {
 
   async enrich(vacancy: Vacancy, context: EnrichContext): Promise<Vacancy> {
     const commuted = await this.tryComputeCommute(vacancy, context.applicant)
-    const enriched = await this.tryLlmEnrich(commuted, context)
-    return enriched.with({ enriched: true, enrichmentDirty: false })
+    const { result, successful } = await this.tryLlmEnrich(commuted, context)
+    if (successful) {
+      return result.with({ enriched: true, enrichmentDirty: false })
+    }
+    return result
   }
 
   private async tryComputeCommute(
@@ -53,8 +56,8 @@ export class VacancyEnricher {
   private async tryLlmEnrich(
     vacancy: Vacancy,
     context: EnrichContext,
-  ): Promise<Vacancy> {
-    if (!this.deps.llmClient) return vacancy
+  ): Promise<{ result: Vacancy; successful: boolean }> {
+    if (!this.deps.llmClient) return { result: vacancy, successful: true }
 
     const [assessmentResult, contactResult] = await runLlmEnrichment(
       vacancy,
@@ -73,7 +76,11 @@ export class VacancyEnricher {
     if (contactResult) {
       updated = mergeContactInfo(updated, contactResult)
     }
-    return updated
+
+    const anySucceeded = !!(assessmentResult || contactResult)
+    const noneNeeded =
+      !needsAssessment(vacancy) && !needsContactExtraction(vacancy)
+    return { result: updated, successful: anySucceeded || noneNeeded }
   }
 }
 

@@ -65,28 +65,50 @@ export function VacancyCard({
         </div>
         <VacancyCardMeta vacancy={v} />
       </div>
-      {(enrichmentState === "enriched" || enrichmentState === "stale") &&
-        v.summary && (
-          <div className="mt-2 line-clamp-2 flex items-start gap-2">
-            <Markdown className="flex-1 text-sm text-gray-500 dark:text-gray-400">
-              {v.summary}
-            </Markdown>
-            <button
-              onClick={handleReEnrich}
-              disabled={isEnriching}
-              className="shrink-0 text-xs px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 text-gray-400 hover:text-blue-600 hover:border-blue-300 disabled:opacity-50 transition-colors"
-              title="Neu analysieren"
-            >
-              {isEnriching ? "⟳" : "↺"}
-            </button>
-          </div>
-        )}
+      {(enrichmentState === "enriched" || enrichmentState === "stale") && (
+        <EnrichedSummaryRow
+          summary={v.summary}
+          isEnriching={isEnriching}
+          isError={reEnrich.isError}
+          onReEnrich={handleReEnrich}
+        />
+      )}
       {enrichmentState === "plain" && (
         <p className="mt-2 text-xs text-gray-400 dark:text-gray-500 italic">
           Nicht analysiert
         </p>
       )}
     </Link>
+  )
+}
+
+function EnrichedSummaryRow({
+  summary,
+  isEnriching,
+  isError,
+  onReEnrich,
+}: {
+  summary: string
+  isEnriching: boolean
+  isError: boolean
+  onReEnrich: (event: React.MouseEvent) => void
+}) {
+  return (
+    <div className="mt-2 flex items-start gap-2">
+      {summary && (
+        <Markdown className="flex-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+          {summary}
+        </Markdown>
+      )}
+      <button
+        onClick={onReEnrich}
+        disabled={isEnriching}
+        className={`shrink-0 ml-auto text-xs px-1.5 py-0.5 rounded border transition-colors disabled:opacity-50 ${isError ? "border-red-300 dark:border-red-700 text-red-500" : "border-gray-200 dark:border-gray-600 text-gray-400 hover:text-blue-600 hover:border-blue-300"}`}
+        title={isError ? "Analyse fehlgeschlagen, erneut versuchen" : "Neu analysieren"}
+      >
+        {isEnriching ? "⟳" : "↺"}
+      </button>
+    </div>
   )
 }
 

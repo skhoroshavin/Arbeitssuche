@@ -85,7 +85,7 @@ describe("VacancyEnricher", () => {
     expect(result.enriched).toBe(true)
   })
 
-  it("continues after LLM failure", async () => {
+  it("keeps enrichmentDirty=true after LLM failure so user can retry", async () => {
     const llmClient: LlmClient = {
       completeJSON: vi.fn().mockRejectedValue(new Error("LLM unavailable")),
     } as unknown as LlmClient
@@ -98,7 +98,8 @@ describe("VacancyEnricher", () => {
     })
 
     expect(result.summary).toBe("")
-    expect(result.enriched).toBe(true)
+    expect(result.enriched).toBe(false)
+    expect(result.enrichmentDirty).toBe(true)
   })
 
   it("derives commute origin from applicant address", async () => {

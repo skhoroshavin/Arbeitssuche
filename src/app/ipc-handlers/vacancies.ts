@@ -91,6 +91,12 @@ export function registerVacanciesHandlers(
     const updated = allVacancies.map((v) => (v.hash === hash ? enriched : v))
     services.vacancyRepo.save(jobSearchId, updated, latestCrawl)
 
+    if (enriched.enrichmentDirty) {
+      throw new Error(
+        "Analyse fehlgeschlagen: Modell und API-Schlüssel in den Einstellungen überprüfen",
+      )
+    }
+
     return { ok: true }
   })
 

@@ -144,15 +144,38 @@ function VacancyEnrichmentHeader({
         </span>
       )}
       {showMatchScore && (
-        <button
-          onClick={handleReEnrich}
-          disabled={isEnriching}
-          className="text-sm px-2 py-1 rounded border border-gray-200 dark:border-gray-600 text-gray-500 hover:text-blue-600 hover:border-blue-300 disabled:opacity-50 transition-colors"
-        >
-          {isEnriching ? "Analysiert..." : "Neu analysieren"}
-        </button>
+        <ReEnrichControl
+          isEnriching={isEnriching}
+          error={reEnrich.error}
+          onReEnrich={handleReEnrich}
+        />
       )}
     </div>
+  )
+}
+
+function ReEnrichControl({
+  isEnriching,
+  error,
+  onReEnrich,
+}: {
+  isEnriching: boolean
+  error: unknown
+  onReEnrich: () => void
+}) {
+  const errorMessage =
+    error instanceof Error ? error.message : "Analyse fehlgeschlagen"
+  return (
+    <>
+      <button
+        onClick={onReEnrich}
+        disabled={isEnriching}
+        className={`text-sm px-2 py-1 rounded border transition-colors disabled:opacity-50 ${error ? "border-red-300 dark:border-red-700 text-red-500" : "border-gray-200 dark:border-gray-600 text-gray-500 hover:text-blue-600 hover:border-blue-300"}`}
+      >
+        {isEnriching ? "Analysiert..." : "Neu analysieren"}
+      </button>
+      {error && <span className="text-xs text-red-500">{errorMessage}</span>}
+    </>
   )
 }
 
