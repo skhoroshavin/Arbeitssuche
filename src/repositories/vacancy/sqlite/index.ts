@@ -1,13 +1,13 @@
-import { Database, parseRow } from "@/utils/index.js";
-import { Vacancy } from "@/models/vacancy/index.js";
-import type { Activity, VacancyDTO } from "@/models/vacancy/types.js";
-import { resolveVacancy } from "@/models/vacancy/index.js";
+import { Database, parseRow } from "@/utils/index.js"
+import { Vacancy } from "@/models/vacancy/index.js"
+import type { Activity, VacancyDTO } from "@/models/vacancy/types.js"
+import { resolveVacancy } from "@/models/vacancy/index.js"
 import {
   EMPTY_VACANCY_LIST_OUTPUT,
   createVacancyListOutput,
-} from "@/repositories/vacancy/output.js";
-import type { VacancyRepository } from "@/repositories/vacancy/types.js";
-import typia from "typia";
+} from "@/repositories/vacancy/output.js"
+import type { VacancyRepository } from "@/repositories/vacancy/types.js"
+import typia from "typia"
 
 export function createSqliteVacancyRepository(
   database: Database,
@@ -25,105 +25,105 @@ export function createSqliteVacancyRepository(
       data TEXT NOT NULL,
       PRIMARY KEY (job_search_id, hash)
     )
-  `);
-  return new SqliteVacancyRepository(database);
+  `)
+  return new SqliteVacancyRepository(database)
 }
 
 class SqliteVacancyRepository implements VacancyRepository {
   constructor(private readonly database: Database) {
     this.loadMetaStmt = database.prepare(
       "SELECT generated_at, latest_crawl FROM vacancy_meta WHERE job_search_id = ?",
-    );
+    )
     this.loadAllStmt = database.prepare(
       "SELECT data FROM vacancies WHERE job_search_id = ?",
-    );
+    )
     this.upsertMetaStmt = database.prepare(
       "INSERT OR REPLACE INTO vacancy_meta (job_search_id, generated_at, latest_crawl) VALUES (?, ?, ?)",
-    );
+    )
     this.deleteStaleVacanciesStmt = database.prepare(
       "DELETE FROM vacancies WHERE job_search_id = ? AND hash NOT IN (SELECT value FROM json_each(?))",
-    );
+    )
     this.upsertVacancyStmt = database.prepare(
       "INSERT OR REPLACE INTO vacancies (job_search_id, hash, data) VALUES (?, ?, ?)",
-    );
+    )
     this.findByHashStmt = database.prepare(
       "SELECT data FROM vacancies WHERE job_search_id = ? AND hash = ?",
-    );
+    )
     this.updateVacancyStmt = database.prepare(
       "UPDATE vacancies SET data = ? WHERE job_search_id = ? AND hash = ?",
-    );
+    )
   }
 
   loadAll(jobSearchId: string) {
-    const metaRaw = this.loadMetaStmt.get(jobSearchId);
-    if (metaRaw === undefined) return EMPTY_VACANCY_LIST_OUTPUT;
+    const metaRaw = this.loadMetaStmt.get(jobSearchId)
+    if (metaRaw === undefined) return EMPTY_VACANCY_LIST_OUTPUT
     const meta = typia.assert<{ generated_at: string; latest_crawl: string }>(
       metaRaw,
-    );
+    )
 
     const vacancies = this.loadAllStmt
       .all(jobSearchId)
-      .map((raw) => hydrateVacancyRow(raw));
+      .map((raw) => hydrateVacancyRow(raw))
 
     return {
       generatedAt: meta.generated_at,
       latestCrawl: meta.latest_crawl,
       vacancies,
-    };
+    }
   }
 
   save(jobSearchId: string, vacancies: Vacancy[], latestCrawl: string): void {
-    const output = createVacancyListOutput(vacancies, latestCrawl);
-    const hashes = JSON.stringify(vacancies.map((v) => v.hash));
+    const output = createVacancyListOutput(vacancies, latestCrawl)
+    const hashes = JSON.stringify(vacancies.map((v) => v.hash))
 
     this.database.transaction(() => {
       this.upsertMetaStmt.run(
         jobSearchId,
         output.generatedAt,
         output.latestCrawl,
-      );
-      this.deleteStaleVacanciesStmt.run(jobSearchId, hashes);
+      )
+      this.deleteStaleVacanciesStmt.run(jobSearchId, hashes)
       for (const vacancy of vacancies) {
         this.upsertVacancyStmt.run(
           jobSearchId,
           vacancy.hash,
           JSON.stringify(vacancy),
-        );
+        )
       }
-    });
+    })
   }
 
   findByHash(jobSearchId: string, hash: string): Vacancy | undefined {
-    const row = parseRow(this.findByHashStmt.get(jobSearchId, hash));
-    if (row === undefined) return undefined;
-    return hydrateVacancy(row);
+    const row = parseRow(this.findByHashStmt.get(jobSearchId, hash))
+    if (row === undefined) return undefined
+    return hydrateVacancy(row)
   }
 
   addActivity(jobSearchId: string, hash: string, activity: Activity): void {
-    const row = parseRow(this.findByHashStmt.get(jobSearchId, hash));
-    if (row === undefined) throw new Error(`Vacancy "${hash}" not found`);
+    const row = parseRow(this.findByHashStmt.get(jobSearchId, hash))
+    if (row === undefined) throw new Error(`Vacancy "${hash}" not found`)
 
-    const vacancy = hydrateVacancy(row);
+    const vacancy = hydrateVacancy(row)
     const updated = vacancy.with({
       activityHistory: [...vacancy.activityHistory, activity],
-    });
+    })
 
-    this.updateVacancyStmt.run(JSON.stringify(updated), jobSearchId, hash);
+    this.updateVacancyStmt.run(JSON.stringify(updated), jobSearchId, hash)
   }
 
-  private readonly loadMetaStmt;
-  private readonly loadAllStmt;
-  private readonly upsertMetaStmt;
-  private readonly deleteStaleVacanciesStmt;
-  private readonly upsertVacancyStmt;
-  private readonly findByHashStmt;
-  private readonly updateVacancyStmt;
+  private readonly loadMetaStmt
+  private readonly loadAllStmt
+  private readonly upsertMetaStmt
+  private readonly deleteStaleVacanciesStmt
+  private readonly upsertVacancyStmt
+  private readonly findByHashStmt
+  private readonly updateVacancyStmt
 }
 
 function hydrateVacancyRow(row: unknown): Vacancy {
-  return hydrateVacancy(parseRow(row));
+  return hydrateVacancy(parseRow(row))
 }
 
 function hydrateVacancy(data: unknown): Vacancy {
-  return new Vacancy(resolveVacancy(typia.assert<Partial<VacancyDTO>>(data)));
+  return new Vacancy(resolveVacancy(typia.assert<Partial<VacancyDTO>>(data)))
 }

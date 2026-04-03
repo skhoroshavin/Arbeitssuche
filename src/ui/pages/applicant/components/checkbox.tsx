@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef } from "react"
 
 export const Checkbox = forwardRef<
   HTMLInputElement,
@@ -9,5 +9,5 @@ export const Checkbox = forwardRef<
       <input ref={reference} type="checkbox" {...properties} />
       <span>{label}</span>
     </label>
-  );
-});
+  )
+})

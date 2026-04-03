@@ -3,16 +3,16 @@ import {
   useLlmProviders,
   useProviderSecretActions,
   resolveSecret,
-} from "@/ui/data";
-import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config/types";
-import { Card, PageHeader, SectionHeader, Loading } from "@/ui/components";
-import { ModelCombobox } from "@/ui/pages/settings/components";
-import { ProviderSecretCard } from "@/ui/pages/settings/components";
+} from "@/ui/data"
+import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config/types"
+import { Card, PageHeader, SectionHeader, Loading } from "@/ui/components"
+import { ModelCombobox } from "@/ui/pages/settings/components"
+import { ProviderSecretCard } from "@/ui/pages/settings/components"
 
 export default function SettingsAI() {
-  const ai = useAISettingsView(MODEL_OPTIONS);
+  const ai = useAISettingsView(MODEL_OPTIONS)
 
-  if (ai.isLoading) return <Loading />;
+  if (ai.isLoading) return <Loading />
 
   return (
     <>
@@ -30,7 +30,7 @@ export default function SettingsAI() {
         onModelChange={(key, value) => ai.saveConfig.mutate({ key, value })}
       />
     </>
-  );
+  )
 }
 
 const MODEL_OPTIONS: LlmModel[] = [
@@ -59,21 +59,21 @@ const MODEL_OPTIONS: LlmModel[] = [
     name: "Claude Opus 4",
     pricing: { prompt: "0.000015", completion: "0.000075" },
   },
-];
+]
 
 function ProviderSecretSection({
   providerId,
   secrets,
 }: {
-  providerId: string;
-  secrets: Record<string, { masked: string; isSet: boolean }> | undefined;
+  providerId: string
+  secrets: Record<string, { masked: string; isSet: boolean }> | undefined
 }) {
-  const { data: providers } = useLlmProviders();
-  const actions = useProviderSecretActions("llm", providerId);
-  const provider = providers?.find((p) => p.id === providerId);
-  const secret = resolveSecret(secrets, providerId);
+  const { data: providers } = useLlmProviders()
+  const actions = useProviderSecretActions("llm", providerId)
+  const provider = providers?.find((p) => p.id === providerId)
+  const secret = resolveSecret(secrets, providerId)
 
-  if (!provider) return;
+  if (!provider) return
 
   return (
     <ProviderSecretCard
@@ -86,7 +86,7 @@ function ProviderSecretSection({
       onTest={actions.onTest}
       className="p-6 mt-4"
     />
-  );
+  )
 }
 
 function ProviderSelector({
@@ -94,9 +94,9 @@ function ProviderSelector({
   provider,
   onSelect,
 }: {
-  providers: { id: string; name: string; description: string }[];
-  provider: LlmProvider;
-  onSelect: (id: string) => void;
+  providers: { id: string; name: string; description: string }[]
+  provider: LlmProvider
+  onSelect: (id: string) => void
 }) {
   return (
     <Card className="p-6">
@@ -121,7 +121,7 @@ function ProviderSelector({
         ))}
       </div>
     </Card>
-  );
+  )
 }
 
 function ModelSettingsCard({
@@ -130,14 +130,14 @@ function ModelSettingsCard({
   isLoading,
   onModelChange,
 }: {
-  models: LlmModel[];
+  models: LlmModel[]
   config: {
-    assessmentModel: string;
-    coverLetterModel: string;
-    consultationModel: string;
-  };
-  isLoading: boolean;
-  onModelChange: (key: ConfigKey, value: string) => void;
+    assessmentModel: string
+    coverLetterModel: string
+    consultationModel: string
+  }
+  isLoading: boolean
+  onModelChange: (key: ConfigKey, value: string) => void
 }) {
   return (
     <Card className="p-6 mt-4">
@@ -166,5 +166,5 @@ function ModelSettingsCard({
         />
       </div>
     </Card>
-  );
+  )
 }

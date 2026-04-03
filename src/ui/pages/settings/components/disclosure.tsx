@@ -1,17 +1,17 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from "react"
 import {
   Disclosure as HeadlessDisclosure,
   DisclosureButton,
   DisclosurePanel,
-} from "@headlessui/react";
-import { ChevronRightIcon } from "@/ui/components";
+} from "@headlessui/react"
+import { ChevronRightIcon } from "@/ui/components"
 
 export function Disclosure({
   title,
   children,
 }: {
-  title: string;
-  children: ReactNode;
+  title: string
+  children: ReactNode
 }) {
   return (
     <HeadlessDisclosure as="div" className="mt-3">
@@ -23,5 +23,5 @@ export function Disclosure({
         {children}
       </DisclosurePanel>
     </HeadlessDisclosure>
-  );
+  )
 }

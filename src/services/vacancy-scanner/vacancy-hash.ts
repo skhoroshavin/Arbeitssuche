@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash } from "node:crypto"
 
 export function vacancyHash(
   title: string,
@@ -8,11 +8,11 @@ export function vacancyHash(
 ): string {
   const parts = [title, company, address, contactName].map((s) =>
     normalizeString(s),
-  );
-  const key = parts.join("||");
-  return createHash("md5").update(key).digest("hex").slice(0, 6);
+  )
+  const key = parts.join("||")
+  return createHash("md5").update(key).digest("hex").slice(0, 6)
 }
 
 function normalizeString(s?: string): string {
-  return (s ?? "").trim().toLowerCase();
+  return (s ?? "").trim().toLowerCase()
 }

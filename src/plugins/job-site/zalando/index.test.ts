@@ -1,46 +1,46 @@
-import { test, describe, expect } from "vitest";
-import path from "node:path";
-import { createZalandoSite } from "./index";
-import { createStubBrowser } from "@/plugins/browser/index.js";
+import { test, describe, expect } from "vitest"
+import path from "node:path"
+import { createZalandoSite } from "."
+import { createStubBrowser } from "@/plugins/browser/index.js"
 
 describe("zalando", () => {
   test("getVacancyList returns absolute URLs from search page", async () => {
-    const browser = createStubBrowser(SAMPLES_DIR);
-    const site = createZalandoSite(browser);
+    const browser = createStubBrowser(SAMPLES_DIR)
+    const site = createZalandoSite(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
       query: "",
       mode: "employment",
-    });
-    expect(urls.length > 0).toBeTruthy();
+    })
+    expect(urls.length > 0).toBeTruthy()
     for (const url of urls) {
-      expect(url).toMatch(/^https?:\/\//);
+      expect(url).toMatch(/^https?:\/\//)
     }
-  });
+  })
 
   test("getVacancyDetails returns title and company", async () => {
-    const browser = createStubBrowser(SAMPLES_DIR);
-    const site = createZalandoSite(browser);
+    const browser = createStubBrowser(SAMPLES_DIR)
+    const site = createZalandoSite(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
       query: "",
       mode: "employment",
-    });
-    const vacancy = await site.getVacancyDetails(urls[0]);
+    })
+    const vacancy = await site.getVacancyDetails(urls[0])
     expect(
       typeof vacancy.title === "string" && vacancy.title.length > 0,
-    ).toBeTruthy();
+    ).toBeTruthy()
     expect(
       typeof vacancy.company === "string" && vacancy.company.length > 0,
-    ).toBeTruthy();
-  });
+    ).toBeTruthy()
+  })
 
   test("getVacancyDetails returns raw HTML from section", async () => {
     const items = Array.from(
       { length: 30 },
       (_, index) =>
         `<li>Requirement number ${index + 1} that is detailed enough</li>`,
-    ).join("");
+    ).join("")
     const html = `
       <html><body>
         <h1>Software Engineer</h1>
@@ -51,19 +51,19 @@ describe("zalando", () => {
           <ul>${items}</ul>
         </section>
       </body></html>
-    `;
-    const vacancyUrl = "https://jobs.zalando.com/en/jobs/12345";
-    const browser = createStubBrowser({ [vacancyUrl]: html });
-    const site = createZalandoSite(browser);
-    const vacancy = await site.getVacancyDetails(vacancyUrl);
-    expect(vacancy.descriptionHtml).toBeTruthy();
+    `
+    const vacancyUrl = "https://jobs.zalando.com/en/jobs/12345"
+    const browser = createStubBrowser({ [vacancyUrl]: html })
+    const site = createZalandoSite(browser)
+    const vacancy = await site.getVacancyDetails(vacancyUrl)
+    expect(vacancy.descriptionHtml).toBeTruthy()
     expect(
       vacancy.descriptionHtml!.includes("<strong>talented engineer</strong>"),
-    ).toBeTruthy();
+    ).toBeTruthy()
     expect(
       vacancy.descriptionHtml!.includes("<li>Requirement number 1"),
-    ).toBeTruthy();
-  });
-});
+    ).toBeTruthy()
+  })
+})
 
-const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples");
+const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples")

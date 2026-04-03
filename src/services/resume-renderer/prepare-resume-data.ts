@@ -1,7 +1,7 @@
-import type { Applicant } from "@/models/applicant/types.js";
+import type { Applicant } from "@/models/applicant/types.js"
 
 export function prepareResumeData(applicant: Applicant) {
-  const { personal, disclose } = applicant;
+  const { personal, disclose } = applicant
 
   return {
     personal: {
@@ -38,22 +38,22 @@ export function prepareResumeData(applicant: Applicant) {
       description: c.description,
     })),
     hobbies: disclose.hobbies ? personal.hobbies : undefined,
-  };
+  }
 }
 
 function conditionalDate(
   disclose?: boolean,
   date?: string,
 ): string | undefined {
-  return disclose ? date : undefined;
+  return disclose ? date : undefined
 }
 
 function prepareLocation(applicant: Applicant): string | undefined {
-  const { personal, disclose } = applicant;
+  const { personal, disclose } = applicant
   const parts = [
     personal.address?.street,
     personal.address?.zip,
     personal.address?.city,
-  ].filter(Boolean);
-  return disclose.address && parts.length > 0 ? parts.join(", ") : undefined;
+  ].filter(Boolean)
+  return disclose.address && parts.length > 0 ? parts.join(", ") : undefined
 }

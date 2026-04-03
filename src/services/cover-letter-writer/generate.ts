@@ -1,31 +1,31 @@
-import type { Applicant } from "@/models/applicant/types.js";
-import type { JobSearch } from "@/models/job-search/types.js";
-import type { LlmClient } from "@/plugins/llm/types.js";
-import { formatApplicantSections } from "@/models/applicant/index.js";
+import type { Applicant } from "@/models/applicant/types.js"
+import type { JobSearch } from "@/models/job-search/types.js"
+import type { LlmClient } from "@/plugins/llm/types.js"
+import { formatApplicantSections } from "@/models/applicant/index.js"
 
 export async function generateCoverLetter(
   applicant: Applicant,
   jobSearch: JobSearch,
   llmClient: LlmClient,
 ): Promise<string> {
-  const prompt = buildCoverLetterPrompt(applicant, jobSearch);
-  return llmClient.complete(prompt, 4096);
+  const prompt = buildCoverLetterPrompt(applicant, jobSearch)
+  return llmClient.complete(prompt, 4096)
 }
 
 function buildCoverLetterPrompt(
   applicant: Applicant,
   jobSearch: JobSearch,
 ): string {
-  const sections = formatApplicantSections(applicant);
+  const sections = formatApplicantSections(applicant)
 
   // Job search context
-  const searchLines = [`Suchbegriff: ${jobSearch.params.searchTerm}`];
+  const searchLines = [`Suchbegriff: ${jobSearch.params.searchTerm}`]
   if (jobSearch.preferences.freeText.length > 0) {
     searchLines.push(
       `Präferenzen:\n${jobSearch.preferences.freeText.map((t) => `- ${t}`).join("\n")}`,
-    );
+    )
   }
-  sections.push(`## Stellensuche\n${searchLines.join("\n")}`);
+  sections.push(`## Stellensuche\n${searchLines.join("\n")}`)
 
   return `Erstellen Sie eine professionelle Anschreiben-Vorlage auf Deutsch für den folgenden Kandidaten und die beschriebene Stellensuche.
 
@@ -43,5 +43,5 @@ Das Anschreiben soll:
 
 Geben Sie NUR den Anschreiben-Text zurück, ohne zusätzliche Erklärungen oder Markdown-Formatierung.
 
-${sections.join("\n\n")}`;
+${sections.join("\n\n")}`
 }

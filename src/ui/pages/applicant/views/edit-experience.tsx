@@ -1,18 +1,18 @@
-import { useFieldArray } from "react-hook-form";
-import { useApplicantForm } from "@/ui/pages/applicant/hooks";
-import { Input } from "@/ui/components";
-import { AutoExpandTextarea } from "@/ui/pages/applicant/components";
-import { Checkbox } from "@/ui/pages/applicant/components";
-import { ApplicantFormPage } from "@/ui/pages/applicant/components";
+import { useFieldArray } from "react-hook-form"
+import { useApplicantForm } from "@/ui/pages/applicant/hooks"
+import { Input } from "@/ui/components"
+import { AutoExpandTextarea } from "@/ui/pages/applicant/components"
+import { Checkbox } from "@/ui/pages/applicant/components"
+import { ApplicantFormPage } from "@/ui/pages/applicant/components"
 import {
   AddButton,
   FieldArrayCard,
   FieldGrid,
-} from "@/ui/pages/applicant/components";
+} from "@/ui/pages/applicant/components"
 
 export default function ApplicantEditExperience() {
-  const { register, control, isLoading, saveStatus } = useApplicantForm();
-  const experience = useFieldArray({ control, name: "experience" });
+  const { register, control, isLoading, saveStatus } = useApplicantForm()
+  const experience = useFieldArray({ control, name: "experience" })
 
   return (
     <ApplicantFormPage
@@ -62,5 +62,5 @@ export default function ApplicantEditExperience() {
         Erfahrung hinzufügen
       </AddButton>
     </ApplicantFormPage>
-  );
+  )
 }

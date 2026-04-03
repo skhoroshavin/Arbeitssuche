@@ -1,22 +1,22 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
-import { createRequestyModelRegistry } from "./index";
+import { describe, it, expect, afterEach, vi } from "vitest"
+import { createRequestyModelRegistry } from "."
 
 describe("createRequestyModelRegistry", () => {
-  const originalFetch = globalThis.fetch;
+  const originalFetch = globalThis.fetch
 
   afterEach(() => {
-    globalThis.fetch = originalFetch;
-  });
+    globalThis.fetch = originalFetch
+  })
 
   function mockFetch(body: unknown) {
-    globalThis.fetch = vi.fn(() =>
+    globalThis.fetch = vi.fn<typeof fetch>(() =>
       Promise.resolve({
         ok: true,
         status: 200,
         json: () => Promise.resolve(body),
         text: () => Promise.resolve(JSON.stringify(body)),
-      }),
-    ) as unknown as typeof fetch;
+      } as Response),
+    )
   }
 
   it("derives name from id when name field is missing", async () => {
@@ -28,14 +28,14 @@ describe("createRequestyModelRegistry", () => {
           output_price: 0.000_015,
         },
       ],
-    });
+    })
 
-    const registry = createRequestyModelRegistry();
-    const models = await registry.fetchModels();
+    const registry = createRequestyModelRegistry()
+    const models = await registry.fetchModels()
 
-    expect(models[0].name).toBe("Claude 3.7 Sonnet");
-    expect(models[0].name).not.toBe("undefined");
-  });
+    expect(models[0].name).toBe("Claude 3.7 Sonnet")
+    expect(models[0].name).not.toBe("undefined")
+  })
 
   it("uses name field when present", async () => {
     mockFetch({
@@ -47,13 +47,13 @@ describe("createRequestyModelRegistry", () => {
           output_price: 0.000_015,
         },
       ],
-    });
+    })
 
-    const registry = createRequestyModelRegistry();
-    const models = await registry.fetchModels();
+    const registry = createRequestyModelRegistry()
+    const models = await registry.fetchModels()
 
-    expect(models[0].name).toBe("Claude Sonnet 4");
-  });
+    expect(models[0].name).toBe("Claude Sonnet 4")
+  })
 
   it("maps input_price/output_price to pricing fields", async () => {
     mockFetch({
@@ -64,14 +64,14 @@ describe("createRequestyModelRegistry", () => {
           output_price: 0.000_015,
         },
       ],
-    });
+    })
 
-    const registry = createRequestyModelRegistry();
-    const models = await registry.fetchModels();
+    const registry = createRequestyModelRegistry()
+    const models = await registry.fetchModels()
 
-    expect(models[0].pricing.prompt).toBe("0.000003");
-    expect(models[0].pricing.completion).toBe("0.000015");
-  });
+    expect(models[0].pricing.prompt).toBe("0.000003")
+    expect(models[0].pricing.completion).toBe("0.000015")
+  })
 
   it("filters out non-EU models and keeps regionless ones", async () => {
     mockFetch({
@@ -97,15 +97,15 @@ describe("createRequestyModelRegistry", () => {
           output_price: 0.000_015,
         },
       ],
-    });
+    })
 
-    const registry = createRequestyModelRegistry();
-    const models = await registry.fetchModels();
+    const registry = createRequestyModelRegistry()
+    const models = await registry.fetchModels()
 
-    expect(models.length).toBe(2);
-    expect(models[0].id).toBe("azure/gpt-4.1-mini");
-    expect(models[1].id).toBe("anthropic/claude-sonnet-4");
-  });
+    expect(models.length).toBe(2)
+    expect(models[0].id).toBe("azure/gpt-4.1-mini")
+    expect(models[1].id).toBe("anthropic/claude-sonnet-4")
+  })
 
   it("keeps models from all recognized EU regions", async () => {
     mockFetch({
@@ -120,13 +120,13 @@ describe("createRequestyModelRegistry", () => {
         { id: "azure/model-d@eu-west-1", input_price: 0, output_price: 0 },
         { id: "azure/model-e@eu-central-1", input_price: 0, output_price: 0 },
       ],
-    });
+    })
 
-    const registry = createRequestyModelRegistry();
-    const models = await registry.fetchModels();
+    const registry = createRequestyModelRegistry()
+    const models = await registry.fetchModels()
 
-    expect(models.length).toBe(5);
-  });
+    expect(models.length).toBe(5)
+  })
 
   it("deduplicates regional variants keeping the first EU match", async () => {
     mockFetch({
@@ -147,12 +147,12 @@ describe("createRequestyModelRegistry", () => {
           output_price: 0.000_008,
         },
       ],
-    });
+    })
 
-    const registry = createRequestyModelRegistry();
-    const models = await registry.fetchModels();
+    const registry = createRequestyModelRegistry()
+    const models = await registry.fetchModels()
 
-    expect(models.length).toBe(1);
-    expect(models[0].id).toBe("azure/gpt-4.1");
-  });
-});
+    expect(models.length).toBe(1)
+    expect(models[0].id).toBe("azure/gpt-4.1")
+  })
+})

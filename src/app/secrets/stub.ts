@@ -1,20 +1,20 @@
-import { resolveSecrets } from "@/models/secrets/index.js";
-import type { Secrets } from "@/models/secrets/types.js";
-import type { SecretsRepository } from "./types.js";
+import { resolveSecrets } from "@/models/secrets/index.js"
+import type { Secrets } from "@/models/secrets/types.js"
+import type { SecretsRepository } from "./types.js"
 
 export function createStubSecretsRepository(
   initial?: Secrets,
 ): SecretsRepository {
-  let stored: Secrets = structuredClone(resolveSecrets(initial));
+  let stored: Secrets = structuredClone(resolveSecrets(initial))
 
   return {
     load(): Secrets {
-      return structuredClone(stored);
+      return structuredClone(stored)
     },
 
     save(data: Secrets): Promise<void> {
-      stored = structuredClone(resolveSecrets(data));
-      return Promise.resolve();
+      stored = structuredClone(resolveSecrets(data))
+      return Promise.resolve()
     },
-  };
+  }
 }

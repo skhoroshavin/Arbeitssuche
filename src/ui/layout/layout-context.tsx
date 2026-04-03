@@ -6,15 +6,15 @@ import {
   type Dispatch,
   type ReactNode,
   type SetStateAction,
-} from "react";
-import type { AutoSaveStatus as AutoSaveStatusType } from "@/ui/hooks";
+} from "react"
+import type { AutoSaveStatus as AutoSaveStatusType } from "@/ui/hooks"
 
 export interface LayoutConfig {
-  sidebarTitle: string;
-  sidebarNavItems: NavItem[];
-  headerTitle: ReactNode;
-  headerBackLink: ReactNode;
-  headerExtra?: ReactNode;
+  sidebarTitle: string
+  sidebarNavItems: NavItem[]
+  headerTitle: ReactNode
+  headerBackLink: ReactNode
+  headerExtra?: ReactNode
 }
 
 export const defaultLayoutConfig: LayoutConfig = {
@@ -23,59 +23,59 @@ export const defaultLayoutConfig: LayoutConfig = {
   headerTitle: "",
   headerBackLink: undefined,
   headerExtra: undefined,
-};
+}
 
 export function useLayout() {
-  return useContext(LayoutContext).config;
+  return useContext(LayoutContext).config
 }
 
 export function useLayoutConfig(
   configFunction: () => LayoutConfig,
   deps: DependencyList,
 ) {
-  const setConfig = useSetLayout();
+  const setConfig = useSetLayout()
   useEffect(() => {
-    setConfig(configFunction());
-  }, [setConfig, ...deps]);
+    setConfig(configFunction())
+  }, [setConfig, ...deps])
 }
 
 export function useAutoSaveHeader(saveStatus: AutoSaveStatusType) {
-  useSetHeaderExtra(<AutoSaveStatus status={saveStatus} />, [saveStatus]);
+  useSetHeaderExtra(<AutoSaveStatus status={saveStatus} />, [saveStatus])
 }
 
 function useSetHeaderExtra(extra: ReactNode, deps: DependencyList) {
-  const setConfig = useSetLayout();
+  const setConfig = useSetLayout()
   useEffect(() => {
-    setConfig((previous) => ({ ...previous, headerExtra: extra }));
+    setConfig((previous) => ({ ...previous, headerExtra: extra }))
     return () =>
-      setConfig((previous) => ({ ...previous, headerExtra: undefined }));
-  }, [setConfig, ...deps]);
+      setConfig((previous) => ({ ...previous, headerExtra: undefined }))
+  }, [setConfig, ...deps])
 }
 
 function useSetLayout() {
-  return useContext(LayoutContext).setConfig;
+  return useContext(LayoutContext).setConfig
 }
 
 function AutoSaveStatus({ status }: { status: AutoSaveStatusType }) {
-  if (status === "idle") return;
-  const { text, className } = autoSaveConfig[status];
-  return <span className={`text-sm ${className}`}>{text}</span>;
+  if (status === "idle") return
+  const { text, className } = autoSaveConfig[status]
+  return <span className={`text-sm ${className}`}>{text}</span>
 }
 
 export const LayoutContext = createContext<LayoutContextValue>({
   config: defaultLayoutConfig,
   setConfig: () => {},
-});
+})
 
 interface NavItem {
-  to: string;
-  label: string;
-  end?: boolean;
+  to: string
+  label: string
+  end?: boolean
 }
 
 interface LayoutContextValue {
-  config: LayoutConfig;
-  setConfig: Dispatch<SetStateAction<LayoutConfig>>;
+  config: LayoutConfig
+  setConfig: Dispatch<SetStateAction<LayoutConfig>>
 }
 
 const autoSaveConfig: Record<
@@ -98,4 +98,4 @@ const autoSaveConfig: Record<
     text: "Fehler beim Speichern",
     className: "text-red-600 dark:text-red-400",
   },
-};
+}

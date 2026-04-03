@@ -4,7 +4,7 @@
  */
 
 export function arrayToString(array: string[] | undefined): string | undefined {
-  return Array.isArray(array) ? array.join("\n") : array;
+  return Array.isArray(array) ? array.join("\n") : array
 }
 
 export function stringToArray(
@@ -15,5 +15,5 @@ export function stringToArray(
         .split("\n")
         .map((l) => l.trim())
         .filter(Boolean)
-    : value;
+    : value
 }

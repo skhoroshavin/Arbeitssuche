@@ -1,5 +1,5 @@
-import { Routes, Route } from "react-router";
-import { AppLayout } from "./layout";
+import { Routes, Route } from "react-router"
+import { AppLayout } from "./layout"
 import {
   ApplicantList,
   ApplicantLayout,
@@ -17,7 +17,7 @@ import {
   SettingsLayout,
   SettingsAI,
   SettingsMaps,
-} from "./pages";
+} from "./pages"
 
 export default function App() {
   return (
@@ -50,5 +50,5 @@ export default function App() {
         />
       </Route>
     </Routes>
-  );
+  )
 }

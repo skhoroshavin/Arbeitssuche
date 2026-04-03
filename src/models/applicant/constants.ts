@@ -1,11 +1,11 @@
-import type { Applicant } from "./types.js";
+import type { Applicant } from "./types.js"
 
 export const RESUME_TEMPLATES = [
   "resume_classic",
   "resume_modern",
   "resume_elegant",
   "resume_minimal",
-] as const;
+] as const
 
 export const DEFAULT_APPLICANT: Applicant = {
   id: "",
@@ -16,4 +16,4 @@ export const DEFAULT_APPLICANT: Applicant = {
   skills: [],
   languages: [],
   certifications: [],
-};
+}

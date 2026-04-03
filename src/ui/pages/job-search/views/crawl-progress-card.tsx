@@ -1,6 +1,6 @@
-import { Card, SectionHeader } from "@/ui/components";
-import { ProgressLog } from "@/ui/pages/job-search/components";
-import type { ProgressEvent as CrawlEvent } from "@/models/index";
+import { Card, SectionHeader } from "@/ui/components"
+import { ProgressLog } from "@/ui/pages/job-search/components"
+import type { ProgressEvent as CrawlEvent } from "@/models/index"
 
 export function CrawlProgressCard({
   events,
@@ -8,10 +8,10 @@ export function CrawlProgressCard({
   onAbort,
   onClose,
 }: {
-  events: CrawlEvent[];
-  done: boolean;
-  onAbort: () => void;
-  onClose: () => void;
+  events: CrawlEvent[]
+  done: boolean
+  onAbort: () => void
+  onClose: () => void
 }) {
   return (
     <Card className="p-4">
@@ -39,5 +39,5 @@ export function CrawlProgressCard({
         </button>
       )}
     </Card>
-  );
+  )
 }

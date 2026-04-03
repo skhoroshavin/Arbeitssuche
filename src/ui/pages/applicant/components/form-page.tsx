@@ -1,7 +1,7 @@
-import type { ReactNode } from "react";
-import { PageHeader, Loading } from "@/ui/components";
-import type { AutoSaveStatus } from "@/ui/hooks";
-import { useAutoSaveHeader } from "@/ui/layout";
+import type { ReactNode } from "react"
+import { PageHeader, Loading } from "@/ui/components"
+import type { AutoSaveStatus } from "@/ui/hooks"
+import { useAutoSaveHeader } from "@/ui/layout"
 
 export function ApplicantFormPage({
   title,
@@ -9,19 +9,19 @@ export function ApplicantFormPage({
   saveStatus,
   children,
 }: {
-  title: string;
-  isLoading: boolean;
-  saveStatus: AutoSaveStatus;
-  children: ReactNode;
+  title: string
+  isLoading: boolean
+  saveStatus: AutoSaveStatus
+  children: ReactNode
 }) {
-  useAutoSaveHeader(saveStatus);
+  useAutoSaveHeader(saveStatus)
 
-  if (isLoading) return <Loading />;
+  if (isLoading) return <Loading />
 
   return (
     <div className="space-y-4">
       <PageHeader title={title} />
       {children}
     </div>
-  );
+  )
 }

@@ -77,5 +77,5 @@ export function ResumeMinimalPreview() {
       <rect x="60" y="144" width="18" height="2" rx="0.5" fill="#475569" />
       <rect x="81" y="144" width="12" height="2" rx="0.5" fill="#94a3b8" />
     </svg>
-  );
+  )
 }

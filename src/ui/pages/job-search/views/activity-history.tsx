@@ -1,13 +1,13 @@
-import { Card, SectionHeader } from "@/ui/components";
-import { STATUS_LABELS } from "@/models/vacancy/index";
-import type { ActivityType } from "@/models/vacancy/types";
+import { Card, SectionHeader } from "@/ui/components"
+import { STATUS_LABELS } from "@/models/vacancy/index"
+import type { ActivityType } from "@/models/vacancy/types"
 
 export function ActivityHistory({
   activities,
 }: {
-  activities: { date: string; type: ActivityType; notes?: string }[];
+  activities: { date: string; type: ActivityType; notes?: string }[]
 }) {
-  if (activities.length === 0) return;
+  if (activities.length === 0) return
   return (
     <Card className="p-4">
       <SectionHeader className="mb-3">Aktivitätshistorie</SectionHeader>
@@ -28,5 +28,5 @@ export function ActivityHistory({
         ))}
       </div>
     </Card>
-  );
+  )
 }

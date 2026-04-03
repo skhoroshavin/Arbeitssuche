@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback } from "react"
 
 export function SecretField({
   label,
@@ -8,41 +8,41 @@ export function SecretField({
   onClear,
   onTest,
 }: SecretFieldProperties) {
-  const [mode, setMode] = useState<"display" | "editing">("display");
-  const [inputValue, setInputValue] = useState("");
+  const [mode, setMode] = useState<"display" | "editing">("display")
+  const [inputValue, setInputValue] = useState("")
   const [testResult, setTestResult] = useState<{
-    ok: boolean;
-    error?: string;
-  }>();
-  const [isSaving, setIsSaving] = useState(false);
+    ok: boolean
+    error?: string
+  }>()
+  const [isSaving, setIsSaving] = useState(false)
 
   const handleSave = async () => {
-    if (!inputValue.trim()) return;
-    setIsSaving(true);
+    if (!inputValue.trim()) return
+    setIsSaving(true)
     try {
-      await onSave(inputValue.trim());
-      setInputValue("");
-      setMode("display");
+      await onSave(inputValue.trim())
+      setInputValue("")
+      setMode("display")
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  };
+  }
 
   const handleCancel = useCallback(() => {
-    setInputValue("");
-    setMode("display");
-  }, []);
+    setInputValue("")
+    setMode("display")
+  }, [])
 
   const handleClear = async () => {
-    await onClear();
-    setTestResult(undefined);
-  };
+    await onClear()
+    setTestResult(undefined)
+  }
 
   const handleTest = async () => {
-    setTestResult(undefined);
-    const result = await onTest();
-    setTestResult(result);
-  };
+    setTestResult(undefined)
+    const result = await onTest()
+    setTestResult(result)
+  }
 
   return (
     <div>
@@ -54,8 +54,8 @@ export function SecretField({
           onClear={handleClear}
           onTest={handleTest}
           onStartEditing={() => {
-            setInputValue("");
-            setMode("editing");
+            setInputValue("")
+            setMode("editing")
           }}
           testResult={testResult}
         />
@@ -70,16 +70,16 @@ export function SecretField({
         />
       )}
     </div>
-  );
+  )
 }
 
 interface SecretFieldProperties {
-  label: string;
-  masked: string;
-  isSet: boolean;
-  onSave: (value: string) => Promise<void>;
-  onClear: () => Promise<void>;
-  onTest: () => Promise<{ ok: boolean; error?: string }>;
+  label: string
+  masked: string
+  isSet: boolean
+  onSave: (value: string) => Promise<void>
+  onClear: () => Promise<void>
+  onTest: () => Promise<{ ok: boolean; error?: string }>
 }
 
 function SecretFieldDisplay({
@@ -91,13 +91,13 @@ function SecretFieldDisplay({
   onStartEditing,
   testResult,
 }: {
-  label: string;
-  masked: string;
-  isSet: boolean;
-  onClear: () => void;
-  onTest: () => void;
-  onStartEditing: () => void;
-  testResult: { ok: boolean; error?: string } | undefined;
+  label: string
+  masked: string
+  isSet: boolean
+  onClear: () => void
+  onTest: () => void
+  onStartEditing: () => void
+  testResult: { ok: boolean; error?: string } | undefined
 }) {
   return (
     <div>
@@ -153,7 +153,7 @@ function SecretFieldDisplay({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 function SecretFieldEditor({
@@ -164,12 +164,12 @@ function SecretFieldEditor({
   onCancel,
   isSaving,
 }: {
-  label: string;
-  inputValue: string;
-  onInputChange: (value: string) => void;
-  onSave: () => void;
-  onCancel: () => void;
-  isSaving: boolean;
+  label: string
+  inputValue: string
+  onInputChange: (value: string) => void
+  onSave: () => void
+  onCancel: () => void
+  isSaving: boolean
 }) {
   return (
     <div className="flex items-center gap-2">
@@ -179,7 +179,7 @@ function SecretFieldEditor({
         value={inputValue}
         onChange={(event) => onInputChange(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "Escape") onCancel();
+          if (event.key === "Escape") onCancel()
         }}
         autoFocus
         className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -202,5 +202,5 @@ function SecretFieldEditor({
         Abbrechen
       </button>
     </div>
-  );
+  )
 }

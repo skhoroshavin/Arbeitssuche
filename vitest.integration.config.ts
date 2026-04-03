@@ -1,6 +1,6 @@
-import { defineConfig } from "vitest/config";
-import UnpluginTypia from "@typia/unplugin/vite";
-import path from "node:path";
+import { defineConfig } from "vitest/config"
+import UnpluginTypia from "@typia/unplugin/vite"
+import path from "node:path"
 
 export default defineConfig({
   plugins: [UnpluginTypia()],
@@ -13,4 +13,4 @@ export default defineConfig({
     include: ["src/plugins/job-site/*.integration-test.ts"],
     testTimeout: 60_000,
   },
-});
+})

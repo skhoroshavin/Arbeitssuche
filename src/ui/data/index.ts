@@ -7,7 +7,7 @@ export {
   useDeleteApplicant,
   useConsultSearches,
   useDownloadResume,
-} from "./applicants";
+} from "./applicants"
 
 export {
   useJobSearchListView,
@@ -25,7 +25,7 @@ export {
   useJobSearchVacancy,
   useAddActivity,
   type VacancyWithStatus,
-} from "./job-searches";
+} from "./job-searches"
 
 export {
   useProviderSecretActions,
@@ -35,12 +35,12 @@ export {
   useAISettingsView,
   useCommuteSecrets,
   useLlmProviders,
-} from "./settings";
+} from "./settings"
 
 export {
   useStartJobSearchCrawl,
   useAbortJobSearchCrawl,
   useSiteListView,
-} from "./job-search-crawl";
+} from "./job-search-crawl"
 
-export { jobSearchQueryKeys, invalidateQuery } from "./job-search-query-keys";
+export { jobSearchQueryKeys, invalidateQuery } from "./job-search-query-keys"

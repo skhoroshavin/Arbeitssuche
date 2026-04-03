@@ -1,17 +1,17 @@
-import { useFieldArray } from "react-hook-form";
-import { useApplicantForm } from "@/ui/pages/applicant/hooks";
-import { Input } from "@/ui/components";
-import { Checkbox } from "@/ui/pages/applicant/components";
-import { ApplicantFormPage } from "@/ui/pages/applicant/components";
+import { useFieldArray } from "react-hook-form"
+import { useApplicantForm } from "@/ui/pages/applicant/hooks"
+import { Input } from "@/ui/components"
+import { Checkbox } from "@/ui/pages/applicant/components"
+import { ApplicantFormPage } from "@/ui/pages/applicant/components"
 import {
   AddButton,
   FieldArrayCard,
   FieldGrid,
-} from "@/ui/pages/applicant/components";
+} from "@/ui/pages/applicant/components"
 
 export default function ApplicantEditCertifications() {
-  const { register, control, isLoading, saveStatus } = useApplicantForm();
-  const certifications = useFieldArray({ control, name: "certifications" });
+  const { register, control, isLoading, saveStatus } = useApplicantForm()
+  const certifications = useFieldArray({ control, name: "certifications" })
 
   return (
     <ApplicantFormPage
@@ -51,5 +51,5 @@ export default function ApplicantEditCertifications() {
         Zertifikat hinzufügen
       </AddButton>
     </ApplicantFormPage>
-  );
+  )
 }

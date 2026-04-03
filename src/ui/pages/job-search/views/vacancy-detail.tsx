@@ -1,38 +1,38 @@
-import { useState } from "react";
-import { useParams, Link, useLocation } from "react-router";
+import { useState } from "react"
+import { useParams, Link, useLocation } from "react-router"
 import {
   useJobSearchVacancy,
   useAddActivity,
   useVacancyCoverLetter,
   useUpdateVacancyCoverLetter,
   useGenerateVacancyCoverLetter,
-} from "@/ui/data";
-import type { VacancyWithStatus } from "@/ui/data";
-import { useApiKeyStatus } from "@/ui/data";
-import { Card, SectionHeader, Loading, ArrowLeftIcon } from "@/ui/components";
-import { CoverLetterEditor } from "@/ui/pages/job-search/components";
-import { Markdown } from "@/ui/components";
-import { StatusBadge } from "@/ui/pages/job-search/components";
-import { useLayoutConfig } from "@/ui/layout";
-import type { ActivityType } from "@/models/vacancy/types";
+} from "@/ui/data"
+import type { VacancyWithStatus } from "@/ui/data"
+import { useApiKeyStatus } from "@/ui/data"
+import { Card, SectionHeader, Loading, ArrowLeftIcon } from "@/ui/components"
+import { CoverLetterEditor } from "@/ui/pages/job-search/components"
+import { Markdown } from "@/ui/components"
+import { StatusBadge } from "@/ui/pages/job-search/components"
+import { useLayoutConfig } from "@/ui/layout"
+import type { Activity, ActivityType } from "@/models/vacancy/types"
 import {
   MATCH_SCORE_LABELS,
   STATUS_LABELS,
   TRANSITIONS,
-} from "@/models/vacancy/index";
-import { VacancyCommuteSection } from "./vacancy-commute-section";
-import { VacancyContactSection } from "./vacancy-contact-section";
-import { VacancyActivityForm } from "./vacancy-activity-form";
-import { ActivityHistory } from "./activity-history";
+} from "@/models/vacancy/index"
+import { VacancyCommuteSection } from "./vacancy-commute-section"
+import { VacancyContactSection } from "./vacancy-contact-section"
+import { VacancyActivityForm } from "./vacancy-activity-form"
+import { ActivityHistory } from "./activity-history"
 
 export default function JobSearchVacancyDetail() {
-  const { id = "", hash = "" } = useParams<{ id: string; hash: string }>();
-  const backSearch = useBackSearch();
-  const detail = useVacancyDetailData(id, hash);
-  const { hasLlmKey } = useApiKeyStatus();
-  const activity = useActivityRecorder(id, hash);
+  const { id = "", hash = "" } = useParams<{ id: string; hash: string }>()
+  const backSearch = useBackSearch()
+  const detail = useVacancyDetailData(id, hash)
+  const { hasLlmKey } = useApiKeyStatus()
+  const activity = useActivityRecorder(id, hash)
 
-  const title = detail.title;
+  const title = detail.title
 
   useLayoutConfig(
     () => ({
@@ -49,14 +49,14 @@ export default function JobSearchVacancyDetail() {
       ),
     }),
     [title, id, backSearch],
-  );
+  )
 
-  if (detail.isLoading) return <Loading />;
-  if (!detail.data) return <div>Stelle nicht gefunden</div>;
+  if (detail.isLoading) return <Loading />
+  if (!detail.data) return <div>Stelle nicht gefunden</div>
 
-  const { data } = detail;
-  const status = data.status;
-  const allowedActions = TRANSITIONS[status];
+  const { data } = detail
+  const status = data.status
+  const allowedActions = TRANSITIONS[status]
 
   return (
     <div className="space-y-6">
@@ -93,21 +93,21 @@ export default function JobSearchVacancyDetail() {
 
       <ActivityHistory activities={data.activityHistory} />
     </div>
-  );
+  )
 }
 
 function useBackSearch(): string {
-  const location = useLocation();
-  const state: unknown = location.state;
+  const location = useLocation()
+  const state: unknown = location.state
   if (
     typeof state === "object" &&
     state !== null &&
     "vacancyListSearch" in state &&
     typeof state.vacancyListSearch === "string"
   ) {
-    return state.vacancyListSearch;
+    return state.vacancyListSearch
   }
-  return "";
+  return ""
 }
 
 function VacancyInfoCard({
@@ -123,7 +123,7 @@ function VacancyInfoCard({
     | "contact"
     | "summary"
     | "description"
-  >;
+  >
 }) {
   return (
     <Card className="p-5">
@@ -179,38 +179,34 @@ function VacancyInfoCard({
         </details>
       )}
     </Card>
-  );
+  )
 }
 
 function useActivityRecorder(jobSearchId: string, hash: string) {
-  const addActivity = useAddActivity(jobSearchId);
+  const addActivity = useAddActivity(jobSearchId)
   const [eventForm, setEventForm] = useState<{
-    type: ActivityType;
-    extra: Record<string, string>;
-  }>();
+    type: ActivityType
+    extra: Record<string, string>
+  }>()
 
   const handleRecordActivity = () => {
-    if (!eventForm) return;
-    const activity: Record<string, unknown> = {
-      type: eventForm.type,
-      date: today(),
-      ...eventForm.extra,
-    };
+    if (!eventForm) return
+    const activity = buildUserActivity(eventForm.type, today(), eventForm.extra)
     addActivity.mutate(
       { hash, activity },
       { onSuccess: () => setEventForm(undefined) },
-    );
-  };
+    )
+  }
 
-  return { eventForm, setEventForm, handleRecordActivity };
+  return { eventForm, setEventForm, handleRecordActivity }
 }
 
 function useVacancyDetailData(jobSearchId: string, hash: string) {
-  const { data, isLoading } = useJobSearchVacancy(jobSearchId, hash);
-  const coverLetterQuery = useVacancyCoverLetter(jobSearchId, hash);
-  const updateCoverLetter = useUpdateVacancyCoverLetter(jobSearchId, hash);
-  const generateCoverLetter = useGenerateVacancyCoverLetter(jobSearchId, hash);
-  const title = data?.title ?? "Stelle";
+  const { data, isLoading } = useJobSearchVacancy(jobSearchId, hash)
+  const coverLetterQuery = useVacancyCoverLetter(jobSearchId, hash)
+  const updateCoverLetter = useUpdateVacancyCoverLetter(jobSearchId, hash)
+  const generateCoverLetter = useGenerateVacancyCoverLetter(jobSearchId, hash)
+  const title = data?.title ?? "Stelle"
   return {
     data,
     isLoading,
@@ -218,9 +214,30 @@ function useVacancyDetailData(jobSearchId: string, hash: string) {
     coverLetterQuery,
     updateCoverLetter,
     generateCoverLetter,
-  };
+  }
 }
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toISOString().slice(0, 10)
+}
+
+function buildUserActivity(
+  type: ActivityType,
+  date: string,
+  extra: Record<string, string>,
+): Activity {
+  if (type === "found" || type === "not-found") {
+    throw new Error(`Cannot record "${type}" activity from UI`)
+  }
+  if (type === "invited") {
+    return { type, date, interviewDate: extra.interviewDate }
+  }
+  if (type === "interviewed") {
+    const outcome = extra.outcome === "cancelled" ? "cancelled" : "completed"
+    return { type, date, outcome }
+  }
+  if (type === "offered") {
+    return { type, date, startDate: extra.startDate, salary: extra.salary }
+  }
+  return { type, date }
 }

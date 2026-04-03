@@ -1,18 +1,18 @@
-import { Link } from "react-router";
-import { Markdown } from "@/ui/components";
-import { StatusBadge } from "@/ui/pages/job-search/components";
-import { MATCH_SCORE_LABELS, STATUS_LABELS } from "@/models/vacancy/index";
-import type { VacancyWithStatus } from "@/ui/data";
-import { getCommuteSummary, getLatestActivityDate } from "./vacancy-utilities";
+import { Link } from "react-router"
+import { Markdown } from "@/ui/components"
+import { StatusBadge } from "@/ui/pages/job-search/components"
+import { MATCH_SCORE_LABELS, STATUS_LABELS } from "@/models/vacancy/index"
+import type { VacancyWithStatus } from "@/ui/data"
+import { getCommuteSummary, getLatestActivityDate } from "./vacancy-utilities"
 
 export function VacancyCard({
   vacancy: v,
   jobSearchId,
   searchString,
 }: {
-  vacancy: VacancyWithStatus;
-  jobSearchId: string;
-  searchString: string;
+  vacancy: VacancyWithStatus
+  jobSearchId: string
+  searchString: string
 }) {
   return (
     <Link
@@ -56,15 +56,15 @@ export function VacancyCard({
         </div>
       )}
     </Link>
-  );
+  )
 }
 
 function VacancyCardSources({
   sources,
 }: {
-  sources: { site: string; url: string }[];
+  sources: { site: string; url: string }[]
 }) {
-  if (sources.length === 0) return;
+  if (sources.length === 0) return
   return (
     <div className="flex flex-wrap gap-1 mt-1">
       {sources.map((s) => (
@@ -72,9 +72,9 @@ function VacancyCardSources({
           key={s.site}
           role="link"
           onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            window.open(s.url, "_blank");
+            event.preventDefault()
+            event.stopPropagation()
+            window.open(s.url, "_blank")
           }}
           className="inline-block px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer"
         >
@@ -82,12 +82,12 @@ function VacancyCardSources({
         </span>
       ))}
     </div>
-  );
+  )
 }
 
 function VacancyCardMeta({ vacancy }: { vacancy: VacancyWithStatus }) {
-  const commute = getCommuteSummary(vacancy);
-  const latestDate = getLatestActivityDate(vacancy);
+  const commute = getCommuteSummary(vacancy)
+  const latestDate = getLatestActivityDate(vacancy)
   return (
     <div className="text-right text-xs text-gray-400 dark:text-gray-500 ml-4 flex-shrink-0">
       {commute && (
@@ -95,5 +95,5 @@ function VacancyCardMeta({ vacancy }: { vacancy: VacancyWithStatus }) {
       )}
       {latestDate && <div>{new Date(latestDate).toLocaleDateString()}</div>}
     </div>
-  );
+  )
 }

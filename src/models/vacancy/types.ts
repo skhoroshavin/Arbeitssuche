@@ -6,25 +6,25 @@ export type ActivityType =
   | "interviewed"
   | "offered"
   | "rejected"
-  | "not-interested";
+  | "not-interested"
 
 export interface VacancyContact {
-  name?: string;
-  email?: string;
-  phone?: string;
+  name?: string
+  email?: string
+  phone?: string
 }
 
 export interface FoundActivity extends BaseActivity {
-  type: "found";
-  site: string;
-  url: string;
-  description?: string;
-  contact?: VacancyContact;
+  type: "found"
+  site: string
+  url: string
+  description?: string
+  contact?: VacancyContact
 }
 
 export interface NotFoundActivity extends BaseActivity {
-  type: "not-found";
-  site: string;
+  type: "not-found"
+  site: string
 }
 
 export type Activity =
@@ -35,9 +35,9 @@ export type Activity =
   | InterviewedActivity
   | OfferedActivity
   | RejectedActivity
-  | NotInterestedActivity;
+  | NotInterestedActivity
 
-export type MatchScore = "very-bad" | "bad" | "ok" | "good" | "excellent";
+export type MatchScore = "very-bad" | "bad" | "ok" | "good" | "excellent"
 
 export type VacancyStatus =
   | "new"
@@ -49,71 +49,71 @@ export type VacancyStatus =
   | "interviewed"
   | "offered"
   | "rejected"
-  | "not-interested";
+  | "not-interested"
 
 export interface CommuteInfo {
-  distance: string;
-  durations: CommuteDurations;
-  fetchedAt: string;
+  distance: string
+  durations: CommuteDurations
+  fetchedAt: string
 }
 
 export interface VacancySource {
-  site: string;
-  url: string;
+  site: string
+  url: string
 }
 
 export interface VacancyDTO {
-  hash: string;
-  title: string;
-  company: string;
-  urls: string[];
-  addresses: string[];
-  contact: VacancyContact;
-  startDate: string;
-  description: string;
-  descriptionChanged: boolean;
-  summary: string;
-  matchScore: MatchScore;
-  commute: Record<string, CommuteInfo>;
-  activityHistory: Activity[];
-  active: boolean;
+  hash: string
+  title: string
+  company: string
+  urls: string[]
+  addresses: string[]
+  contact: VacancyContact
+  startDate: string
+  description: string
+  descriptionChanged: boolean
+  summary: string
+  matchScore: MatchScore
+  commute: Record<string, CommuteInfo>
+  activityHistory: Activity[]
+  active: boolean
 }
 
 interface AppliedActivity extends BaseActivity {
-  type: "applied";
+  type: "applied"
 }
 
 interface InvitedActivity extends BaseActivity {
-  type: "invited";
-  interviewDate: string;
+  type: "invited"
+  interviewDate: string
 }
 
 interface InterviewedActivity extends BaseActivity {
-  type: "interviewed";
-  outcome: "completed" | "cancelled";
+  type: "interviewed"
+  outcome: "completed" | "cancelled"
 }
 
 interface OfferedActivity extends BaseActivity {
-  type: "offered";
-  startDate?: string;
-  salary?: string;
+  type: "offered"
+  startDate?: string
+  salary?: string
 }
 
 interface RejectedActivity extends BaseActivity {
-  type: "rejected";
+  type: "rejected"
 }
 
 interface NotInterestedActivity extends BaseActivity {
-  type: "not-interested";
+  type: "not-interested"
 }
 
 interface BaseActivity {
-  date: string;
-  notes?: string;
+  date: string
+  notes?: string
 }
 
 interface CommuteDurations {
-  morning: number;
-  day: number;
-  evening: number;
+  morning: number
+  day: number
+  evening: number
 }

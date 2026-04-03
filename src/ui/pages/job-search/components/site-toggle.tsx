@@ -1,21 +1,21 @@
-import { ToggleButton } from "@/ui/pages/job-search/components";
+import { ToggleButton } from "@/ui/pages/job-search/components"
 
 export function SiteToggle({
   allSites,
   selectedSites,
   onChange,
 }: {
-  allSites: SiteInfo[];
-  selectedSites: string[];
-  onChange: (sites: string[]) => void;
+  allSites: SiteInfo[]
+  selectedSites: string[]
+  onChange: (sites: string[]) => void
 }) {
   const toggle = (site: string) => {
     onChange(
       selectedSites.includes(site)
         ? selectedSites.filter((s) => s !== site)
         : [...selectedSites, site],
-    );
-  };
+    )
+  }
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -29,10 +29,10 @@ export function SiteToggle({
         </ToggleButton>
       ))}
     </div>
-  );
+  )
 }
 
 interface SiteInfo {
-  name: string;
-  supportedModes: string[];
+  name: string
+  supportedModes: string[]
 }

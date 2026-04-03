@@ -1,17 +1,15 @@
-import type { VacancyRepository } from "@/repositories/vacancy/types.js";
-import type { JobSearchRepository } from "@/repositories/job-search/types.js";
-import type { ApplicantRepository } from "@/repositories/applicant/types.js";
-import type { Applicant } from "@/models/applicant/types.js";
-import type { LlmClient } from "@/plugins/llm/types.js";
-import type { CommuteClient } from "@/plugins/commute/types.js";
-import type { JobSite } from "@/plugins/job-site/types.js";
-import type { Vacancy } from "@/models/vacancy/index.js";
-import type { ProgressEvent } from "@/models/index.js";
-import { resolveSearchParameters } from "./resolve-search-parameters.js";
-import { scanVacancies } from "./scan.js";
-import { markUnseenAsGone } from "./unify.js";
-
-export type OnProgress = (event: ProgressEvent) => void;
+import type { VacancyRepository } from "@/repositories/vacancy/types.js"
+import type { JobSearchRepository } from "@/repositories/job-search/types.js"
+import type { ApplicantRepository } from "@/repositories/applicant/types.js"
+import type { Applicant } from "@/models/applicant/types.js"
+import type { LlmClient } from "@/plugins/llm/types.js"
+import type { CommuteClient } from "@/plugins/commute/types.js"
+import type { JobSite } from "@/plugins/job-site/types.js"
+import type { Vacancy } from "@/models/vacancy/index.js"
+import type { ProgressEvent } from "@/models/index.js"
+import { resolveSearchParameters } from "./resolve-search-parameters.js"
+import { scanVacancies } from "./scan.js"
+import { markUnseenAsGone } from "./unify.js"
 
 export class VacancyScanner {
   constructor(
@@ -29,29 +27,29 @@ export class VacancyScanner {
     onProgress: OnProgress,
     siteFactory: JobSiteFactory,
   ): Promise<void> {
-    const jobSearch = this.jobSearchRepo.load(id);
+    const jobSearch = this.jobSearchRepo.load(id)
     const sitesToRun =
       jobSearch.params.sources.length > 0
         ? jobSearch.params.sources
-        : this.listJobSiteNames();
+        : this.listJobSiteNames()
 
-    const applicant = this.applicantRepo.load(jobSearch.applicantId);
-    const searchParameters = resolveSearchParameters(jobSearch, applicant);
-    const crawlDate = new Date().toISOString().slice(0, 10);
+    const applicant = this.applicantRepo.load(jobSearch.applicantId)
+    const searchParameters = resolveSearchParameters(jobSearch, applicant)
+    const crawlDate = new Date().toISOString().slice(0, 10)
 
-    const existing = this.vacancyRepo.loadAll(id);
-    const existingByHash = new Map<string, Vacancy>();
+    const existing = this.vacancyRepo.loadAll(id)
+    const existingByHash = new Map<string, Vacancy>()
     for (const v of existing.vacancies) {
-      existingByHash.set(v.hash, v);
+      existingByHash.set(v.hash, v)
     }
 
     const commuteOrigin = this.commuteClient
       ? resolveCommuteOrigin(applicant)
-      : undefined;
+      : undefined
 
-    const sites = sitesToRun.map((name) => siteFactory(name));
+    const sites = sitesToRun.map((name) => siteFactory(name))
 
-    let lastSaveTime = 0;
+    let lastSaveTime = 0
 
     const result = await scanVacancies({
       sites,
@@ -68,42 +66,44 @@ export class VacancyScanner {
       applicant,
       preferences: jobSearch.preferences,
       onVacancyProcessed: () => {
-        const now = Date.now();
+        const now = Date.now()
         if (now - lastSaveTime >= 1000) {
-          this.vacancyRepo.save(id, [...existingByHash.values()], crawlDate);
-          lastSaveTime = now;
+          this.vacancyRepo.save(id, [...existingByHash.values()], crawlDate)
+          lastSaveTime = now
           onProgress({
             message: "",
             phase: "scan",
             vacanciesUpdated: true,
-          });
+          })
         }
       },
-    });
+    })
 
-    if (abortController.signal.aborted) return;
+    if (abortController.signal.aborted) return
 
-    const allVacancies = [...existingByHash.values()];
+    const allVacancies = [...existingByHash.values()]
     const { vacancies: finalVacancies, goneCount } = markUnseenAsGone(
       allVacancies,
       result.seenHashes,
       crawlDate,
-    );
+    )
 
-    this.vacancyRepo.save(id, finalVacancies, crawlDate);
-    onProgress({ message: "", phase: "scan", vacanciesUpdated: true });
+    this.vacancyRepo.save(id, finalVacancies, crawlDate)
+    onProgress({ message: "", phase: "scan", vacanciesUpdated: true })
 
     onProgress({
       message: `Scan complete: ${result.newCount} new, ${result.updatedCount} updated, ${goneCount} gone, ${result.enrichedCount} enriched`,
       phase: "complete",
-    });
+    })
   }
 }
 
-type JobSiteFactory = (name: string) => JobSite;
+export type OnProgress = (event: ProgressEvent) => void
+
+type JobSiteFactory = (name: string) => JobSite
 
 function resolveCommuteOrigin(applicant: Applicant): string | undefined {
-  const address = applicant.personal.address;
-  if (!address) return undefined;
-  return `${address.street}, ${address.zip} ${address.city}`;
+  const address = applicant.personal.address
+  if (!address) return undefined
+  return `${address.street}, ${address.zip} ${address.city}`
 }

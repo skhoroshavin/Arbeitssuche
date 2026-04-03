@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { toStrictSchema } from "./index";
+import { describe, it, expect } from "vitest"
+import { toStrictSchema } from "."
 
 describe("toStrictSchema", () => {
   it("inlines $ref and adds additionalProperties: false", () => {
@@ -14,15 +14,15 @@ describe("toStrictSchema", () => {
         },
       },
       schema: { $ref: "#/components/schemas/Foo" },
-    };
+    }
 
     expect(toStrictSchema(input)).toEqual({
       type: "object",
       properties: { name: { type: "string" } },
       required: ["name"],
       additionalProperties: false,
-    });
-  });
+    })
+  })
 
   it("converts oneOf with const values to enum", () => {
     const input = {
@@ -36,7 +36,7 @@ describe("toStrictSchema", () => {
         },
         required: ["score"],
       },
-    };
+    }
 
     expect(toStrictSchema(input)).toEqual({
       type: "object",
@@ -45,8 +45,8 @@ describe("toStrictSchema", () => {
       },
       required: ["score"],
       additionalProperties: false,
-    });
-  });
+    })
+  })
 
   it("converts optional properties to nullable and adds to required", () => {
     const input = {
@@ -59,7 +59,7 @@ describe("toStrictSchema", () => {
         },
         required: [],
       },
-    };
+    }
 
     expect(toStrictSchema(input)).toEqual({
       type: "object",
@@ -69,8 +69,8 @@ describe("toStrictSchema", () => {
       },
       required: ["name", "email"],
       additionalProperties: false,
-    });
-  });
+    })
+  })
 
   it("converts oneOf type alternatives to anyOf", () => {
     const input = {
@@ -92,7 +92,7 @@ describe("toStrictSchema", () => {
         },
         required: ["contact"],
       },
-    };
+    }
 
     expect(toStrictSchema(input)).toEqual({
       type: "object",
@@ -111,8 +111,8 @@ describe("toStrictSchema", () => {
       },
       required: ["contact"],
       additionalProperties: false,
-    });
-  });
+    })
+  })
 
   it("handles array with $ref items", () => {
     const input = {
@@ -129,7 +129,7 @@ describe("toStrictSchema", () => {
         type: "array",
         items: { $ref: "#/components/schemas/Item" },
       },
-    };
+    }
 
     expect(toStrictSchema(input)).toEqual({
       type: "array",
@@ -139,8 +139,8 @@ describe("toStrictSchema", () => {
         required: ["value"],
         additionalProperties: false,
       },
-    });
-  });
+    })
+  })
 
   it("transforms typia AssessResult schema", () => {
     const input = {
@@ -167,7 +167,7 @@ describe("toStrictSchema", () => {
         },
       },
       schema: { $ref: "#/components/schemas/AssessResult" },
-    };
+    }
 
     expect(toStrictSchema(input)).toEqual({
       type: "object",
@@ -180,8 +180,8 @@ describe("toStrictSchema", () => {
       },
       required: ["summary", "matchScore"],
       additionalProperties: false,
-    });
-  });
+    })
+  })
 
   it("transforms typia ContactExtractionResult schema with optional fields", () => {
     const input = {
@@ -213,7 +213,7 @@ describe("toStrictSchema", () => {
         },
       },
       schema: { $ref: "#/components/schemas/ContactExtractionResult" },
-    };
+    }
 
     expect(toStrictSchema(input)).toEqual({
       type: "object",
@@ -237,15 +237,15 @@ describe("toStrictSchema", () => {
       },
       required: ["addresses", "contact"],
       additionalProperties: false,
-    });
-  });
+    })
+  })
 
   it("throws on unresolved $ref", () => {
     const input = {
       components: { schemas: {} },
       schema: { $ref: "#/components/schemas/Missing" },
-    };
+    }
 
-    expect(() => toStrictSchema(input)).toThrow("Unresolved $ref");
-  });
-});
+    expect(() => toStrictSchema(input)).toThrow("Unresolved $ref")
+  })
+})

@@ -2,12 +2,12 @@ import {
   createModelRegistry,
   createOpenAICompatibleClient,
   normalizeNestedPricing,
-} from "@/plugins/openai-compatible/index.js";
+} from "@/plugins/openai-compatible/index.js"
 import type {
   LlmClient,
   LlmModelRegistry,
   LlmProviderInfo,
-} from "@/plugins/llm/types.js";
+} from "@/plugins/llm/types.js"
 
 export function createOpenRouterClient(
   apiKey: string,
@@ -18,7 +18,7 @@ export function createOpenRouterClient(
     apiKey,
     model,
     "OpenRouter",
-  );
+  )
 }
 
 export const openrouterProviderInfo: LlmProviderInfo = {
@@ -34,12 +34,12 @@ export const openrouterProviderInfo: LlmProviderInfo = {
     "6. Kopiere den Schlüssel - er beginnt mit `sk-or-...`",
     "7. Füge ihn oben ein",
   ].join("\n"),
-};
+}
 
 export function createOpenRouterModelRegistry(): LlmModelRegistry {
   return createModelRegistry("https://openrouter.ai/api/v1/models", (m) => ({
     id: String(m.id),
     name: String(m.name),
     pricing: normalizeNestedPricing(m.pricing),
-  }));
+  }))
 }

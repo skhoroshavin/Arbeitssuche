@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { resolveApplicant } from "./index";
+import { describe, expect, it } from "vitest"
+import { resolveApplicant } from "."
 
 describe("resolveApplicant", () => {
   it("fills missing collections and disclose flags", () => {
@@ -18,6 +18,6 @@ describe("resolveApplicant", () => {
       languages: [],
       certifications: [],
       personalNotes: undefined,
-    });
-  });
-});
+    })
+  })
+})

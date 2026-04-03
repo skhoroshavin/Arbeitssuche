@@ -3,9 +3,9 @@ export function Card({
   children,
   onClick,
 }: {
-  className?: string;
-  children: React.ReactNode;
-  onClick?: React.MouseEventHandler<HTMLDivElement>;
+  className?: string
+  children: React.ReactNode
+  onClick?: React.MouseEventHandler<HTMLDivElement>
 }) {
   return (
     <div
@@ -16,13 +16,13 @@ export function Card({
         tabIndex: 0,
         onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
           if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            event.currentTarget.click();
+            event.preventDefault()
+            event.currentTarget.click()
           }
         },
       })}
     >
       {children}
     </div>
-  );
+  )
 }

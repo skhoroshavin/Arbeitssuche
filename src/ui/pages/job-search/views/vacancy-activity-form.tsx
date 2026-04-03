@@ -1,6 +1,6 @@
-import { Card, SectionHeader } from "@/ui/components";
-import type { ActivityType } from "@/models/vacancy/types";
-import type { StatusAction } from "@/models/vacancy/index";
+import { Card, SectionHeader } from "@/ui/components"
+import type { ActivityType } from "@/models/vacancy/types"
+import type { StatusAction } from "@/models/vacancy/index"
 
 export function VacancyActivityForm({
   allowedActions,
@@ -8,24 +8,24 @@ export function VacancyActivityForm({
   onSelectAction,
   onConfirm,
 }: {
-  allowedActions: StatusAction[];
-  eventForm?: { type: ActivityType; extra: Record<string, string> };
+  allowedActions: StatusAction[]
+  eventForm?: { type: ActivityType; extra: Record<string, string> }
   onSelectAction: (form?: {
-    type: ActivityType;
-    extra: Record<string, string>;
-  }) => void;
-  onConfirm: () => void;
+    type: ActivityType
+    extra: Record<string, string>
+  }) => void
+  onConfirm: () => void
 }) {
   return (
     <Card className="p-4">
       <SectionHeader className="mb-3">Aktionen</SectionHeader>
       <div className="flex flex-wrap gap-2">
         {allowedActions.map((action) => {
-          let extra: Record<string, string> = {};
+          let extra: Record<string, string> = {}
           if (action.type === "invited") {
-            extra = { interviewDate: "" };
+            extra = { interviewDate: "" }
           } else if (action.type === "interviewed") {
-            extra = { outcome: "completed" };
+            extra = { outcome: "completed" }
           }
           return (
             <button
@@ -35,7 +35,7 @@ export function VacancyActivityForm({
             >
               {action.label}
             </button>
-          );
+          )
         })}
       </div>
 
@@ -74,5 +74,5 @@ export function VacancyActivityForm({
         </div>
       )}
     </Card>
-  );
+  )
 }

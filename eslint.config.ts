@@ -1,8 +1,9 @@
-import eslint from "@eslint/js";
-import tseslint from "typescript-eslint";
-import checkFile from "eslint-plugin-check-file";
-import unicorn from "eslint-plugin-unicorn";
-import unslop from "eslint-plugin-unslop";
+import eslint from "@eslint/js"
+import tseslint from "typescript-eslint"
+import checkFile from "eslint-plugin-check-file"
+import importX from "eslint-plugin-import-x"
+import unicorn from "eslint-plugin-unicorn"
+import unslop from "eslint-plugin-unslop"
 
 // =============================================================================
 // Config
@@ -42,6 +43,9 @@ export default tseslint.config(
 
   {
     files: ["**/*.{ts,tsx}"],
+    plugins: {
+      "import-x": importX,
+    },
     rules: {
       "unslop/read-friendly-order": "error",
       "unslop/no-false-sharing": [
@@ -90,6 +94,7 @@ export default tseslint.config(
         { assertionStyle: "never" },
       ],
       "@typescript-eslint/no-non-null-assertion": "error",
+      "import-x/no-useless-path-segments": ["error", { noUselessIndex: true }],
     },
   },
   {
@@ -176,4 +181,4 @@ export default tseslint.config(
       ],
     },
   },
-);
+)

@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef } from "react"
 
 export const Input = forwardRef<
   HTMLInputElement,
@@ -13,8 +13,8 @@ export const Input = forwardRef<
         className="mt-1 block w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
       />
     </label>
-  );
-});
+  )
+})
 
 export const Textarea = forwardRef<
   HTMLTextAreaElement,
@@ -29,5 +29,5 @@ export const Textarea = forwardRef<
         className="mt-1 block w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
       />
     </label>
-  );
-});
+  )
+})

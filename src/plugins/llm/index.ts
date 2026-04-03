@@ -2,16 +2,16 @@ import {
   createOpenRouterClient,
   createOpenRouterModelRegistry,
   openrouterProviderInfo,
-} from "./openrouter/index.js";
+} from "./openrouter"
 import {
   createRequestyClient,
   createRequestyModelRegistry,
   requestyProviderInfo,
-} from "./requesty/index.js";
-import type { LlmClient, LlmModelRegistry, LlmProviderInfo } from "./types.js";
+} from "./requesty"
+import type { LlmClient, LlmModelRegistry, LlmProviderInfo } from "./types.js"
 
 export function getLlmProviders(): LlmProviderInfo[] {
-  return [openrouterProviderInfo, requestyProviderInfo];
+  return [openrouterProviderInfo, requestyProviderInfo]
 }
 
 export function createLlmClientForPing(
@@ -19,7 +19,7 @@ export function createLlmClientForPing(
   apiKey: string,
 ): LlmClient {
   // Model is not needed for ping, use a dummy value
-  return createLlmClient(provider, apiKey, "");
+  return createLlmClient(provider, apiKey, "")
 }
 
 export function createLlmClient(
@@ -29,10 +29,10 @@ export function createLlmClient(
 ): LlmClient {
   switch (provider) {
     case "requesty": {
-      return createRequestyClient(apiKey, model);
+      return createRequestyClient(apiKey, model)
     }
     default: {
-      return createOpenRouterClient(apiKey, model);
+      return createOpenRouterClient(apiKey, model)
     }
   }
 }
@@ -40,10 +40,10 @@ export function createLlmClient(
 export function createModelRegistry(provider: string): LlmModelRegistry {
   switch (provider) {
     case "requesty": {
-      return createRequestyModelRegistry();
+      return createRequestyModelRegistry()
     }
     default: {
-      return createOpenRouterModelRegistry();
+      return createOpenRouterModelRegistry()
     }
   }
 }

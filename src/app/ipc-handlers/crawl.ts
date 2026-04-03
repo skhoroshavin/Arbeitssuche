@@ -1,6 +1,6 @@
-import type { AppServices } from "@/app/index.js";
-import { startCrawl, abortCrawl } from "@/app/crawl-manager.js";
-import type { IpcHandle, SafeSend } from "./index.js";
+import type { AppServices } from "@/app/index.js"
+import { startCrawl, abortCrawl } from "@/app/crawl-manager.js"
+import type { IpcHandle, SafeSend } from "."
 
 export function registerCrawlHandlers(
   handle: IpcHandle,
@@ -12,27 +12,27 @@ export function registerCrawlHandlers(
       jobSearchId: id,
       vacancyScanner: services.vacancyScanner,
       onProgress: (event) => {
-        safeSend("job:progress", { jobSearchId: id, ...event });
+        safeSend("job:progress", { jobSearchId: id, ...event })
       },
       onComplete: () => {
         safeSend("job:progress", {
           jobSearchId: id,
           message: "Crawl finished",
           phase: "done",
-        });
+        })
       },
       onError: (error) => {
         safeSend("job:progress", {
           jobSearchId: id,
           message: `Crawl error: ${error.message}`,
           phase: "done",
-        });
+        })
       },
-    });
-  });
+    })
+  })
 
   handle("job-searches:crawl:abort", (id: string) => {
-    abortCrawl(id);
-    return { aborted: true };
-  });
+    abortCrawl(id)
+    return { aborted: true }
+  })
 }

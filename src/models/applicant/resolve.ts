@@ -1,5 +1,5 @@
-import type { Applicant, ApplicantPersonal } from "@/models/applicant/types.js";
-import { DEFAULT_APPLICANT } from "@/models/applicant/constants.js";
+import type { Applicant, ApplicantPersonal } from "@/models/applicant/types.js"
+import { DEFAULT_APPLICANT } from "@/models/applicant/constants.js"
 
 export function resolveApplicant(data: ApplicantInput): Applicant {
   return {
@@ -12,11 +12,11 @@ export function resolveApplicant(data: ApplicantInput): Applicant {
     languages: data.languages ?? [],
     certifications: data.certifications ?? [],
     personalNotes: data.personalNotes,
-  };
+  }
 }
 
 interface ApplicantInput extends Omit<Partial<Applicant>, "personal"> {
-  personal?: Partial<ApplicantPersonal>;
+  personal?: Partial<ApplicantPersonal>
 }
 
 function resolveApplicantPersonal(
@@ -26,5 +26,5 @@ function resolveApplicantPersonal(
     ...DEFAULT_APPLICANT.personal,
     ...personal,
     hobbies: personal?.hobbies ?? [],
-  };
+  }
 }

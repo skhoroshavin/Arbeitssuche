@@ -1,30 +1,30 @@
-import typia from "typia";
-import type { Applicant } from "@/models/applicant/types.js";
-import type { ConsultationSuggestion } from "@/models/job-search/types.js";
-import type { LlmClient, TypedSchema } from "@/plugins/llm/types.js";
-import { formatApplicantSections } from "@/models/applicant/index.js";
+import typia from "typia"
+import type { Applicant } from "@/models/applicant/types.js"
+import type { ConsultationSuggestion } from "@/models/job-search/types.js"
+import type { LlmClient, TypedSchema } from "@/plugins/llm/types.js"
+import { formatApplicantSections } from "@/models/applicant/index.js"
 
 export async function consultSearches(
   applicant: Applicant,
   llmClient: LlmClient,
 ): Promise<ConsultationSuggestion[]> {
-  const prompt = buildConsultSearchesPrompt(applicant);
+  const prompt = buildConsultSearchesPrompt(applicant)
   return llmClient.completeJSON(
     prompt,
     CONSULT_MAX_TOKENS,
     CONSULT_SEARCHES_SCHEMA,
-  );
+  )
 }
 
-const CONSULT_MAX_TOKENS = 4096;
+const CONSULT_MAX_TOKENS = 4096
 
 const CONSULT_SEARCHES_SCHEMA: TypedSchema<ConsultationSuggestion[]> = {
   schema: typia.json.schema<ConsultationSuggestion[]>(),
   parse: typia.json.createAssertParse<ConsultationSuggestion[]>(),
-};
+}
 
 function buildConsultSearchesPrompt(applicant: Applicant): string {
-  const sections = formatApplicantSections(applicant);
+  const sections = formatApplicantSections(applicant)
 
   return `Sie sind ein erfahrener Karriereberater. Analysieren Sie das folgende Bewerberprofil und schlagen Sie 5-10 konkrete Suchbegriffe für Jobbörsen vor.
 
@@ -38,5 +38,5 @@ Bieten Sie Vielfalt: direkte Treffer basierend auf bisheriger Erfahrung, angrenz
 Geben Sie NUR ein JSON-Array zurück (keine Markdown-Fences, kein zusätzlicher Text):
 [{"searchTerm": "...", "searchMode": "employment", "reason": "..."}]
 
-${sections.join("\n\n")}`;
+${sections.join("\n\n")}`
 }

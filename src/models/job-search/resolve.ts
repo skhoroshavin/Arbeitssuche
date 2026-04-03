@@ -2,11 +2,11 @@ import type {
   JobSearch,
   SearchParameters,
   SearchPreferences,
-} from "@/models/job-search/types.js";
+} from "@/models/job-search/types.js"
 import {
   DEFAULT_PREFERENCES,
   DEFAULT_SEARCH_PARAMS,
-} from "@/models/job-search/constants.js";
+} from "@/models/job-search/constants.js"
 
 export function resolveJobSearch(data: JobSearchInput): JobSearch {
   return {
@@ -14,15 +14,15 @@ export function resolveJobSearch(data: JobSearchInput): JobSearch {
     applicantId: data.applicantId ?? "",
     params: resolveSearchParameters(data.params),
     preferences: resolveSearchPreferences(data.preferences),
-  };
+  }
 }
 
 interface JobSearchInput extends Omit<
   Partial<JobSearch>,
   "params" | "preferences"
 > {
-  params?: Partial<SearchParameters>;
-  preferences?: Partial<SearchPreferences>;
+  params?: Partial<SearchParameters>
+  preferences?: Partial<SearchPreferences>
 }
 
 function resolveSearchParameters(
@@ -32,7 +32,7 @@ function resolveSearchParameters(
     ...DEFAULT_SEARCH_PARAMS,
     ...parameters,
     sources: parameters?.sources ?? [],
-  };
+  }
 }
 
 function resolveSearchPreferences(
@@ -42,5 +42,5 @@ function resolveSearchPreferences(
     ...DEFAULT_PREFERENCES,
     ...preferences,
     freeText: preferences?.freeText ?? [],
-  };
+  }
 }

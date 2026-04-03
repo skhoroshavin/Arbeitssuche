@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig } from "@playwright/test"
 
 export default defineConfig({
   testDir: "./tests-templates",
@@ -9,4 +9,4 @@ export default defineConfig({
       maxDiffPixelRatio: 0.01,
     },
   },
-});
+})

@@ -1,12 +1,12 @@
-import { useMemo } from "react";
-import { useParams, Link, Outlet } from "react-router";
-import { useApplicantHeaderName } from "@/ui/data";
-import { useLayoutConfig } from "@/ui/layout";
-import { HomeIcon } from "@/ui/components";
+import { useMemo } from "react"
+import { useParams, Link, Outlet } from "react-router"
+import { useApplicantHeaderName } from "@/ui/data"
+import { useLayoutConfig } from "@/ui/layout"
+import { HomeIcon } from "@/ui/components"
 
 export default function ApplicantLayout() {
-  const { id = "" } = useParams<{ id: string }>();
-  const { displayName } = useApplicantHeaderName(id);
+  const { id = "" } = useParams<{ id: string }>()
+  const { displayName } = useApplicantHeaderName(id)
 
   const navItems = useMemo(
     () => [
@@ -18,7 +18,7 @@ export default function ApplicantLayout() {
       { to: `/applicants/${id}/other`, label: "Sonstiges" },
     ],
     [id],
-  );
+  )
 
   useLayoutConfig(
     () => ({
@@ -36,7 +36,7 @@ export default function ApplicantLayout() {
       ),
     }),
     [displayName, navItems],
-  );
+  )
 
-  return <Outlet />;
+  return <Outlet />
 }

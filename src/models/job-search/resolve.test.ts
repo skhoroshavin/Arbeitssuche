@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { resolveJobSearch } from "./index";
+import { describe, expect, it } from "vitest"
+import { resolveJobSearch } from "."
 
 describe("resolveJobSearch", () => {
   it("fills missing params and preferences defaults", () => {
@@ -19,6 +19,6 @@ describe("resolveJobSearch", () => {
         sources: [],
       },
       preferences: { freeText: [] },
-    });
-  });
-});
+    })
+  })
+})

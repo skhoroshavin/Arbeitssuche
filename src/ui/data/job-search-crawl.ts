@@ -1,29 +1,29 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import typia from "typia";
-import { api } from "./internal/api";
-import { invalidateQuery, jobSearchQueryKeys } from "./job-search-query-keys";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import typia from "typia"
+import { api } from "./internal/api"
+import { invalidateQuery, jobSearchQueryKeys } from "./job-search-query-keys"
 
 export function useStartJobSearchCrawl(id: string) {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => api().invoke("job-searches:crawl:start", id),
     onSuccess: () =>
       invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id)),
-  });
+  })
 }
 
 export function useAbortJobSearchCrawl(id: string) {
   return useMutation({
     mutationFn: () => api().invoke("job-searches:crawl:abort", id),
-  });
+  })
 }
 
 export function useSiteListView() {
-  const query = useSites();
+  const query = useSites()
   return {
     ...query,
     data: query.data ?? EMPTY_SITE_LIST,
-  };
+  }
 }
 
 function useSites() {
@@ -33,9 +33,9 @@ function useSites() {
       typia.assert<{ sites: { name: string; supportedModes: string[] }[] }>(
         await api().invoke("sites:list"),
       ),
-  });
+  })
 }
 
-const EMPTY_SITE_LIST: { sites: SiteInfo[] } = { sites: [] };
+const EMPTY_SITE_LIST: { sites: SiteInfo[] } = { sites: [] }
 
-type SiteInfo = { name: string; supportedModes: string[] };
+type SiteInfo = { name: string; supportedModes: string[] }

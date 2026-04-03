@@ -3,9 +3,9 @@ export function ToggleButton({
   onClick,
   children,
 }: {
-  isActive: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
+  isActive: boolean
+  onClick: () => void
+  children: React.ReactNode
 }) {
   return (
     <button
@@ -19,5 +19,5 @@ export function ToggleButton({
     >
       {children}
     </button>
-  );
+  )
 }

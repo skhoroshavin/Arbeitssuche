@@ -1,11 +1,11 @@
-import type { VacancyContact } from "@/models/vacancy/types";
+import type { VacancyContact } from "@/models/vacancy/types"
 
 export function VacancyContactSection({
   contact,
 }: {
-  contact: VacancyContact;
+  contact: VacancyContact
 }) {
-  if (!contact.name && !contact.email && !contact.phone) return;
+  if (!contact.name && !contact.email && !contact.phone) return
 
   return (
     <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
@@ -18,11 +18,11 @@ export function VacancyContactSection({
         <ContactField value={contact.phone} href={`tel:${contact.phone}`} />
       </div>
     </div>
-  );
+  )
 }
 
 function ContactField({ value, href }: { value?: string; href?: string }) {
-  if (!value) return;
+  if (!value) return
   return (
     <div>
       {href ? (
@@ -33,5 +33,5 @@ function ContactField({ value, href }: { value?: string; href?: string }) {
         value
       )}
     </div>
-  );
+  )
 }

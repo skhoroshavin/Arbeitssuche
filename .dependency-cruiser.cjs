@@ -1,5 +1,5 @@
-const { readdirSync } = require("node:fs");
-const path = require("node:path");
+const { readdirSync } = require("node:fs")
+const path = require("node:path")
 
 /** @type {import("dependency-cruiser").IConfiguration} */
 module.exports = {
@@ -36,13 +36,13 @@ module.exports = {
       dot: { collapsePattern: "node_modules/[^/]+" },
     },
   },
-};
+}
 
 function buildInternalBoundaryRules() {
-  const modules = buildModules();
+  const modules = buildModules()
 
   return modules.map((sourceModule) => {
-    const allowedTargets = resolveAllowedTargetPaths(sourceModule, modules);
+    const allowedTargets = resolveAllowedTargetPaths(sourceModule, modules)
 
     return {
       name: `boundary-${sourceModule.key.replaceAll("/", "-")}`,
@@ -52,12 +52,12 @@ function buildInternalBoundaryRules() {
         path: "^src/",
         pathNot: allowedTargets,
       },
-    };
-  });
+    }
+  })
 }
 
 function buildModules() {
-  const pageGroups = listDirectories(path.join(process.cwd(), "src/ui/pages"));
+  const pageGroups = listDirectories(path.join(process.cwd(), "src/ui/pages"))
 
   /** @type {Array<{ key: string; layer: string; pathRegex: string; allow: string[] }>} */
   return [
@@ -147,99 +147,99 @@ function buildModules() {
       pathRegex: "^src/ui/pages/index\\.ts$",
       allow: ["ui/pages"],
     },
-  ];
+  ]
 }
 
 function resolveAllowedTargetPaths(sourceModule, modules) {
-  const ownModulePattern = sourceModule.pathRegex;
+  const ownModulePattern = sourceModule.pathRegex
   const allowedModulePatterns = modules
     .filter((targetModule) => isAllowed(sourceModule, targetModule))
     .flatMap((targetModule) => [
       ...toValuePublicSurfacePatterns(targetModule),
       ...toTypePublicSurfacePatterns(targetModule),
-    ]);
+    ])
 
-  return [ownModulePattern, ...allowedModulePatterns];
+  return [ownModulePattern, ...allowedModulePatterns]
 }
 
 function isAllowed(sourceModule, targetModule) {
-  if (targetModule.key === sourceModule.key) return true;
+  if (targetModule.key === sourceModule.key) return true
 
   return sourceModule.allow.some((allowedKey) => {
-    if (allowedKey === targetModule.key) return true;
-    if (allowedKey === targetModule.layer) return true;
+    if (allowedKey === targetModule.key) return true
+    if (allowedKey === targetModule.layer) return true
     if (allowedKey === "ui/pages" && targetModule.key.startsWith("ui/pages/"))
-      return true;
-    return false;
-  });
+      return true
+    return false
+  })
 }
 
 function toValuePublicSurfacePatterns(module) {
-  if (module.key === "utils") return ["^src/utils/index\\.ts$"];
+  if (module.key === "utils") return ["^src/utils/index\\.ts$"]
   if (module.key === "models")
-    return ["^src/models/[^/]+/index\\.ts$", "^src/models/index\\.ts$"];
-  if (module.key === "plugins") return ["^src/plugins/[^/]+/index\\.ts$"];
+    return ["^src/models/[^/]+/index\\.ts$", "^src/models/index\\.ts$"]
+  if (module.key === "plugins") return ["^src/plugins/[^/]+/index\\.ts$"]
   if (module.key === "repositories")
-    return ["^src/repositories/[^/]+/index\\.ts$"];
-  if (module.key === "services") return ["^src/services/[^/]+/index\\.ts$"];
+    return ["^src/repositories/[^/]+/index\\.ts$"]
+  if (module.key === "services") return ["^src/services/[^/]+/index\\.ts$"]
   if (module.key === "app")
-    return ["^src/app/[^/]+/index\\.ts$", "^src/app/index\\.ts$"];
-  if (module.key === "ui/hooks") return ["^src/ui/hooks/index\\.ts$"];
-  if (module.key === "ui/components") return ["^src/ui/components/index\\.ts$"];
-  if (module.key === "ui/layout") return ["^src/ui/layout/index\\.ts$"];
-  if (module.key === "ui/data") return ["^src/ui/data/index\\.ts$"];
+    return ["^src/app/[^/]+/index\\.ts$", "^src/app/index\\.ts$"]
+  if (module.key === "ui/hooks") return ["^src/ui/hooks/index\\.ts$"]
+  if (module.key === "ui/components") return ["^src/ui/components/index\\.ts$"]
+  if (module.key === "ui/layout") return ["^src/ui/layout/index\\.ts$"]
+  if (module.key === "ui/data") return ["^src/ui/data/index\\.ts$"]
   if (module.key.startsWith("ui/pages/")) {
-    const group = module.key.replace("ui/pages/", "");
+    const group = module.key.replace("ui/pages/", "")
     return [
       `^src/ui/pages/${escapeRegex(group)}/index\\.ts$`,
       `^src/ui/pages/${escapeRegex(group)}/components/index\\.ts$`,
       `^src/ui/pages/${escapeRegex(group)}/hooks/index\\.ts$`,
-    ];
+    ]
   }
-  if (module.key === "ui/pages") return ["^src/ui/pages/index\\.ts$"];
+  if (module.key === "ui/pages") return ["^src/ui/pages/index\\.ts$"]
   if (module.key === "ui/root")
-    return ["^src/ui/pages/index\\.ts$", "^src/ui/layout/index\\.ts$"];
+    return ["^src/ui/pages/index\\.ts$", "^src/ui/layout/index\\.ts$"]
 
-  return [];
+  return []
 }
 
 function toTypePublicSurfacePatterns(module) {
-  const valueSurfaces = toValuePublicSurfacePatterns(module);
-  if (module.key === "utils") return valueSurfaces;
-  if (module.key === "ui/root") return valueSurfaces;
+  const valueSurfaces = toValuePublicSurfacePatterns(module)
+  if (module.key === "utils") return valueSurfaces
+  if (module.key === "ui/root") return valueSurfaces
 
-  return [...valueSurfaces, ...toTypesSurfacePatterns(module)];
+  return [...valueSurfaces, ...toTypesSurfacePatterns(module)]
 }
 
 function toTypesSurfacePatterns(module) {
-  if (module.key === "models") return ["^src/models/[^/]+/types\\.ts$"];
-  if (module.key === "plugins") return ["^src/plugins/[^/]+/types\\.ts$"];
+  if (module.key === "models") return ["^src/models/[^/]+/types\\.ts$"]
+  if (module.key === "plugins") return ["^src/plugins/[^/]+/types\\.ts$"]
   if (module.key === "repositories")
-    return ["^src/repositories/[^/]+/types\\.ts$"];
-  if (module.key === "services") return ["^src/services/[^/]+/types\\.ts$"];
-  if (module.key === "app") return ["^src/app/[^/]+/types\\.ts$"];
-  if (module.key === "ui/hooks") return ["^src/ui/hooks/types\\.ts$"];
-  if (module.key === "ui/components") return ["^src/ui/components/types\\.ts$"];
-  if (module.key === "ui/layout") return ["^src/ui/layout/types\\.ts$"];
-  if (module.key === "ui/data") return ["^src/ui/data/types\\.ts$"];
+    return ["^src/repositories/[^/]+/types\\.ts$"]
+  if (module.key === "services") return ["^src/services/[^/]+/types\\.ts$"]
+  if (module.key === "app") return ["^src/app/[^/]+/types\\.ts$"]
+  if (module.key === "ui/hooks") return ["^src/ui/hooks/types\\.ts$"]
+  if (module.key === "ui/components") return ["^src/ui/components/types\\.ts$"]
+  if (module.key === "ui/layout") return ["^src/ui/layout/types\\.ts$"]
+  if (module.key === "ui/data") return ["^src/ui/data/types\\.ts$"]
   if (module.key.startsWith("ui/pages/")) {
-    const group = module.key.replace("ui/pages/", "");
+    const group = module.key.replace("ui/pages/", "")
     return [
       `^src/ui/pages/${escapeRegex(group)}/types\\.ts$`,
       `^src/ui/pages/${escapeRegex(group)}/hooks/types\\.ts$`,
       `^src/ui/pages/${escapeRegex(group)}/components/types\\.ts$`,
-    ];
+    ]
   }
 
-  return [];
+  return []
 }
 
 function listDirectories(absolutePath) {
   return readdirSync(absolutePath, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name);
+    .map((entry) => entry.name)
 }
 
 function escapeRegex(value) {
-  return value.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }

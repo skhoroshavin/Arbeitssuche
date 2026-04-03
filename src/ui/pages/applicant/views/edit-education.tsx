@@ -1,18 +1,18 @@
-import { useFieldArray } from "react-hook-form";
-import { useApplicantForm } from "@/ui/pages/applicant/hooks";
-import { Input } from "@/ui/components";
-import { AutoExpandTextarea } from "@/ui/pages/applicant/components";
-import { Checkbox } from "@/ui/pages/applicant/components";
-import { ApplicantFormPage } from "@/ui/pages/applicant/components";
+import { useFieldArray } from "react-hook-form"
+import { useApplicantForm } from "@/ui/pages/applicant/hooks"
+import { Input } from "@/ui/components"
+import { AutoExpandTextarea } from "@/ui/pages/applicant/components"
+import { Checkbox } from "@/ui/pages/applicant/components"
+import { ApplicantFormPage } from "@/ui/pages/applicant/components"
 import {
   AddButton,
   FieldArrayCard,
   FieldGrid,
-} from "@/ui/pages/applicant/components";
+} from "@/ui/pages/applicant/components"
 
 export default function ApplicantEditEducation() {
-  const { register, control, isLoading, saveStatus } = useApplicantForm();
-  const education = useFieldArray({ control, name: "education" });
+  const { register, control, isLoading, saveStatus } = useApplicantForm()
+  const education = useFieldArray({ control, name: "education" })
 
   return (
     <ApplicantFormPage
@@ -55,5 +55,5 @@ export default function ApplicantEditEducation() {
         Ausbildung hinzufügen
       </AddButton>
     </ApplicantFormPage>
-  );
+  )
 }

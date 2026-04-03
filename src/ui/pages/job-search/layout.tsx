@@ -1,13 +1,12 @@
-import { useMemo } from "react";
-import { useParams, Link, Outlet } from "react-router";
-import { useJobSearch, useApplicantHeaderName } from "@/ui/data";
-import { useLayoutConfig } from "@/ui/layout";
-import { HomeIcon, ChevronRightIcon } from "@/ui/components";
+import { useMemo } from "react"
+import { useParams, Link, Outlet } from "react-router"
+import { useJobSearch, useApplicantHeaderName } from "@/ui/data"
+import { useLayoutConfig } from "@/ui/layout"
+import { HomeIcon, ChevronRightIcon } from "@/ui/components"
 
 export default function JobSearchLayout() {
-  const { id = "" } = useParams<{ id: string }>();
-  const { searchTitle, applicantName, applicantId } =
-    useJobSearchLayoutData(id);
+  const { id = "" } = useParams<{ id: string }>()
+  const { searchTitle, applicantName, applicantId } = useJobSearchLayoutData(id)
 
   const navItems = useMemo(
     () => [
@@ -16,7 +15,7 @@ export default function JobSearchLayout() {
       { to: `/job-searches/${id}/vacancies`, label: "Stellen" },
     ],
     [id],
-  );
+  )
 
   useLayoutConfig(
     () => ({
@@ -36,9 +35,9 @@ export default function JobSearchLayout() {
       ),
     }),
     [applicantId, applicantName, searchTitle, navItems],
-  );
+  )
 
-  return <Outlet />;
+  return <Outlet />
 }
 
 function BreadcrumbTitle({
@@ -46,9 +45,9 @@ function BreadcrumbTitle({
   applicantName,
   searchTitle,
 }: {
-  applicantId?: string;
-  applicantName: string;
-  searchTitle: string;
+  applicantId?: string
+  applicantName: string
+  searchTitle: string
 }) {
   return (
     <>
@@ -64,16 +63,16 @@ function BreadcrumbTitle({
       )}
       {searchTitle}
     </>
-  );
+  )
 }
 
 function useJobSearchLayoutData(id: string) {
-  const { data } = useJobSearch(id);
-  const applicantId = data?.applicantId;
-  const { displayName } = useApplicantHeaderName(applicantId);
+  const { data } = useJobSearch(id)
+  const applicantId = data?.applicantId
+  const { displayName } = useApplicantHeaderName(applicantId)
   return {
     searchTitle: data?.params.searchTerm || id,
     applicantName: displayName,
     applicantId,
-  };
+  }
 }

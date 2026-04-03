@@ -1,1 +1,1 @@
-export { createStubFetch } from "./stub/index.js";
+export { createStubFetch } from "./stub"

@@ -1,22 +1,22 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
-import { createOpenRouterModelRegistry } from "./index";
+import { describe, it, expect, afterEach, vi } from "vitest"
+import { createOpenRouterModelRegistry } from "."
 
 describe("createOpenRouterModelRegistry", () => {
-  const originalFetch = globalThis.fetch;
+  const originalFetch = globalThis.fetch
 
   afterEach(() => {
-    globalThis.fetch = originalFetch;
-  });
+    globalThis.fetch = originalFetch
+  })
 
   function mockFetch(body: unknown) {
-    globalThis.fetch = vi.fn(() =>
+    globalThis.fetch = vi.fn<typeof fetch>(() =>
       Promise.resolve({
         ok: true,
         status: 200,
         json: () => Promise.resolve(body),
         text: () => Promise.resolve(JSON.stringify(body)),
-      }),
-    ) as unknown as typeof fetch;
+      } as Response),
+    )
   }
 
   it("returns models with non-undefined names", async () => {
@@ -33,16 +33,16 @@ describe("createOpenRouterModelRegistry", () => {
           pricing: { prompt: "0", completion: "0" },
         },
       ],
-    });
+    })
 
-    const registry = createOpenRouterModelRegistry();
-    const models = await registry.fetchModels();
+    const registry = createOpenRouterModelRegistry()
+    const models = await registry.fetchModels()
 
     for (const model of models) {
-      expect(model.name).not.toBe("undefined");
-      expect(model.name.length > 0).toBeTruthy();
+      expect(model.name).not.toBe("undefined")
+      expect(model.name.length > 0).toBeTruthy()
     }
-  });
+  })
 
   it("extracts nested pricing fields", async () => {
     mockFetch({
@@ -53,24 +53,24 @@ describe("createOpenRouterModelRegistry", () => {
           pricing: { prompt: "0.000003", completion: "0.000015" },
         },
       ],
-    });
+    })
 
-    const registry = createOpenRouterModelRegistry();
-    const models = await registry.fetchModels();
+    const registry = createOpenRouterModelRegistry()
+    const models = await registry.fetchModels()
 
-    expect(models[0].pricing.prompt).toBe("0.000003");
-    expect(models[0].pricing.completion).toBe("0.000015");
-  });
+    expect(models[0].pricing.prompt).toBe("0.000003")
+    expect(models[0].pricing.completion).toBe("0.000015")
+  })
 
   it("defaults pricing to 0 when missing", async () => {
     mockFetch({
       data: [{ id: "test/model", name: "Test Model" }],
-    });
+    })
 
-    const registry = createOpenRouterModelRegistry();
-    const models = await registry.fetchModels();
+    const registry = createOpenRouterModelRegistry()
+    const models = await registry.fetchModels()
 
-    expect(models[0].pricing.prompt).toBe("0");
-    expect(models[0].pricing.completion).toBe("0");
-  });
-});
+    expect(models[0].pricing.prompt).toBe("0")
+    expect(models[0].pricing.completion).toBe("0")
+  })
+})

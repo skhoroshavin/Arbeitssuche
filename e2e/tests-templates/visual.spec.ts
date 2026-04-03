@@ -1,12 +1,12 @@
-import { test, expect } from "@playwright/test";
-import path from "node:path";
-import { renderHTML } from "../../src/services/resume-renderer/renderer.js";
-import { pdf } from "pdf-to-img";
+import { test, expect } from "@playwright/test"
+import path from "node:path"
+import { renderHTML } from "../../src/services/resume-renderer/renderer.js"
+import { pdf } from "pdf-to-img"
 
 const templatesDir = path.resolve(
   import.meta.dirname,
   "../../src/services/resume-renderer/templates",
-);
+)
 
 const resumeData = {
   personal: {
@@ -139,25 +139,25 @@ const resumeData = {
     },
   ],
   hobbies: ["Wandern", "Fotografie", "Open Source", "Bouldern"],
-};
+}
 
 async function renderPdfPages(
   page: import("@playwright/test").Page,
   html: string,
 ): Promise<Buffer[]> {
-  await page.setContent(html, { waitUntil: "networkidle" });
+  await page.setContent(html, { waitUntil: "networkidle" })
 
   const pdfBuffer = await page.pdf({
     format: "A4",
     margin: { top: "0", bottom: "0", left: "0", right: "0" },
     printBackground: true,
-  });
+  })
 
-  const pages: Buffer[] = [];
+  const pages: Buffer[] = []
   for await (const image of await pdf(pdfBuffer, { scale: 2 })) {
-    pages.push(Buffer.from(image));
+    pages.push(Buffer.from(image))
   }
-  return pages;
+  return pages
 }
 
 const RESUME_TEMPLATES = [
@@ -165,16 +165,16 @@ const RESUME_TEMPLATES = [
   "resume_modern",
   "resume_elegant",
   "resume_minimal",
-] as const;
+] as const
 
 for (const template of RESUME_TEMPLATES) {
   test(`${template}`, async ({ page }) => {
-    const html = renderHTML(templatesDir, template, resumeData);
-    const pages = await renderPdfPages(page, html);
+    const html = renderHTML(templatesDir, template, resumeData)
+    const pages = await renderPdfPages(page, html)
 
-    expect(pages.length).toBeGreaterThanOrEqual(2);
+    expect(pages.length).toBeGreaterThanOrEqual(2)
     for (let i = 0; i < pages.length; i++) {
-      expect(pages[i]).toMatchSnapshot(`${template}-page${i + 1}.png`);
+      expect(pages[i]).toMatchSnapshot(`${template}-page${i + 1}.png`)
     }
-  });
+  })
 }

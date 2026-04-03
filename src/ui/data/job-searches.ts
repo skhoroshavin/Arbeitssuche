@@ -1,25 +1,26 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { JobSearch, JobSearchInfo } from "@/models/job-search/types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import type { JobSearch, JobSearchInfo } from "@/models/job-search/types"
 import type {
+  Activity,
   VacancyDTO,
   VacancySource,
   VacancyStatus,
-} from "@/models/vacancy/types";
-import typia from "typia";
-import { api } from "./internal/api";
-import { jobSearchQueryKeys, invalidateQuery } from "./job-search-query-keys";
+} from "@/models/vacancy/types"
+import typia from "typia"
+import { api } from "./internal/api"
+import { jobSearchQueryKeys, invalidateQuery } from "./job-search-query-keys"
 
 export type VacancyWithStatus = VacancyDTO & {
-  status: VacancyStatus;
-  sources: VacancySource[];
-};
+  status: VacancyStatus
+  sources: VacancySource[]
+}
 
 export function useJobSearchListView(applicantId?: string) {
-  const query = useJobSearches(applicantId);
+  const query = useJobSearches(applicantId)
   return {
     ...query,
     data: query.data ?? EMPTY_JOB_SEARCH_LIST,
-  };
+  }
 }
 
 export function useJobSearch(id: string) {
@@ -28,16 +29,16 @@ export function useJobSearch(id: string) {
     queryFn: async () =>
       typia.assert<JobSearch>(await api().invoke("job-searches:load", id)),
     enabled: !!id,
-  });
+  })
 }
 
 export function useCreateJobSearch() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (body: {
-      searchTerm: string;
-      applicantId: string;
-      searchMode?: string;
+      searchTerm: string
+      applicantId: string
+      searchMode?: string
     }) =>
       api().invoke(
         "job-searches:create",
@@ -47,26 +48,26 @@ export function useCreateJobSearch() {
       ),
     onSuccess: () =>
       invalidateQuery(queryClient, jobSearchQueryKeys.listRoot()),
-  });
+  })
 }
 
 export function useUpdateJobSearch(id: string) {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (data: JobSearch) =>
       api().invoke("job-searches:save", id, data),
     onSuccess: () =>
       invalidateQuery(queryClient, jobSearchQueryKeys.detail(id)),
-  });
+  })
 }
 
 export function useDeleteJobSearch() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api().invoke("job-searches:delete", id),
     onSuccess: () =>
       invalidateQuery(queryClient, jobSearchQueryKeys.listRoot()),
-  });
+  })
 }
 
 export function useJobSearchCoverLetter(id: string) {
@@ -77,17 +78,17 @@ export function useJobSearchCoverLetter(id: string) {
         await api().invoke("job-searches:cover-letter:load", id),
       ),
     enabled: !!id,
-  });
+  })
 }
 
 export function useUpdateJobSearchCoverLetter(id: string) {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (content: string) =>
       api().invoke("job-searches:cover-letter:save", id, content),
     onSuccess: () =>
       invalidateQuery(queryClient, jobSearchQueryKeys.coverLetter(id)),
-  });
+  })
 }
 
 export function useGenerateCoverLetter(id: string) {
@@ -96,7 +97,7 @@ export function useGenerateCoverLetter(id: string) {
       typia.assert<{ content: string }>(
         await api().invoke("job-searches:cover-letter:generate", id),
       ),
-  });
+  })
 }
 
 export function useVacancyCoverLetter(id: string, hash: string) {
@@ -111,11 +112,11 @@ export function useVacancyCoverLetter(id: string, hash: string) {
         ),
       ),
     enabled: !!id && !!hash,
-  });
+  })
 }
 
 export function useUpdateVacancyCoverLetter(id: string, hash: string) {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (content: string) =>
       api().invoke(
@@ -129,7 +130,7 @@ export function useUpdateVacancyCoverLetter(id: string, hash: string) {
         queryClient,
         jobSearchQueryKeys.vacancyCoverLetter(id, hash),
       ),
-  });
+  })
 }
 
 export function useGenerateVacancyCoverLetter(id: string, hash: string) {
@@ -142,11 +143,11 @@ export function useGenerateVacancyCoverLetter(id: string, hash: string) {
           hash,
         ),
       ),
-  });
+  })
 }
 
 export function useJobSearchVacancyListView(id: string) {
-  const query = useJobSearchVacancies(id);
+  const query = useJobSearchVacancies(id)
   return {
     ...query,
     data:
@@ -156,7 +157,7 @@ export function useJobSearchVacancyListView(id: string) {
             vacancies: query.data.vacancies,
             totalCount: query.data.totalCount,
           },
-  };
+  }
 }
 
 export function useJobSearchVacancy(id: string, hash: string) {
@@ -167,28 +168,22 @@ export function useJobSearchVacancy(id: string, hash: string) {
         await api().invoke("job-searches:vacancies:load", id, hash),
       ),
     enabled: !!id && !!hash,
-  });
+  })
 }
 
 export function useAddActivity(id: string) {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      hash,
-      activity,
-    }: {
-      hash: string;
-      activity: Record<string, unknown>;
-    }) =>
+    mutationFn: ({ hash, activity }: { hash: string; activity: Activity }) =>
       api().invoke("job-searches:vacancies:add-activity", id, hash, activity),
     onSuccess: () => {
-      void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id));
+      void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
       void invalidateQuery(
         queryClient,
         jobSearchQueryKeys.vacancyDetailRoot(id),
-      );
+      )
     },
-  });
+  })
 }
 
 function useJobSearches(applicantId?: string) {
@@ -198,7 +193,7 @@ function useJobSearches(applicantId?: string) {
       typia.assert<{ jobSearches: JobSearchInfo[] }>(
         await api().invoke("job-searches:list", applicantId),
       ),
-  });
+  })
 }
 
 function useJobSearchVacancies(id: string) {
@@ -209,30 +204,30 @@ function useJobSearchVacancies(id: string) {
         await api().invoke("job-searches:vacancies:list", id),
       ),
     enabled: !!id,
-  });
+  })
 }
 
 const EMPTY_VACANCY_LIST: VacancyListView = {
   vacancies: [],
   totalCount: 0,
-};
+}
 
 const EMPTY_JOB_SEARCH_LIST: JobSearchListView = {
   jobSearches: [],
-};
+}
 
 interface VacancyListResponse {
-  vacancies: VacancyWithStatus[];
-  totalCount: number;
-  generatedAt: string;
-  latestCrawl: string;
+  vacancies: VacancyWithStatus[]
+  totalCount: number
+  generatedAt: string
+  latestCrawl: string
 }
 
 type VacancyListView = Readonly<{
-  vacancies: VacancyWithStatus[];
-  totalCount: number;
-}>;
+  vacancies: VacancyWithStatus[]
+  totalCount: number
+}>
 
 type JobSearchListView = Readonly<{
-  jobSearches: JobSearchInfo[];
-}>;
+  jobSearches: JobSearchInfo[]
+}>
