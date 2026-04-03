@@ -146,7 +146,7 @@ export function registerVacanciesHandlers(
         onProgress: (event) => {
           safeSend("job:progress", {
             jobSearchId,
-            message: `Enriching ${event.completed}/${event.total}`,
+            message: `Analysiere ${event.completed}/${event.total}`,
             phase: "enrich",
             enrichProgress: event,
           })
@@ -161,7 +161,7 @@ export function registerVacanciesHandlers(
 
       safeSend("job:progress", {
         jobSearchId,
-        message: "Enrichment complete",
+        message: "Analyse abgeschlossen",
         phase: "done",
       })
 

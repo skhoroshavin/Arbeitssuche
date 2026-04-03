@@ -52,7 +52,7 @@
 - [x] 6.4 After crawler completes, call `queue.drain()`, then `markUnseenAsGone`, then final save
 - [x] 6.5 Remove old `scan.ts`, `unify.ts` and all moved files from `vacancy-scanner/`
 - [x] 6.6 Update `app/index.ts` to construct the new services and pass them to VacancyScanner
-- [ ] 6.7 Verify existing scan behavior works end-to-end (manual or integration test)
+- [x] 6.7 Verify existing scan behavior works end-to-end (manual or integration test)
 
 ## 7. Extend ProgressEvent and Crawl Manager
 
@@ -95,4 +95,4 @@
 - [x] 12.2 Update dependency-cruiser config if new service directories need boundary rules
 - [x] 12.3 Run `npm run verify` (lint, knip, depcruise, build) and fix any issues
 - [x] 12.4 Run `npm test` and fix any broken tests
-- [ ] 12.5 Manual end-to-end test: start scan, observe concurrent enrichment, abort, re-enrich single, enrich all unenriched
+- [x] 12.5 Manual end-to-end test: start scan, observe concurrent enrichment, abort, re-enrich single, enrich all unenriched

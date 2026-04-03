@@ -10,7 +10,7 @@ export function GlobalProgressIndicator() {
   const { jobSearchId, phase, enrichProgress, isCrawling } = progress
 
   const phaseLabel =
-    phase === "search" || phase === "scan" ? "Scanning..." : "Enriching..."
+    phase === "search" || phase === "scan" ? "Wird gescannt..." : "Wird analysiert..."
 
   return (
     <div className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 px-4 py-2 flex items-center gap-3 text-sm">
