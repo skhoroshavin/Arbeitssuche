@@ -2,6 +2,7 @@ import typia from "typia"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { VacancyContact } from "@/models/vacancy/types.js"
 import type { LlmClient, TypedSchema } from "@/plugins/llm/types.js"
+import { mergeAddresses } from "@/services/vacancy-processor/index.js"
 
 export function needsContactExtraction(vacancy: Vacancy): boolean {
   if (!vacancy.description) return false
@@ -50,37 +51,6 @@ export function mergeContactInfo(
 
   if (!addressesChanged && contact === vacancy.contact) return vacancy
   return vacancy.with({ addresses, contact })
-}
-
-export function mergeAddresses(
-  existing: string[],
-  extracted: string[],
-): string[] {
-  const merged = [...existing]
-  const mergedLower = merged.map((a) => a.toLowerCase())
-
-  for (const newAddr of extracted) {
-    const newLower = newAddr.toLowerCase()
-
-    const subsumesIndex = mergedLower.findIndex(
-      (lower) => lower !== newLower && newLower.includes(lower),
-    )
-
-    if (subsumesIndex === -1) {
-      const alreadyCovered = mergedLower.some(
-        (lower) => lower === newLower || lower.includes(newLower),
-      )
-      if (!alreadyCovered) {
-        merged.push(newAddr)
-        mergedLower.push(newLower)
-      }
-    } else {
-      merged[subsumesIndex] = newAddr
-      mergedLower[subsumesIndex] = newLower
-    }
-  }
-
-  return merged
 }
 
 interface ContactExtractionResult {

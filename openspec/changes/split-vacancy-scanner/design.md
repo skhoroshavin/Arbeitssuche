@@ -82,7 +82,7 @@ class SiteCrawler {
 
 interface CrawlOptions {
   sites: JobSite[]
-  criteria: JobSearchCriteria  // domain type from models/job-search
+  criteria: JobSearchCriteria // domain type from models/job-search
   signal?: AbortSignal
   onProgress?: (event: ProgressEvent) => void
   onResult: (details: VacancyDetails, siteName: string) => void
@@ -95,7 +95,8 @@ interface CrawlOptions {
 - `models/job-search/types.ts` gets a new `JobSearchCriteria` — the domain-level type that adds `limit` and represents the full search configuration as the UI and services see it. This replaces the `SearchParameters` type currently in `scan.ts`.
 
 The crawler accepts `JobSearchCriteria` and derives the plugin-level `SearchCriteria` when calling `site.getVacancyList()`. This keeps the plugin boundary clean while giving services and UI a single domain type for all search parameters.
-```
+
+````
 
 **Why not async iterators:** The crawler already has side effects (progress reporting) and the consumer needs to process results synchronously within the pagination loop (to track URL deduplication counts for the limit). A callback keeps the flow explicit and matches the existing pattern. Async iterators would add complexity without clear benefit here.
 
@@ -118,7 +119,7 @@ interface EnrichContext {
   applicant: Applicant
   preferences: SearchPreferences
 }
-```
+````
 
 Construction-time deps are infrastructure (LLM client, commute client) that don't change across calls. Per-call context is the applicant and their preferences — these are domain inputs that may differ between invocations (e.g., re-enriching after editing an applicant profile, or enriching for a different applicant).
 
@@ -183,12 +184,12 @@ Abort kills both. The IPC handler for abort doesn't change signature, just gains
 
 **New IPC channels:**
 
-| Channel | Direction | Purpose |
-|---------|-----------|---------|
-| `job:progress` | main→renderer | Existing. Extended with enrichment progress fields |
-| `vacancies:re-enrich` | renderer→main | Re-enrich a single vacancy by hash |
+| Channel                       | Direction     | Purpose                                            |
+| ----------------------------- | ------------- | -------------------------------------------------- |
+| `job:progress`                | main→renderer | Existing. Extended with enrichment progress fields |
+| `vacancies:re-enrich`         | renderer→main | Re-enrich a single vacancy by hash                 |
 | `vacancies:enrich-unenriched` | renderer→main | Batch-enrich all dirty/unenriched for a job search |
-| `vacancies:enrich:abort` | renderer→main | Stop a running enrichment batch |
+| `vacancies:enrich:abort`      | renderer→main | Stop a running enrichment batch                    |
 
 ### 8. ProgressEvent extended for enrichment phases
 
@@ -212,6 +213,7 @@ The "enrich" phase is new. `enrichProgress` is sent with every enrichment comple
 **Why layout-level, not page-level:** Enrichment continues after crawling finishes and after the user navigates away from the job search page. A page-scoped component would unmount and lose the connection.
 
 **UI behavior:**
+
 - Hidden when no active crawl/enrichment
 - Shows phase label + progress bar during crawl and enrichment
 - Shows abort button (calls `job-searches:crawl:abort` or `vacancies:enrich:abort` depending on context)

@@ -1,27 +1,15 @@
 import type { VacancyDetails } from "@/plugins/job-site/types.js"
 import { Vacancy } from "@/models/vacancy/index.js"
-import type {
-  FoundActivity,
-  NotFoundActivity,
-  VacancyContact,
-} from "@/models/vacancy/types.js"
+import type { FoundActivity, VacancyContact } from "@/models/vacancy/types.js"
 import { vacancyHash } from "./vacancy-hash.js"
 import { htmlToMarkdown } from "./markdown.js"
-import { mergeAddresses } from "./extract-contact.js"
 
-export interface ProcessOneResult {
-  vacancy: Vacancy
-  hash: string
-  isNew: boolean
-  descriptionChanged: boolean
-}
-
-export function processOneCrawlResult(
+export function process(
   details: VacancyDetails,
   siteName: string,
   existingByHash: Map<string, Vacancy>,
   crawlDate: string,
-): ProcessOneResult {
+): ProcessResult {
   const hash = vacancyHash(
     details.title,
     details.company,
@@ -65,41 +53,13 @@ export function processOneCrawlResult(
     contact,
     startDate: details.startDate,
     description,
-    descriptionChanged: false,
+    enriched: false,
+    enrichmentDirty: true,
     activityHistory: [foundActivity],
     active: true,
   })
 
-  return { vacancy, hash, isNew: true, descriptionChanged: false }
-}
-
-export function markUnseenAsGone(
-  allVacancies: Vacancy[],
-  seenHashes: Set<string>,
-  crawlDate: string,
-): MarkUnseenResult {
-  let goneCount = 0
-  const vacancies = allVacancies.map((v) => {
-    if (seenHashes.has(v.hash) || !v.active) return v
-
-    goneCount++
-    const notFoundActivity: NotFoundActivity = {
-      type: "not-found",
-      date: crawlDate,
-      site: "all",
-    }
-    return v.with({
-      active: false,
-      activityHistory: [...v.activityHistory, notFoundActivity],
-    })
-  })
-
-  return { vacancies, goneCount }
-}
-
-interface MarkUnseenResult {
-  vacancies: Vacancy[]
-  goneCount: number
+  return { vacancy, hash, isNew: true }
 }
 
 function contactFromDetails(
@@ -118,7 +78,7 @@ function mergeWithExisting(
   foundActivity: FoundActivity,
   contact?: VacancyContact,
   description?: string,
-): ProcessOneResult {
+): ProcessResult {
   const descriptionChanged = hasDescriptionChanged(
     description,
     existing.description,
@@ -131,18 +91,55 @@ function mergeWithExisting(
       details.address ? [details.address] : [],
     ),
     description: description ?? existing.description,
-    descriptionChanged,
+    enrichmentDirty: existing.enrichmentDirty || descriptionChanged,
     contact: contact ?? existing.contact,
     startDate: details.startDate ?? existing.startDate,
     activityHistory: [...existing.activityHistory, foundActivity],
     active: true,
   })
 
-  return { vacancy, hash, isNew: false, descriptionChanged }
+  return { vacancy, hash, isNew: false }
+}
+
+interface ProcessResult {
+  vacancy: Vacancy
+  hash: string
+  isNew: boolean
 }
 
 function mergeUrls(existing: string[], newUrl: string): string[] {
   return existing.includes(newUrl) ? existing : [...existing, newUrl]
+}
+
+export function mergeAddresses(
+  existing: string[],
+  extracted: string[],
+): string[] {
+  const merged = [...existing]
+  const mergedLower = merged.map((a) => a.toLowerCase())
+
+  for (const newAddr of extracted) {
+    const newLower = newAddr.toLowerCase()
+
+    const subsumesIndex = mergedLower.findIndex(
+      (lower) => lower !== newLower && newLower.includes(lower),
+    )
+
+    if (subsumesIndex === -1) {
+      const alreadyCovered = mergedLower.some(
+        (lower) => lower === newLower || lower.includes(newLower),
+      )
+      if (!alreadyCovered) {
+        merged.push(newAddr)
+        mergedLower.push(newLower)
+      }
+    } else {
+      merged[subsumesIndex] = newAddr
+      mergedLower[subsumesIndex] = newLower
+    }
+  }
+
+  return merged
 }
 
 function hasDescriptionChanged(

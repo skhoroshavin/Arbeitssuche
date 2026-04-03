@@ -24,6 +24,9 @@ export {
   useJobSearchVacancyListView,
   useJobSearchVacancy,
   useAddActivity,
+  useReEnrichVacancy,
+  useEnrichAllUnenriched,
+  useAbortEnrichment,
   type VacancyWithStatus,
 } from "./job-searches"
 

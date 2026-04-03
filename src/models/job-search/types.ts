@@ -1,5 +1,13 @@
 export type SearchMode = "employment" | "entry-level" | "apprenticeship"
 
+export interface JobSearchCriteria {
+  location: string
+  query: string
+  radiusKm: number
+  mode: SearchMode
+  limit?: number
+}
+
 export interface SearchParameters {
   searchTerm: string
   radiusKm: number

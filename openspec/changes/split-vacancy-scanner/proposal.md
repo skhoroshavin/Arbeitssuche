@@ -34,12 +34,12 @@ Add two boolean fields:
 
 This produces four UI states:
 
-| enriched | dirty | State | UI treatment |
-|----------|-------|-------|-------------|
-| false | false | plain | Header only, "not analyzed" label |
-| false | true | pending | Header only, spinner |
-| true | true | stale | Show old summary, "outdated" badge |
-| true | false | enriched | Full card with summary + match score |
+| enriched | dirty | State    | UI treatment                         |
+| -------- | ----- | -------- | ------------------------------------ |
+| false    | false | plain    | Header only, "not analyzed" label    |
+| false    | true  | pending  | Header only, spinner                 |
+| true     | true  | stale    | Show old summary, "outdated" badge   |
+| true     | false | enriched | Full card with summary + match score |
 
 The "stale" state preserves the old summary while re-enrichment runs, which is better UX than today (where the old summary is discarded on description change).
 

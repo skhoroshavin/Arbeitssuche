@@ -137,7 +137,7 @@ test("hydrates missing active field as true", () => {
   teardown()
 })
 
-test("hydrates missing descriptionChanged field as false", () => {
+test("hydrates missing enriched field as false when no summary", () => {
   const id = nextId()
   const { db, repo, teardown } = openDatabaseById(id)
   db.prepare(
@@ -160,7 +160,38 @@ test("hydrates missing descriptionChanged field as false", () => {
   )
 
   const output = repo.loadAll("s1")
-  expect(output.vacancies[0].descriptionChanged).toBe(false)
+  expect(output.vacancies[0].enriched).toBe(false)
+  expect(output.vacancies[0].enrichmentDirty).toBe(false)
+  teardown()
+})
+
+test("migrates enriched=true for existing vacancy with summary", () => {
+  const id = nextId()
+  const { db, repo, teardown } = openDatabaseById(id)
+  db.prepare(
+    "INSERT INTO vacancy_meta (job_search_id, generated_at, latest_crawl) VALUES (?, ?, ?)",
+  ).run("s1", "2026-01-01T00:00:00Z", "2026-01-01.yaml")
+  db.prepare(
+    "INSERT INTO vacancies (job_search_id, hash, data) VALUES (?, ?, ?)",
+  ).run(
+    "s1",
+    "h1",
+    JSON.stringify({
+      hash: "h1",
+      title: "Dev",
+      company: "ACME",
+      urls: [],
+      addresses: [],
+      active: true,
+      activityHistory: [],
+      summary: "- Good match\n- Relevant experience",
+      descriptionChanged: false,
+    }),
+  )
+
+  const output = repo.loadAll("s1")
+  expect(output.vacancies[0].enriched).toBe(true)
+  expect(output.vacancies[0].enrichmentDirty).toBe(false)
   teardown()
 })
 
@@ -210,7 +241,6 @@ function makeVacancy(overrides: Partial<VacancyDTO> = {}): Vacancy {
     company: "ACME",
     urls: ["https://example.com/job/1"],
     addresses: ["Berlin"],
-    descriptionChanged: false,
     activityHistory: [],
     active: true,
     ...overrides,

@@ -18,6 +18,8 @@ import { resolveConfig } from "@/models/config/index.js"
 import { ResumeRenderer } from "@/services/resume-renderer/index.js"
 import { JobConsultant } from "@/services/job-consultant/index.js"
 import { VacancyScanner } from "@/services/vacancy-scanner/index.js"
+import { SiteCrawler } from "@/services/site-crawler/index.js"
+import { VacancyEnricher } from "@/services/vacancy-enricher/index.js"
 import { CoverLetterWriter } from "@/services/cover-letter-writer/index.js"
 import type { LlmClientFactory } from "./llm-factory.js"
 import { resolveSecrets } from "@/models/secrets/index.js"
@@ -57,16 +59,22 @@ export function createAppServices(context: ServiceContext): AppServices {
 
     const modelRegistry = context.modelRegistry ?? createModelRegistry(provider)
 
+    const vacancyEnricher = new VacancyEnricher({
+      llmClient: assessmentLlm,
+      commuteClient,
+    })
+
     return {
       modelRegistry,
+      vacancyEnricher,
       resumeRenderer: new ResumeRenderer(context.applicantRepo, pdfRenderer),
       jobConsultant: new JobConsultant(context.applicantRepo, consultationLlm),
       vacancyScanner: new VacancyScanner(
         context.vacancyRepo,
         context.jobSearchRepo,
         context.applicantRepo,
-        assessmentLlm,
-        commuteClient,
+        new SiteCrawler(),
+        vacancyEnricher,
         getJobSiteNames,
       ),
       coverLetterWriter: new CoverLetterWriter(
@@ -95,6 +103,9 @@ export function createAppServices(context: ServiceContext): AppServices {
     get jobConsultant() {
       return services.jobConsultant
     },
+    get vacancyEnricher() {
+      return services.vacancyEnricher
+    },
     get vacancyScanner() {
       return services.vacancyScanner
     },
@@ -116,6 +127,7 @@ export interface AppServices {
   modelRegistry: LlmModelRegistry
   resumeRenderer: ResumeRenderer
   jobConsultant: JobConsultant
+  vacancyEnricher: VacancyEnricher
   vacancyScanner: VacancyScanner
   coverLetterWriter: CoverLetterWriter
   rebuild: () => void

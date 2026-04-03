@@ -7,7 +7,7 @@ import type { LlmClient, TypedSchema } from "@/plugins/llm/types.js"
 import { formatApplicantSections } from "@/models/applicant/index.js"
 
 export function needsAssessment(vacancy: Vacancy): boolean {
-  return !vacancy.summary || vacancy.descriptionChanged
+  return !vacancy.summary || vacancy.enrichmentDirty
 }
 
 export async function assessVacancy(

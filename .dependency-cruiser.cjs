@@ -35,7 +35,7 @@ const MODULE_POLICY = [
   {
     key: "ui/layout",
     pathRegex: "^src/ui/layout/",
-    allow: ["ui/hooks", "ui/components"],
+    allow: ["ui/hooks", "ui/components", "models"],
   },
   { key: "ui/data", pathRegex: "^src/ui/data/", allow: ["models"] },
   {

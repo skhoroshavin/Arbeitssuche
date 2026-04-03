@@ -71,7 +71,8 @@ export interface VacancyDTO {
   contact: VacancyContact
   startDate: string
   description: string
-  descriptionChanged: boolean
+  enriched: boolean
+  enrichmentDirty: boolean
   summary: string
   matchScore: MatchScore
   commute: Record<string, CommuteInfo>
