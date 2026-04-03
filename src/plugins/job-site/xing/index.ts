@@ -7,6 +7,10 @@ import type {
   JobPostingJsonLd,
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
+import {
+  extractAbsoluteLinks,
+  withOpenedPage,
+} from "@/plugins/page-utilities/index.js";
 import { extractAddressFromJsonLd, extractJsonLd } from "@/utils/json-ld.js";
 import { normalizeMailtoHref, normalizeOptionalText } from "@/utils/text.js";
 
@@ -35,12 +39,9 @@ class XingSite implements JobSite {
   }
 
   async getVacancyDetails(url: string) {
-    const page = await this.browser.openPage(url);
-    try {
-      return extractVacancy(page.html, url);
-    } finally {
-      await page.close();
-    }
+    return withOpenedPage(this.browser, url, (html) =>
+      extractVacancy(html, url),
+    );
   }
 }
 
@@ -63,16 +64,11 @@ function extractVacancy(html: string, url: string): VacancyDetails {
 }
 
 function extractLinks(html: string): string[] {
-  const $ = cheerio.load(html);
-  const urls = new Set<string>();
-  $("a[href*='/jobs/']").each((_index, element) => {
-    const href = $(element).attr("href");
-    if (!href) return;
-    if (!/\/jobs\/[a-z].*-\d+$/.test(href)) return;
-    const full = href.startsWith("http") ? href : `${BASE_URL}${href}`;
-    urls.add(full);
+  return extractAbsoluteLinks(html, {
+    selector: "a[href*='/jobs/']",
+    hrefPattern: /\/jobs\/[a-z].*-\d+$/,
+    baseUrl: BASE_URL,
   });
-  return [...urls];
 }
 
 function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {

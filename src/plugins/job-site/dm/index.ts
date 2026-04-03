@@ -7,6 +7,7 @@ import type {
   JobPostingJsonLd,
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
+import { withOpenedPage } from "@/plugins/page-utilities/index.js";
 import { extractAddressFromJsonLd, extractJsonLd } from "@/utils/json-ld.js";
 import { normalizeOptionalText } from "@/utils/text.js";
 
@@ -34,15 +35,15 @@ class DmSite implements JobSite {
   }
 
   async getVacancyDetails(url: string) {
-    const page = await this.browser.openPage(url, {
-      waitFor: SEARCH_READY_SELECTOR,
-      blockPatterns: BLOCK_PATTERNS,
-    });
-    try {
-      return extractVacancy(page.html, url);
-    } finally {
-      await page.close();
-    }
+    return withOpenedPage(
+      this.browser,
+      url,
+      (html) => extractVacancy(html, url),
+      {
+        waitFor: SEARCH_READY_SELECTOR,
+        blockPatterns: BLOCK_PATTERNS,
+      },
+    );
   }
 }
 

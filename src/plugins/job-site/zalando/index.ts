@@ -6,6 +6,7 @@ import type {
   JobSite,
   SearchCriteria,
 } from "@/plugins/job-site/types.js";
+import { extractAbsoluteLinks } from "@/plugins/page-utilities/index.js";
 import { normalizeOptionalText } from "@/utils/text.js";
 
 export function createZalandoSite(browser: Browser): JobSite {
@@ -93,16 +94,11 @@ function extractVacancy(html: string, url: string): VacancyDetails {
 }
 
 function extractLinks(html: string): string[] {
-  const $ = cheerio.load(html);
-  const urls = new Set<string>();
-  $(SELECTORS.jobLink).each((_index, element) => {
-    const href = $(element).attr("href");
-    if (!href) return;
-    if (!/\/en\/jobs\/\d+/.test(href)) return;
-    const full = href.startsWith("http") ? href : `${BASE_URL}${href}`;
-    urls.add(full);
+  return extractAbsoluteLinks(html, {
+    selector: SELECTORS.jobLink,
+    hrefPattern: /\/en\/jobs\/\d+/,
+    baseUrl: BASE_URL,
   });
-  return [...urls];
 }
 
 function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
