@@ -65,10 +65,9 @@ const EXTRACT_CONTACT_SCHEMA: TypedSchema<RawContactResult> = {
   parse: typia.json.createAssertParse<RawContactResult>(),
 }
 
-// Raw type matching the LLM JSON contract: contact is nullable in the JSON schema
 interface RawContactResult {
   addresses: string[]
-  contact: VacancyContact | null
+  contact: RawContact | null
 }
 
 function buildContactExtractionPrompt(vacancy: Vacancy): string {
@@ -111,9 +110,7 @@ Regeln:
 - Einzelne Felder in contact dürfen weggelassen werden, wenn nicht vorhanden`
 }
 
-function cleanContact(
-  contact: VacancyContact | null,
-): VacancyContact | undefined {
+function cleanContact(contact: RawContact | null): VacancyContact | undefined {
   if (!contact) return undefined
   const cleaned = pickDefined({
     name: trimOrUndefined(contact.name),
@@ -123,7 +120,7 @@ function cleanContact(
   return Object.keys(cleaned).length > 0 ? cleaned : undefined
 }
 
-function trimOrUndefined(value?: string): string | undefined {
+function trimOrUndefined(value?: string | null): string | undefined {
   return value?.trim() || undefined
 }
 
@@ -135,4 +132,11 @@ function pickDefined(
     if (value) result[key] = value
   }
   return result
+}
+
+// Raw contact fields are nullable since LLM may return null instead of omitting fields
+interface RawContact {
+  name?: string | null
+  email?: string | null
+  phone?: string | null
 }

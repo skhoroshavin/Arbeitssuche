@@ -125,7 +125,9 @@ function hydrateVacancyRow(row: unknown): Vacancy {
 }
 
 function hydrateVacancy(data: unknown): Vacancy {
-  return new Vacancy(resolveVacancy(typia.assert<Partial<VacancyDTO>>(stripLegacyCommute(data))))
+  return new Vacancy(
+    resolveVacancy(typia.assert<Partial<VacancyDTO>>(stripLegacyCommute(data))),
+  )
 }
 
 // Old commute data stored durations as strings ("1 hour 5 mins") — strip and let next enrichment recompute.

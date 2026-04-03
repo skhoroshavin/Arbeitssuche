@@ -118,7 +118,7 @@ function EnrichAllButton({
   onEnrichAll: () => void
   onAbort: () => void
 }) {
-  if (!hasUnenriched) return
+  if (!hasUnenriched && !isEnriching) return
   if (isEnriching) {
     return (
       <button
@@ -193,14 +193,24 @@ function useEnrichControl(id: string, vacancies: VacancyWithStatus[]) {
   const enrichAll = useEnrichAllUnenriched(id)
   const abortEnrichment = useAbortEnrichment(id)
   const [isEnriching, setIsEnriching] = useState(false)
+  const [enrichProgressJobId, setEnrichProgressJobId] = useState<string>()
+  const { vacancyUpdateCount } = useJobProgress(enrichProgressJobId)
 
   const hasUnenriched = vacancies.some((v) => !v.enriched || v.enrichmentDirty)
 
+  useEffect(() => {
+    if (vacancyUpdateCount > 0) {
+      void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
+    }
+  }, [vacancyUpdateCount, queryClient, id])
+
   const handleEnrichAll = () => {
     setIsEnriching(true)
+    setEnrichProgressJobId(id)
     enrichAll.mutate(undefined, {
       onSettled: () => {
         setIsEnriching(false)
+        setEnrichProgressJobId(undefined)
         void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
       },
     })
@@ -209,6 +219,7 @@ function useEnrichControl(id: string, vacancies: VacancyWithStatus[]) {
   const handleAbort = () => {
     abortEnrichment.mutate()
     setIsEnriching(false)
+    setEnrichProgressJobId(undefined)
   }
 
   return { hasUnenriched, isEnriching, handleEnrichAll, handleAbort }

@@ -104,7 +104,11 @@ function EnrichedSummaryRow({
         onClick={onReEnrich}
         disabled={isEnriching}
         className={`shrink-0 ml-auto text-xs px-1.5 py-0.5 rounded border transition-colors disabled:opacity-50 ${isError ? "border-red-300 dark:border-red-700 text-red-500" : "border-gray-200 dark:border-gray-600 text-gray-400 hover:text-blue-600 hover:border-blue-300"}`}
-        title={isError ? "Analyse fehlgeschlagen, erneut versuchen" : "Neu analysieren"}
+        title={
+          isError
+            ? "Analyse fehlgeschlagen, erneut versuchen"
+            : "Neu analysieren"
+        }
       >
         {isEnriching ? "⟳" : "↺"}
       </button>
