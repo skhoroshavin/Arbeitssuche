@@ -1,6 +1,62 @@
 const { readdirSync } = require("node:fs")
 const path = require("node:path")
 
+const MODULE_POLICY = [
+  { key: "utils", pathRegex: "^src/utils/", allow: [] },
+  { key: "models", pathRegex: "^src/models/", allow: ["models"] },
+  { key: "plugins", pathRegex: "^src/plugins/", allow: ["utils"] },
+  {
+    key: "repositories",
+    pathRegex: "^src/repositories/",
+    allow: ["plugins", "models", "utils"],
+  },
+  {
+    key: "services",
+    pathRegex: "^src/services/",
+    allow: ["plugins", "models", "utils", "repositories", "services"],
+  },
+  {
+    key: "app",
+    pathRegex: "^src/app/",
+    allow: ["app", "utils", "models", "plugins", "repositories", "services"],
+  },
+  {
+    key: "ui/root",
+    pathRegex:
+      "^src/ui/(app\\.tsx|main\\.tsx|index\\.css|index\\.html|renderer-globals\\.d\\.ts|test-setup\\.ts)$",
+    allow: ["ui/layout", "ui/pages", "ui/pages/*", "models"],
+  },
+  { key: "ui/hooks", pathRegex: "^src/ui/hooks/", allow: [] },
+  {
+    key: "ui/components",
+    pathRegex: "^src/ui/components/",
+    allow: ["ui/hooks"],
+  },
+  {
+    key: "ui/layout",
+    pathRegex: "^src/ui/layout/",
+    allow: ["ui/hooks", "ui/components"],
+  },
+  { key: "ui/data", pathRegex: "^src/ui/data/", allow: ["models"] },
+  {
+    key: "ui/pages/:group",
+    pathRegex: "^src/ui/pages/:group/",
+    allow: [
+      "ui/hooks",
+      "ui/components",
+      "ui/layout",
+      "ui/data",
+      "models",
+      "ui/pages/:group",
+    ],
+  },
+  {
+    key: "ui/pages",
+    pathRegex: "^src/ui/pages/index\\.ts$",
+    allow: ["ui/pages", "ui/pages/*"],
+  },
+]
+
 /** @type {import("dependency-cruiser").IConfiguration} */
 module.exports = {
   forbidden: [
@@ -58,95 +114,24 @@ function buildInternalBoundaryRules() {
 
 function buildModules() {
   const pageGroups = listDirectories(path.join(process.cwd(), "src/ui/pages"))
+  const pageGroupPolicy = MODULE_POLICY.find(
+    (module) => module.key === "ui/pages/:group",
+  )
 
-  /** @type {Array<{ key: string; layer: string; pathRegex: string; allow: string[] }>} */
+  if (!pageGroupPolicy) {
+    throw new Error("ui/pages/:group policy must be defined")
+  }
+
   return [
-    {
-      key: "utils",
-      layer: "utils",
-      pathRegex: "^src/utils/",
-      allow: [],
-    },
-    {
-      key: "models",
-      layer: "models",
-      pathRegex: "^src/models/",
-      allow: ["models"],
-    },
-    {
-      key: "plugins",
-      layer: "plugins",
-      pathRegex: "^src/plugins/",
-      allow: ["utils"],
-    },
-    {
-      key: "repositories",
-      layer: "repositories",
-      pathRegex: "^src/repositories/",
-      allow: ["plugins", "models", "utils"],
-    },
-    {
-      key: "services",
-      layer: "services",
-      pathRegex: "^src/services/",
-      allow: ["plugins", "models", "utils", "repositories", "services"],
-    },
-    {
-      key: "app",
-      layer: "app",
-      pathRegex: "^src/app/",
-      allow: ["app", "utils", "models", "plugins", "repositories", "services"],
-    },
-    {
-      key: "ui/root",
-      layer: "ui",
-      pathRegex:
-        "^src/ui/(app\\.tsx|main\\.tsx|index\\.css|index\\.html|renderer-globals\\.d\\.ts|test-setup\\.ts)$",
-      allow: ["ui/layout", "ui/pages", "models"],
-    },
-    {
-      key: "ui/hooks",
-      layer: "ui",
-      pathRegex: "^src/ui/hooks/",
-      allow: [],
-    },
-    {
-      key: "ui/components",
-      layer: "ui",
-      pathRegex: "^src/ui/components/",
-      allow: ["ui/hooks"],
-    },
-    {
-      key: "ui/layout",
-      layer: "ui",
-      pathRegex: "^src/ui/layout/",
-      allow: ["ui/hooks", "ui/components"],
-    },
-    {
-      key: "ui/data",
-      layer: "ui",
-      pathRegex: "^src/ui/data/",
-      allow: ["models"],
-    },
+    ...MODULE_POLICY.filter((module) => module.key !== "ui/pages/:group"),
     ...pageGroups.map((group) => ({
       key: `ui/pages/${group}`,
-      layer: "ui",
-      pathRegex: `^src/ui/pages/${escapeRegex(group)}/`,
-      allow: [
-        "ui/hooks",
-        "ui/components",
-        "ui/layout",
-        "ui/data",
-        "models",
-        `ui/pages/${group}`,
-      ],
+      pathRegex: pageGroupPolicy.pathRegex.replace(
+        ":group",
+        escapeRegex(group),
+      ),
+      allow: resolveGroupDependencies(pageGroupPolicy.allow, group),
     })),
-    {
-      key: "ui/pages",
-      layer: "ui",
-      pathRegex: "^src/ui/pages/index\\.ts$",
-      allow: ["ui/pages"],
-    },
   ]
 }
 
@@ -165,13 +150,22 @@ function resolveAllowedTargetPaths(sourceModule, modules) {
 function isAllowed(sourceModule, targetModule) {
   if (targetModule.key === sourceModule.key) return true
 
-  return sourceModule.allow.some((allowedKey) => {
-    if (allowedKey === targetModule.key) return true
-    if (allowedKey === targetModule.layer) return true
-    if (allowedKey === "ui/pages" && targetModule.key.startsWith("ui/pages/"))
-      return true
-    return false
-  })
+  return sourceModule.allow.some((allowedKey) =>
+    doesAllowedModuleMatchTarget(allowedKey, targetModule.key),
+  )
+}
+
+function resolveGroupDependencies(policy, group) {
+  return policy.map((key) => key.replace(":group", group))
+}
+
+function doesAllowedModuleMatchTarget(allowedKey, targetKey) {
+  if (allowedKey === targetKey) return true
+  if (allowedKey.endsWith("/*")) {
+    return targetKey.startsWith(allowedKey.slice(0, -1))
+  }
+
+  return false
 }
 
 function toValuePublicSurfacePatterns(module) {
