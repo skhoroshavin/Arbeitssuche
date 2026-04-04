@@ -19,7 +19,7 @@ export function registerIpcHandlers(options: IpcHandlerOptions): void {
 
   registerApplicantsHandlers(handle, services)
   registerJobSearchesHandlers(handle, services)
-  registerVacanciesHandlers(handle, services)
+  registerVacanciesHandlers(handle, services, safeSend)
   registerCrawlHandlers(handle, services, safeSend)
   registerSettingsHandlers(handle, services)
 }

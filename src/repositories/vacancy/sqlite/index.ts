@@ -125,5 +125,29 @@ function hydrateVacancyRow(row: unknown): Vacancy {
 }
 
 function hydrateVacancy(data: unknown): Vacancy {
-  return new Vacancy(resolveVacancy(typia.assert<Partial<VacancyDTO>>(data)))
+  return new Vacancy(
+    resolveVacancy(typia.assert<Partial<VacancyDTO>>(stripLegacyCommute(data))),
+  )
+}
+
+// Old commute data stored durations as strings ("1 hour 5 mins") — strip and let next enrichment recompute.
+function stripLegacyCommute(data: unknown): unknown {
+  if (!isRecord(data)) return data
+  if (isRecord(data.commute) && hasLegacyCommuteFormat(data.commute)) {
+    return { ...data, commute: undefined }
+  }
+  return data
+}
+
+function hasLegacyCommuteFormat(commute: Record<string, unknown>): boolean {
+  return Object.values(commute).some((entry) => !isValidCommuteEntry(entry))
+}
+
+function isValidCommuteEntry(entry: unknown): boolean {
+  if (!isRecord(entry) || !isRecord(entry.durations)) return false
+  return typeof entry.durations.morning === "number"
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
 }

@@ -171,6 +171,39 @@ export function useJobSearchVacancy(id: string, hash: string) {
   })
 }
 
+export function useReEnrichVacancy(jobSearchId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (hash: string) =>
+      api().invoke("vacancies:re-enrich", jobSearchId, hash),
+    onSuccess: () => {
+      void invalidateQuery(
+        queryClient,
+        jobSearchQueryKeys.vacancyList(jobSearchId),
+      )
+      void invalidateQuery(
+        queryClient,
+        jobSearchQueryKeys.vacancyDetailRoot(jobSearchId),
+      )
+    },
+  })
+}
+
+export function useEnrichAllUnenriched(jobSearchId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api().invoke("vacancies:enrich-unenriched", jobSearchId),
+    onSuccess: () =>
+      invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(jobSearchId)),
+  })
+}
+
+export function useAbortEnrichment(jobSearchId: string) {
+  return useMutation({
+    mutationFn: () => api().invoke("vacancies:enrich:abort", jobSearchId),
+  })
+}
+
 export function useAddActivity(id: string) {
   const queryClient = useQueryClient()
   return useMutation({

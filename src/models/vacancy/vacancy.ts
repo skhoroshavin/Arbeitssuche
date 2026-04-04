@@ -22,7 +22,8 @@ export class Vacancy implements VacancyDTO {
     this.contact = merged.contact
     this.startDate = merged.startDate
     this.description = merged.description
-    this.descriptionChanged = merged.descriptionChanged
+    this.enriched = merged.enriched
+    this.enrichmentDirty = merged.enrichmentDirty
     this.summary = merged.summary
     this.matchScore = merged.matchScore
     this.commute = merged.commute
@@ -38,7 +39,8 @@ export class Vacancy implements VacancyDTO {
   readonly contact: VacancyContact
   readonly startDate: string
   readonly description: string
-  readonly descriptionChanged: boolean
+  readonly enriched: boolean
+  readonly enrichmentDirty: boolean
   readonly summary: string
   readonly matchScore: MatchScore
   readonly commute: Record<string, CommuteInfo>

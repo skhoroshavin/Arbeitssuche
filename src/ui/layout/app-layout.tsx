@@ -8,6 +8,7 @@ import {
   type LayoutConfig,
 } from "./layout-context"
 import { CogIcon } from "@/ui/components"
+import { GlobalProgressIndicator } from "./global-progress-indicator"
 
 export function AppLayout() {
   const [config, setConfig] = useState<LayoutConfig>(defaultLayoutConfig)
@@ -89,6 +90,7 @@ function MainArea() {
         {headerExtra}
       </header>
 
+      <GlobalProgressIndicator />
       <main ref={mainReference} className="flex-1 overflow-y-auto p-6">
         <div className="max-w-3xl mx-auto">
           <Outlet />

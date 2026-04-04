@@ -22,6 +22,7 @@ export default function JobSearchConfig() {
 
   const { register, setValue, watch, saveStatus } = useAutoSaveForm({
     queryResult: { data, isLoading },
+    formOptions: { defaultValues: DEFAULT_FORM_VALUES },
     toFormValues: (d): ConfigFormValues => ({
       searchTerm: d.params.searchTerm,
       radiusKm: d.params.radiusKm,
@@ -137,6 +138,17 @@ export default function JobSearchConfig() {
       </Card>
     </div>
   )
+}
+
+const DEFAULT_FORM_VALUES: ConfigFormValues = {
+  searchTerm: "",
+  radiusKm: 30,
+  searchMode: "employment",
+  sources: [],
+  maxResults: "",
+  maxDistanceKm: "",
+  maxCommuteMinutes: "",
+  freeText: "",
 }
 
 interface ConfigFormValues {

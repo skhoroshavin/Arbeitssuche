@@ -4,6 +4,11 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useApiKeyStatus, useJobSearchVacancyListView } from "@/ui/data"
 import { invalidateQuery, jobSearchQueryKeys } from "@/ui/data"
 import { useStartJobSearchCrawl, useAbortJobSearchCrawl } from "@/ui/data"
+import {
+  useEnrichAllUnenriched,
+  useAbortEnrichment,
+  type VacancyWithStatus,
+} from "@/ui/data"
 import { useJobProgress } from "@/ui/pages/job-search/hooks"
 import { PageHeader, EmptyState, Loading } from "@/ui/components"
 import { FilterBar } from "./filter-bar"
@@ -17,6 +22,7 @@ export default function JobSearchVacancyList() {
   const location = useLocation()
   const listData = useVacancyListData(id)
   const crawl = useCrawlControl(id)
+  const enrich = useEnrichControl(id, listData.vacancies)
   const { filter, sortBy, setFilter, setSortBy } = useVacancyFilters()
 
   const { statusCounts, filtered } = useFilteredVacancies(
@@ -41,7 +47,14 @@ export default function JobSearchVacancyList() {
           </>
         }
         actions={
-          <div>
+          <div className="flex items-center gap-2">
+            <EnrichAllButton
+              hasUnenriched={enrich.hasUnenriched}
+              isEnriching={enrich.isEnriching}
+              isCrawling={crawl.isCrawling}
+              onEnrichAll={enrich.handleEnrichAll}
+              onAbort={enrich.handleAbort}
+            />
             <button
               onClick={crawl.handleStartCrawl}
               disabled={crawl.isCrawling}
@@ -92,6 +105,41 @@ export default function JobSearchVacancyList() {
   )
 }
 
+function EnrichAllButton({
+  hasUnenriched,
+  isEnriching,
+  isCrawling,
+  onEnrichAll,
+  onAbort,
+}: {
+  hasUnenriched: boolean
+  isEnriching: boolean
+  isCrawling: boolean
+  onEnrichAll: () => void
+  onAbort: () => void
+}) {
+  if (!hasUnenriched && !isEnriching) return
+  if (isEnriching) {
+    return (
+      <button
+        onClick={onAbort}
+        className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600"
+      >
+        Analyse abbrechen
+      </button>
+    )
+  }
+  return (
+    <button
+      onClick={onEnrichAll}
+      disabled={isCrawling}
+      className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+    >
+      Alle analysieren
+    </button>
+  )
+}
+
 function useCrawlControl(id: string) {
   const queryClient = useQueryClient()
   const startCrawl = useStartJobSearchCrawl(id)
@@ -138,4 +186,41 @@ function useVacancyListData(id: string) {
     totalCount: data.totalCount,
     isLoading,
   }
+}
+
+function useEnrichControl(id: string, vacancies: VacancyWithStatus[]) {
+  const queryClient = useQueryClient()
+  const enrichAll = useEnrichAllUnenriched(id)
+  const abortEnrichment = useAbortEnrichment(id)
+  const [isEnriching, setIsEnriching] = useState(false)
+  const [enrichProgressJobId, setEnrichProgressJobId] = useState<string>()
+  const { vacancyUpdateCount } = useJobProgress(enrichProgressJobId)
+
+  const hasUnenriched = vacancies.some((v) => !v.enriched || v.enrichmentDirty)
+
+  useEffect(() => {
+    if (vacancyUpdateCount > 0) {
+      void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
+    }
+  }, [vacancyUpdateCount, queryClient, id])
+
+  const handleEnrichAll = () => {
+    setIsEnriching(true)
+    setEnrichProgressJobId(id)
+    enrichAll.mutate(undefined, {
+      onSettled: () => {
+        setIsEnriching(false)
+        setEnrichProgressJobId(undefined)
+        void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
+      },
+    })
+  }
+
+  const handleAbort = () => {
+    abortEnrichment.mutate()
+    setIsEnriching(false)
+    setEnrichProgressJobId(undefined)
+  }
+
+  return { hasUnenriched, isEnriching, handleEnrichAll, handleAbort }
 }
