@@ -1,18 +1,30 @@
 # dependency-boundaries Specification
 
 ## Purpose
-TBD - created by archiving change tighten-dependency-boundaries. Update Purpose after archive.
+
+Defines the architectural import boundary enforcement for the codebase, ensuring module dependencies follow a well-defined layered architecture with clear import rules.
+
 ## Requirements
+
 ### Requirement: Single architecture boundary authority
 
-The system MUST enforce architectural import boundaries using dependency-cruiser as the single policy authority.
+The system MUST enforce architectural import boundaries using `eslint-plugin-unslop` as the single policy authority. Dependency-cruiser MUST NOT be used for boundary enforcement.
 
 #### Scenario: Architecture verification runs
 
-**GIVEN** project import boundaries are configured
-**WHEN** architecture verification executes
-**THEN** dependency-cruiser determines whether internal imports are valid
-**AND** boundary outcomes are not dependent on duplicated architecture regex policies in other tools
+- **WHEN** architecture verification executes
+- **THEN** `unslop/import-control` determines whether internal imports are valid
+- **AND** boundary outcomes are not dependent on duplicated architecture policies in other tools
+
+## REMOVED Requirements
+
+### Requirement: Layer dependency directions
+
+**Reason**: Replaced by the more precise module-level allow lists in `linting-policy` spec. The old layer-level table listed `repositories -> plugins` which was never used in practice, and `app -> app` which creates a circular module dependency. The new allow lists reflect the tightened and verified target architecture.
+
+**Migration**: See `linting-policy` spec, Requirement: Module-level import allow lists.
+
+## ADDED Requirements
 
 ### Requirement: Allow-list only, default-deny boundaries
 
@@ -20,9 +32,8 @@ The system MUST represent boundaries as explicit allow lists where any unlisted 
 
 #### Scenario: Unlisted dependency is introduced
 
-**GIVEN** a source module imports a target module not present in its allow list
-**WHEN** dependency-cruiser evaluates dependencies
-**THEN** the dependency is rejected
+- **WHEN** a source module imports a target module not present in its allow list
+- **THEN** ESLint reports an `unslop/import-control` error on the import statement
 
 ### Requirement: Uniform public surface convention
 
@@ -30,48 +41,13 @@ The system MUST enforce a uniform cross-module public surface convention.
 
 #### Scenario: Cross-module value import
 
-**GIVEN** a file imports runtime values from another module
-**WHEN** the import path is evaluated
-**THEN** only that module's `index.ts` surface is allowed
+- **WHEN** a file imports runtime values from another module
+- **THEN** only that module's `index.ts` surface is allowed
 
 #### Scenario: Cross-module type-only import
 
-**GIVEN** a file imports types from another module
-**WHEN** the import path is evaluated
-**THEN** only that module's `index.ts` or `types.ts` surfaces are allowed
-
-### Requirement: Layer dependency directions
-
-The system MUST enforce the following layer-level allow lists:
-
-- `utils` -> none
-- `models` -> `models`
-- `plugins` -> `utils`
-- `repositories` -> `plugins`, `models`, `utils`
-- `services` -> `plugins`, `models`, `utils`, `repositories`, `services`
-- `app` -> `app`, `utils`, `models`, `plugins`, `repositories`, `services`
-
-#### Scenario: Plugin imports model layer
-
-**GIVEN** a file in `src/plugins` imports from `src/models`
-**WHEN** dependency-cruiser evaluates boundaries
-**THEN** the dependency is rejected
-
-### Requirement: UI modular allow lists with group isolation
-
-The system MUST enforce UI boundaries with module-level allow lists:
-
-- `ui/hooks` -> none
-- `ui/components` -> `ui/hooks`
-- `ui/layout` -> `ui/hooks`, `ui/components`
-- `ui/data` -> `models`
-- `ui/pages/:group` -> `ui/hooks`, `ui/components`, `ui/layout`, `ui/data`, `models`, `ui/pages/:group`
-
-#### Scenario: Page imports from another page group
-
-**GIVEN** a file in `src/ui/pages/applicant` imports from `src/ui/pages/job-search`
-**WHEN** dependency-cruiser evaluates module boundaries
-**THEN** the dependency is rejected because only `ui/pages/:group` self-group imports are allowed
+- **WHEN** a file imports types from another module
+- **THEN** only that module's `index.ts` or `types.ts` surfaces are allowed
 
 ### Requirement: Parent imports are forbidden under src
 
@@ -79,7 +55,5 @@ The system MUST forbid parent-relative imports (`../`) in `src/`.
 
 #### Scenario: Parent import appears in src
 
-**GIVEN** a source file under `src/` uses a parent-relative import
-**WHEN** boundary checks run
-**THEN** the import is rejected
-
+- **WHEN** a source file under `src/` uses a parent-relative import
+- **THEN** the import is rejected

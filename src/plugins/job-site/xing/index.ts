@@ -10,7 +10,7 @@ import type {
 import {
   extractAbsoluteLinks,
   withOpenedPage,
-} from "@/plugins/page-utilities/index.js"
+} from "@/plugins/job-site/utils/index.js"
 import {
   extractAddressFromJsonLd,
   extractJsonLd,

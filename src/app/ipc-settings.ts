@@ -1,4 +1,4 @@
-import type { AppServices } from "@/app/index.js"
+import type { AppServices } from "."
 import type { Secrets } from "@/models/secrets/types.js"
 import type { ConfigKey } from "@/models/config/types.js"
 import { resolveConfig } from "@/models/config/index.js"
@@ -13,8 +13,8 @@ import {
   COMMUTE_SECRET_KEYS,
   maskedSecretsFor,
   resolveSecretKey,
-} from "./utilities.js"
-import type { IpcHandle } from "."
+} from "./ipc-utilities.js"
+import type { IpcHandle } from "./ipc-handlers.js"
 
 export function registerSettingsHandlers(
   handle: IpcHandle,

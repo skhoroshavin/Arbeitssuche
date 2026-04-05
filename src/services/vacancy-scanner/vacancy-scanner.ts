@@ -3,7 +3,7 @@ import type { JobSearchRepository } from "@/repositories/job-search/types.js"
 import type { ApplicantRepository } from "@/repositories/applicant/types.js"
 import type { JobSite } from "@/plugins/job-site/types.js"
 import type { Vacancy } from "@/models/vacancy/index.js"
-import type { ProgressEvent } from "@/models/index.js"
+import type { ProgressEvent } from "@/models/progress/index.js"
 import { SiteCrawler } from "@/services/site-crawler/index.js"
 import { resolveSearchParameters } from "@/services/site-crawler/index.js"
 import {

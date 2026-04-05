@@ -1,6 +1,6 @@
-import type { AppServices } from "@/app/index.js"
-import { startCrawl, abortCrawl } from "@/app/crawl-manager.js"
-import type { IpcHandle, SafeSend } from "."
+import type { AppServices } from "."
+import { startCrawl, abortCrawl } from "./crawl-manager.js"
+import type { IpcHandle, SafeSend } from "./ipc-handlers.js"
 
 export function registerCrawlHandlers(
   handle: IpcHandle,

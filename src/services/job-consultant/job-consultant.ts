@@ -1,7 +1,7 @@
 import type { ApplicantRepository } from "@/repositories/applicant/types.js"
 import type { LlmClient } from "@/plugins/llm/types.js"
 import type { ConsultationSuggestion } from "@/models/job-search/types.js"
-import { ensureLlmAvailable } from "@/services/asserts.js"
+import { ensureLlmAvailable } from "@/services/llm/index.js"
 import { consultSearches } from "./consult-searches.js"
 
 export class JobConsultant {

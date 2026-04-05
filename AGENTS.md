@@ -7,17 +7,10 @@ It focuses on how to build/test/lint and which coding rules to follow.
 
 - Stack: TypeScript, Electron, React, Vite, Vitest, Playwright
 - Package manager: npm (`package-lock.json` is present)
-- Module mode: ESM (`"type": "module"`)
+- Module mode: ESM (`"type": "module`)
 - Path alias: `@/* -> src/*`
 - Main layers: `src/utils`, `src/models`, `src/plugins`, `src/repositories`, `src/services`, `src/app`, `src/ui`
-- Layer import rules (`.dependency-cruiser.cjs`):
-  - `utils` -> `utils`
-  - `models` -> `models`
-  - `plugins` -> `plugins`, `utils`, and plugin `types.ts` surfaces
-  - `repositories` -> `repositories`, `utils`, selected `models` public surfaces
-  - `services` -> `services`, `utils`, `models` public surfaces, `plugins/*/types.ts`, `repositories/*/types.ts`
-  - `app` -> `app`, `utils`, `models`, and public `plugins`/`repositories`/`services` surfaces
-  - `ui` shared/page code -> constrained to allowed `ui` folders plus `models` public surfaces; page groups remain isolated
+- Architecture enforcement: `eslint-plugin-unslop` (see `eslint.config.ts` for the full architecture definition)
 
 ## Setup
 
@@ -100,9 +93,29 @@ It focuses on how to build/test/lint and which coding rules to follow.
   - relative imports should use `index`/`types` surfaces
   - aliased imports should use public surfaces
 
-### Architecture Rules (depcruise + custom ESLint)
+### Architecture Rules (eslint-plugin-unslop)
 
-- Respect layer boundaries in `.dependency-cruiser.cjs`
+Architecture is enforced by `eslint-plugin-unslop` configured in `eslint.config.ts`. Key rules:
+
+- **import-control**: Enforces module-level allow lists for cross-module imports
+  - `utils` — shared, no declared imports
+  - `models/*` — may import `models/*`
+  - `plugins/*` — may import `plugins/*`, `utils`
+  - `repositories/*` — may import `repositories/*`, `models`, `models/*`, `utils`
+  - `services/*` — may import `services/*`, `plugins/*`, `models`, `models/*`, `repositories/*`, `utils`
+  - `app` and `app/*` — may import `utils`, `models`, `models/*`, `plugins/*`, `repositories/*`, `services/*`
+  - `ui/components` — shared, may import `ui/hooks`
+  - `ui/layout` — may import `ui/hooks`, `ui/components`, `models`
+  - `ui/data` — may import `models`
+  - `ui/pages/*` — may import `ui/hooks`, `ui/components`, `ui/layout`, `ui/data`, `models`
+
+- **export-control**: Enforces export patterns (currently inert, no contracts declared)
+
+- **no-false-sharing**: Enforces that shared modules have multiple consumers
+  - `utils` and `ui/components` must be consumed by at least 2 distinct entities
+
+- **read-friendly-order**: Enforces helper functions are defined after their first use
+
 - UI page groups must stay isolated (`applicant`, `job-search`, `settings`)
 - `plugins`, `repositories`, `services`, `app` should import only allowed upstream surfaces
 - Shared-code rule: files in configured shared dirs should be consumed by at least 2 entities

@@ -7,7 +7,7 @@ import type {
   JobPostingJsonLd,
   SearchCriteria,
 } from "@/plugins/job-site/types.js"
-import { withOpenedPage } from "@/plugins/page-utilities/index.js"
+import { withOpenedPage } from "@/plugins/job-site/utils/index.js"
 import {
   extractAddressFromJsonLd,
   extractJsonLd,
