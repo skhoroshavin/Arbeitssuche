@@ -21,10 +21,6 @@ const architecture = {
     shared: true,
   },
 
-  "models": {
-    imports: [],
-  },
-
   "models/*": {
     imports: ["models/*"],
   },
@@ -46,15 +42,7 @@ const architecture = {
   },
 
   "app/*": {
-    imports: ["app/*", "utils", "models", "models/*", "plugins/*", "repositories/*", "services/*"],
-  },
-
-  "ui": {
-    imports: [],
-  },
-
-  "ui/hooks": {
-    imports: [],
+    imports: ["utils", "models", "models/*", "plugins/*", "repositories/*", "services/*"],
   },
 
   "ui/components": {
@@ -68,10 +56,6 @@ const architecture = {
 
   "ui/data": {
     imports: ["models"],
-  },
-
-  "ui/pages": {
-    imports: [],
   },
 
   "ui/pages/*": {
@@ -97,6 +81,7 @@ The migration should also clean up module structure so the architecture matches 
 - Keep `src/models/index.ts` as a root public aggregator only, not as a place for shared implementation code.
 - Move `src/plugins/stub-utilities.ts` to `src/utils/` because it is generic helper logic rather than plugin-domain behavior.
 - Move `src/plugins/page-utilities/index.ts` under the job-site plugin area, preferably `src/plugins/job-site/utils/index.ts`, because it is crawler/job-site-specific support code.
+- Flatten `src/app/ipc-handlers/` into `src/app/` to eliminate the bidirectional dependency between the `app` module and its `ipc-handlers` submodule. Rename files with an `ipc-` prefix (`ipc-handlers.ts`, `ipc-applicants.ts`, `ipc-crawl.ts`, `ipc-job-searches.ts`, `ipc-settings.ts`, `ipc-vacancies.ts`, `ipc-utilities.ts`). All `@/app/...` alias imports inside those files become same-module relative `./` imports, so no explicit cross-module permission is needed.
 - Avoid shared parent-folder helpers under `src/repositories/`; generic helpers should move to `src/utils/`.
 - Move `src/services/asserts.ts` out of service root into an explicit named support module under `src/services/*` unless it becomes generic enough for `src/utils/`.
 - Keep `src/ui/app.tsx` at `src/ui/` and avoid introducing an artificial `ui/root` module.
