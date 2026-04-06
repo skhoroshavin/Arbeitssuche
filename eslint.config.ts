@@ -15,6 +15,95 @@ export default tseslint.config(
   unicorn.configs.recommended,
   // @ts-expect-error ESLint plugin type mismatch with typescript-eslint config helper
   unslop.configs.full,
+
+  // Architecture configuration for unslop
+  {
+    settings: {
+      unslop: {
+        sourceRoot: "src",
+        architecture: {
+          utils: {
+            imports: [],
+          },
+          "utils/node": {
+            imports: ["utils"],
+          },
+          "models/*": {
+            imports: ["models/*"],
+          },
+          "plugins/*": {
+            imports: ["plugins/*", "utils"],
+          },
+          "repositories/*": {
+            imports: [
+              "repositories/*",
+              "models",
+              "models/*",
+              "utils",
+              "utils/node",
+            ],
+          },
+          "services/*": {
+            imports: [
+              "services/*",
+              "plugins/*",
+              "models",
+              "models/*",
+              "repositories/*",
+              "utils",
+              "utils/node",
+            ],
+          },
+          app: {
+            imports: [
+              "utils",
+              "utils/node",
+              "models",
+              "models/*",
+              "plugins/*",
+              "repositories/*",
+              "services/*",
+            ],
+          },
+          "app/*": {
+            imports: [
+              "utils",
+              "utils/node",
+              "models",
+              "models/*",
+              "plugins/*",
+              "repositories/*",
+              "services/*",
+            ],
+          },
+          "ui/components": {
+            shared: true,
+            imports: ["ui/hooks"],
+          },
+          "ui/hooks": {
+            imports: [],
+          },
+          "ui/layout": {
+            imports: ["ui/hooks", "ui/components", "models", "models/*"],
+          },
+          "ui/data": {
+            imports: ["models", "models/*"],
+          },
+          "ui/pages/*": {
+            imports: [
+              "ui/hooks",
+              "ui/components",
+              "ui/layout",
+              "ui/data",
+              "models",
+              "models/*",
+              "utils",
+            ],
+          },
+        },
+      },
+    },
+  },
   {
     ignores: [
       "dist/",

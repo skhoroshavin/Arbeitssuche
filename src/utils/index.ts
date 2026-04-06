@@ -1,9 +1,10 @@
-export { Database, parseRow } from "./database.js"
-export { createUniqueDerivedId, createWithUniqueId, deriveId } from "./id.js"
+// Browser-safe utilities
 export { extractAddressFromJsonLd, extractJsonLd } from "./json-ld.js"
-export { setupTemporaryDatabaseDirectory } from "./test-database-utilities.js"
 export {
+  arrayToString,
   formatAddressParts,
   normalizeMailtoHref,
   normalizeOptionalText,
+  stringToArray,
 } from "./text.js"
+export { findStubMatch } from "./stub-utilities.js"

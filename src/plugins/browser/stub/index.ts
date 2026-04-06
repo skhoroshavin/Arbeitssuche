@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import path from "node:path"
 import { gunzipSync } from "node:zlib"
 import typia from "typia"
-import { findStubMatch } from "@/utils/stub-utilities.js"
+import { findStubMatch } from "@/utils/index.js"
 import type { Browser, Page, OpenPageOptions } from "@/plugins/browser/types.js"
 
 export function createStubBrowser(

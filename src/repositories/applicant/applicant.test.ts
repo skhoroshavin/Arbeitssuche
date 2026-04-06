@@ -5,8 +5,10 @@ import {
 } from "."
 import type { Applicant } from "@/models/applicant/types"
 import type { ApplicantRepository } from "./types"
-import { Database } from "@/utils/index.js"
-import { setupTemporaryDatabaseDirectory } from "@/utils/index.js"
+import {
+  Database,
+  setupTemporaryDatabaseDirectory,
+} from "@/utils/node/index.js"
 
 applicantRepositoryTests("StubApplicantRepository", () => ({
   repo: createStubApplicantRepository(),

@@ -5,7 +5,7 @@ import type {
 } from "@/plugins/job-site/types.js"
 import type { JobSearchCriteria } from "@/models/job-search/types.js"
 import type { ProgressEvent } from "@/models/progress/index.js"
-import { formatError } from "@/services/vacancy-scanner/format-error.js"
+import { formatError } from "@/services/vacancy-scanner/index.js"
 import {
   MAX_PAGES,
   resolveEffectiveMode,

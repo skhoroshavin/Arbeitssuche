@@ -9,7 +9,11 @@ import type {
 } from "@/models/job-search/types.js"
 import { resolveJobSearch } from "@/models/job-search/index.js"
 import type { JobSearchRepository } from "@/repositories/job-search/types.js"
-import { Database, createUniqueDerivedId, parseRow } from "@/utils/index.js"
+import {
+  Database,
+  createUniqueDerivedId,
+  parseRow,
+} from "@/utils/node/index.js"
 import typia from "typia"
 
 export function createSqliteJobSearchRepository(

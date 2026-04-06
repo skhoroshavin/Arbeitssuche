@@ -19,7 +19,7 @@ The project MUST use `unslop.configs.full` as the ESLint baseline, enabling `imp
 
 The project MUST declare the following module-level import allow lists in the unslop architecture config:
 
-- `utils` — shared, no declared imports
+- `utils` — may import (empty list, no internal dependencies)
 - `models/*` — may import `models/*`
 - `plugins/*` — may import `plugins/*`, `utils`
 - `repositories/*` — may import `repositories/*`, `models`, `models/*`, `utils`
@@ -27,9 +27,10 @@ The project MUST declare the following module-level import allow lists in the un
 - `app` — may import `utils`, `models`, `models/*`, `plugins/*`, `repositories/*`, `services/*`
 - `app/*` — may import `utils`, `models`, `models/*`, `plugins/*`, `repositories/*`, `services/*`
 - `ui/components` — shared, may import `ui/hooks`
-- `ui/layout` — may import `ui/hooks`, `ui/components`, `models`
-- `ui/data` — may import `models`
-- `ui/pages/*` — may import `ui/hooks`, `ui/components`, `ui/layout`, `ui/data`, `models`
+- `ui/hooks` — may import (empty list)
+- `ui/layout` — may import `ui/hooks`, `ui/components`, `models`, `models/*`
+- `ui/data` — may import `models`, `models/*`
+- `ui/pages/*` — may import `ui/hooks`, `ui/components`, `ui/layout`, `ui/data`, `models`, `models/*`, `utils`
 
 #### Scenario: Plugin imports model layer
 

@@ -16,7 +16,7 @@ import {
   createEncryptedSecretsRepository,
 } from "./secrets"
 import { createElectronStoreConfigRepository } from "./config"
-import { Database } from "@/utils/index.js"
+import { Database } from "@/utils/node/index.js"
 import { getDataDirectory, getSecretsPath } from "./data-paths.js"
 
 let mainWindow: BrowserWindow | undefined

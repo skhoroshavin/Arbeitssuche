@@ -1,4 +1,4 @@
-import { Database, parseRow } from "@/utils/index.js"
+import { Database, parseRow } from "@/utils/node/index.js"
 import { Vacancy } from "@/models/vacancy/index.js"
 import type { Activity, VacancyDTO } from "@/models/vacancy/types.js"
 import { resolveVacancy } from "@/models/vacancy/index.js"

@@ -8,7 +8,11 @@ import {
   resolveApplicant,
 } from "@/models/applicant/index.js"
 import type { ApplicantRepository } from "@/repositories/applicant/types.js"
-import { Database, createUniqueDerivedId, parseRow } from "@/utils/index.js"
+import {
+  Database,
+  createUniqueDerivedId,
+  parseRow,
+} from "@/utils/node/index.js"
 import typia from "typia"
 
 export function createSqliteApplicantRepository(

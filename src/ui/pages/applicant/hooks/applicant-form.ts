@@ -10,7 +10,7 @@ import type {
   Address,
 } from "@/models/applicant/types"
 import { DEFAULT_APPLICANT } from "@/models/applicant/index"
-import { arrayToString, stringToArray } from "@/utils/text.js"
+import { arrayToString, stringToArray } from "@/utils/index.js"
 
 export function useApplicantForm() {
   const { id = "" } = useParams<{ id: string }>()
