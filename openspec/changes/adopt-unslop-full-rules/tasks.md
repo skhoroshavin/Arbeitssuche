@@ -19,7 +19,7 @@
 - [x] 2.4 Move `arrayToString` and `stringToArray` from `src/models/utilities.ts` to `src/utils/text.ts` (or a new `src/utils/array.ts` if more appropriate)
 - [x] 2.5 Update `src/ui/pages/applicant/hooks/applicant-form.ts` to import from `@/utils/` instead of `@/models/index`
 - [x] 2.6 Remove the `utilities.ts` re-export from `src/models/index.ts` and delete `src/models/utilities.ts`
-- [ ] 2.7 Run `npm test` to verify no regressions
+- [x] 2.7 Run `npm test` to verify no regressions
 
 ## 3. Reshape plugins
 
@@ -28,7 +28,7 @@
 - [x] 3.3 Create `src/plugins/job-site/utils/index.ts` and move the contents of `src/plugins/page-utilities/index.ts` into it
 - [x] 3.4 Update all imports of `@/plugins/page-utilities` to use `@/plugins/job-site/utils/index.js`
 - [x] 3.5 Delete `src/plugins/page-utilities/` directory
-- [ ] 3.6 Run `npm test` to verify no regressions
+- [x] 3.6 Run `npm test` to verify no regressions
 
 ## 4. Reshape services
 
@@ -36,7 +36,7 @@
 - [x] 4.2 Update `src/services/job-consultant/job-consultant.ts` to import from `@/services/llm/index.js`
 - [x] 4.3 Update `src/services/cover-letter-writer/cover-letter-writer.ts` to import from `@/services/llm/index.js`
 - [x] 4.4 Delete `src/services/asserts.ts`
-- [ ] 4.5 Run `npm test` to verify no regressions
+- [x] 4.5 Run `npm test` to verify no regressions
 
 ## 5. Update ESLint config
 
@@ -44,7 +44,7 @@
 - [x] 5.2 Replace the existing unslop config in `eslint.config.ts` with `unslop.configs.full` as the baseline
 - [x] 5.3 Add the architecture block inline in `eslint.config.ts` with the module-level allow lists from the `linting-policy` spec
 - [x] 5.4 Run `npm run lint` and fix any remaining violations not covered by the reshaping steps
-- [ ] 5.5 Ensure `npm run verify` passes with zero lint errors
+- [x] 5.5 Ensure `npm run verify` passes with zero lint errors
 
 ## 6. Remove dependency-cruiser
 

@@ -7,7 +7,7 @@ It focuses on how to build/test/lint and which coding rules to follow.
 
 - Stack: TypeScript, Electron, React, Vite, Vitest, Playwright
 - Package manager: npm (`package-lock.json` is present)
-- Module mode: ESM (`"type": "module`)
+- Module mode: ESM (`"type": "module"`)
 - Path alias: `@/* -> src/*`
 - Main layers: `src/utils`, `src/models`, `src/plugins`, `src/repositories`, `src/services`, `src/app`, `src/ui`
 - Architecture enforcement: `eslint-plugin-unslop` (see `eslint.config.ts` for the full architecture definition)
