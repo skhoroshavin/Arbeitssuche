@@ -1,5 +1,3 @@
-export type SearchMode = "employment" | "entry-level" | "apprenticeship"
-
 export interface SearchCriteria {
   location: string
   query: string
@@ -7,15 +5,21 @@ export interface SearchCriteria {
   mode: SearchMode
 }
 
+export interface JobSite {
+  name: string
+  supportedModes: SearchMode[]
+  getVacancyList(
+    criteria: SearchCriteria,
+    pageId?: string,
+  ): Promise<VacancyListPage>
+  getVacancyDetails(url: string): Promise<VacancyDetails>
+}
+
+export type SearchMode = "employment" | "entry-level" | "apprenticeship"
+
 export interface VacancyListPage {
   urls: string[]
   nextPageId?: string
-}
-
-export interface VacancyContact {
-  name?: string
-  email?: string
-  phone?: string
 }
 
 export interface VacancyDetails {
@@ -29,14 +33,10 @@ export interface VacancyDetails {
   contact?: VacancyContact
 }
 
-export interface JobSite {
-  name: string
-  supportedModes: SearchMode[]
-  getVacancyList(
-    criteria: SearchCriteria,
-    pageId?: string,
-  ): Promise<VacancyListPage>
-  getVacancyDetails(url: string): Promise<VacancyDetails>
+export interface VacancyContact {
+  name?: string
+  email?: string
+  phone?: string
 }
 
 // --- JSON-LD types for job posting structured data ---

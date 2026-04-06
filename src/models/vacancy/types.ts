@@ -8,37 +8,6 @@ export type ActivityType =
   | "rejected"
   | "not-interested"
 
-export interface VacancyContact {
-  name?: string
-  email?: string
-  phone?: string
-}
-
-export interface FoundActivity extends BaseActivity {
-  type: "found"
-  site: string
-  url: string
-  description?: string
-  contact?: VacancyContact
-}
-
-export interface NotFoundActivity extends BaseActivity {
-  type: "not-found"
-  site: string
-}
-
-export type Activity =
-  | FoundActivity
-  | NotFoundActivity
-  | AppliedActivity
-  | InvitedActivity
-  | InterviewedActivity
-  | OfferedActivity
-  | RejectedActivity
-  | NotInterestedActivity
-
-export type MatchScore = "very-bad" | "bad" | "ok" | "good" | "excellent"
-
 export type VacancyStatus =
   | "new"
   | "gone"
@@ -50,12 +19,6 @@ export type VacancyStatus =
   | "offered"
   | "rejected"
   | "not-interested"
-
-export interface CommuteInfo {
-  distance: string
-  durations: CommuteDurations
-  fetchedAt: string
-}
 
 export interface VacancySource {
   site: string
@@ -78,6 +41,43 @@ export interface VacancyDTO {
   commute: Record<string, CommuteInfo>
   activityHistory: Activity[]
   active: boolean
+}
+
+export type Activity =
+  | FoundActivity
+  | NotFoundActivity
+  | AppliedActivity
+  | InvitedActivity
+  | InterviewedActivity
+  | OfferedActivity
+  | RejectedActivity
+  | NotInterestedActivity
+
+export interface FoundActivity extends BaseActivity {
+  type: "found"
+  site: string
+  url: string
+  description?: string
+  contact?: VacancyContact
+}
+
+export interface VacancyContact {
+  name?: string
+  email?: string
+  phone?: string
+}
+
+export interface NotFoundActivity extends BaseActivity {
+  type: "not-found"
+  site: string
+}
+
+export type MatchScore = "very-bad" | "bad" | "ok" | "good" | "excellent"
+
+export interface CommuteInfo {
+  distance: string
+  durations: CommuteDurations
+  fetchedAt: string
 }
 
 interface AppliedActivity extends BaseActivity {

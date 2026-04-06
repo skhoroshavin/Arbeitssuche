@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react"
-import { useWatch, type Control, type FieldValues } from "react-hook-form"
 
-export type AutoSaveStatus = "idle" | "unsaved" | "saving" | "saved" | "error"
+import { useWatch, type Control, type FieldValues } from "react-hook-form"
 
 export function useAutoSave<T extends FieldValues>({
   control,
@@ -92,6 +91,8 @@ export function useAutoSave<T extends FieldValues>({
 
   return { status, resetBaseline }
 }
+
+export type AutoSaveStatus = "idle" | "unsaved" | "saving" | "saved" | "error"
 
 interface UseAutoSaveOptions<T extends FieldValues> {
   control: Control<T>

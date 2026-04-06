@@ -3,13 +3,13 @@ export interface OpenPageOptions {
   blockPatterns?: RegExp[]
 }
 
-export interface Page {
-  html: string
-  navigate(url: string, options?: { waitFor?: string }): Promise<void>
+export interface Browser {
+  openPage(url: string, options?: OpenPageOptions): Promise<Page>
   close(): Promise<void>
 }
 
-export interface Browser {
-  openPage(url: string, options?: OpenPageOptions): Promise<Page>
+export interface Page {
+  html: string
+  navigate(url: string, options?: { waitFor?: string }): Promise<void>
   close(): Promise<void>
 }

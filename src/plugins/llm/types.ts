@@ -3,11 +3,6 @@ export interface TypedSchema<T> {
   parse: (input: string) => T
 }
 
-export interface LlmPricing {
-  prompt: string
-  completion: string
-}
-
 export interface LlmClient {
   complete(prompt: string, maxTokens: number): Promise<string>
   completeJSON<T>(
@@ -18,14 +13,19 @@ export interface LlmClient {
   ping(): Promise<boolean>
 }
 
+export interface LlmModelRegistry {
+  fetchModels(): Promise<LlmModelInfo[]>
+}
+
 export interface LlmModelInfo {
   id: string
   name: string
   pricing: LlmPricing
 }
 
-export interface LlmModelRegistry {
-  fetchModels(): Promise<LlmModelInfo[]>
+export interface LlmPricing {
+  prompt: string
+  completion: string
 }
 
 export interface LlmProviderInfo {

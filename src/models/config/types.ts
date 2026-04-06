@@ -1,11 +1,11 @@
-export type LlmProvider = "openrouter" | "requesty"
-
 export interface AppConfig {
   provider?: LlmProvider
   assessmentModel?: string
   coverLetterModel?: string
   consultationModel?: string
 }
+
+export type LlmProvider = "openrouter" | "requesty"
 
 export type ConfigKey =
   | "provider"

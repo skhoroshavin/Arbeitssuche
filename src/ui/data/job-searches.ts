@@ -1,19 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+
 import type { JobSearch, JobSearchInfo } from "@/models/job-search/types"
+
 import type {
   Activity,
   VacancyDTO,
   VacancySource,
   VacancyStatus,
 } from "@/models/vacancy/types"
-import typia from "typia"
-import { api } from "./internal/api"
-import { jobSearchQueryKeys, invalidateQuery } from "./job-search-query-keys"
 
-export type VacancyWithStatus = VacancyDTO & {
-  status: VacancyStatus
-  sources: VacancySource[]
-}
+import typia from "typia"
+
+import { api } from "./internal/api"
+
+import { jobSearchQueryKeys, invalidateQuery } from "./job-search-query-keys"
 
 export function useJobSearchListView(applicantId?: string) {
   const query = useJobSearches(applicantId)
@@ -171,6 +171,11 @@ export function useJobSearchVacancy(id: string, hash: string) {
   })
 }
 
+export type VacancyWithStatus = VacancyDTO & {
+  status: VacancyStatus
+  sources: VacancySource[]
+}
+
 export function useReEnrichVacancy(jobSearchId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -219,6 +224,24 @@ export function useAddActivity(id: string) {
   })
 }
 
+const EMPTY_VACANCY_LIST: VacancyListView = {
+  vacancies: [],
+  totalCount: 0,
+}
+
+const EMPTY_JOB_SEARCH_LIST: JobSearchListView = {
+  jobSearches: [],
+}
+
+type VacancyListView = Readonly<{
+  vacancies: VacancyWithStatus[]
+  totalCount: number
+}>
+
+type JobSearchListView = Readonly<{
+  jobSearches: JobSearchInfo[]
+}>
+
 function useJobSearches(applicantId?: string) {
   return useQuery({
     queryKey: jobSearchQueryKeys.list(applicantId),
@@ -240,27 +263,9 @@ function useJobSearchVacancies(id: string) {
   })
 }
 
-const EMPTY_VACANCY_LIST: VacancyListView = {
-  vacancies: [],
-  totalCount: 0,
-}
-
-const EMPTY_JOB_SEARCH_LIST: JobSearchListView = {
-  jobSearches: [],
-}
-
 interface VacancyListResponse {
   vacancies: VacancyWithStatus[]
   totalCount: number
   generatedAt: string
   latestCrawl: string
 }
-
-type VacancyListView = Readonly<{
-  vacancies: VacancyWithStatus[]
-  totalCount: number
-}>
-
-type JobSearchListView = Readonly<{
-  jobSearches: JobSearchInfo[]
-}>
