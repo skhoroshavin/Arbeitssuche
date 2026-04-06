@@ -22,17 +22,11 @@ export default tseslint.config(
       unslop: {
         sourceRoot: "src",
         architecture: {
-          utils: {
-            imports: [],
-          },
-          "utils/node": {
-            imports: ["utils"],
-          },
           "models/*": {
             imports: ["models/*"],
           },
           "plugins/*": {
-            imports: ["plugins/*", "utils"],
+            imports: ["plugins/*", "utils", "utils/node"],
           },
           "repositories/*": {
             imports: [
