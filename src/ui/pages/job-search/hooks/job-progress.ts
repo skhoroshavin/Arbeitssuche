@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import typia from "typia"
-import type { ProgressEvent } from "@/models/index.js"
+import type { ProgressEvent } from "@/models/progress/index.js"
 
 export function useJobProgress(jobSearchId?: string) {
   const [events, setEvents] = useState<ProgressEvent[]>([])

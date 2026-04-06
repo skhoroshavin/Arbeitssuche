@@ -5,7 +5,7 @@ import type {
   VacancyListPage,
 } from "@/plugins/job-site/types.js"
 import type { JobSearchCriteria } from "@/models/job-search/types.js"
-import { formatError } from "@/services/vacancy-scanner/format-error.js"
+import { formatError } from "@/services/vacancy-scanner/index.js"
 
 export const MAX_PAGES = 20
 

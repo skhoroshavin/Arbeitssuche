@@ -7,7 +7,7 @@ import {
   defaultLayoutConfig,
   type LayoutConfig,
 } from "./layout-context"
-import { CogIcon } from "@/ui/components"
+import { CogIcon } from "@/ui/components/icons.js"
 import { GlobalProgressIndicator } from "./global-progress-indicator"
 
 export function AppLayout() {

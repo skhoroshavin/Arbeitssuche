@@ -5,8 +5,10 @@ import {
 } from "."
 import type { JobSearch } from "@/models/job-search/types"
 import type { JobSearchRepository } from "./types"
-import { Database } from "@/utils/index.js"
-import { setupTemporaryDatabaseDirectory } from "@/utils/index.js"
+import {
+  Database,
+  setupTemporaryDatabaseDirectory,
+} from "@/utils/node/index.js"
 
 jobSearchRepositoryTests("StubJobSearchRepository", () => ({
   repo: createStubJobSearchRepository(),

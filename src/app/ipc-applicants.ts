@@ -1,6 +1,6 @@
 import type { Applicant } from "@/models/applicant/types.js"
-import type { AppServices } from "@/app/index.js"
-import type { IpcHandle } from "."
+import type { AppServices } from "."
+import type { IpcHandle } from "./ipc-handlers.js"
 
 export function registerApplicantsHandlers(
   handle: IpcHandle,

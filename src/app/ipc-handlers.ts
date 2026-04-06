@@ -1,10 +1,10 @@
 import { ipcMain, type WebContents } from "electron"
-import type { AppServices } from "@/app/index.js"
-import { registerApplicantsHandlers } from "./applicants.js"
-import { registerJobSearchesHandlers } from "./job-searches.js"
-import { registerVacanciesHandlers } from "./vacancies.js"
-import { registerCrawlHandlers } from "./crawl.js"
-import { registerSettingsHandlers } from "./settings.js"
+import type { AppServices } from "."
+import { registerApplicantsHandlers } from "./ipc-applicants.js"
+import { registerJobSearchesHandlers } from "./ipc-job-searches.js"
+import { registerVacanciesHandlers } from "./ipc-vacancies.js"
+import { registerCrawlHandlers } from "./ipc-crawl.js"
+import { registerSettingsHandlers } from "./ipc-settings.js"
 
 export type IpcHandle = <A extends unknown[], R>(
   channel: string,

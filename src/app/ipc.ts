@@ -1,1 +1,1 @@
-export { registerIpcHandlers } from "./ipc-handlers"
+export { registerIpcHandlers } from "./ipc-handlers.js"

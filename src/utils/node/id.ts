@@ -12,6 +12,7 @@ export function createUniqueDerivedId(
  * Retry loop for creating an entity with a unique derived ID.
  * Calls `derive()` up to 5 times, returning the first ID where `exists()` is false.
  * Throws if all 5 attempts collide.
+ * @internal Exported for testing only.
  */
 export function createWithUniqueId(
   derive: () => string,
@@ -24,7 +25,10 @@ export function createWithUniqueId(
   throw new Error("Failed to generate unique id after 5 attempts")
 }
 
-/** Derive a URL-safe ID from text: slugified prefix (max 30 chars) + 4-char random hex suffix. */
+/**
+ * Derive a URL-safe ID from text: slugified prefix (max 30 chars) + 4-char random hex suffix.
+ * @internal Exported for testing only.
+ */
 export function deriveId(text: string): string {
   const slug = text
     .toLowerCase()

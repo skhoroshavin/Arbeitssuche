@@ -1,10 +1,4 @@
-# dependency-boundaries Specification
-
-## Purpose
-
-Defines the architectural import boundary enforcement for the codebase, ensuring module dependencies follow a well-defined layered architecture with clear import rules.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Single architecture boundary authority
 

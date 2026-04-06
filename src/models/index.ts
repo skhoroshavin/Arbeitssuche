@@ -1,2 +1,5 @@
-export type { ProgressEvent } from "./events.js"
-export { arrayToString, stringToArray } from "./utilities.js"
+// Models public surface - re-exports from named submodules only
+// Note: Individual model types should be imported from their specific modules
+
+// Re-export ProgressEvent from progress module
+export type { ProgressEvent } from "./progress"

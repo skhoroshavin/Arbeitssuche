@@ -3,7 +3,7 @@ import type { CommuteClient } from "@/plugins/commute/types.js"
 import type { Applicant } from "@/models/applicant/types.js"
 import type { SearchPreferences } from "@/models/job-search/types.js"
 import type { Vacancy } from "@/models/vacancy/index.js"
-import { formatError } from "@/services/vacancy-scanner/format-error.js"
+import { formatError } from "@/services/vacancy-scanner/index.js"
 import { computeCommutes } from "./commute.js"
 import { needsAssessment, assessVacancy } from "./assess.js"
 import {

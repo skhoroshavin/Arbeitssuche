@@ -49,7 +49,6 @@ export class EnrichQueue {
     return this._total
   }
 
-  // eslint-disable-next-line unslop/read-friendly-order
   private processNext(): void {
     if (this.signal?.aborted) this.queue = []
     const next = this.queue.shift()

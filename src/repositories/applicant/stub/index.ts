@@ -8,7 +8,7 @@ import {
   resolveApplicant,
 } from "@/models/applicant/index.js"
 import type { ApplicantRepository } from "@/repositories/applicant/types.js"
-import { createUniqueDerivedId } from "@/utils/index.js"
+import { createUniqueDerivedId } from "@/utils/node/index.js"
 
 export function createStubApplicantRepository(
   initial?: Record<string, Applicant>,

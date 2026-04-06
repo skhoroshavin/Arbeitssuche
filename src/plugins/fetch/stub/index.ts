@@ -1,5 +1,5 @@
 import type { Fetch } from "@/plugins/fetch/types.js"
-import { findStubMatch } from "@/plugins/stub-utilities.js"
+import { findStubMatch } from "@/utils/index.js"
 
 export function createStubFetch(routes: Record<string, StubRoute>): StubFetch {
   const requestedUrls: string[] = []

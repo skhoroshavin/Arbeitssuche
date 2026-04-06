@@ -1,6 +1,6 @@
 import type { CommuteClient } from "@/plugins/commute/types.js"
 import type { Vacancy } from "@/models/vacancy/index.js"
-import { formatError } from "@/services/vacancy-scanner/format-error.js"
+import { formatError } from "@/services/vacancy-scanner/index.js"
 
 export async function computeCommutes(
   input: ComputeCommutesInput,

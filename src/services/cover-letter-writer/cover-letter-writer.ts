@@ -2,7 +2,7 @@ import type { JobSearchRepository } from "@/repositories/job-search/types.js"
 import type { ApplicantRepository } from "@/repositories/applicant/types.js"
 import type { VacancyRepository } from "@/repositories/vacancy/types.js"
 import type { LlmClient } from "@/plugins/llm/types.js"
-import { ensureLlmAvailable } from "@/services/asserts.js"
+import { ensureLlmAvailable } from "@/services/llm/index.js"
 import { generateCoverLetter } from "./generate.js"
 import { generatePersonalizedCoverLetter } from "./generate-personalized.js"
 
