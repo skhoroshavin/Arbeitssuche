@@ -1,5 +1,6 @@
 import { useRef, useState } from "react"
 import { Link, NavLink, Outlet, useLocation } from "react-router"
+import { Cog8ToothIcon } from "@heroicons/react/20/solid"
 import { useScrollRestoration } from "./use-scroll-restoration"
 import {
   LayoutContext,
@@ -7,7 +8,6 @@ import {
   defaultLayoutConfig,
   type LayoutConfig,
 } from "./layout-context"
-import { CogIcon } from "@/ui/components/icons.js"
 import { GlobalProgressIndicator } from "./global-progress-indicator"
 
 export function AppLayout() {
@@ -59,7 +59,7 @@ function Sidebar() {
           className={navLinkClassName}
         >
           <span className="flex items-center gap-2">
-            <CogIcon />
+            <Cog8ToothIcon className="w-4 h-4" />
             Einstellungen
           </span>
         </NavLink>
