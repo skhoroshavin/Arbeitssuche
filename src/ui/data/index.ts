@@ -5,7 +5,7 @@ export {
   useCreateApplicant,
   useUpdateApplicant,
   useDeleteApplicant,
-  useConsultSearches,
+  useConsultSearchesView,
   useDownloadResume,
 } from "./applicants"
 

@@ -13,6 +13,7 @@ import {
 import { useAutoSaveHeader } from "@/ui/layout"
 import { SiteToggle } from "@/ui/pages/job-search/components"
 import { SearchModeToggle } from "@/ui/pages/job-search/components"
+import type { JobSearch } from "@/models/job-search/types"
 
 export default function JobSearchConfig() {
   const { id = "" } = useParams<{ id: string }>()
@@ -23,40 +24,10 @@ export default function JobSearchConfig() {
   const { register, setValue, watch, saveStatus } = useAutoSaveForm({
     queryResult: { data, isLoading },
     formOptions: { defaultValues: DEFAULT_FORM_VALUES },
-    toFormValues: (d): ConfigFormValues => ({
-      searchTerm: d.params.searchTerm,
-      radiusKm: d.params.radiusKm,
-      searchMode: d.params.searchMode,
-      sources: d.params.sources,
-      maxResults: d.params.maxResults?.toString() ?? "",
-      maxDistanceKm: d.preferences.maxDistanceKm?.toString() ?? "",
-      maxCommuteMinutes: d.preferences.maxCommuteMinutes?.toString() ?? "",
-      freeText: d.preferences.freeText.join("\n"),
-    }),
+    toFormValues: toConfigFormValues,
     onSave: async (form: ConfigFormValues) => {
       if (!data) throw new Error("Job search data not loaded")
-      await update.mutateAsync({
-        ...data,
-        params: {
-          searchTerm: form.searchTerm,
-          radiusKm: Number(form.radiusKm),
-          searchMode: form.searchMode,
-          sources: form.sources,
-          maxResults: form.maxResults ? Number(form.maxResults) : undefined,
-        },
-        preferences: {
-          maxDistanceKm: form.maxDistanceKm
-            ? Number(form.maxDistanceKm)
-            : undefined,
-          maxCommuteMinutes: form.maxCommuteMinutes
-            ? Number(form.maxCommuteMinutes)
-            : undefined,
-          freeText: form.freeText
-            .split("\n")
-            .map((l) => l.trim())
-            .filter(Boolean),
-        },
-      })
+      await update.mutateAsync(fromConfigFormValues(data, form))
     },
   })
 
@@ -160,4 +131,50 @@ interface ConfigFormValues {
   maxDistanceKm: string
   maxCommuteMinutes: string
   freeText: string
+}
+
+function toConfigFormValues(jobSearch: JobSearch): ConfigFormValues {
+  return {
+    searchTerm: jobSearch.params.searchTerm,
+    radiusKm: jobSearch.params.radiusKm,
+    searchMode: jobSearch.params.searchMode,
+    sources: jobSearch.params.sources,
+    maxResults: jobSearch.params.maxResults?.toString() ?? "",
+    maxDistanceKm: jobSearch.preferences.maxDistanceKm?.toString() ?? "",
+    maxCommuteMinutes:
+      jobSearch.preferences.maxCommuteMinutes?.toString() ?? "",
+    freeText: jobSearch.preferences.freeText.join("\n"),
+  }
+}
+
+function fromConfigFormValues(
+  jobSearch: JobSearch,
+  form: ConfigFormValues,
+): JobSearch {
+  return {
+    ...jobSearch,
+    params: {
+      searchTerm: form.searchTerm,
+      radiusKm: Number(form.radiusKm),
+      searchMode: form.searchMode,
+      sources: form.sources,
+      maxResults: parseOptionalNumber(form.maxResults),
+    },
+    preferences: {
+      maxDistanceKm: parseOptionalNumber(form.maxDistanceKm),
+      maxCommuteMinutes: parseOptionalNumber(form.maxCommuteMinutes),
+      freeText: splitLines(form.freeText),
+    },
+  }
+}
+
+function splitLines(value: string): string[] {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
+function parseOptionalNumber(value: string): number | undefined {
+  return value ? Number(value) : undefined
 }

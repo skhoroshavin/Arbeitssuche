@@ -109,16 +109,12 @@ interface FormPersonal {
 }
 
 function arrayToString(array: string[] | undefined): string | undefined {
-  return Array.isArray(array) ? array.join("\n") : array
+  return array?.join("\n")
 }
 
-function stringToArray(
-  value: string | string[] | undefined,
-): string[] | undefined {
-  return typeof value === "string"
-    ? value
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-    : value
+function stringToArray(value: string | undefined): string[] | undefined {
+  return value
+    ?.split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
 }

@@ -4,7 +4,7 @@ import {
   useApplicantHeaderName,
   useApplicant,
   useDownloadResume,
-  useConsultSearches,
+  useConsultSearchesView,
   useApiKeyStatus,
   useJobSearchListView,
   useCreateJobSearch,
@@ -156,11 +156,11 @@ function ConsultationButton({
 }
 
 function useConsultationFlow(id: string) {
-  const consultSearches = useConsultSearches(id)
+  const consultSearches = useConsultSearchesView(id)
   const createJobSearch = useCreateJobSearch()
   const [showConsultation, setShowConsultation] = useState(false)
   const [isCreatingSuggestions, setIsCreatingSuggestions] = useState(false)
-  const suggestions = consultSearches.data?.suggestions ?? []
+  const suggestions = consultSearches.suggestions
 
   const handleConsult = () => {
     setShowConsultation(true)

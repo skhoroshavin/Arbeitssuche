@@ -115,6 +115,27 @@ describe("SiteCrawler", () => {
     )
   })
 
+  it("passes resolved plugin criteria without crawler limit", async () => {
+    const getVacancyListMock = vi.fn().mockResolvedValue({ urls: [] })
+    const site = makeSite({ getVacancyList: getVacancyListMock })
+
+    const crawler = new SiteCrawler()
+    await crawler.crawl({
+      sites: [site],
+      criteria: { ...CRITERIA, limit: 2 },
+      onResult: vi.fn(),
+    })
+
+    const criteria = getVacancyListMock.mock.calls[0][0]
+    expect(criteria).toMatchObject({
+      location: CRITERIA.location,
+      query: CRITERIA.query,
+      radiusKm: CRITERIA.radiusKm,
+      mode: CRITERIA.mode,
+    })
+    expect(Object.hasOwn(criteria, "limit")).toBe(false)
+  })
+
   it("continues after search page fetch failure", async () => {
     const site1: JobSite = {
       name: "failing-site",

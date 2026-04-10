@@ -1,5 +1,6 @@
 import typia from "typia"
 import type { CheerioAPI } from "cheerio/slim"
+import { joinNormalizedText } from "./text.js"
 
 /** Extract the first JSON-LD object matching the given `@type` from a parsed HTML document. */
 export function extractJsonLd(
@@ -47,10 +48,9 @@ function formatAddress(
     | undefined,
 ): string | undefined {
   if (!addr) return undefined
-  const parts = [addr.streetAddress, addr.postalCode, addr.addressLocality]
-  return (
-    parts.filter((value): value is string => value !== undefined).join(", ") ||
-    undefined
+  return joinNormalizedText(
+    [addr.streetAddress, addr.postalCode, addr.addressLocality],
+    ", ",
   )
 }
 

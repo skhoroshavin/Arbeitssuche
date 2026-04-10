@@ -68,8 +68,7 @@ function formatPersonalNotes(
   notes: Applicant["personalNotes"],
 ): string | undefined {
   if (!notes || notes.length === 0) return undefined
-  const lines = Array.isArray(notes) ? notes : [notes]
-  return `## Personal Notes\n${lines.map((n) => `- ${n}`).join("\n")}`
+  return `## Personal Notes\n${notes.map((note) => `- ${note}`).join("\n")}`
 }
 
 function formatExperienceLine(entry: ApplicantExperience): string {
@@ -83,10 +82,9 @@ function formatEducationLine(entry: ApplicantEducation): string {
 }
 
 function formatHighlights(
-  highlights: string[] | string | undefined,
+  highlights: string[] | undefined,
   separator = "; ",
 ): string {
   if (!highlights) return ""
-  if (typeof highlights === "string") return highlights
   return highlights.join(separator)
 }

@@ -1,7 +1,12 @@
 import { test, describe, expect } from "vitest"
 import * as cheerio from "cheerio/slim"
 import { extractJsonLd } from "."
-import { normalizeMailtoHref, normalizeOptionalText } from "."
+import {
+  joinNormalizedText,
+  normalizeContact,
+  normalizeMailtoHref,
+  normalizeOptionalText,
+} from "."
 
 describe("extractJsonLd", () => {
   test("extracts object matching the requested @type", () => {
@@ -57,6 +62,38 @@ describe("normalizeMailtoHref", () => {
     expect(normalizeMailtoHref("mailto: test@example.com ")).toBe(
       "test@example.com",
     )
+  })
+})
+
+describe("joinNormalizedText", () => {
+  test("joins normalized non-empty parts", () => {
+    expect(joinNormalizedText([" 10115", "Berlin "], " ")).toBe("10115 Berlin")
+  })
+
+  test("returns undefined when all parts are empty", () => {
+    expect(joinNormalizedText([" ", undefined, "null"])).toBe(undefined)
+  })
+})
+
+describe("normalizeContact", () => {
+  test("normalizes contact fields", () => {
+    expect(
+      normalizeContact({
+        name: " Jane Doe ",
+        email: "jane@example.com",
+        phone: " ",
+      }),
+    ).toEqual({
+      name: "Jane Doe",
+      email: "jane@example.com",
+      phone: undefined,
+    })
+  })
+
+  test("returns undefined when all fields normalize empty", () => {
+    expect(
+      normalizeContact({ name: " ", email: undefined, phone: "null" }),
+    ).toBe(undefined)
   })
 })
 

@@ -37,6 +37,7 @@ describe("arbeitsagentur", () => {
       await site.getVacancyList({
         location: "München",
         query: "",
+        radiusKm: 25,
         mode: "apprenticeship",
       })
 
@@ -52,6 +53,7 @@ describe("arbeitsagentur", () => {
       await site.getVacancyList({
         location: "Hamburg",
         query: "",
+        radiusKm: 25,
         mode: "entry-level",
       })
 
@@ -252,5 +254,6 @@ function createSite(
 const baseCriteria: SearchCriteria = {
   location: "Berlin",
   query: "Software",
+  radiusKm: 25,
   mode: "employment",
 }

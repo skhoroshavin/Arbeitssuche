@@ -7,7 +7,7 @@ import type {
   SearchCriteria,
 } from "@/plugins/job-site/types.js"
 import { extractAbsoluteLinks } from "@/plugins/job-site/utils/index.js"
-import { normalizeOptionalText } from "@/utils/index.js"
+import { normalizeContact, normalizeOptionalText } from "@/utils/index.js"
 
 export function createZalandoSite(browser: Browser): JobSite {
   return new ZalandoSite(browser)
@@ -109,15 +109,7 @@ function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
 }
 
 function createContact(contact: VacancyContact): VacancyContact | undefined {
-  const normalizedContact = {
-    name: normalizeOptionalText(contact.name),
-    email: normalizeOptionalText(contact.email),
-    phone: normalizeOptionalText(contact.phone),
-  }
-  if (Object.values(normalizedContact).every((v) => v === undefined)) {
-    return undefined
-  }
-  return normalizedContact
+  return normalizeContact(contact)
 }
 
 export const SUPPORTED_MODES = ["employment"] as const
