@@ -20,8 +20,10 @@ export default tseslint.config(
   {
     settings: {
       unslop: {
-        sourceRoot: "src",
         architecture: {
+          utils: {
+            shared: true,
+          },
           "models/*": {
             imports: ["models/*"],
           },

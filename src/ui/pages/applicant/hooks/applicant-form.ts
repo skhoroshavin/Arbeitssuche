@@ -10,7 +10,6 @@ import type {
   Address,
 } from "@/models/applicant/types"
 import { DEFAULT_APPLICANT } from "@/models/applicant/index"
-import { arrayToString, stringToArray } from "@/utils/index.js"
 
 export function useApplicantForm() {
   const { id = "" } = useParams<{ id: string }>()
@@ -107,4 +106,19 @@ interface FormPersonal {
   gender?: string
   address?: Address
   hobbies?: string
+}
+
+function arrayToString(array: string[] | undefined): string | undefined {
+  return Array.isArray(array) ? array.join("\n") : array
+}
+
+function stringToArray(
+  value: string | string[] | undefined,
+): string[] | undefined {
+  return typeof value === "string"
+    ? value
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+    : value
 }
