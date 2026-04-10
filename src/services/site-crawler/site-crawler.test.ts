@@ -33,10 +33,12 @@ describe("SiteCrawler", () => {
   })
 
   it("respects limit from criteria", async () => {
+    const getVacancyDetailsMock = vi.fn().mockResolvedValue(makeDetails())
     const site = makeSite({
       pages: [
         { urls: ["url1", "url2", "url3", "url4", "url5"], nextPageId: "p2" },
       ],
+      getVacancyDetails: getVacancyDetailsMock,
     })
 
     const results: VacancyDetails[] = []
@@ -47,8 +49,7 @@ describe("SiteCrawler", () => {
       onResult: (d) => results.push(d),
     })
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(vi.mocked(site.getVacancyDetails)).toHaveBeenCalledTimes(2)
+    expect(getVacancyDetailsMock).toHaveBeenCalledTimes(2)
   })
 
   it("stops on abort signal", async () => {
@@ -76,7 +77,8 @@ describe("SiteCrawler", () => {
   })
 
   it("skips site with unsupported mode", async () => {
-    const site = makeSite()
+    const getVacancyListMock = vi.fn().mockResolvedValue({ urls: ["url1"] })
+    const site = makeSite({ getVacancyList: getVacancyListMock })
     ;(site as { supportedModes: string[] }).supportedModes = ["apprenticeship"]
 
     const results: VacancyDetails[] = []
@@ -87,14 +89,15 @@ describe("SiteCrawler", () => {
       onResult: (d) => results.push(d),
     })
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(vi.mocked(site.getVacancyList)).not.toHaveBeenCalled()
+    expect(getVacancyListMock).not.toHaveBeenCalled()
     expect(results.length).toBe(0)
   })
 
   it("falls back to employment mode for entry-level when site supports employment", async () => {
+    const getVacancyListMock = vi.fn().mockResolvedValue({ urls: ["url1"] })
     const site = makeSite({
       pages: [{ urls: ["url1"] }],
+      getVacancyList: getVacancyListMock,
     })
     ;(site as { supportedModes: string[] }).supportedModes = ["employment"]
 
@@ -106,8 +109,7 @@ describe("SiteCrawler", () => {
       onResult: (d) => results.push(d),
     })
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(vi.mocked(site.getVacancyList)).toHaveBeenCalledWith(
+    expect(getVacancyListMock).toHaveBeenCalledWith(
       expect.objectContaining({ mode: "employment" }),
       undefined,
     )

@@ -21,7 +21,7 @@ describe("VacancyEnricher", () => {
   })
 
   it("computes commute and sets summary when both clients configured", async () => {
-    const commuteClient = makeCommuteClient()
+    const { commuteClient, getCommuteMock } = makeCommuteClient()
     const llmClient = makeLlmClient()
     const enricher = new VacancyEnricher({ commuteClient, llmClient })
     const vacancy = makeVacancy()
@@ -31,8 +31,7 @@ describe("VacancyEnricher", () => {
       preferences: PREFERENCES,
     })
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(vi.mocked(commuteClient.getCommute)).toHaveBeenCalledWith(
+    expect(getCommuteMock).toHaveBeenCalledWith(
       "Teststr. 1, 10115 Berlin",
       "Berlin",
     )
@@ -103,7 +102,7 @@ describe("VacancyEnricher", () => {
   })
 
   it("derives commute origin from applicant address", async () => {
-    const commuteClient = makeCommuteClient()
+    const { commuteClient, getCommuteMock } = makeCommuteClient()
     const enricher = new VacancyEnricher({ commuteClient })
     const applicant: Applicant = {
       ...APPLICANT,
@@ -118,8 +117,7 @@ describe("VacancyEnricher", () => {
       preferences: PREFERENCES,
     })
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(vi.mocked(commuteClient.getCommute)).toHaveBeenCalledWith(
+    expect(getCommuteMock).toHaveBeenCalledWith(
       "Hauptstr. 5, 80331 München",
       "Berlin",
     )
@@ -171,12 +169,22 @@ function makeLlmClient(): LlmClient {
   } as unknown as LlmClient
 }
 
-function makeCommuteClient(): CommuteClient {
+function makeCommuteClient(): {
+  commuteClient: CommuteClient
+  getCommuteMock: ReturnType<typeof vi.fn>
+} {
+  const getCommuteMock = vi.fn().mockResolvedValue({
+    distance: "10 km",
+    durations: { morning: 20, day: 15, evening: 25 },
+    fetchedAt: "2026-01-01",
+  })
+
+  const commuteClient = {
+    getCommute: getCommuteMock,
+  } satisfies CommuteClient
+
   return {
-    getCommute: vi.fn().mockResolvedValue({
-      distance: "10 km",
-      durations: { morning: 20, day: 15, evening: 25 },
-      fetchedAt: "2026-01-01",
-    }),
-  } as unknown as CommuteClient
+    commuteClient,
+    getCommuteMock,
+  }
 }
