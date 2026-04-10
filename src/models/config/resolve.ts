@@ -1,17 +1,11 @@
 import type { AppConfig, LlmProvider } from "@/models/config/types.js"
+
 import {
   DEFAULT_PROVIDER,
   DEFAULT_ASSESSMENT_MODEL,
   DEFAULT_COVER_LETTER_MODEL,
   DEFAULT_CONSULTATION_MODEL,
 } from "@/models/config/constants.js"
-
-export interface ResolvedConfig {
-  provider: LlmProvider
-  assessmentModel: string
-  coverLetterModel: string
-  consultationModel: string
-}
 
 export function resolveConfig(config: AppConfig): ResolvedConfig {
   return {
@@ -20,4 +14,11 @@ export function resolveConfig(config: AppConfig): ResolvedConfig {
     coverLetterModel: config.coverLetterModel ?? DEFAULT_COVER_LETTER_MODEL,
     consultationModel: config.consultationModel ?? DEFAULT_CONSULTATION_MODEL,
   }
+}
+
+export interface ResolvedConfig {
+  provider: LlmProvider
+  assessmentModel: string
+  coverLetterModel: string
+  consultationModel: string
 }

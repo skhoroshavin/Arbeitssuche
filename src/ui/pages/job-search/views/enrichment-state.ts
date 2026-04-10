@@ -1,5 +1,3 @@
-export type EnrichmentState = "plain" | "pending" | "stale" | "enriched"
-
 export function deriveEnrichmentState(
   enriched: boolean,
   enrichmentDirty: boolean,
@@ -9,3 +7,5 @@ export function deriveEnrichmentState(
   if (enriched && enrichmentDirty) return "stale"
   return "enriched"
 }
+
+export type EnrichmentState = "plain" | "pending" | "stale" | "enriched"

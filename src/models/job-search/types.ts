@@ -1,11 +1,16 @@
-export type SearchMode = "employment" | "entry-level" | "apprenticeship"
-
 export interface JobSearchCriteria {
   location: string
   query: string
   radiusKm: number
   mode: SearchMode
   limit?: number
+}
+
+export interface JobSearch {
+  id: string
+  applicantId: string
+  params: SearchParameters
+  preferences: SearchPreferences
 }
 
 export interface SearchParameters {
@@ -22,13 +27,6 @@ export interface SearchPreferences {
   freeText: string[]
 }
 
-export interface JobSearch {
-  id: string
-  applicantId: string
-  params: SearchParameters
-  preferences: SearchPreferences
-}
-
 export interface JobSearchInfo {
   id: string
   applicantId: string
@@ -40,3 +38,5 @@ export interface ConsultationSuggestion {
   searchMode: SearchMode
   reason: string
 }
+
+export type SearchMode = "employment" | "entry-level" | "apprenticeship"

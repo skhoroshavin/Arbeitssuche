@@ -1,21 +1,24 @@
 import type { LlmClient } from "@/plugins/llm/types.js"
+
 import type { CommuteClient } from "@/plugins/commute/types.js"
+
 import type { Applicant } from "@/models/applicant/types.js"
+
 import type { SearchPreferences } from "@/models/job-search/types.js"
+
 import type { Vacancy } from "@/models/vacancy/index.js"
+
 import { formatError } from "@/services/vacancy-scanner/index.js"
+
 import { computeCommutes } from "./commute.js"
+
 import { needsAssessment, assessVacancy } from "./assess.js"
+
 import {
   needsContactExtraction,
   extractContactInfo,
   mergeContactInfo,
 } from "./extract-contact.js"
-
-export interface EnrichContext {
-  applicant: Applicant
-  preferences: SearchPreferences
-}
 
 export class VacancyEnricher {
   constructor(private readonly deps: EnricherDeps) {}
@@ -82,6 +85,11 @@ export class VacancyEnricher {
       !needsAssessment(vacancy) && !needsContactExtraction(vacancy)
     return { result: updated, successful: anySucceeded || noneNeeded }
   }
+}
+
+export interface EnrichContext {
+  applicant: Applicant
+  preferences: SearchPreferences
 }
 
 interface EnricherDeps {

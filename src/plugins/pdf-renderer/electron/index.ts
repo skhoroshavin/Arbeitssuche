@@ -1,5 +1,10 @@
 import { BrowserWindow } from "electron"
+
 import type { PdfRenderer } from "@/plugins/pdf-renderer/types.js"
+
+export function createElectronPdfRenderer(): PdfRenderer {
+  return new ElectronPdfRenderer()
+}
 
 class ElectronPdfRenderer implements PdfRenderer {
   async htmlToPdf(html: string): Promise<Buffer> {
@@ -29,8 +34,4 @@ class ElectronPdfRenderer implements PdfRenderer {
       win.destroy()
     }
   }
-}
-
-export function createElectronPdfRenderer(): PdfRenderer {
-  return new ElectronPdfRenderer()
 }

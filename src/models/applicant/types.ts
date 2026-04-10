@@ -1,5 +1,19 @@
 import type { Address } from "@/models/config/types.js"
 
+export { type Address } from "@/models/config/types.js"
+
+export interface Applicant {
+  id: string
+  personal: ApplicantPersonal
+  disclose: ApplicantDisclose
+  experience: ApplicantExperience[]
+  education: ApplicantEducation[]
+  skills: ApplicantSkill[]
+  languages: ApplicantLanguage[]
+  certifications: ApplicantCertification[]
+  personalNotes?: string[]
+}
+
 export interface ApplicantPersonal {
   name: string
   email?: string
@@ -54,18 +68,6 @@ export interface ApplicantDisclose {
   hobbies: boolean
 }
 
-export interface Applicant {
-  id: string
-  personal: ApplicantPersonal
-  disclose: ApplicantDisclose
-  experience: ApplicantExperience[]
-  education: ApplicantEducation[]
-  skills: ApplicantSkill[]
-  languages: ApplicantLanguage[]
-  certifications: ApplicantCertification[]
-  personalNotes?: string[]
-}
-
 export interface ApplicantInfo {
   id: string
   name?: string
@@ -76,5 +78,3 @@ export type ResumeTemplate =
   | "resume_modern"
   | "resume_elegant"
   | "resume_minimal"
-
-export { type Address } from "@/models/config/types.js"

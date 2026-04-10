@@ -20,8 +20,10 @@ export default tseslint.config(
   {
     settings: {
       unslop: {
-        sourceRoot: "src",
         architecture: {
+          utils: {
+            shared: true,
+          },
           "models/*": {
             imports: ["models/*"],
           },
@@ -203,13 +205,6 @@ export default tseslint.config(
     },
   },
 
-  // Disable read-friendly-order for existing source files that would require extensive refactoring
-  {
-    files: ["src/**/*.{ts,tsx}"],
-    rules: {
-      "unslop/read-friendly-order": "off",
-    },
-  },
   {
     files: ["src/app/main.ts"],
     rules: {
