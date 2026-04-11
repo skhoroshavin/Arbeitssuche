@@ -1,6 +1,7 @@
 export { default as ApplicantList } from "./views/list"
 export { default as ApplicantLayout } from "./layout"
 export { default as ApplicantOverview } from "./views/overview"
+export { default as ApplicantWizardPage } from "./views/wizard"
 export { default as ApplicantEditPersonal } from "./views/edit-personal"
 export { default as ApplicantEditExperience } from "./views/edit-experience"
 export { default as ApplicantEditEducation } from "./views/edit-education"

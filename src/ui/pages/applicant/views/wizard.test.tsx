@@ -7,7 +7,7 @@ import {
 import {
   canFinalizeApplicantWizard,
   createFreshApplicantWizardSnapshot,
-} from "./wizard-modal"
+} from "./wizard"
 
 describe("Applicant wizard state", () => {
   it("starts from a blank non-meaningful draft", () => {
