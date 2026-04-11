@@ -19,7 +19,10 @@ export class ApplicantListPage {
     this.newApplicantButton = page.getByRole("button", {
       name: "Neuer Bewerber",
     })
-    this.wizardTitle = page.getByText("Schritt 1 von 5: Persönlich")
+    this.wizardTitle = page.getByRole("heading", {
+      name: "Persönlich",
+      level: 1,
+    })
     this.wizardContinueButton = page.getByRole("button", { name: "Weiter" })
     this.wizardFinishButton = page.getByRole("button", {
       name: "Fertigstellen",
@@ -60,10 +63,16 @@ export class ApplicantListPage {
   }
 
   async advanceWizardToLastStep() {
+    const stepHeadings: Record<number, string> = {
+      2: "Berufserfahrung",
+      3: "Ausbildung",
+      4: "Zertifikate",
+      5: "Sonstiges",
+    }
     for (const step of [2, 3, 4, 5] as const) {
       await this.wizardContinueButton.click()
       await expect(
-        this.page.getByText(`Schritt ${step} von 5`, { exact: false }),
+        this.page.getByRole("heading", { name: stepHeadings[step], level: 1 }),
       ).toBeVisible()
     }
   }
