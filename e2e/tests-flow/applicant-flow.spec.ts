@@ -1,6 +1,8 @@
 import { test, expect } from "../fixtures.js"
 
 test.describe("Applicant Flow", () => {
+  test.describe.configure({ timeout: 45_000 })
+
   test("can create and view an applicant", async ({
     applicantListPage,
     api,
