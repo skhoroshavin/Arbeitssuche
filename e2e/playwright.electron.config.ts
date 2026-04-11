@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test"
 
 export default defineConfig({
   testDir: "./tests-flow",
-  timeout: 60_000,
+  timeout: 15_000,
   retries: 0,
   expect: {
     toMatchSnapshot: {
@@ -17,7 +17,7 @@ export default defineConfig({
     {
       name: "visual",
       testMatch: "tests-templates/**/*.spec.ts",
-      timeout: 30_000,
+      timeout: 15_000,
     },
   ],
 })

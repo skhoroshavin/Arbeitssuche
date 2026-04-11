@@ -72,7 +72,7 @@ export class JobSearchPage {
   }
 
   async gotoConfig(id: string) {
-    await this.page.goto(`/job-searches/${id}`)
+    await this.page.goto(`/job-searches/${id}/config`)
   }
 
   async gotoCoverLetter(id: string) {

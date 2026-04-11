@@ -3,6 +3,7 @@ import {
   createStubJobSearchRepository,
   createSqliteJobSearchRepository,
 } from "."
+import { createDefaultJobSearchEditorSnapshot } from "@/models/job-search"
 import type { JobSearch } from "@/models/job-search/types"
 import type { JobSearchRepository } from "./types"
 import {
@@ -142,6 +143,67 @@ function jobSearchRepositoryTests(
       const id = repo.create("Software Engineer", "john")
       repo.delete(id)
       expect(repo.exists(id)).toBe(false)
+      teardown()
+    })
+
+    test("save/load draft round-trips and remains unique per applicant", () => {
+      const { repo, teardown } = createRepo()
+      const first = {
+        ...createDefaultJobSearchEditorSnapshot(),
+        params: {
+          ...createDefaultJobSearchEditorSnapshot().params,
+          searchTerm: "First",
+        },
+      }
+      const second = {
+        ...createDefaultJobSearchEditorSnapshot(),
+        params: {
+          ...createDefaultJobSearchEditorSnapshot().params,
+          searchTerm: "Second",
+        },
+      }
+      repo.saveDraft("john", first)
+      repo.saveDraft("john", second)
+      expect(repo.loadDraft("john")?.snapshot.params.searchTerm).toBe("Second")
+      teardown()
+    })
+
+    test("blank draft is not meaningful", () => {
+      const { repo, teardown } = createRepo()
+      repo.saveDraft("john", createDefaultJobSearchEditorSnapshot())
+      expect(repo.loadDraft("john")?.meaningful).toBe(false)
+      teardown()
+    })
+
+    test("edited draft is meaningful", () => {
+      const { repo, teardown } = createRepo()
+      const draft = createDefaultJobSearchEditorSnapshot()
+      draft.params.searchTerm = "React"
+      repo.saveDraft("john", draft)
+      expect(repo.loadDraft("john")?.meaningful).toBe(true)
+      teardown()
+    })
+
+    test("deleteDraft removes saved draft", () => {
+      const { repo, teardown } = createRepo()
+      repo.saveDraft("john", createDefaultJobSearchEditorSnapshot())
+      repo.deleteDraft("john")
+      expect(repo.loadDraft("john")).toBeUndefined()
+      teardown()
+    })
+
+    test("finalizeDraft creates persisted job search and deletes draft", () => {
+      const { repo, teardown } = createRepo()
+      const draft = createDefaultJobSearchEditorSnapshot()
+      draft.params.searchTerm = "React Engineer"
+      draft.coverLetterContent = "Template"
+      repo.saveDraft("john", draft)
+
+      const id = repo.finalizeDraft("john")
+
+      expect(repo.load(id).params.searchTerm).toBe("React Engineer")
+      expect(repo.loadApplicationCoverLetter(id, "")).toBe("Template")
+      expect(repo.loadDraft("john")).toBeUndefined()
       teardown()
     })
   })

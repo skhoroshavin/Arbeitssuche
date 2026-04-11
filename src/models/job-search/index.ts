@@ -5,3 +5,9 @@ export {
   DEFAULT_PREFERENCES,
 } from "./constants.js"
 export { resolveJobSearch } from "./resolve.js"
+export {
+  createDefaultJobSearchEditorSnapshot,
+  mapPersistedJobSearchToSnapshot,
+  mapSnapshotToPersistedJobSearch,
+  isMeaningfulJobSearchEditorSnapshot,
+} from "./editor-snapshot.js"

@@ -3,6 +3,7 @@ import type { ApplicantRepository } from "@/repositories/applicant/types.js"
 import type { VacancyRepository } from "@/repositories/vacancy/types.js"
 import type { LlmClient } from "@/plugins/llm/types.js"
 import { ensureLlmAvailable } from "@/services/llm/index.js"
+import { mapSnapshotToPersistedJobSearch } from "@/models/job-search/index.js"
 import { generateCoverLetter } from "./generate.js"
 import { generatePersonalizedCoverLetter } from "./generate-personalized.js"
 
@@ -19,6 +20,26 @@ export class CoverLetterWriter {
     const applicant = this.applicantRepo.load(jobSearch.applicantId)
 
     ensureLlmAvailable(this.llm)
+
+    const content = await generateCoverLetter(applicant, jobSearch, this.llm)
+    return { content }
+  }
+
+  async generateFromDraft(applicantId: string): Promise<{ content: string }> {
+    const draft = this.jobSearchRepo.loadDraft(applicantId)
+    if (!draft)
+      throw new Error(`Draft for applicant "${applicantId}" not found`)
+    const applicant = this.applicantRepo.load(applicantId)
+
+    ensureLlmAvailable(this.llm)
+
+    const jobSearch = mapSnapshotToPersistedJobSearch("draft", applicantId, {
+      ...draft.snapshot,
+      params: {
+        ...draft.snapshot.params,
+        searchTerm: draft.snapshot.params.searchTerm.trim() || "Neue Suche",
+      },
+    })
 
     const content = await generateCoverLetter(applicant, jobSearch, this.llm)
     return { content }

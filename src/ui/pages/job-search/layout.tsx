@@ -10,7 +10,7 @@ export default function JobSearchLayout() {
 
   const navItems = useMemo(
     () => [
-      { to: `/job-searches/${id}`, label: "Konfiguration", end: true },
+      { to: `/job-searches/${id}/config`, label: "Konfiguration" },
       { to: `/job-searches/${id}/cover-letter`, label: "Anschreiben" },
       { to: `/job-searches/${id}/vacancies`, label: "Stellen" },
     ],

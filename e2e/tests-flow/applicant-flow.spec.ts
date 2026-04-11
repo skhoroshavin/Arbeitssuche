@@ -26,16 +26,13 @@ test.describe("Applicant Flow", () => {
 
 test.describe("Applicant Tabs & Edit Forms", () => {
   let applicantId: string
-  let originalSecrets: Record<string, string>
 
   test.beforeEach(async ({ api }) => {
     applicantId = await api.createApplicant(`e2e-tabs-${Date.now()}`)
-    originalSecrets = await api.getSecrets()
   })
 
   test.afterEach(async ({ api }) => {
     await api.deleteApplicant(applicantId)
-    await api.saveSecrets(originalSecrets)
   })
 
   test("can navigate to each edit tab", async ({ applicantPage }) => {

@@ -1,18 +1,11 @@
 import { useParams } from "react-router"
 import { useJobSearch, useUpdateJobSearch, useSiteListView } from "@/ui/data"
 import { useAutoSaveForm } from "@/ui/hooks"
+import { mapPersistedJobSearchToSnapshot } from "@/models/job-search"
 import type { SearchMode } from "@/models/job-search/types"
-import {
-  Card,
-  SectionHeader,
-  PageHeader,
-  Input,
-  Textarea,
-  Loading,
-} from "@/ui/components"
+import { PageHeader, Loading } from "@/ui/components"
 import { useAutoSaveHeader } from "@/ui/layout"
-import { SiteToggle } from "@/ui/pages/job-search/components"
-import { SearchModeToggle } from "@/ui/pages/job-search/components"
+import { JobSearchSearchConfigView } from "@/ui/views"
 import type { JobSearch } from "@/models/job-search/types"
 
 export default function JobSearchConfig() {
@@ -21,7 +14,7 @@ export default function JobSearchConfig() {
   const update = useUpdateJobSearch(id)
   const sitesQuery = useSiteListView()
 
-  const { register, setValue, watch, saveStatus } = useAutoSaveForm({
+  const { setValue, watch, saveStatus } = useAutoSaveForm({
     queryResult: { data, isLoading },
     formOptions: { defaultValues: DEFAULT_FORM_VALUES },
     toFormValues: toConfigFormValues,
@@ -44,69 +37,43 @@ export default function JobSearchConfig() {
   return (
     <div className="space-y-4">
       <PageHeader title="Suchkonfiguration" />
-
-      <Card className="p-4 space-y-3">
-        <SectionHeader>Suchparameter</SectionHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="Suchbegriff" {...register("searchTerm")} />
-          <Input label="Radius (km)" type="number" {...register("radiusKm")} />
-          <Input
-            label="Max. Ergebnisse"
-            type="number"
-            placeholder="Unbegrenzt"
-            {...register("maxResults")}
-          />
-        </div>
-      </Card>
-
-      <Card className="p-4 space-y-3">
-        <SectionHeader>Suchmodus</SectionHeader>
-        <SearchModeToggle
-          selectedMode={selectedMode}
-          onChange={(mode) =>
-            setValue("searchMode", mode, { shouldDirty: true })
-          }
-        />
-      </Card>
-
-      <Card className="p-4 space-y-3">
-        <SectionHeader>
-          Jobbörsen{" "}
-          <span className="text-gray-400 dark:text-gray-500 font-normal text-sm">
-            (leer = alle)
-          </span>
-        </SectionHeader>
-        <SiteToggle
-          allSites={allSites}
-          selectedSites={selectedSites}
-          onChange={(sites) =>
-            setValue("sources", sites, { shouldDirty: true })
-          }
-        />
-      </Card>
-
-      <Card className="p-4 space-y-3">
-        <SectionHeader>Präferenzen</SectionHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            label="Max. Entfernung (km)"
-            type="number"
-            placeholder="Kein Limit"
-            {...register("maxDistanceKm")}
-          />
-          <Input
-            label="Max. Fahrtzeit (Min.)"
-            type="number"
-            placeholder="Kein Limit"
-            {...register("maxCommuteMinutes")}
-          />
-        </div>
-        <Textarea
-          label="Freitextkriterien (eine pro Zeile)"
-          rows={4}
-          {...register("freeText")}
-        />
-      </Card>
+      <JobSearchSearchConfigView
+        allSites={allSites}
+        value={{
+          searchTerm: watch("searchTerm"),
+          radiusKm: Number(watch("radiusKm")),
+          searchMode: selectedMode,
+          sources: selectedSites,
+          maxResults: parseOptionalNumber(watch("maxResults")),
+          maxDistanceKm: parseOptionalNumber(watch("maxDistanceKm")),
+          maxCommuteMinutes: parseOptionalNumber(watch("maxCommuteMinutes")),
+          freeText: splitLines(watch("freeText")),
+        }}
+        onUpdate={(value) => {
+          setValue("searchTerm", value.searchTerm, { shouldDirty: true })
+          setValue("radiusKm", value.radiusKm, { shouldDirty: true })
+          setValue("searchMode", value.searchMode, { shouldDirty: true })
+          setValue("sources", value.sources, { shouldDirty: true })
+          setValue("maxResults", stringifyOptionalNumber(value.maxResults), {
+            shouldDirty: true,
+          })
+          setValue(
+            "maxDistanceKm",
+            stringifyOptionalNumber(value.maxDistanceKm),
+            {
+              shouldDirty: true,
+            },
+          )
+          setValue(
+            "maxCommuteMinutes",
+            stringifyOptionalNumber(value.maxCommuteMinutes),
+            {
+              shouldDirty: true,
+            },
+          )
+          setValue("freeText", value.freeText.join("\n"), { shouldDirty: true })
+        }}
+      />
     </div>
   )
 }
@@ -134,16 +101,16 @@ interface ConfigFormValues {
 }
 
 function toConfigFormValues(jobSearch: JobSearch): ConfigFormValues {
+  const snapshot = mapPersistedJobSearchToSnapshot(jobSearch, "")
   return {
-    searchTerm: jobSearch.params.searchTerm,
-    radiusKm: jobSearch.params.radiusKm,
-    searchMode: jobSearch.params.searchMode,
-    sources: jobSearch.params.sources,
-    maxResults: jobSearch.params.maxResults?.toString() ?? "",
-    maxDistanceKm: jobSearch.preferences.maxDistanceKm?.toString() ?? "",
-    maxCommuteMinutes:
-      jobSearch.preferences.maxCommuteMinutes?.toString() ?? "",
-    freeText: jobSearch.preferences.freeText.join("\n"),
+    searchTerm: snapshot.params.searchTerm,
+    radiusKm: snapshot.params.radiusKm,
+    searchMode: snapshot.params.searchMode,
+    sources: snapshot.params.sources,
+    maxResults: snapshot.params.maxResults?.toString() ?? "",
+    maxDistanceKm: snapshot.preferences.maxDistanceKm?.toString() ?? "",
+    maxCommuteMinutes: snapshot.preferences.maxCommuteMinutes?.toString() ?? "",
+    freeText: snapshot.preferences.freeText.join("\n"),
   }
 }
 
@@ -177,4 +144,8 @@ function splitLines(value: string): string[] {
 
 function parseOptionalNumber(value: string): number | undefined {
   return value ? Number(value) : undefined
+}
+
+function stringifyOptionalNumber(value: number | undefined): string {
+  return value === undefined ? "" : value.toString()
 }

@@ -9,6 +9,7 @@ export function EntityList({
   items,
   isLoading,
   onCreateSubmit,
+  onCreateClick,
   createError,
   onDelete,
   onNavigate,
@@ -21,7 +22,13 @@ export function EntityList({
 
   const createButton = (
     <button
-      onClick={() => setShowCreate(!showCreate)}
+      onClick={() => {
+        if (onCreateClick) {
+          void onCreateClick()
+          return
+        }
+        setShowCreate(!showCreate)
+      }}
       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
     >
       {buttonLabel}
@@ -38,7 +45,7 @@ export function EntityList({
         </div>
       </div>
 
-      {showCreate && (
+      {showCreate && !onCreateClick && (
         <Card className="p-4">
           <form
             onSubmit={async (event) => {
@@ -117,6 +124,7 @@ interface EntityListProperties {
   items: { id: string; label: string }[]
   isLoading: boolean
   onCreateSubmit: (name: string) => Promise<void>
+  onCreateClick?: () => Promise<void> | void
   createError?: Error
   onDelete: (item: { id: string; label: string }) => void
   onNavigate: (id: string) => void

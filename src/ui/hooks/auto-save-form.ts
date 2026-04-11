@@ -12,6 +12,7 @@ export function useAutoSaveForm<TForm extends FieldValues, TData>({
   toFormValues,
   onSave,
   formOptions,
+  shouldFlushOnUnmount,
 }: UseAutoSaveFormOptions<TForm, TData>): UseFormReturn<TForm> & {
   isLoading: boolean
   saveStatus: AutoSaveStatus
@@ -22,6 +23,7 @@ export function useAutoSaveForm<TForm extends FieldValues, TData>({
   const { status: saveStatus, resetBaseline } = useAutoSave({
     control: form.control,
     onSave,
+    shouldFlushOnUnmount,
   })
 
   useEffect(() => {
@@ -42,4 +44,5 @@ interface UseAutoSaveFormOptions<TForm extends FieldValues, TData> {
   toFormValues: (data: TData) => TForm
   onSave: (formData: TForm) => Promise<unknown>
   formOptions?: UseFormProps<TForm>
+  shouldFlushOnUnmount?: () => boolean
 }

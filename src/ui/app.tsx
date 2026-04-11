@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router"
+import { Routes, Route, Navigate } from "react-router"
 import { AppLayout } from "./layout"
 import {
   ApplicantList,
@@ -40,7 +40,8 @@ export default function App() {
           <Route path="other" element={<ApplicantEditOther />} />
         </Route>
         <Route path="/job-searches/:id" element={<JobSearchLayout />}>
-          <Route index element={<JobSearchConfig />} />
+          <Route index element={<Navigate to="vacancies" replace />} />
+          <Route path="config" element={<JobSearchConfig />} />
           <Route path="cover-letter" element={<JobSearchCoverLetter />} />
           <Route path="vacancies" element={<JobSearchVacancyList />} />
         </Route>

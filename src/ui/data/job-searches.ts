@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
-import type { JobSearch, JobSearchInfo } from "@/models/job-search/types"
+import type {
+  JobSearch,
+  JobSearchDraft,
+  JobSearchEditorSnapshot,
+  JobSearchInfo,
+} from "@/models/job-search/types"
 
 import type {
   Activity,
@@ -51,6 +56,53 @@ export function useCreateJobSearch() {
   })
 }
 
+export function useJobSearchDraft(applicantId: string) {
+  return useQuery({
+    queryKey: jobSearchQueryKeys.draft(applicantId),
+    queryFn: async () =>
+      typia.assert<{ draft?: JobSearchDraft }>(
+        await api().invoke("job-searches:draft:load", applicantId),
+      ),
+    enabled: !!applicantId,
+  })
+}
+
+export function useSaveJobSearchDraft(applicantId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (snapshot: JobSearchEditorSnapshot) =>
+      api().invoke("job-searches:draft:save", applicantId, snapshot),
+    onSuccess: () =>
+      invalidateQuery(queryClient, jobSearchQueryKeys.draft(applicantId)),
+  })
+}
+
+export function useDeleteJobSearchDraft(applicantId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api().invoke("job-searches:draft:delete", applicantId),
+    onSuccess: () =>
+      invalidateQuery(queryClient, jobSearchQueryKeys.draft(applicantId)),
+  })
+}
+
+export function useFinalizeJobSearchDraft(applicantId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () =>
+      typia.assert<{ id: string; applicantId: string }>(
+        await api().invoke("job-searches:draft:finalize", applicantId),
+      ),
+    onSuccess: async ({ id }) => {
+      await invalidateQuery(queryClient, jobSearchQueryKeys.draft(applicantId))
+      await invalidateQuery(queryClient, jobSearchQueryKeys.list(applicantId))
+      await invalidateQuery(queryClient, jobSearchQueryKeys.listRoot())
+      await invalidateQuery(queryClient, jobSearchQueryKeys.detail(id))
+      await invalidateQuery(queryClient, jobSearchQueryKeys.coverLetter(id))
+    },
+  })
+}
+
 export function useUpdateJobSearch(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -96,6 +148,18 @@ export function useGenerateCoverLetter(id: string) {
     mutationFn: async () =>
       typia.assert<{ content: string }>(
         await api().invoke("job-searches:cover-letter:generate", id),
+      ),
+  })
+}
+
+export function useGenerateDraftCoverLetter(applicantId: string) {
+  return useMutation({
+    mutationFn: async () =>
+      typia.assert<{ content: string }>(
+        await api().invoke(
+          "job-searches:draft:cover-letter:generate",
+          applicantId,
+        ),
       ),
   })
 }

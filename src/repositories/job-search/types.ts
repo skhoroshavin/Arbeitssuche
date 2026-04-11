@@ -1,4 +1,5 @@
 import type {
+  JobSearchDraft,
   JobSearch,
   JobSearchInfo,
   SearchMode,
@@ -16,6 +17,10 @@ export interface JobSearchRepository {
     searchMode?: SearchMode,
   ): string
   delete(id: string): void
+  loadDraft(applicantId: string): JobSearchDraft | undefined
+  saveDraft(applicantId: string, draft: JobSearchDraft["snapshot"]): void
+  deleteDraft(applicantId: string): void
+  finalizeDraft(applicantId: string): string
   loadApplicationCoverLetter(jobSearchId: string, vacancyHash: string): string
   saveApplicationCoverLetter(
     jobSearchId: string,

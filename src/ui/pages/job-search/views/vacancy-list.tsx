@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react"
-import { useParams, useLocation } from "react-router"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { useParams, useLocation, useNavigate } from "react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { useApiKeyStatus, useJobSearchVacancyListView } from "@/ui/data"
 import { invalidateQuery, jobSearchQueryKeys } from "@/ui/data"
@@ -20,6 +20,7 @@ import { useVacancyFilters, useFilteredVacancies } from "./use-vacancy-filters"
 export default function JobSearchVacancyList() {
   const { id = "" } = useParams<{ id: string }>()
   const location = useLocation()
+  const navigate = useNavigate()
   const listData = useVacancyListData(id)
   const crawl = useCrawlControl(id)
   const enrich = useEnrichControl(id, listData.vacancies)
@@ -32,6 +33,25 @@ export default function JobSearchVacancyList() {
   )
 
   const { hasLlmKey, hasMapsKey } = useApiKeyStatus()
+  const hasStartedInitialUpdateReference = useRef(false)
+
+  useEffect(() => {
+    const shouldStartInitialUpdate = hasStartInitialUpdateFlag(location.state)
+    if (!shouldStartInitialUpdate) return
+    if (hasStartedInitialUpdateReference.current) return
+    hasStartedInitialUpdateReference.current = true
+    crawl.handleStartCrawl()
+    void navigate(location.pathname + location.search, {
+      replace: true,
+      state: undefined,
+    })
+  }, [
+    crawl.handleStartCrawl,
+    location.pathname,
+    location.search,
+    location.state,
+    navigate,
+  ])
 
   if (listData.isLoading) return <Loading />
 
@@ -154,26 +174,26 @@ function useCrawlControl(id: string) {
     }
   }, [vacancyUpdateCount, queryClient, id])
 
-  const handleStartCrawl = () => {
+  const handleStartCrawl = useCallback(() => {
     reset()
     startCrawl.mutate(undefined, {
       onSuccess: () => {
         setProgressJobId(id)
       },
     })
-  }
+  }, [id, reset, startCrawl])
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setProgressJobId(undefined)
     void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
-  }
+  }, [id, queryClient])
 
   return {
     progressJobId,
     events,
     done,
     handleStartCrawl,
-    handleAbort: () => abortCrawl.mutate(),
+    handleAbort: useCallback(() => abortCrawl.mutate(), [abortCrawl]),
     handleClose,
     isCrawling: !!(progressJobId && !done),
   }
@@ -223,4 +243,10 @@ function useEnrichControl(id: string, vacancies: VacancyWithStatus[]) {
   }
 
   return { hasUnenriched, isEnriching, handleEnrichAll, handleAbort }
+}
+
+function hasStartInitialUpdateFlag(state: unknown): boolean {
+  if (!state || typeof state !== "object") return false
+  if (!("startInitialUpdate" in state)) return false
+  return state.startInitialUpdate === true
 }

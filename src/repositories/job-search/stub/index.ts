@@ -1,9 +1,13 @@
 import {
+  isMeaningfulJobSearchEditorSnapshot,
   DEFAULT_SEARCH_PARAMS,
   DEFAULT_PREFERENCES,
+  mapSnapshotToPersistedJobSearch,
 } from "@/models/job-search/index.js"
 import type {
+  JobSearchDraft,
   JobSearch,
+  JobSearchEditorSnapshot,
   JobSearchInfo,
   SearchMode,
 } from "@/models/job-search/types.js"
@@ -36,6 +40,7 @@ class StubJobSearchRepository implements JobSearchRepository {
           ])
         : [],
     )
+    this.drafts = new Map()
   }
 
   listByApplicant(applicantId: string): JobSearchInfo[] {
@@ -87,6 +92,48 @@ class StubJobSearchRepository implements JobSearchRepository {
     this.store.delete(id)
   }
 
+  loadDraft(applicantId: string): JobSearchDraft | undefined {
+    const snapshot = this.drafts.get(applicantId)
+    if (!snapshot) return undefined
+    return {
+      applicantId,
+      snapshot: structuredClone(snapshot),
+      meaningful: isMeaningfulJobSearchEditorSnapshot(snapshot),
+    }
+  }
+
+  saveDraft(applicantId: string, draft: JobSearchEditorSnapshot): void {
+    this.drafts.set(applicantId, structuredClone(draft))
+  }
+
+  finalizeDraft(applicantId: string): string {
+    const draft = this.drafts.get(applicantId)
+    if (!draft)
+      throw new Error(`Draft for applicant "${applicantId}" not found`)
+    const searchTerm = draft.params.searchTerm.trim()
+    const resolvedSearchTerm = searchTerm.length > 0 ? searchTerm : "Neue Suche"
+    const id = createUniqueDerivedId(resolvedSearchTerm, (searchId) =>
+      this.store.has(searchId),
+    )
+    const jobSearch = mapSnapshotToPersistedJobSearch(id, applicantId, {
+      ...draft,
+      params: {
+        ...draft.params,
+        searchTerm: resolvedSearchTerm,
+      },
+    })
+    this.store.set(id, {
+      jobSearch,
+      applicationCoverLetters: new Map([["", draft.coverLetterContent]]),
+    })
+    this.deleteDraft(applicantId)
+    return id
+  }
+
+  deleteDraft(applicantId: string): void {
+    this.drafts.delete(applicantId)
+  }
+
   loadApplicationCoverLetter(jobSearchId: string, vacancyHash: string): string {
     return (
       this.store.get(jobSearchId)?.applicationCoverLetters?.get(vacancyHash) ??
@@ -113,6 +160,7 @@ class StubJobSearchRepository implements JobSearchRepository {
   }
 
   private readonly store: Map<string, StubData>
+  private readonly drafts: Map<string, JobSearchEditorSnapshot>
 }
 
 interface StubData {

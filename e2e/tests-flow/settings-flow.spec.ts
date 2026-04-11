@@ -5,16 +5,6 @@ const REQUESTY_LABEL = "Requesty API-Schlüssel"
 const MAPS_LABEL = "Google Maps API-Schlüssel"
 
 test.describe("Settings Flow", () => {
-  let originalSecrets: Record<string, string>
-
-  test.beforeEach(async ({ api }) => {
-    originalSecrets = await api.getSecrets()
-  })
-
-  test.afterEach(async ({ api }) => {
-    await api.saveSecrets(originalSecrets)
-  })
-
   test("renders masked tokens for set keys", async ({ api, settingsPage }) => {
     await api.saveSecrets({
       openrouterApiKey: "sk-or-long-token-value-here",
