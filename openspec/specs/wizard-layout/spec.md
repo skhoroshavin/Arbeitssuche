@@ -1,4 +1,10 @@
-## ADDED Requirements
+# wizard-layout Specification
+
+## Purpose
+
+TBD - created by archiving change wizard-routes. Update Purpose after archive.
+
+## Requirements
 
 ### Requirement: Wizard layout displays step progression in a sidebar
 
