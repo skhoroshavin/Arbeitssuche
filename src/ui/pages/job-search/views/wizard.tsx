@@ -28,7 +28,7 @@ import {
   useDraftWizardInitialization,
 } from "@/ui/hooks"
 
-import { WizardLayout, buildWizardSteps } from "@/ui/layout"
+import { DraftWizardPage } from "@/ui/layout"
 import { WizardCancelChoicesModal } from "@/ui/components"
 
 import { JobSearchCoverLetterView, JobSearchSearchConfigView } from "@/ui/views"
@@ -99,60 +99,30 @@ export default function JobSearchWizardPage() {
     },
   })
 
-  const wizardSteps = buildWizardSteps(WIZARD_STEPS, STEP_LABELS, step)
-
-  if (phase === "loading") {
-    return (
-      <WizardLayout
-        title="Neue Jobsuche erstellen"
-        steps={wizardSteps}
-        onCancel={() => {
-          void navigate(`/applicants/${applicantId}`)
-        }}
-      >
-        <div className="text-gray-500">Laden…</div>
-      </WizardLayout>
-    )
-  }
-
-  if (phase === "resume-prompt") {
-    return (
-      <WizardLayout
-        title="Neue Jobsuche erstellen"
-        steps={wizardSteps}
-        onCancel={() => {
-          void navigate(`/applicants/${applicantId}`)
-        }}
-      >
-        <ResumeDraftPrompt
-          onResume={() => setPhase("editing")}
-          onDiscardAndStartFresh={async () => {
-            await deleteDraft.mutateAsync()
-            setResolvedSnapshot(createDefaultJobSearchEditorSnapshot())
-            setPhase("editing")
-          }}
-        />
-      </WizardLayout>
-    )
-  }
-
-  const { onBack, onNext, onFinish } = resolveWizardNavigation(
-    step,
-    setStep,
-    lifecycle,
-  )
-
   return (
     <>
-      <WizardLayout
+      <DraftWizardPage
+        phase={phase}
         title="Neue Jobsuche erstellen"
-        steps={wizardSteps}
+        steps={WIZARD_STEPS}
+        currentStep={step}
+        stepLabels={STEP_LABELS}
+        setStep={setStep}
         onCancel={() => {
           void lifecycle.cancelWizard()
         }}
-        onBack={onBack}
-        onNext={onNext}
-        onFinish={onFinish}
+        onFinish={lifecycle.finishWizard}
+        resumePrompt={{
+          description:
+            "Es gibt eine fortsetzbare Jobsuche im Entwurf. Möchten Sie fortsetzen oder neu starten?",
+          discardLabel: "Entwurf verwerfen",
+          onResume: () => setPhase("editing"),
+          onDiscardAndStartFresh: async () => {
+            await deleteDraft.mutateAsync()
+            setResolvedSnapshot(createDefaultJobSearchEditorSnapshot())
+            setPhase("editing")
+          },
+        }}
       >
         <JobSearchWizardStepView
           step={step}
@@ -164,7 +134,7 @@ export default function JobSearchWizardPage() {
           allSites={siteList.data.sites}
           hasLlmKey={hasLlmKey}
         />
-      </WizardLayout>
+      </DraftWizardPage>
 
       <WizardCancelChoicesModal
         open={lifecycle.showCancelChoices}
@@ -178,44 +148,6 @@ export default function JobSearchWizardPage() {
 
 type Phase = "loading" | "resume-prompt" | "editing"
 
-function ResumeDraftPrompt({
-  onResume,
-  onDiscardAndStartFresh,
-}: ResumeDraftPromptProperties) {
-  return (
-    <div className="max-w-lg space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-        Entwurf gefunden
-      </h2>
-      <p className="text-sm text-gray-600 dark:text-gray-300">
-        Es gibt eine fortsetzbare Jobsuche im Entwurf. Möchten Sie fortsetzen
-        oder neu starten?
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onResume}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-        >
-          Entwurf fortsetzen
-        </button>
-        <button
-          type="button"
-          onClick={() => void onDiscardAndStartFresh()}
-          className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-        >
-          Entwurf verwerfen
-        </button>
-      </div>
-    </div>
-  )
-}
-
-interface ResumeDraftPromptProperties {
-  onResume: () => void
-  onDiscardAndStartFresh: () => Promise<void>
-}
-
 const STEP_LABELS: Record<WizardStep_, string> = {
   parameters: "Parameter",
   mode: "Modus",
@@ -227,15 +159,10 @@ const STEP_LABELS: Record<WizardStep_, string> = {
 function mapSnapshotToFormValues(
   snapshot: JobSearchEditorSnapshot,
 ): WizardFormValues {
+  const config = mapSnapshotToConfigValue(snapshot)
+
   return {
-    searchTerm: snapshot.params.searchTerm,
-    radiusKm: snapshot.params.radiusKm,
-    searchMode: snapshot.params.searchMode,
-    sources: snapshot.params.sources,
-    maxResults: snapshot.params.maxResults,
-    maxDistanceKm: snapshot.preferences.maxDistanceKm,
-    maxCommuteMinutes: snapshot.preferences.maxCommuteMinutes,
-    freeText: snapshot.preferences.freeText,
+    ...config,
     coverLetterContent: snapshot.coverLetterContent,
   }
 }
@@ -243,56 +170,26 @@ function mapSnapshotToFormValues(
 function mapFormValuesToSnapshot(
   values: WizardFormValues,
 ): JobSearchEditorSnapshot {
+  const config = mapFormValuesToConfigValue(values)
+
   return {
     params: {
-      searchTerm: values.searchTerm,
-      radiusKm: values.radiusKm,
-      searchMode: values.searchMode,
-      sources: values.sources,
-      maxResults: values.maxResults,
+      searchTerm: config.searchTerm,
+      radiusKm: config.radiusKm,
+      searchMode: config.searchMode,
+      sources: config.sources,
+      maxResults: config.maxResults,
     },
     preferences: {
-      maxDistanceKm: values.maxDistanceKm,
-      maxCommuteMinutes: values.maxCommuteMinutes,
-      freeText: values.freeText,
+      maxDistanceKm: config.maxDistanceKm,
+      maxCommuteMinutes: config.maxCommuteMinutes,
+      freeText: config.freeText,
     },
     coverLetterContent: values.coverLetterContent,
   }
 }
 
-function resolveWizardNavigation(
-  step: WizardStep_,
-  setStep: (s: WizardStep_) => void,
-  lifecycle: { finishWizard: () => Promise<void> },
-) {
-  return {
-    onBack:
-      step === "parameters"
-        ? undefined
-        : () => {
-            setStep(previousStep(step))
-          },
-    onNext:
-      step === "cover-letter"
-        ? undefined
-        : () => {
-            setStep(nextStep(step))
-          },
-    onFinish: step === "cover-letter" ? lifecycle.finishWizard : undefined,
-  }
-}
-
-function nextStep(step: WizardStep_): WizardStep_ {
-  const index = WIZARD_STEPS.indexOf(step)
-  return WIZARD_STEPS[Math.min(index + 1, WIZARD_STEPS.length - 1)]
-}
-
-function previousStep(step: WizardStep_): WizardStep_ {
-  const index = WIZARD_STEPS.indexOf(step)
-  return WIZARD_STEPS[Math.max(index - 1, 0)]
-}
-
-const WIZARD_STEPS: WizardStep_[] = [
+const WIZARD_STEPS: [WizardStep_, ...WizardStep_[]] = [
   "parameters",
   "mode",
   "sources",
@@ -339,16 +236,7 @@ function JobSearchWizardStepView({
     <JobSearchSearchConfigView
       sections={[step]}
       allSites={allSites}
-      value={{
-        searchTerm: watch("searchTerm"),
-        radiusKm: watch("radiusKm"),
-        searchMode: watch("searchMode"),
-        sources: watch("sources"),
-        maxResults: watch("maxResults"),
-        maxDistanceKm: watch("maxDistanceKm"),
-        maxCommuteMinutes: watch("maxCommuteMinutes"),
-        freeText: watch("freeText"),
-      }}
+      value={readConfigValue(watch)}
       onUpdate={(value) => applyWizardConfigValue(setValue, value)}
     />
   )
@@ -387,16 +275,79 @@ function applyWizardConfigValue(
   setValue: UseFormSetValue<WizardFormValues>,
   configUpdate: JobSearchEditorConfigValue,
 ): void {
-  setValue("searchTerm", configUpdate.searchTerm, { shouldDirty: true })
-  setValue("radiusKm", configUpdate.radiusKm, { shouldDirty: true })
-  setValue("searchMode", configUpdate.searchMode, { shouldDirty: true })
-  setValue("sources", configUpdate.sources, { shouldDirty: true })
-  setValue("maxResults", configUpdate.maxResults, { shouldDirty: true })
-  setValue("maxDistanceKm", configUpdate.maxDistanceKm, { shouldDirty: true })
-  setValue("maxCommuteMinutes", configUpdate.maxCommuteMinutes, {
+  const nextValues = mapConfigValueToFormValues(configUpdate)
+
+  setValue("searchTerm", nextValues.searchTerm, { shouldDirty: true })
+  setValue("radiusKm", nextValues.radiusKm, { shouldDirty: true })
+  setValue("searchMode", nextValues.searchMode, { shouldDirty: true })
+  setValue("sources", nextValues.sources, { shouldDirty: true })
+  setValue("maxResults", nextValues.maxResults, { shouldDirty: true })
+  setValue("maxDistanceKm", nextValues.maxDistanceKm, { shouldDirty: true })
+  setValue("maxCommuteMinutes", nextValues.maxCommuteMinutes, {
     shouldDirty: true,
   })
-  setValue("freeText", configUpdate.freeText, { shouldDirty: true })
+  setValue("freeText", nextValues.freeText, { shouldDirty: true })
+}
+
+function mapConfigValueToFormValues(
+  value: JobSearchEditorConfigValue,
+): Pick<
+  WizardFormValues,
+  | "searchTerm"
+  | "radiusKm"
+  | "searchMode"
+  | "sources"
+  | "maxResults"
+  | "maxDistanceKm"
+  | "maxCommuteMinutes"
+  | "freeText"
+> {
+  return {
+    searchTerm: value.searchTerm,
+    radiusKm: value.radiusKm,
+    searchMode: value.searchMode,
+    sources: value.sources,
+    maxResults: value.maxResults,
+    maxDistanceKm: value.maxDistanceKm,
+    maxCommuteMinutes: value.maxCommuteMinutes,
+    freeText: value.freeText,
+  }
+}
+
+function mapFormValuesToConfigValue(
+  value: WizardFormValues,
+): JobSearchEditorConfigValue {
+  return mapConfigValueToFormValues(value)
+}
+
+function mapSnapshotToConfigValue(
+  snapshot: JobSearchEditorSnapshot,
+): JobSearchEditorConfigValue {
+  return {
+    searchTerm: snapshot.params.searchTerm,
+    radiusKm: snapshot.params.radiusKm,
+    searchMode: snapshot.params.searchMode,
+    sources: snapshot.params.sources,
+    maxResults: snapshot.params.maxResults,
+    maxDistanceKm: snapshot.preferences.maxDistanceKm,
+    maxCommuteMinutes: snapshot.preferences.maxCommuteMinutes,
+    freeText: snapshot.preferences.freeText,
+  }
+}
+
+function readConfigValue(
+  watch: UseFormWatch<WizardFormValues>,
+): JobSearchEditorConfigValue {
+  return {
+    searchTerm: watch("searchTerm"),
+    radiusKm: watch("radiusKm"),
+    searchMode: watch("searchMode"),
+    sources: watch("sources"),
+    maxResults: watch("maxResults"),
+    maxDistanceKm: watch("maxDistanceKm"),
+    maxCommuteMinutes: watch("maxCommuteMinutes"),
+    freeText: watch("freeText"),
+  }
 }
 
 interface WizardFormValues {

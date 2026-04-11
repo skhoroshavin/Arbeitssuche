@@ -126,7 +126,7 @@ export class ApplicantPage {
   }
 
   async advanceWizardToCoverLetter() {
-    for (const step of [2, 3, 4, 5] as const) {
+    for (const step of JOB_SEARCH_WIZARD_STEPS.slice(1)) {
       await this.wizardContinueButton.click()
       await expect(this.wizardStepHeading(step)).toBeVisible()
     }
@@ -151,3 +151,5 @@ export class ApplicantPage {
     await this.templateButton(name).click()
   }
 }
+
+const JOB_SEARCH_WIZARD_STEPS = [1, 2, 3, 4, 5] as const

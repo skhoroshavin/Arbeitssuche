@@ -18,12 +18,13 @@ import {
 
 import {
   useAutoSaveForm,
+  type AutoSaveStatus,
   createDraftWizardMutations,
   useDraftWizardLifecycle,
   useDraftWizardInitialization,
 } from "@/ui/hooks"
 
-import { WizardLayout, buildWizardSteps } from "@/ui/layout"
+import { DraftWizardPage } from "@/ui/layout"
 import { WizardCancelChoicesModal } from "@/ui/components"
 
 import {
@@ -94,59 +95,32 @@ export default function ApplicantWizardPage() {
     },
   })
 
-  const wizardSteps = buildWizardSteps(WIZARD_STEPS, STEP_LABELS, step)
-
-  if (phase === "loading") {
-    return (
-      <WizardLayout
+  return (
+    <>
+      <DraftWizardPage
+        phase={phase}
         title="Neuen Bewerber erstellen"
-        steps={wizardSteps}
-        onCancel={() => {
-          void navigate("/")
-        }}
-      >
-        <div className="text-gray-500">Laden…</div>
-      </WizardLayout>
-    )
-  }
-
-  if (phase === "resume-prompt") {
-    return (
-      <WizardLayout
-        title="Neuen Bewerber erstellen"
-        steps={wizardSteps}
-        onCancel={() => {
-          void navigate("/")
-        }}
-      >
-        <ResumeDraftPrompt
-          description="Es gibt einen fortsetzbaren Bewerberentwurf. Möchten Sie fortsetzen oder neu starten?"
-          onResume={() => setPhase("editing")}
-          onDiscardAndStartFresh={async () => {
+        steps={WIZARD_STEPS}
+        currentStep={step}
+        stepLabels={STEP_LABELS}
+        setStep={setStep}
+        onCancel={() => void lifecycle.cancelWizard()}
+        onFinish={lifecycle.finishWizard}
+        finishDisabled={!canFinalizeApplicantWizard(watchedSnapshot)}
+        resumePrompt={{
+          description:
+            "Es gibt einen fortsetzbaren Bewerberentwurf. Möchten Sie fortsetzen oder neu starten?",
+          discardLabel: "Neu starten",
+          onResume: () => setPhase("editing"),
+          onDiscardAndStartFresh: async () => {
             await deleteDraft.mutateAsync()
             setResolvedSnapshot(createDefaultApplicantDraftSnapshot())
             setPhase("editing")
-          }}
-        />
-      </WizardLayout>
-    )
-  }
-
-  return (
-    <>
-      <WizardLayout
-        title="Neuen Bewerber erstellen"
-        steps={wizardSteps}
-        onCancel={() => void lifecycle.cancelWizard()}
-        onBack={
-          step === "personal" ? undefined : () => setStep(previousStep(step))
-        }
-        onNext={step === "other" ? undefined : () => setStep(nextStep(step))}
-        onFinish={step === "other" ? lifecycle.finishWizard : undefined}
-        finishDisabled={!canFinalizeApplicantWizard(watchedSnapshot)}
+          },
+        }}
       >
         <ApplicantWizardStepView form={form} step={step} />
-      </WizardLayout>
+      </DraftWizardPage>
 
       <WizardCancelChoicesModal
         open={lifecycle.showCancelChoices}
@@ -166,43 +140,6 @@ export function canFinalizeApplicantWizard(
 
 type Phase = "loading" | "resume-prompt" | "editing"
 
-function ResumeDraftPrompt({
-  description,
-  onResume,
-  onDiscardAndStartFresh,
-}: ResumeDraftPromptProperties) {
-  return (
-    <div className="max-w-lg space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-        Entwurf gefunden
-      </h2>
-      <p className="text-sm text-gray-600 dark:text-gray-300">{description}</p>
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onResume}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-        >
-          Entwurf fortsetzen
-        </button>
-        <button
-          type="button"
-          onClick={() => void onDiscardAndStartFresh()}
-          className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-        >
-          Neu starten
-        </button>
-      </div>
-    </div>
-  )
-}
-
-interface ResumeDraftPromptProperties {
-  description: string
-  onResume: () => void
-  onDiscardAndStartFresh: () => Promise<void>
-}
-
 function ApplicantWizardStepView({
   form,
   step,
@@ -214,15 +151,9 @@ function ApplicantWizardStepView({
     useHeaderAutoSave: false,
   }
 
-  if (step === "personal")
-    return <ApplicantEditorPersonalView {...properties} />
-  if (step === "experience")
-    return <ApplicantEditorExperienceView {...properties} />
-  if (step === "education")
-    return <ApplicantEditorEducationView {...properties} />
-  if (step === "certifications")
-    return <ApplicantEditorCertificationsView {...properties} />
-  return <ApplicantEditorOtherView {...properties} />
+  const StepView = STEP_VIEWS[step]
+
+  return <StepView {...properties} />
 }
 
 interface ApplicantWizardStepViewProperties {
@@ -230,6 +161,15 @@ interface ApplicantWizardStepViewProperties {
     typeof useAutoSaveForm<ApplicantFormValues, ApplicantDraftSnapshot>
   >
   step: ApplicantWizardStep
+}
+
+interface ApplicantWizardStepViewSharedProperties {
+  form: ReturnType<
+    typeof useAutoSaveForm<ApplicantFormValues, ApplicantDraftSnapshot>
+  >
+  isLoading: boolean
+  saveStatus: AutoSaveStatus
+  useHeaderAutoSave?: boolean
 }
 
 const STEP_LABELS: Record<ApplicantWizardStep, string> = {
@@ -240,17 +180,7 @@ const STEP_LABELS: Record<ApplicantWizardStep, string> = {
   other: "Sonstiges",
 }
 
-function nextStep(step: ApplicantWizardStep): ApplicantWizardStep {
-  const index = WIZARD_STEPS.indexOf(step)
-  return WIZARD_STEPS[Math.min(index + 1, WIZARD_STEPS.length - 1)]
-}
-
-function previousStep(step: ApplicantWizardStep): ApplicantWizardStep {
-  const index = WIZARD_STEPS.indexOf(step)
-  return WIZARD_STEPS[Math.max(index - 1, 0)]
-}
-
-const WIZARD_STEPS: ApplicantWizardStep[] = [
+const WIZARD_STEPS: [ApplicantWizardStep, ...ApplicantWizardStep[]] = [
   "personal",
   "experience",
   "education",
@@ -264,3 +194,15 @@ type ApplicantWizardStep =
   | "education"
   | "certifications"
   | "other"
+
+const STEP_VIEWS = {
+  personal: ApplicantEditorPersonalView,
+  experience: ApplicantEditorExperienceView,
+  education: ApplicantEditorEducationView,
+  certifications: ApplicantEditorCertificationsView,
+  other: ApplicantEditorOtherView,
+} satisfies Record<ApplicantWizardStep, StepView>
+
+type StepView = (
+  properties: ApplicantWizardStepViewSharedProperties,
+) => React.JSX.Element

@@ -9,10 +9,9 @@ import {
   DEFAULT_APPLICANT,
   isMeaningfulApplicantDraftSnapshot,
   resolveApplicant,
-  resolveApplicantDraftSnapshot,
 } from "@/models/applicant/index.js"
 import {
-  finalizeApplicantDraftData,
+  loadFinalizedApplicantDraft,
   type ApplicantRepository,
 } from "@/repositories/applicant/types.js"
 import { createUniqueDerivedId } from "@/utils/node/index.js"
@@ -68,19 +67,21 @@ class StubApplicantRepository implements ApplicantRepository {
   }
 
   saveDraft(draft: ApplicantDraftSnapshot): void {
-    this.draft = resolveApplicantDraftSnapshot(structuredClone(draft))
+    this.draft = resolveApplicant(structuredClone(draft))
   }
 
   finalizeDraft(): string {
-    const draft = this.draft
-    if (!draft) throw new Error("Applicant draft not found")
-    const { id, data } = finalizeApplicantDraftData({
-      snapshot: draft,
+    return loadFinalizedApplicantDraft({
+      draft: this.draft,
+      getSnapshot: (draft) => draft,
       exists: (candidate) => this.exists(candidate),
+      persist: ({ id, data }) => {
+        this.store.set(id, data)
+      },
+      clearDraft: () => {
+        this.deleteDraft()
+      },
     })
-    this.store.set(id, data)
-    this.deleteDraft()
-    return id
   }
 
   exists(id: string): boolean {

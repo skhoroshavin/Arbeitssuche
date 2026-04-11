@@ -10,10 +10,9 @@ import {
   DEFAULT_APPLICANT,
   isMeaningfulApplicantDraftSnapshot,
   resolveApplicant,
-  resolveApplicantDraftSnapshot,
 } from "@/models/applicant/index.js"
 import {
-  finalizeApplicantDraftData,
+  loadFinalizedApplicantDraft,
   type ApplicantRepository,
 } from "@/repositories/applicant/types.js"
 import {
@@ -102,22 +101,24 @@ class SqliteApplicantRepository implements ApplicantRepository {
   }
 
   saveDraft(draft: ApplicantDraftSnapshot): void {
-    const snapshot = resolveApplicantDraftSnapshot(draft)
+    const snapshot = resolveApplicant(draft)
     const meaningful = isMeaningfulApplicantDraftSnapshot(snapshot)
     this.saveDraftStmt.run(JSON.stringify(snapshot), meaningful ? 1 : 0)
   }
 
   finalizeDraft(): string {
     return this.database.transaction(() => {
-      const draft = this.loadDraft()
-      if (!draft) throw new Error("Applicant draft not found")
-      const { id, data } = finalizeApplicantDraftData({
-        snapshot: draft.snapshot,
+      return loadFinalizedApplicantDraft({
+        draft: this.loadDraft(),
+        getSnapshot: (draft) => draft.snapshot,
         exists: (candidate) => this.exists(candidate),
+        persist: ({ id, data }) => {
+          this.insertStmt.run(id, data.personal.name, JSON.stringify(data))
+        },
+        clearDraft: () => {
+          this.deleteDraft()
+        },
       })
-      this.insertStmt.run(id, data.personal.name, JSON.stringify(data))
-      this.deleteDraft()
-      return id
     })
   }
 
@@ -129,7 +130,7 @@ class SqliteApplicantRepository implements ApplicantRepository {
     const raw = this.loadDraftStmt.get()
     if (raw === undefined) return undefined
     const parsed = typia.assert<ApplicantDraftRow>(raw)
-    const snapshot = resolveApplicantDraftSnapshot(
+    const snapshot = resolveApplicant(
       typia.assert<ApplicantDraftSnapshot>(JSON.parse(parsed.data)),
     )
     return {
