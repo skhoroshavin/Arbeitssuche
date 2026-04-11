@@ -56,6 +56,18 @@ export function useDraftWizardLifecycle<TSnapshot, TResult>({
   }
 }
 
+export function createDraftWizardMutations<TSnapshot, TResult>({
+  saveDraft,
+  deleteDraft,
+  finalizeDraft,
+}: DraftWizardMutationProperties<TSnapshot, TResult>) {
+  return {
+    saveDraft: async (snapshot: TSnapshot) => saveDraft.mutateAsync(snapshot),
+    deleteDraft: async () => deleteDraft.mutateAsync(),
+    finalizeDraft: async () => finalizeDraft.mutateAsync(),
+  }
+}
+
 interface DraftWizardLifecycleProperties<TSnapshot, TResult> {
   snapshot: TSnapshot
   isMeaningful: (snapshot: TSnapshot) => boolean
@@ -64,4 +76,10 @@ interface DraftWizardLifecycleProperties<TSnapshot, TResult> {
   finalizeDraft: () => Promise<TResult>
   onClose: () => void
   onFinished: (result: TResult) => void
+}
+
+interface DraftWizardMutationProperties<TSnapshot, TResult> {
+  saveDraft: { mutateAsync: (snapshot: TSnapshot) => Promise<unknown> }
+  deleteDraft: { mutateAsync: () => Promise<unknown> }
+  finalizeDraft: { mutateAsync: () => Promise<TResult> }
 }

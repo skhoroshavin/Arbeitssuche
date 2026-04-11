@@ -15,17 +15,17 @@ export function toApplicantFormValues(
     ...applicant,
     personal: {
       ...applicant.personal,
-      hobbies: arrayToString(applicant.personal.hobbies),
+      hobbies: joinLines(applicant.personal.hobbies),
     },
     experience: applicant.experience.map((entry) => ({
       ...entry,
-      highlights: arrayToString(entry.highlights),
+      highlights: joinLines(entry.highlights),
     })),
     education: applicant.education.map((entry) => ({
       ...entry,
-      highlights: arrayToString(entry.highlights),
+      highlights: joinLines(entry.highlights),
     })),
-    personalNotes: arrayToString(applicant.personalNotes),
+    personalNotes: joinLines(applicant.personalNotes),
   }
 }
 
@@ -35,17 +35,17 @@ export function fromApplicantFormValues(form: ApplicantFormValues): Applicant {
     disclose: form.disclose ?? DEFAULT_APPLICANT.disclose,
     personal: {
       ...form.personal,
-      hobbies: stringToArray(form.personal.hobbies) ?? [],
+      hobbies: splitLines(form.personal.hobbies) ?? [],
     },
     experience: form.experience.map((entry) => ({
       ...entry,
-      highlights: stringToArray(entry.highlights),
+      highlights: splitLines(entry.highlights),
     })),
     education: form.education.map((entry) => ({
       ...entry,
-      highlights: stringToArray(entry.highlights),
+      highlights: splitLines(entry.highlights),
     })),
-    personalNotes: stringToArray(form.personalNotes),
+    personalNotes: splitLines(form.personalNotes),
   }
 }
 
@@ -91,11 +91,11 @@ export interface ApplicantFormPersonal {
   hobbies?: string
 }
 
-function arrayToString(array: string[] | undefined): string | undefined {
-  return array?.join("\n")
+function joinLines(lines: string[] | undefined): string | undefined {
+  return lines?.join("\n")
 }
 
-function stringToArray(value: string | undefined): string[] | undefined {
+function splitLines(value: string | undefined): string[] | undefined {
   return value
     ?.split("\n")
     .map((line) => line.trim())

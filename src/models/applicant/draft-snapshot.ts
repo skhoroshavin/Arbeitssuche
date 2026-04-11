@@ -62,11 +62,31 @@ function hasMeaningfulAddress(address?: Address): boolean {
 }
 
 function hasMeaningfulExperience(experience: ApplicantExperience[]): boolean {
-  return experience.some((entry) => hasMeaningfulExperienceEntry(entry))
+  return experience.some((entry) =>
+    hasMeaningfulTimelineEntry({
+      primary: entry.role,
+      secondary: entry.company,
+      startDate: entry.startDate,
+      endDate: entry.endDate,
+      location: entry.location,
+      discloseDates: entry.discloseDates,
+      highlights: entry.highlights,
+    }),
+  )
 }
 
 function hasMeaningfulEducation(education: ApplicantEducation[]): boolean {
-  return education.some((entry) => hasMeaningfulEducationEntry(entry))
+  return education.some((entry) =>
+    hasMeaningfulTimelineEntry({
+      primary: entry.institution,
+      secondary: entry.course,
+      startDate: entry.startDate,
+      endDate: entry.endDate,
+      location: entry.location,
+      discloseDates: entry.discloseDates,
+      highlights: entry.highlights,
+    }),
+  )
 }
 
 function hasMeaningfulSkills(skills: Applicant["skills"]): boolean {
@@ -91,39 +111,18 @@ function hasMeaningfulNotes(notes: Applicant["personalNotes"]): boolean {
   return notes?.some((note) => hasText(note)) === true
 }
 
-function hasMeaningfulExperienceEntry({
-  role,
-  company,
+function hasMeaningfulTimelineEntry({
+  primary,
+  secondary,
   startDate,
   endDate,
   location,
   discloseDates,
   highlights,
-}: ApplicantExperience): boolean {
+}: MeaningfulTimelineEntry): boolean {
   const checks = [
-    hasText(role),
-    hasText(company),
-    hasText(startDate),
-    hasText(endDate),
-    hasText(location),
-    discloseDates === true,
-    highlights?.some((highlight) => hasText(highlight)) === true,
-  ]
-  return checks.some(Boolean)
-}
-
-function hasMeaningfulEducationEntry({
-  institution,
-  course,
-  startDate,
-  endDate,
-  location,
-  discloseDates,
-  highlights,
-}: ApplicantEducation): boolean {
-  const checks = [
-    hasText(institution),
-    hasText(course),
+    hasText(primary),
+    hasText(secondary),
     hasText(startDate),
     hasText(endDate),
     hasText(location),
@@ -135,4 +134,14 @@ function hasMeaningfulEducationEntry({
 
 function hasText(value: string | undefined): boolean {
   return value !== undefined && value.trim().length > 0
+}
+
+interface MeaningfulTimelineEntry {
+  primary: string
+  secondary: string
+  startDate?: string
+  endDate?: string
+  location?: string
+  discloseDates?: boolean
+  highlights?: string[]
 }

@@ -11,7 +11,10 @@ import {
   useSiteListView,
 } from "@/ui/data"
 import { useAutoSaveForm } from "@/ui/hooks"
-import { useDraftWizardLifecycle } from "@/ui/pages/applicant/hooks"
+import {
+  createDraftWizardMutations,
+  useDraftWizardLifecycle,
+} from "@/ui/pages/applicant/hooks"
 import { WizardCancelChoicesModal, WizardModalShell } from "."
 import { JobSearchCoverLetterView, JobSearchSearchConfigView } from "@/ui/views"
 import type {
@@ -51,9 +54,7 @@ export function JobSearchWizardModal({
   const lifecycle = useDraftWizardLifecycle({
     snapshot: currentSnapshot,
     isMeaningful: isMeaningfulJobSearchEditorSnapshot,
-    saveDraft: createSaveJobSearchDraft(saveDraft),
-    deleteDraft: createDeleteJobSearchDraft(deleteDraft),
-    finalizeDraft: createFinalizeJobSearchDraft(finalizeDraft),
+    ...createDraftWizardMutations({ saveDraft, deleteDraft, finalizeDraft }),
     onClose,
     onFinished: ({ id }) => onFinished(id),
   })
@@ -240,23 +241,4 @@ function applyWizardConfigValue(
     shouldDirty: true,
   })
   setValue("freeText", value.freeText, { shouldDirty: true })
-}
-
-function createSaveJobSearchDraft(
-  saveDraft: ReturnType<typeof useSaveJobSearchDraft>,
-) {
-  return async (snapshot: JobSearchEditorSnapshot) =>
-    saveDraft.mutateAsync(snapshot)
-}
-
-function createDeleteJobSearchDraft(
-  deleteDraft: ReturnType<typeof useDeleteJobSearchDraft>,
-) {
-  return async () => deleteDraft.mutateAsync()
-}
-
-function createFinalizeJobSearchDraft(
-  finalizeDraft: ReturnType<typeof useFinalizeJobSearchDraft>,
-) {
-  return async () => finalizeDraft.mutateAsync()
 }

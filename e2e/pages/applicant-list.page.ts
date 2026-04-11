@@ -12,7 +12,6 @@ export class ApplicantListPage {
   readonly wizardKeepDraftButton: Locator
   readonly wizardResumeDraftDialogTitle: Locator
   readonly wizardResumeDraftButton: Locator
-  readonly wizardStartOverButton: Locator
 
   constructor(page: Page) {
     this.page = page
@@ -32,9 +31,6 @@ export class ApplicantListPage {
     this.wizardResumeDraftDialogTitle = page.getByText("Entwurf gefunden")
     this.wizardResumeDraftButton = page.getByRole("button", {
       name: "Entwurf fortsetzen",
-    })
-    this.wizardStartOverButton = page.getByRole("button", {
-      name: "Neu starten",
     })
   }
 
@@ -56,16 +52,6 @@ export class ApplicantListPage {
     await this.advanceWizardToLastStep()
     await this.wizardFinishButton.click()
     await expect(this.wizardFinishButton).not.toBeVisible({ timeout: 15000 })
-  }
-
-  async createApplicantViaEnter(name: string) {
-    await this.createApplicant(name)
-  }
-
-  async openAndDismissForm(name: string) {
-    await this.openWizard()
-    await this.page.getByLabel("Name").fill(name)
-    await this.wizardCancelButton.click()
   }
 
   async openWizard() {

@@ -15,7 +15,10 @@ import {
   WizardCancelChoicesModal,
   WizardModalShell,
 } from "@/ui/pages/applicant/components"
-import { useDraftWizardLifecycle } from "@/ui/pages/applicant/hooks"
+import {
+  createDraftWizardMutations,
+  useDraftWizardLifecycle,
+} from "@/ui/pages/applicant/hooks"
 import {
   fromApplicantFormValues,
   toApplicantFormValues,
@@ -52,9 +55,7 @@ export function ApplicantWizardModal({
   const lifecycle = useDraftWizardLifecycle({
     snapshot: watchedSnapshot,
     isMeaningful: isMeaningfulApplicantDraftSnapshot,
-    saveDraft: createSaveApplicantDraft(saveDraft),
-    deleteDraft: createDeleteApplicantDraft(deleteDraft),
-    finalizeDraft: createFinalizeApplicantDraft(finalizeDraft),
+    ...createDraftWizardMutations({ saveDraft, deleteDraft, finalizeDraft }),
     onClose,
     onFinished: ({ id }) => onFinished(id),
   })
@@ -155,25 +156,6 @@ interface ApplicantWizardStepViewProperties {
     saveStatus: AutoSaveStatus
   }
   step: ApplicantWizardStep
-}
-
-function createSaveApplicantDraft(
-  saveDraft: ReturnType<typeof useSaveApplicantDraft>,
-) {
-  return async (snapshot: ApplicantDraftSnapshot) =>
-    saveDraft.mutateAsync(snapshot)
-}
-
-function createDeleteApplicantDraft(
-  deleteDraft: ReturnType<typeof useDeleteApplicantDraft>,
-) {
-  return async () => deleteDraft.mutateAsync()
-}
-
-function createFinalizeApplicantDraft(
-  finalizeDraft: ReturnType<typeof useFinalizeApplicantDraft>,
-) {
-  return async () => finalizeDraft.mutateAsync()
 }
 
 function resolveStepIndex(step: ApplicantWizardStep): number {

@@ -12,7 +12,10 @@ import {
   resolveApplicant,
   resolveApplicantDraftSnapshot,
 } from "@/models/applicant/index.js"
-import type { ApplicantRepository } from "@/repositories/applicant/types.js"
+import {
+  finalizeApplicantDraftData,
+  type ApplicantRepository,
+} from "@/repositories/applicant/types.js"
 import {
   Database,
   createUniqueDerivedId,
@@ -108,13 +111,10 @@ class SqliteApplicantRepository implements ApplicantRepository {
     return this.database.transaction(() => {
       const draft = this.loadDraft()
       if (!draft) throw new Error("Applicant draft not found")
-      const snapshot = resolveApplicantDraftSnapshot(draft.snapshot)
-      const resolvedName = snapshot.personal.name.trim()
-      const id = createUniqueDerivedId(
-        resolvedName.length > 0 ? resolvedName : "bewerber",
-        (candidate) => this.exists(candidate),
-      )
-      const data = resolveApplicant({ ...snapshot, id })
+      const { id, data } = finalizeApplicantDraftData({
+        snapshot: draft.snapshot,
+        exists: (candidate) => this.exists(candidate),
+      })
       this.insertStmt.run(id, data.personal.name, JSON.stringify(data))
       this.deleteDraft()
       return id

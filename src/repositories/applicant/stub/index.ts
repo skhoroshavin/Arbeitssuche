@@ -11,7 +11,10 @@ import {
   resolveApplicant,
   resolveApplicantDraftSnapshot,
 } from "@/models/applicant/index.js"
-import type { ApplicantRepository } from "@/repositories/applicant/types.js"
+import {
+  finalizeApplicantDraftData,
+  type ApplicantRepository,
+} from "@/repositories/applicant/types.js"
 import { createUniqueDerivedId } from "@/utils/node/index.js"
 
 export function createStubApplicantRepository(
@@ -71,13 +74,10 @@ class StubApplicantRepository implements ApplicantRepository {
   finalizeDraft(): string {
     const draft = this.draft
     if (!draft) throw new Error("Applicant draft not found")
-    const snapshot = resolveApplicantDraftSnapshot(draft)
-    const resolvedName = snapshot.personal.name.trim()
-    const id = createUniqueDerivedId(
-      resolvedName.length > 0 ? resolvedName : "bewerber",
-      (candidate) => this.exists(candidate),
-    )
-    const data = resolveApplicant({ ...snapshot, id })
+    const { id, data } = finalizeApplicantDraftData({
+      snapshot: draft,
+      exists: (candidate) => this.exists(candidate),
+    })
     this.store.set(id, data)
     this.deleteDraft()
     return id

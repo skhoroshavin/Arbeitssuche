@@ -4,5 +4,8 @@ export {
   discardDraftAndOpen,
   resumeDraftSnapshot,
 } from "./draft-launch"
-export { useDraftWizardLifecycle } from "./draft-wizard-lifecycle"
+export {
+  createDraftWizardMutations,
+  useDraftWizardLifecycle,
+} from "./draft-wizard-lifecycle"
 export { useSelectionSet } from "./selection-set"
