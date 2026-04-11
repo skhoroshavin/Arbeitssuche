@@ -39,8 +39,14 @@ export function useLayoutConfig(
   }, [setConfig, ...deps])
 }
 
-export function useAutoSaveHeader(saveStatus: AutoSaveStatusType) {
-  useSetHeaderExtra(<AutoSaveStatus status={saveStatus} />, [saveStatus])
+export function useAutoSaveHeader(
+  saveStatus: AutoSaveStatusType,
+  enabled = true,
+) {
+  useSetHeaderExtra(
+    enabled ? <AutoSaveStatus status={saveStatus} /> : undefined,
+    [saveStatus, enabled],
+  )
 }
 
 function useSetHeaderExtra(extra: ReactNode, deps: DependencyList) {

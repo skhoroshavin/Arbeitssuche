@@ -1,16 +1,16 @@
 import { ResumeDraftModal } from "./resume-draft-modal"
 
-export function JobSearchResumeDraftModal({
+export function ApplicantResumeDraftModal({
   open,
   onResume,
   onDiscardAndStartOver,
   onCancel,
-}: JobSearchResumeDraftModalProperties) {
+}: ApplicantResumeDraftModalProperties) {
   return (
     <ResumeDraftModal
       open={open}
-      description="Es gibt eine fortsetzbare Jobsuche im Entwurf. Möchten Sie fortsetzen oder neu starten?"
-      discardLabel="Entwurf verwerfen"
+      description="Es gibt einen fortsetzbaren Bewerberentwurf. Möchten Sie fortsetzen oder neu starten?"
+      discardLabel="Neu starten"
       onResume={onResume}
       onDiscardAndStartOver={onDiscardAndStartOver}
       onCancel={onCancel}
@@ -18,7 +18,7 @@ export function JobSearchResumeDraftModal({
   )
 }
 
-interface JobSearchResumeDraftModalProperties {
+interface ApplicantResumeDraftModalProperties {
   open: boolean
   onResume: () => void
   onDiscardAndStartOver: () => void

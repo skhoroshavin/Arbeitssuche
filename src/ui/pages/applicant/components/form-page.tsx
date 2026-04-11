@@ -7,14 +7,16 @@ export function ApplicantFormPage({
   title,
   isLoading,
   saveStatus,
+  useHeaderAutoSave = true,
   children,
 }: {
   title: string
   isLoading: boolean
   saveStatus: AutoSaveStatus
+  useHeaderAutoSave?: boolean
   children: ReactNode
 }) {
-  useAutoSaveHeader(saveStatus)
+  useAutoSaveHeader(saveStatus, useHeaderAutoSave)
 
   if (isLoading) return <Loading />
 

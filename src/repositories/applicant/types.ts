@@ -1,4 +1,9 @@
-import type { Applicant, ApplicantInfo } from "@/models/applicant/types.js"
+import type {
+  Applicant,
+  ApplicantDraft,
+  ApplicantDraftSnapshot,
+  ApplicantInfo,
+} from "@/models/applicant/types.js"
 
 export interface ApplicantRepository {
   list(): ApplicantInfo[]
@@ -7,4 +12,8 @@ export interface ApplicantRepository {
   save(id: string, data: Applicant): void
   create(name: string): string
   delete(id: string): void
+  loadDraft(): ApplicantDraft | undefined
+  saveDraft(draft: ApplicantDraftSnapshot): void
+  deleteDraft(): void
+  finalizeDraft(): string
 }

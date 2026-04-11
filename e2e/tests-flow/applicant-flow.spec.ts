@@ -8,19 +8,50 @@ test.describe("Applicant Flow", () => {
     await applicantListPage.goto()
     await applicantListPage.createApplicant("E2e Test Applicant")
 
-    await expect(
-      applicantListPage.applicantCard("E2e Test Applicant"),
-    ).toBeVisible()
-
     const applicantId =
-      await applicantListPage.navigateToApplicant("E2e Test Applicant")
+      applicantListPage.page.url().split("/applicants/")[1] ?? ""
     await expect(
       applicantListPage.page.getByRole("heading", { name: "Lebenslauf" }),
+    ).toBeVisible()
+    await expect(
+      applicantListPage.page.getByText("E2e Test Applicant"),
     ).toBeVisible()
 
     if (applicantId) {
       await api.deleteApplicant(applicantId)
     }
+  })
+
+  test("can keep, resume, discard, and finish an applicant draft", async ({
+    applicantListPage,
+    page,
+  }) => {
+    await applicantListPage.goto()
+    await applicantListPage.openWizard()
+    await page.getByLabel("Name").fill("Draft Applicant")
+    await applicantListPage.wizardCancelButton.click()
+    await applicantListPage.wizardKeepDraftButton.click()
+
+    await applicantListPage.openCreateForm()
+    await expect(applicantListPage.wizardResumeDraftDialogTitle).toBeVisible()
+    await applicantListPage.wizardResumeDraftButton.click()
+    await expect(page.getByLabel("Name")).toHaveValue("Draft Applicant")
+
+    await applicantListPage.wizardCancelButton.click()
+    await page.getByRole("button", { name: "Entwurf verwerfen" }).click()
+
+    await applicantListPage.openCreateForm()
+    await expect(
+      applicantListPage.wizardResumeDraftDialogTitle,
+    ).not.toBeVisible()
+    await page.getByLabel("Name").fill("Finished Applicant")
+    await applicantListPage.advanceWizardToLastStep()
+    await applicantListPage.wizardFinishButton.click()
+
+    await expect(
+      page.getByRole("heading", { name: "Lebenslauf" }),
+    ).toBeVisible()
+    await expect(page.getByText("Finished Applicant")).toBeVisible()
   })
 })
 

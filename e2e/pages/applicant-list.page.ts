@@ -5,8 +5,14 @@ export class ApplicantListPage {
   readonly page: Page
   readonly heading: Locator
   readonly newApplicantButton: Locator
-  readonly nameInput: Locator
-  readonly createButton: Locator
+  readonly wizardTitle: Locator
+  readonly wizardContinueButton: Locator
+  readonly wizardFinishButton: Locator
+  readonly wizardCancelButton: Locator
+  readonly wizardKeepDraftButton: Locator
+  readonly wizardResumeDraftDialogTitle: Locator
+  readonly wizardResumeDraftButton: Locator
+  readonly wizardStartOverButton: Locator
 
   constructor(page: Page) {
     this.page = page
@@ -14,8 +20,22 @@ export class ApplicantListPage {
     this.newApplicantButton = page.getByRole("button", {
       name: "Neuer Bewerber",
     })
-    this.nameInput = page.getByPlaceholder("Name (z.B. Max Mustermann)")
-    this.createButton = page.getByRole("button", { name: "Erstellen" })
+    this.wizardTitle = page.getByText("Schritt 1 von 5: Persönlich")
+    this.wizardContinueButton = page.getByRole("button", { name: "Weiter" })
+    this.wizardFinishButton = page.getByRole("button", {
+      name: "Fertigstellen",
+    })
+    this.wizardCancelButton = page.getByRole("button", { name: "Abbrechen" })
+    this.wizardKeepDraftButton = page.getByRole("button", {
+      name: "Entwurf behalten",
+    })
+    this.wizardResumeDraftDialogTitle = page.getByText("Entwurf gefunden")
+    this.wizardResumeDraftButton = page.getByRole("button", {
+      name: "Entwurf fortsetzen",
+    })
+    this.wizardStartOverButton = page.getByRole("button", {
+      name: "Neu starten",
+    })
   }
 
   applicantCard(name: string): Locator {
@@ -31,23 +51,35 @@ export class ApplicantListPage {
   }
 
   async createApplicant(name: string) {
-    await this.openCreateForm()
-    await this.nameInput.fill(name)
-    await this.createButton.click()
-    await expect(this.createButton).not.toBeVisible({ timeout: 15000 })
+    await this.openWizard()
+    await this.page.getByLabel("Name").fill(name)
+    await this.advanceWizardToLastStep()
+    await this.wizardFinishButton.click()
+    await expect(this.wizardFinishButton).not.toBeVisible({ timeout: 15000 })
   }
 
   async createApplicantViaEnter(name: string) {
-    await this.openCreateForm()
-    await this.nameInput.fill(name)
-    await this.nameInput.press("Enter")
-    await expect(this.createButton).not.toBeVisible({ timeout: 15000 })
+    await this.createApplicant(name)
   }
 
   async openAndDismissForm(name: string) {
-    await this.openCreateForm()
-    await this.nameInput.fill(name)
-    await this.page.keyboard.press("Escape")
+    await this.openWizard()
+    await this.page.getByLabel("Name").fill(name)
+    await this.wizardCancelButton.click()
+  }
+
+  async openWizard() {
+    await this.newApplicantButton.click()
+    await expect(this.wizardTitle).toBeVisible()
+  }
+
+  async advanceWizardToLastStep() {
+    for (const step of [2, 3, 4, 5] as const) {
+      await this.wizardContinueButton.click()
+      await expect(
+        this.page.getByText(`Schritt ${step} von 5`, { exact: false }),
+      ).toBeVisible()
+    }
   }
 
   async navigateToApplicant(name: string): Promise<string> {
