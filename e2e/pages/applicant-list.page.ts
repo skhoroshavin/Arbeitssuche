@@ -46,7 +46,8 @@ export class ApplicantListPage {
   }
 
   async openCreateForm() {
-    await this.openWizard()
+    await this.newApplicantButton.click()
+    await expect(this.wizardCancelButton).toBeVisible()
   }
 
   async createApplicant(name: string) {
