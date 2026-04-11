@@ -2,6 +2,7 @@ export {
   ApplicantList,
   ApplicantLayout,
   ApplicantOverview,
+  ApplicantWizardPage,
   ApplicantEditPersonal,
   ApplicantEditExperience,
   ApplicantEditEducation,
@@ -14,5 +15,6 @@ export {
   JobSearchCoverLetter,
   JobSearchVacancyList,
   JobSearchVacancyDetail,
+  JobSearchWizardPage,
 } from "./job-search"
 export { SettingsLayout, SettingsAI, SettingsMaps } from "./settings"

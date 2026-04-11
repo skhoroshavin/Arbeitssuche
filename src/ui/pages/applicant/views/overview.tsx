@@ -1,7 +1,5 @@
 import { useState } from "react"
 import { useParams, useNavigate, useLocation, Link } from "react-router"
-import { createDefaultJobSearchEditorSnapshot } from "@/models/job-search"
-import type { JobSearchEditorSnapshot } from "@/models/job-search/types"
 import {
   useApplicantHeaderName,
   useApplicant,
@@ -10,99 +8,27 @@ import {
   useApiKeyStatus,
   useJobSearchListView,
   useCreateJobSearch,
-  useDeleteJobSearchDraft,
   useDeleteJobSearch,
-  useJobSearchDraft,
 } from "@/ui/data"
 import { PageHeader, Loading } from "@/ui/components"
 import { EntityList } from "@/ui/pages/applicant/components"
 import { TemplateSelector } from "@/ui/pages/applicant/components"
 import { ConsultationModal } from "@/ui/pages/applicant/components"
-import { JobSearchResumeDraftModal } from "@/ui/pages/applicant/components"
-import { JobSearchWizardModal } from "@/ui/pages/applicant/components"
 import type { ConsultationSuggestion } from "@/models/job-search/types"
-import {
-  closeDraftPrompt,
-  discardDraftAndOpen,
-  resumeDraftSnapshot,
-} from "@/ui/pages/applicant/hooks"
 
 export default function ApplicantOverview() {
   const { id = "" } = useParams<{ id: string }>()
   const overview = useOverviewData(id)
   const deleteJobSearch = useDeleteJobSearch()
-  const draftQuery = useJobSearchDraft(id)
-  const deleteDraft = useDeleteJobSearchDraft(id)
   const navigate = useNavigate()
   const location = useLocation()
-  const [showResumeDraftModal, setShowResumeDraftModal] = useState(false)
-  const [wizardSnapshot, setWizardSnapshot] =
-    useState<JobSearchEditorSnapshot>()
-
-  const downloadResume = useDownloadResume(id, overview.displayName)
   const { hasLlmKey } = useApiKeyStatus()
   const consultation = useConsultationFlow(id)
 
+  const downloadResume = useDownloadResume(id, overview.displayName)
+
   if (overview.isLoading) return <Loading />
   if (!overview.data) return <div>Bewerber nicht gefunden</div>
-
-  return (
-    <ApplicantOverviewContent
-      applicantId={id}
-      overview={overview}
-      deleteJobSearch={deleteJobSearch}
-      draftQuery={draftQuery}
-      deleteDraft={deleteDraft}
-      navigate={navigate}
-      locationPathname={location.pathname}
-      downloadResume={downloadResume}
-      hasLlmKey={hasLlmKey}
-      consultation={consultation}
-      showResumeDraftModal={showResumeDraftModal}
-      setShowResumeDraftModal={setShowResumeDraftModal}
-      wizardSnapshot={wizardSnapshot}
-      setWizardSnapshot={setWizardSnapshot}
-    />
-  )
-}
-
-function ApplicantOverviewContent({
-  applicantId,
-  overview,
-  deleteJobSearch,
-  draftQuery,
-  deleteDraft,
-  navigate,
-  locationPathname,
-  downloadResume,
-  hasLlmKey,
-  consultation,
-  showResumeDraftModal,
-  setShowResumeDraftModal,
-  wizardSnapshot,
-  setWizardSnapshot,
-}: {
-  applicantId: string
-  overview: ReturnType<typeof useOverviewData>
-  deleteJobSearch: ReturnType<typeof useDeleteJobSearch>
-  draftQuery: ReturnType<typeof useJobSearchDraft>
-  deleteDraft: ReturnType<typeof useDeleteJobSearchDraft>
-  navigate: ReturnType<typeof useNavigate>
-  locationPathname: string
-  downloadResume: ReturnType<typeof useDownloadResume>
-  hasLlmKey: boolean
-  consultation: ReturnType<typeof useConsultationFlow>
-  showResumeDraftModal: boolean
-  setShowResumeDraftModal: (value: boolean) => void
-  wizardSnapshot?: JobSearchEditorSnapshot
-  setWizardSnapshot: (snapshot: JobSearchEditorSnapshot | undefined) => void
-}) {
-  const openFreshWizard = (searchTerm: string) => {
-    const snapshot = createDefaultJobSearchEditorSnapshot()
-    snapshot.params.searchTerm = searchTerm
-    setWizardSnapshot(snapshot)
-  }
-  const closePrompt = closeDraftPrompt(setShowResumeDraftModal)
 
   return (
     <div className="space-y-4">
@@ -121,15 +47,7 @@ function ApplicantOverviewContent({
         items={overview.jobSearchItems}
         isLoading={overview.jobSearchesLoading}
         onCreateSubmit={async () => {}}
-        onCreateClick={async () => {
-          const result = await draftQuery.refetch()
-          const draft = result.data?.draft
-          if (draft?.meaningful) {
-            setShowResumeDraftModal(true)
-            return
-          }
-          openFreshWizard("")
-        }}
+        onCreateClick={() => navigate(`/applicants/${id}/job-searches/new`)}
         createError={undefined}
         onDelete={(item) => {
           if (confirm(`Jobsuche "${item.label}" löschen?`)) {
@@ -144,7 +62,7 @@ function ApplicantOverviewContent({
             onConsult={consultation.handleConsult}
             isPending={consultation.consultSearches.isPending}
             hasLlmKey={hasLlmKey}
-            returnTo={locationPathname}
+            returnTo={location.pathname}
           />
         }
       />
@@ -158,40 +76,6 @@ function ApplicantOverviewContent({
         onCreateSelected={consultation.handleCreateSelected}
         isCreating={consultation.isCreatingSuggestions}
       />
-
-      <JobSearchResumeDraftModal
-        open={showResumeDraftModal}
-        onResume={() => {
-          resumeDraftSnapshot({
-            draft: draftQuery.data?.draft,
-            openSnapshot: setWizardSnapshot,
-            closePrompt,
-          })
-        }}
-        onDiscardAndStartOver={() => {
-          discardDraftAndOpen({
-            deleteDraft: () => deleteDraft.mutateAsync(),
-            openFresh: () => openFreshWizard(""),
-            closePrompt,
-          })
-        }}
-        onCancel={closePrompt}
-      />
-
-      {wizardSnapshot && (
-        <JobSearchWizardModal
-          open={true}
-          applicantId={applicantId}
-          initialSnapshot={wizardSnapshot}
-          onClose={() => setWizardSnapshot(undefined)}
-          onFinished={(jobSearchId) => {
-            setWizardSnapshot(undefined)
-            void navigate(`/job-searches/${jobSearchId}/vacancies`, {
-              state: { startInitialUpdate: true },
-            })
-          }}
-        />
-      )}
     </div>
   )
 }

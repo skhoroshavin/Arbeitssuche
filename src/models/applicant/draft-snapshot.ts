@@ -17,7 +17,7 @@ export function createDefaultApplicantDraftSnapshot(): ApplicantDraftSnapshot {
 export function isMeaningfulApplicantDraftSnapshot(
   snapshot: ApplicantDraftSnapshot,
 ): boolean {
-  const resolved = resolveApplicantDraftSnapshot(snapshot)
+  const resolved = resolveApplicant(snapshot)
   const checks = [
     hasMeaningfulPersonal(resolved),
     hasMeaningfulExperience(resolved.experience),
@@ -28,12 +28,6 @@ export function isMeaningfulApplicantDraftSnapshot(
     hasMeaningfulNotes(resolved.personalNotes),
   ]
   return checks.some(Boolean)
-}
-
-export function resolveApplicantDraftSnapshot(
-  snapshot: ApplicantDraftSnapshot,
-): ApplicantDraftSnapshot {
-  return resolveApplicant(snapshot)
 }
 
 function hasMeaningfulPersonal(applicant: Applicant): boolean {

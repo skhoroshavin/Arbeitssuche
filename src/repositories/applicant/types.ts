@@ -4,10 +4,9 @@ import type {
   ApplicantDraftSnapshot,
   ApplicantInfo,
 } from "@/models/applicant/types.js"
-import {
-  resolveApplicant,
-  resolveApplicantDraftSnapshot,
-} from "@/models/applicant/index.js"
+
+import { resolveApplicant } from "@/models/applicant/index.js"
+
 import { createUniqueDerivedId } from "@/utils/node/index.js"
 
 export interface ApplicantRepository {
@@ -23,14 +22,31 @@ export interface ApplicantRepository {
   finalizeDraft(): string
 }
 
-export function finalizeApplicantDraftData({
-  snapshot,
+export function loadFinalizedApplicantDraft<TDraft>({
+  draft,
+  getSnapshot,
   exists,
+  persist,
+  clearDraft,
 }: {
-  snapshot: ApplicantDraftSnapshot
+  draft: TDraft | undefined
+  getSnapshot: (draft: TDraft) => ApplicantDraftSnapshot
   exists: (candidate: string) => boolean
-}): { id: string; data: Applicant } {
-  const resolvedSnapshot = resolveApplicantDraftSnapshot(snapshot)
+  persist: (result: { id: string; data: Applicant }) => void
+  clearDraft: () => void
+}): string {
+  if (!draft) throw new Error("Applicant draft not found")
+  const finalized = finalizeApplicantDraftData(getSnapshot(draft), exists)
+  persist(finalized)
+  clearDraft()
+  return finalized.id
+}
+
+function finalizeApplicantDraftData(
+  snapshot: ApplicantDraftSnapshot,
+  exists: (candidate: string) => boolean,
+): { id: string; data: Applicant } {
+  const resolvedSnapshot = resolveApplicant(snapshot)
   const name = resolveDraftApplicantName(resolvedSnapshot)
   const id = createUniqueDerivedId(name, exists)
   return {

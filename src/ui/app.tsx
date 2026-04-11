@@ -9,11 +9,13 @@ import {
   ApplicantEditEducation,
   ApplicantEditCertifications,
   ApplicantEditOther,
+  ApplicantWizardPage,
   JobSearchLayout,
   JobSearchConfig,
   JobSearchCoverLetter,
   JobSearchVacancyList,
   JobSearchVacancyDetail,
+  JobSearchWizardPage,
   SettingsLayout,
   SettingsAI,
   SettingsMaps,
@@ -50,6 +52,11 @@ export default function App() {
           element={<JobSearchVacancyDetail />}
         />
       </Route>
+      <Route path="/applicants/new" element={<ApplicantWizardPage />} />
+      <Route
+        path="/applicants/:applicantId/job-searches/new"
+        element={<JobSearchWizardPage />}
+      />
     </Routes>
   )
 }

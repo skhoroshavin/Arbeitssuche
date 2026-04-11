@@ -4,5 +4,4 @@ export { DEFAULT_APPLICANT, RESUME_TEMPLATES } from "./constants.js"
 export {
   createDefaultApplicantDraftSnapshot,
   isMeaningfulApplicantDraftSnapshot,
-  resolveApplicantDraftSnapshot,
 } from "./draft-snapshot.js"

@@ -19,7 +19,10 @@ export class ApplicantListPage {
     this.newApplicantButton = page.getByRole("button", {
       name: "Neuer Bewerber",
     })
-    this.wizardTitle = page.getByText("Schritt 1 von 5: Persönlich")
+    this.wizardTitle = page.getByRole("heading", {
+      name: "Persönlich",
+      level: 1,
+    })
     this.wizardContinueButton = page.getByRole("button", { name: "Weiter" })
     this.wizardFinishButton = page.getByRole("button", {
       name: "Fertigstellen",
@@ -44,10 +47,11 @@ export class ApplicantListPage {
 
   async openCreateForm() {
     await this.newApplicantButton.click()
+    await expect(this.wizardCancelButton).toBeVisible()
   }
 
   async createApplicant(name: string) {
-    await this.openWizard()
+    await this.openCreateForm()
     await this.page.getByLabel("Name").fill(name)
     await this.advanceWizardToLastStep()
     await this.wizardFinishButton.click()
@@ -60,10 +64,10 @@ export class ApplicantListPage {
   }
 
   async advanceWizardToLastStep() {
-    for (const step of [2, 3, 4, 5] as const) {
+    for (const heading of APPLICANT_WIZARD_STEP_HEADINGS.slice(1)) {
       await this.wizardContinueButton.click()
       await expect(
-        this.page.getByText(`Schritt ${step} von 5`, { exact: false }),
+        this.page.getByRole("heading", { name: heading, level: 1 }),
       ).toBeVisible()
     }
   }
@@ -74,3 +78,11 @@ export class ApplicantListPage {
     return url.split("/applicants/")[1]?.split("/")[0] ?? ""
   }
 }
+
+const APPLICANT_WIZARD_STEP_HEADINGS = [
+  "Persönlich",
+  "Berufserfahrung",
+  "Ausbildung",
+  "Zertifikate",
+  "Sonstiges",
+] as const

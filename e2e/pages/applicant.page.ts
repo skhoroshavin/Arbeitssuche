@@ -34,19 +34,17 @@ export class ApplicantPage {
     this.savedStatus = page.getByText("Gespeichert", { exact: true })
     this.unsavedStatus = page.getByText("Ungespeicherte Änderungen")
     this.jobSearchHeading = page.getByRole("heading", { name: "Jobsuchen" })
-    this.wizardStepOneHeading = page.getByText(
-      "Schritt 1 von 5: Suchkonfiguration",
-    )
-    this.wizardStepTwoHeading = page.getByText(
-      "Schritt 2 von 5: Suchkonfiguration",
-    )
-    this.wizardStepThreeHeading = page.getByText(
-      "Schritt 3 von 5: Suchkonfiguration",
-    )
-    this.wizardStepFourHeading = page.getByText(
-      "Schritt 4 von 5: Suchkonfiguration",
-    )
-    this.wizardStepFiveHeading = page.getByText("Schritt 5 von 5: Anschreiben")
+    this.wizardStepOneHeading = page.getByRole("heading", {
+      name: "Suchparameter",
+    })
+    this.wizardStepTwoHeading = page.getByRole("heading", { name: "Suchmodus" })
+    this.wizardStepThreeHeading = page.getByRole("heading", {
+      name: /Jobboersen/,
+    })
+    this.wizardStepFourHeading = page.getByRole("heading", {
+      name: "Praferenzen",
+    })
+    this.wizardStepFiveHeading = page.getByLabel("Anschreiben")
     this.wizardContinueButton = page.getByRole("button", { name: "Weiter" })
     this.wizardFinishButton = page.getByRole("button", {
       name: "Fertigstellen",
@@ -115,11 +113,11 @@ export class ApplicantPage {
   }
 
   wizardStepHeading(step: 1 | 2 | 3 | 4 | 5): Locator {
-    const headingText =
-      step === 5
-        ? "Schritt 5 von 5: Anschreiben"
-        : `Schritt ${step} von 5: Suchkonfiguration`
-    return this.page.getByText(headingText)
+    if (step === 1) return this.wizardStepOneHeading
+    if (step === 2) return this.wizardStepTwoHeading
+    if (step === 3) return this.wizardStepThreeHeading
+    if (step === 4) return this.wizardStepFourHeading
+    return this.wizardStepFiveHeading
   }
 
   async openWizard() {
@@ -128,7 +126,7 @@ export class ApplicantPage {
   }
 
   async advanceWizardToCoverLetter() {
-    for (const step of [2, 3, 4, 5] as const) {
+    for (const step of JOB_SEARCH_WIZARD_STEPS.slice(1)) {
       await this.wizardContinueButton.click()
       await expect(this.wizardStepHeading(step)).toBeVisible()
     }
@@ -153,3 +151,5 @@ export class ApplicantPage {
     await this.templateButton(name).click()
   }
 }
+
+const JOB_SEARCH_WIZARD_STEPS = [1, 2, 3, 4, 5] as const

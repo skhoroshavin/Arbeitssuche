@@ -4,22 +4,18 @@ import {
   createDefaultApplicantDraftSnapshot,
   isMeaningfulApplicantDraftSnapshot,
 } from "@/models/applicant"
-import {
-  canFinalizeApplicantWizard,
-  createFreshApplicantWizardSnapshot,
-} from "./wizard-modal"
+import { canFinalizeApplicantWizard } from "./wizard"
 
 describe("Applicant wizard state", () => {
   it("starts from a blank non-meaningful draft", () => {
-    const snapshot = createFreshApplicantWizardSnapshot()
+    const snapshot = createDefaultApplicantDraftSnapshot()
 
-    expect(snapshot).toEqual(createDefaultApplicantDraftSnapshot())
     expect(isMeaningfulApplicantDraftSnapshot(snapshot)).toBe(false)
     expect(canFinalizeApplicantWizard(snapshot)).toBe(false)
   })
 
   it("treats typed name as meaningful and finalizable", () => {
-    const snapshot = createFreshApplicantWizardSnapshot()
+    const snapshot = createDefaultApplicantDraftSnapshot()
     snapshot.personal.name = "Ada Lovelace"
 
     expect(isMeaningfulApplicantDraftSnapshot(snapshot)).toBe(true)
@@ -27,7 +23,7 @@ describe("Applicant wizard state", () => {
   })
 
   it("treats non-default nested data as meaningful", () => {
-    const snapshot = createFreshApplicantWizardSnapshot()
+    const snapshot = createDefaultApplicantDraftSnapshot()
     snapshot.education.push({ institution: "TU Berlin", course: "Informatik" })
 
     expect(isMeaningfulApplicantDraftSnapshot(snapshot)).toBe(true)
