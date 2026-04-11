@@ -1,4 +1,10 @@
-## ADDED Requirements
+# concurrent-enrichment Specification
+
+## Purpose
+
+Defines queue concurrency, scan-time parallelism, and eligibility rules for vacancy enrichment work.
+
+## Requirements
 
 ### Requirement: EnrichQueue runs enrichments with bounded concurrency
 

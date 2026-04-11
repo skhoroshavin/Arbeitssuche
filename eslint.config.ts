@@ -85,12 +85,20 @@ export default tseslint.config(
           "ui/data": {
             imports: ["models", "models/*"],
           },
+          "ui/views": {
+            imports: ["ui/components", "models", "models/*"],
+          },
+          "ui/views/*": {
+            imports: ["ui/views", "ui/components", "models", "models/*"],
+          },
           "ui/pages/*": {
             imports: [
               "ui/hooks",
               "ui/components",
               "ui/layout",
               "ui/data",
+              "ui/views",
+              "ui/views/*",
               "models",
               "models/*",
               "utils",

@@ -6,6 +6,7 @@ export function useAutoSave<T extends FieldValues>({
   control,
   onSave,
   debounceMs = 1000,
+  shouldFlushOnUnmount,
 }: UseAutoSaveOptions<T>): {
   status: AutoSaveStatus
   resetBaseline: () => void
@@ -17,9 +18,11 @@ export function useAutoSave<T extends FieldValues>({
     undefined,
   )
   const onSaveReference = useRef(onSave)
+  const shouldFlushOnUnmountReference = useRef(shouldFlushOnUnmount)
   const [status, setStatus] = useState<AutoSaveStatus>("idle")
 
   onSaveReference.current = onSave
+  shouldFlushOnUnmountReference.current = shouldFlushOnUnmount
 
   const resetBaseline = useCallback(() => {
     pendingBaselineReference.current = true
@@ -76,6 +79,9 @@ export function useAutoSave<T extends FieldValues>({
   valuesReference.current = values
   useEffect(() => {
     return () => {
+      if (shouldFlushOnUnmountReference.current?.() === false) {
+        return
+      }
       if (timerReference.current) {
         clearTimeout(timerReference.current)
         timerReference.current = undefined
@@ -98,4 +104,5 @@ interface UseAutoSaveOptions<T extends FieldValues> {
   control: Control<T>
   onSave: (data: T) => Promise<unknown>
   debounceMs?: number
+  shouldFlushOnUnmount?: () => boolean
 }

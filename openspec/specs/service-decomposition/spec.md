@@ -1,4 +1,10 @@
-## ADDED Requirements
+# service-decomposition Specification
+
+## Purpose
+
+Defines the service boundaries and orchestration contract for vacancy scanning, including crawler, processor, enricher, and scanner responsibilities.
+
+## Requirements
 
 ### Requirement: SiteCrawler service fetches vacancy details from job sites
 
@@ -108,7 +114,7 @@ The `vacancy-scanner` service SHALL compose `SiteCrawler`, `VacancyProcessor`, `
 #### Scenario: Scanner is thin orchestrator
 
 - **WHEN** the scanner is implemented
-- **THEN** it SHALL contain no crawling, processing, or enrichment logic — only composition and coordination of the three services plus the enrich queue
+- **THEN** it SHALL contain no crawling, processing, or enrichment logic, only composition and coordination of the three services plus the enrich queue
 
 ### Requirement: JobSearchCriteria domain type in models
 

@@ -1,4 +1,10 @@
-## ADDED Requirements
+# enrichment-state Specification
+
+## Purpose
+
+Defines how vacancy enrichment state is modeled, derived for UI display, and used for recovery after interrupted enrichment.
+
+## Requirements
 
 ### Requirement: Vacancy model tracks enrichment state with two booleans
 

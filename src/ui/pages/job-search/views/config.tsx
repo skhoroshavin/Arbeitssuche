@@ -1,18 +1,18 @@
 import { useParams } from "react-router"
+import type { UseFormSetValue } from "react-hook-form"
 import { useJobSearch, useUpdateJobSearch, useSiteListView } from "@/ui/data"
 import { useAutoSaveForm } from "@/ui/hooks"
+import { mapPersistedJobSearchToSnapshot } from "@/models/job-search"
 import type { SearchMode } from "@/models/job-search/types"
-import {
-  Card,
-  SectionHeader,
-  PageHeader,
-  Input,
-  Textarea,
-  Loading,
-} from "@/ui/components"
+import { PageHeader, Loading } from "@/ui/components"
 import { useAutoSaveHeader } from "@/ui/layout"
-import { SiteToggle } from "@/ui/pages/job-search/components"
-import { SearchModeToggle } from "@/ui/pages/job-search/components"
+import {
+  JobSearchSearchConfigView,
+  splitLines,
+  stringifyOptionalNumber,
+} from "@/ui/views"
+import type { JobSearch } from "@/models/job-search/types"
+import type { JobSearchEditorConfigValue } from "@/ui/views"
 
 export default function JobSearchConfig() {
   const { id = "" } = useParams<{ id: string }>()
@@ -20,43 +20,13 @@ export default function JobSearchConfig() {
   const update = useUpdateJobSearch(id)
   const sitesQuery = useSiteListView()
 
-  const { register, setValue, watch, saveStatus } = useAutoSaveForm({
+  const { setValue, watch, saveStatus } = useAutoSaveForm({
     queryResult: { data, isLoading },
     formOptions: { defaultValues: DEFAULT_FORM_VALUES },
-    toFormValues: (d): ConfigFormValues => ({
-      searchTerm: d.params.searchTerm,
-      radiusKm: d.params.radiusKm,
-      searchMode: d.params.searchMode,
-      sources: d.params.sources,
-      maxResults: d.params.maxResults?.toString() ?? "",
-      maxDistanceKm: d.preferences.maxDistanceKm?.toString() ?? "",
-      maxCommuteMinutes: d.preferences.maxCommuteMinutes?.toString() ?? "",
-      freeText: d.preferences.freeText.join("\n"),
-    }),
+    toFormValues: toConfigFormValues,
     onSave: async (form: ConfigFormValues) => {
       if (!data) throw new Error("Job search data not loaded")
-      await update.mutateAsync({
-        ...data,
-        params: {
-          searchTerm: form.searchTerm,
-          radiusKm: Number(form.radiusKm),
-          searchMode: form.searchMode,
-          sources: form.sources,
-          maxResults: form.maxResults ? Number(form.maxResults) : undefined,
-        },
-        preferences: {
-          maxDistanceKm: form.maxDistanceKm
-            ? Number(form.maxDistanceKm)
-            : undefined,
-          maxCommuteMinutes: form.maxCommuteMinutes
-            ? Number(form.maxCommuteMinutes)
-            : undefined,
-          freeText: form.freeText
-            .split("\n")
-            .map((l) => l.trim())
-            .filter(Boolean),
-        },
-      })
+      await update.mutateAsync(fromConfigFormValues(data, form))
     },
   })
 
@@ -73,69 +43,11 @@ export default function JobSearchConfig() {
   return (
     <div className="space-y-4">
       <PageHeader title="Suchkonfiguration" />
-
-      <Card className="p-4 space-y-3">
-        <SectionHeader>Suchparameter</SectionHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="Suchbegriff" {...register("searchTerm")} />
-          <Input label="Radius (km)" type="number" {...register("radiusKm")} />
-          <Input
-            label="Max. Ergebnisse"
-            type="number"
-            placeholder="Unbegrenzt"
-            {...register("maxResults")}
-          />
-        </div>
-      </Card>
-
-      <Card className="p-4 space-y-3">
-        <SectionHeader>Suchmodus</SectionHeader>
-        <SearchModeToggle
-          selectedMode={selectedMode}
-          onChange={(mode) =>
-            setValue("searchMode", mode, { shouldDirty: true })
-          }
-        />
-      </Card>
-
-      <Card className="p-4 space-y-3">
-        <SectionHeader>
-          Jobbörsen{" "}
-          <span className="text-gray-400 dark:text-gray-500 font-normal text-sm">
-            (leer = alle)
-          </span>
-        </SectionHeader>
-        <SiteToggle
-          allSites={allSites}
-          selectedSites={selectedSites}
-          onChange={(sites) =>
-            setValue("sources", sites, { shouldDirty: true })
-          }
-        />
-      </Card>
-
-      <Card className="p-4 space-y-3">
-        <SectionHeader>Präferenzen</SectionHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            label="Max. Entfernung (km)"
-            type="number"
-            placeholder="Kein Limit"
-            {...register("maxDistanceKm")}
-          />
-          <Input
-            label="Max. Fahrtzeit (Min.)"
-            type="number"
-            placeholder="Kein Limit"
-            {...register("maxCommuteMinutes")}
-          />
-        </div>
-        <Textarea
-          label="Freitextkriterien (eine pro Zeile)"
-          rows={4}
-          {...register("freeText")}
-        />
-      </Card>
+      <JobSearchSearchConfigView
+        allSites={allSites}
+        value={toEditorConfigValue(watch(), selectedMode, selectedSites)}
+        onUpdate={(value) => applyEditorConfigValue(setValue, value)}
+      />
     </div>
   )
 }
@@ -160,4 +72,84 @@ interface ConfigFormValues {
   maxDistanceKm: string
   maxCommuteMinutes: string
   freeText: string
+}
+
+function toConfigFormValues(jobSearch: JobSearch): ConfigFormValues {
+  const snapshot = mapPersistedJobSearchToSnapshot(jobSearch, "")
+  return {
+    searchTerm: snapshot.params.searchTerm,
+    radiusKm: snapshot.params.radiusKm,
+    searchMode: snapshot.params.searchMode,
+    sources: snapshot.params.sources,
+    maxResults: snapshot.params.maxResults?.toString() ?? "",
+    maxDistanceKm: snapshot.preferences.maxDistanceKm?.toString() ?? "",
+    maxCommuteMinutes: snapshot.preferences.maxCommuteMinutes?.toString() ?? "",
+    freeText: snapshot.preferences.freeText.join("\n"),
+  }
+}
+
+function fromConfigFormValues(
+  jobSearch: JobSearch,
+  form: ConfigFormValues,
+): JobSearch {
+  return {
+    ...jobSearch,
+    params: {
+      searchTerm: form.searchTerm,
+      radiusKm: Number(form.radiusKm),
+      searchMode: form.searchMode,
+      sources: form.sources,
+      maxResults: parseOptionalNumber(form.maxResults),
+    },
+    preferences: {
+      maxDistanceKm: parseOptionalNumber(form.maxDistanceKm),
+      maxCommuteMinutes: parseOptionalNumber(form.maxCommuteMinutes),
+      freeText: splitLines(form.freeText),
+    },
+  }
+}
+
+function toEditorConfigValue(
+  form: ConfigFormValues,
+  selectedMode: SearchMode,
+  selectedSites: string[],
+): JobSearchEditorConfigValue {
+  return {
+    searchTerm: form.searchTerm,
+    radiusKm: Number(form.radiusKm),
+    searchMode: selectedMode,
+    sources: selectedSites,
+    maxResults: parseOptionalNumber(form.maxResults),
+    maxDistanceKm: parseOptionalNumber(form.maxDistanceKm),
+    maxCommuteMinutes: parseOptionalNumber(form.maxCommuteMinutes),
+    freeText: splitLines(form.freeText),
+  }
+}
+
+function applyEditorConfigValue(
+  setValue: UseFormSetValue<ConfigFormValues>,
+  value: JobSearchEditorConfigValue,
+): void {
+  setValue("searchTerm", value.searchTerm, { shouldDirty: true })
+  setValue("radiusKm", value.radiusKm, { shouldDirty: true })
+  setValue("searchMode", value.searchMode, { shouldDirty: true })
+  setValue("sources", value.sources, { shouldDirty: true })
+  setValue("maxResults", stringifyOptionalNumber(value.maxResults), {
+    shouldDirty: true,
+  })
+  setValue("maxDistanceKm", stringifyOptionalNumber(value.maxDistanceKm), {
+    shouldDirty: true,
+  })
+  setValue(
+    "maxCommuteMinutes",
+    stringifyOptionalNumber(value.maxCommuteMinutes),
+    {
+      shouldDirty: true,
+    },
+  )
+  setValue("freeText", value.freeText.join("\n"), { shouldDirty: true })
+}
+
+function parseOptionalNumber(value: string): number | undefined {
+  return value ? Number(value) : undefined
 }

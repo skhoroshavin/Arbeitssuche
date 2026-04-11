@@ -61,15 +61,6 @@ export function useDeleteApplicant() {
   })
 }
 
-export function useConsultSearches(applicantId: string) {
-  return useMutation({
-    mutationFn: async () =>
-      typia.assert<{ suggestions: ConsultationSuggestion[] }>(
-        await api().invoke("applicants:consult-searches", applicantId),
-      ),
-  })
-}
-
 export function useDownloadResume(id: string, applicantName: string) {
   return useMutation({
     mutationFn: async (template: ResumeTemplate) => {
@@ -92,6 +83,25 @@ export function useDownloadResume(id: string, applicantName: string) {
 }
 
 const EMPTY_APPLICANTS: ApplicantInfo[] = []
+
+export function useConsultSearchesView(applicantId: string) {
+  const mutation = useConsultSearches(applicantId)
+  return {
+    ...mutation,
+    suggestions: mutation.data?.suggestions ?? EMPTY_CONSULTATION_SUGGESTIONS,
+  }
+}
+
+const EMPTY_CONSULTATION_SUGGESTIONS: ConsultationSuggestion[] = []
+
+function useConsultSearches(applicantId: string) {
+  return useMutation({
+    mutationFn: async () =>
+      typia.assert<{ suggestions: ConsultationSuggestion[] }>(
+        await api().invoke("applicants:consult-searches", applicantId),
+      ),
+  })
+}
 
 function useApplicants() {
   return useQuery({

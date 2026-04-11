@@ -79,7 +79,7 @@ function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
   const qs = new URLSearchParams()
   if (criteria.query) qs.set("keywords", criteria.query)
   qs.set("location", criteria.location)
-  qs.set("radius", String(criteria.radiusKm ?? 30))
+  qs.set("radius", String(criteria.radiusKm))
   const pageNumber = Number(pageId ?? "1")
   if (pageNumber > 1) qs.set("page", String(pageNumber))
   const cl = modeToCareerLevel(criteria.mode)

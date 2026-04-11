@@ -1,7 +1,7 @@
 export interface SearchCriteria {
   location: string
   query: string
-  radiusKm?: number
+  radiusKm: number
   mode: SearchMode
 }
 

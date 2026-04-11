@@ -1,4 +1,10 @@
-## ADDED Requirements
+# enrichment-progress Specification
+
+## Purpose
+
+Defines global progress reporting for crawl and enrichment phases, including abort behavior and progress event shape.
+
+## Requirements
 
 ### Requirement: Global progress indicator in AppLayout
 
@@ -17,7 +23,7 @@ A persistent progress indicator SHALL be rendered in `AppLayout` (between the he
 #### Scenario: Enrichment in progress after crawl
 
 - **WHEN** the crawl has finished but enrichment tasks are still running
-- **THEN** the indicator SHALL show the "enriching" phase label with progress (e.g., "Enriching 12/47")
+- **THEN** the indicator SHALL show the "enriching" phase label with progress (for example, "Enriching 12/47")
 
 #### Scenario: All work complete
 
@@ -50,7 +56,7 @@ The global progress indicator SHALL include an abort button that stops all activ
 
 ### Requirement: ProgressEvent extended with enrichment data
 
-`ProgressEvent` SHALL include an optional `enrichProgress` field with `completed` and `total` counts, and the `phase` field SHALL support "enrich" as a value.
+`ProgressEvent` SHALL include an optional `enrichProgress` field with `completed` and `total` counts, and the `phase` field SHALL support `"enrich"` as a value.
 
 #### Scenario: Enrichment progress events emitted
 

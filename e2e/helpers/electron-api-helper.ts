@@ -54,9 +54,18 @@ export class ElectronApiHelper {
         "job-searches:list",
         applicantId,
       )
-      for (const js of result.jobSearches) {
-        await (window as any).electronAPI.invoke("job-searches:delete", js.id)
-      }
+      await Promise.allSettled(
+        result.jobSearches.map(async (js: { id: string }) => {
+          await Promise.allSettled([
+            (window as any).electronAPI.invoke(
+              "job-searches:crawl:abort",
+              js.id,
+            ),
+            (window as any).electronAPI.invoke("vacancies:enrich:abort", js.id),
+          ])
+          await (window as any).electronAPI.invoke("job-searches:delete", js.id)
+        }),
+      )
     }, applicantId)
   }
 

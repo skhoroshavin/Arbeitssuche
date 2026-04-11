@@ -6,6 +6,7 @@ import type {
   JobSite,
   SearchCriteria,
 } from "@/plugins/job-site/types.js"
+import { joinNormalizedText } from "@/utils/index.js"
 
 export function createArbeitsagenturSite(
   browser: Browser,
@@ -87,7 +88,7 @@ function buildSearchApiUrl(criteria: SearchCriteria, pageId?: string): string {
   qs.set("wo", criteria.location)
   qs.set("angebotsart", modeToAngebotsart(criteria.mode))
   if (criteria.mode === "entry-level") qs.set("berufserfahrung", "BEL")
-  qs.set("umkreis", String(criteria.radiusKm ?? 25))
+  qs.set("umkreis", String(criteria.radiusKm))
   const pageNumber = Number(pageId ?? "1")
   qs.set("page", String(pageNumber))
   qs.set("size", "25")
@@ -104,27 +105,8 @@ function buildAddressFromLocations(
   if (!locations?.length) return undefined
   const addr = locations[0].adresse
   if (!addr) return undefined
-  const cityLine = formatAddressParts([addr.plz, addr.ort], " ")
-  return formatAddressParts([addr.strasse, cityLine])
-}
-
-function formatAddressParts(
-  parts: Array<null | string | undefined>,
-  separator = ", ",
-): string | undefined {
-  const normalizedParts = parts
-    .map((part) => normalizeOptionalText(part))
-    .filter((part): part is string => part !== undefined)
-  if (normalizedParts.length === 0) return undefined
-  return normalizedParts.join(separator)
-}
-
-function normalizeOptionalText(
-  value: null | string | undefined,
-): string | undefined {
-  const normalized = value?.trim()
-  if (!normalized || normalized === "null") return undefined
-  return normalized
+  const cityLine = joinNormalizedText([addr.plz, addr.ort], " ")
+  return joinNormalizedText([addr.strasse, cityLine])
 }
 
 function modeToAngebotsart(mode: string): string {

@@ -1,4 +1,10 @@
-## ADDED Requirements
+# re-enrichment Specification
+
+## Purpose
+
+Defines IPC and UI behavior for re-enriching a single vacancy, batch enrichment of pending vacancies, and abort behavior.
+
+## Requirements
 
 ### Requirement: Per-vacancy re-enrich via IPC
 

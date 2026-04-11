@@ -2,26 +2,114 @@ import { test, expect } from "../fixtures.js"
 
 test.describe("Job Search Flow", () => {
   let applicantId: string
-  let originalSecrets: Record<string, string>
 
   test.beforeEach(async ({ api }) => {
     applicantId = await api.createApplicant(`e2e-js-${Date.now()}`)
-    originalSecrets = await api.getSecrets()
   })
 
-  test.afterEach(async ({ api }) => {
-    await api.deleteJobSearchesForApplicant(applicantId)
-    await api.deleteApplicant(applicantId)
-    await api.saveSecrets(originalSecrets)
-  })
-
-  test("can create a job search under an applicant", async ({
+  test("new search opens wizard immediately without legacy name form", async ({
     applicantPage,
   }) => {
     await applicantPage.goto(applicantId)
-    await applicantPage.createJobSearch("e2e search term")
+    await applicantPage.openWizard()
+    await expect(applicantPage.searchTermInput).not.toBeVisible()
+  })
 
-    await expect(applicantPage.page.getByText("e2e search term")).toBeVisible()
+  test("wizard splits configuration into multiple steps and finishes", async ({
+    applicantPage,
+    jobSearchPage,
+  }) => {
+    await applicantPage.goto(applicantId)
+    await applicantPage.openWizard()
+    await applicantPage.field("Suchbegriff").fill("wizard finish")
+    await applicantPage.advanceWizardToCoverLetter()
+    await applicantPage.wizardFinishButton.click()
+
+    await expect(jobSearchPage.vacanciesHeading).toBeVisible()
+    await expect(applicantPage.page).toHaveURL(/\/job-searches\/.+\/vacancies/)
+  })
+
+  test("resume and discard prompts are shown for meaningful drafts", async ({
+    applicantPage,
+  }) => {
+    await applicantPage.goto(applicantId)
+    await applicantPage.newSearchButton.click()
+    await expect(applicantPage.wizardStepOneHeading).toBeVisible()
+    await applicantPage.field("Suchbegriff").fill("draft prompt edited")
+
+    await applicantPage.wizardCancelButton.click()
+    await expect(applicantPage.wizardKeepDraftButton).toBeVisible()
+    await applicantPage.wizardKeepDraftButton.click()
+
+    await applicantPage.newSearchButton.click()
+    await expect(applicantPage.resumeDraftDialogTitle).toBeVisible()
+    await applicantPage.discardDraftButton.click()
+    await expect(applicantPage.wizardStepOneHeading).toBeVisible()
+  })
+
+  test("finish starts update without statement-finalized errors", async ({
+    applicantPage,
+    page,
+  }) => {
+    const consoleErrors: string[] = []
+    page.on("console", (message) => {
+      if (message.type() === "error") {
+        consoleErrors.push(message.text())
+      }
+    })
+
+    await applicantPage.goto(applicantId)
+    await applicantPage.finishWizard("crawl smoke")
+
+    await expect(page).toHaveURL(/\/job-searches\/.+\/vacancies/)
+    await expect(
+      page.getByRole("button", { name: "Aktualisieren" }),
+    ).toBeVisible()
+    expect(
+      consoleErrors.filter((entry) =>
+        entry.includes("statement has been finalized"),
+      ),
+    ).toEqual([])
+  })
+
+  test("vacancy list breadcrumb links navigate to applicant and home", async ({
+    jobSearchPage,
+    api,
+    page,
+  }) => {
+    const jsId = await api.createJobSearch("breadcrumb nav", applicantId)
+    await jobSearchPage.gotoVacancies(jsId)
+
+    await page.getByRole("link", { name: /e2e-js-/ }).click()
+    await expect(page).toHaveURL(new RegExp(`/applicants/${applicantId}$`))
+
+    await page.goto(`/job-searches/${jsId}/vacancies`)
+    await page.getByLabel("Startseite").click()
+    await expect(page).toHaveURL(/\/$/)
+  })
+
+  test("wizard-created job search is visible after reload", async ({
+    applicantPage,
+    page,
+  }) => {
+    await applicantPage.goto(applicantId)
+    await applicantPage.finishWizard("persisted wizard search")
+
+    await page.goto(`/applicants/${applicantId}`)
+    await expect(page.getByText("persisted wizard search")).toBeVisible()
+    await page.reload()
+    await expect(page.getByText("persisted wizard search")).toBeVisible()
+  })
+
+  test("existing job search entries open vacancy list by default", async ({
+    applicantPage,
+    api,
+    page,
+  }) => {
+    await api.createJobSearch("existing redirect", applicantId)
+    await applicantPage.goto(applicantId)
+    await page.getByText("existing redirect").click()
+    await expect(page).toHaveURL(/\/job-searches\/.+\/vacancies/)
   })
 
   test("cover letter page has Generieren button that calls LLM", async ({

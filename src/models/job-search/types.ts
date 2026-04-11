@@ -13,6 +13,18 @@ export interface JobSearch {
   preferences: SearchPreferences
 }
 
+export interface JobSearchDraft {
+  applicantId: string
+  snapshot: JobSearchEditorSnapshot
+  meaningful: boolean
+}
+
+export interface JobSearchEditorSnapshot {
+  params: SearchParameters
+  preferences: SearchPreferences
+  coverLetterContent: string
+}
+
 export interface SearchParameters {
   searchTerm: string
   radiusKm: number

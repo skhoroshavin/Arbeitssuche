@@ -5,6 +5,7 @@ export const jobSearchQueryKeys = {
   list: (applicantId?: string) =>
     ["job-searches", applicantId ?? "all"] as const,
   detail: (id: string) => ["job-search", id] as const,
+  draft: (applicantId: string) => ["job-search-draft", applicantId] as const,
   coverLetter: (id: string) => ["job-search-cover-letter", id] as const,
   vacancyList: (id: string) => ["job-search-vacancies", id] as const,
   vacancyDetailRoot: (id: string) => ["job-search-vacancy", id] as const,
