@@ -41,19 +41,49 @@ export function mapSnapshotToPersistedJobSearch(
   }
 }
 
+export function resolveDraftJobSearchEditorSnapshot(
+  snapshot: JobSearchEditorSnapshot,
+): JobSearchEditorSnapshot {
+  return {
+    ...snapshot,
+    params: {
+      ...snapshot.params,
+      searchTerm: resolveDraftSearchTerm(snapshot.params.searchTerm),
+    },
+  }
+}
+
 export function isMeaningfulJobSearchEditorSnapshot(
   snapshot: JobSearchEditorSnapshot,
 ): boolean {
+  return (
+    hasMeaningfulParameters(snapshot.params) ||
+    hasMeaningfulPreferences(snapshot.preferences) ||
+    snapshot.coverLetterContent.trim().length > 0
+  )
+}
+
+function resolveDraftSearchTerm(searchTerm: string): string {
+  const normalizedSearchTerm = searchTerm.trim()
+  return normalizedSearchTerm.length > 0 ? normalizedSearchTerm : "Neue Suche"
+}
+
+function hasMeaningfulParameters(parameters: SearchParameters): boolean {
   const checks = [
-    snapshot.params.searchTerm.trim().length > 0,
-    snapshot.params.radiusKm !== DEFAULT_SEARCH_PARAMS.radiusKm,
-    snapshot.params.searchMode !== DEFAULT_SEARCH_PARAMS.searchMode,
-    snapshot.params.sources.length > 0,
-    snapshot.params.maxResults !== undefined,
-    snapshot.preferences.maxDistanceKm !== undefined,
-    snapshot.preferences.maxCommuteMinutes !== undefined,
-    snapshot.preferences.freeText.some((entry) => entry.trim().length > 0),
-    snapshot.coverLetterContent.trim().length > 0,
+    parameters.searchTerm.trim().length > 0,
+    parameters.radiusKm !== DEFAULT_SEARCH_PARAMS.radiusKm,
+    parameters.searchMode !== DEFAULT_SEARCH_PARAMS.searchMode,
+    parameters.sources.length > 0,
+    parameters.maxResults !== undefined,
+  ]
+  return checks.some(Boolean)
+}
+
+function hasMeaningfulPreferences(preferences: SearchPreferences): boolean {
+  const checks = [
+    preferences.maxDistanceKm !== undefined,
+    preferences.maxCommuteMinutes !== undefined,
+    preferences.freeText.some((entry) => entry.trim().length > 0),
   ]
   return checks.some(Boolean)
 }

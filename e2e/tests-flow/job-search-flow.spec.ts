@@ -11,9 +11,7 @@ test.describe("Job Search Flow", () => {
     applicantPage,
   }) => {
     await applicantPage.goto(applicantId)
-    await applicantPage.newSearchButton.click()
-
-    await expect(applicantPage.wizardStepOneHeading).toBeVisible()
+    await applicantPage.openWizard()
     await expect(applicantPage.searchTermInput).not.toBeVisible()
   })
 
@@ -22,18 +20,9 @@ test.describe("Job Search Flow", () => {
     jobSearchPage,
   }) => {
     await applicantPage.goto(applicantId)
-    await applicantPage.newSearchButton.click()
-
-    await expect(applicantPage.wizardStepOneHeading).toBeVisible()
+    await applicantPage.openWizard()
     await applicantPage.field("Suchbegriff").fill("wizard finish")
-    await applicantPage.wizardContinueButton.click()
-    await expect(applicantPage.wizardStepTwoHeading).toBeVisible()
-    await applicantPage.wizardContinueButton.click()
-    await expect(applicantPage.wizardStepThreeHeading).toBeVisible()
-    await applicantPage.wizardContinueButton.click()
-    await expect(applicantPage.wizardStepFourHeading).toBeVisible()
-    await applicantPage.wizardContinueButton.click()
-    await expect(applicantPage.wizardStepFiveHeading).toBeVisible()
+    await applicantPage.advanceWizardToCoverLetter()
     await applicantPage.wizardFinishButton.click()
 
     await expect(jobSearchPage.vacanciesHeading).toBeVisible()
@@ -70,13 +59,7 @@ test.describe("Job Search Flow", () => {
     })
 
     await applicantPage.goto(applicantId)
-    await applicantPage.newSearchButton.click()
-    await applicantPage.field("Suchbegriff").fill("crawl smoke")
-    await applicantPage.wizardContinueButton.click()
-    await applicantPage.wizardContinueButton.click()
-    await applicantPage.wizardContinueButton.click()
-    await applicantPage.wizardContinueButton.click()
-    await applicantPage.wizardFinishButton.click()
+    await applicantPage.finishWizard("crawl smoke")
 
     await expect(page).toHaveURL(/\/job-searches\/.+\/vacancies/)
     await expect(
@@ -110,13 +93,7 @@ test.describe("Job Search Flow", () => {
     page,
   }) => {
     await applicantPage.goto(applicantId)
-    await applicantPage.newSearchButton.click()
-    await applicantPage.field("Suchbegriff").fill("persisted wizard search")
-    await applicantPage.wizardContinueButton.click()
-    await applicantPage.wizardContinueButton.click()
-    await applicantPage.wizardContinueButton.click()
-    await applicantPage.wizardContinueButton.click()
-    await applicantPage.wizardFinishButton.click()
+    await applicantPage.finishWizard("persisted wizard search")
 
     await page.goto(`/applicants/${applicantId}`)
     await expect(page.getByText("persisted wizard search")).toBeVisible()

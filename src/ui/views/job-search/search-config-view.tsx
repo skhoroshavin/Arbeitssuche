@@ -12,7 +12,7 @@ export function JobSearchSearchConfigView({
     <>
       {sections.map((section) => (
         <div key={section}>
-          {renderSection(section, value, allSites, onUpdate)}
+          {SECTION_RENDERERS[section](value, allSites, onUpdate)}
         </div>
       ))}
     </>
@@ -31,16 +31,6 @@ export type JobSearchConfigSection =
   | "mode"
   | "sources"
   | "preferences"
-
-function renderSection(
-  section: JobSearchConfigSection,
-  value: JobSearchEditorConfigValue,
-  allSites: SiteInfo[],
-  onUpdate: (value: JobSearchEditorConfigValue) => void,
-): JSX.Element {
-  const renderer = SECTION_RENDERERS[section]
-  return renderer(value, allSites, onUpdate)
-}
 
 const DEFAULT_SECTIONS: JobSearchConfigSection[] = [
   "parameters",
@@ -218,7 +208,7 @@ function renderPreferencesSection(
   )
 }
 
-function splitLines(value: string): string[] {
+export function splitLines(value: string): string[] {
   return value
     .split("\n")
     .map((line) => line.trim())
@@ -227,6 +217,10 @@ function splitLines(value: string): string[] {
 
 function parseOptionalNumber(value: string): number | undefined {
   return value.trim() ? Number(value) : undefined
+}
+
+export function stringifyOptionalNumber(value: number | undefined): string {
+  return value === undefined ? "" : value.toString()
 }
 
 function toggleSource(current: string[], site: string): string[] {

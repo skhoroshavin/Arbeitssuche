@@ -1,12 +1,18 @@
 import { useParams } from "react-router"
+import type { UseFormSetValue } from "react-hook-form"
 import { useJobSearch, useUpdateJobSearch, useSiteListView } from "@/ui/data"
 import { useAutoSaveForm } from "@/ui/hooks"
 import { mapPersistedJobSearchToSnapshot } from "@/models/job-search"
 import type { SearchMode } from "@/models/job-search/types"
 import { PageHeader, Loading } from "@/ui/components"
 import { useAutoSaveHeader } from "@/ui/layout"
-import { JobSearchSearchConfigView } from "@/ui/views"
+import {
+  JobSearchSearchConfigView,
+  splitLines,
+  stringifyOptionalNumber,
+} from "@/ui/views"
 import type { JobSearch } from "@/models/job-search/types"
+import type { JobSearchEditorConfigValue } from "@/ui/views"
 
 export default function JobSearchConfig() {
   const { id = "" } = useParams<{ id: string }>()
@@ -39,40 +45,8 @@ export default function JobSearchConfig() {
       <PageHeader title="Suchkonfiguration" />
       <JobSearchSearchConfigView
         allSites={allSites}
-        value={{
-          searchTerm: watch("searchTerm"),
-          radiusKm: Number(watch("radiusKm")),
-          searchMode: selectedMode,
-          sources: selectedSites,
-          maxResults: parseOptionalNumber(watch("maxResults")),
-          maxDistanceKm: parseOptionalNumber(watch("maxDistanceKm")),
-          maxCommuteMinutes: parseOptionalNumber(watch("maxCommuteMinutes")),
-          freeText: splitLines(watch("freeText")),
-        }}
-        onUpdate={(value) => {
-          setValue("searchTerm", value.searchTerm, { shouldDirty: true })
-          setValue("radiusKm", value.radiusKm, { shouldDirty: true })
-          setValue("searchMode", value.searchMode, { shouldDirty: true })
-          setValue("sources", value.sources, { shouldDirty: true })
-          setValue("maxResults", stringifyOptionalNumber(value.maxResults), {
-            shouldDirty: true,
-          })
-          setValue(
-            "maxDistanceKm",
-            stringifyOptionalNumber(value.maxDistanceKm),
-            {
-              shouldDirty: true,
-            },
-          )
-          setValue(
-            "maxCommuteMinutes",
-            stringifyOptionalNumber(value.maxCommuteMinutes),
-            {
-              shouldDirty: true,
-            },
-          )
-          setValue("freeText", value.freeText.join("\n"), { shouldDirty: true })
-        }}
+        value={toEditorConfigValue(watch(), selectedMode, selectedSites)}
+        onUpdate={(value) => applyEditorConfigValue(setValue, value)}
       />
     </div>
   )
@@ -135,17 +109,47 @@ function fromConfigFormValues(
   }
 }
 
-function splitLines(value: string): string[] {
-  return value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
+function toEditorConfigValue(
+  form: ConfigFormValues,
+  selectedMode: SearchMode,
+  selectedSites: string[],
+): JobSearchEditorConfigValue {
+  return {
+    searchTerm: form.searchTerm,
+    radiusKm: Number(form.radiusKm),
+    searchMode: selectedMode,
+    sources: selectedSites,
+    maxResults: parseOptionalNumber(form.maxResults),
+    maxDistanceKm: parseOptionalNumber(form.maxDistanceKm),
+    maxCommuteMinutes: parseOptionalNumber(form.maxCommuteMinutes),
+    freeText: splitLines(form.freeText),
+  }
+}
+
+function applyEditorConfigValue(
+  setValue: UseFormSetValue<ConfigFormValues>,
+  value: JobSearchEditorConfigValue,
+): void {
+  setValue("searchTerm", value.searchTerm, { shouldDirty: true })
+  setValue("radiusKm", value.radiusKm, { shouldDirty: true })
+  setValue("searchMode", value.searchMode, { shouldDirty: true })
+  setValue("sources", value.sources, { shouldDirty: true })
+  setValue("maxResults", stringifyOptionalNumber(value.maxResults), {
+    shouldDirty: true,
+  })
+  setValue("maxDistanceKm", stringifyOptionalNumber(value.maxDistanceKm), {
+    shouldDirty: true,
+  })
+  setValue(
+    "maxCommuteMinutes",
+    stringifyOptionalNumber(value.maxCommuteMinutes),
+    {
+      shouldDirty: true,
+    },
+  )
+  setValue("freeText", value.freeText.join("\n"), { shouldDirty: true })
 }
 
 function parseOptionalNumber(value: string): number | undefined {
   return value ? Number(value) : undefined
-}
-
-function stringifyOptionalNumber(value: number | undefined): string {
-  return value === undefined ? "" : value.toString()
 }

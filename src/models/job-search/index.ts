@@ -7,6 +7,7 @@ export {
 export { resolveJobSearch } from "./resolve.js"
 export {
   createDefaultJobSearchEditorSnapshot,
+  resolveDraftJobSearchEditorSnapshot,
   mapPersistedJobSearchToSnapshot,
   mapSnapshotToPersistedJobSearch,
   isMeaningfulJobSearchEditorSnapshot,

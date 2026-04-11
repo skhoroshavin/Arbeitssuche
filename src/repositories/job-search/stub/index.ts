@@ -3,6 +3,7 @@ import {
   DEFAULT_SEARCH_PARAMS,
   DEFAULT_PREFERENCES,
   mapSnapshotToPersistedJobSearch,
+  resolveDraftJobSearchEditorSnapshot,
 } from "@/models/job-search/index.js"
 import type {
   JobSearchDraft,
@@ -110,18 +111,16 @@ class StubJobSearchRepository implements JobSearchRepository {
     const draft = this.drafts.get(applicantId)
     if (!draft)
       throw new Error(`Draft for applicant "${applicantId}" not found`)
-    const searchTerm = draft.params.searchTerm.trim()
-    const resolvedSearchTerm = searchTerm.length > 0 ? searchTerm : "Neue Suche"
+    const resolvedSnapshot = resolveDraftJobSearchEditorSnapshot(draft)
+    const resolvedSearchTerm = resolvedSnapshot.params.searchTerm
     const id = createUniqueDerivedId(resolvedSearchTerm, (searchId) =>
       this.store.has(searchId),
     )
-    const jobSearch = mapSnapshotToPersistedJobSearch(id, applicantId, {
-      ...draft,
-      params: {
-        ...draft.params,
-        searchTerm: resolvedSearchTerm,
-      },
-    })
+    const jobSearch = mapSnapshotToPersistedJobSearch(
+      id,
+      applicantId,
+      resolvedSnapshot,
+    )
     this.store.set(id, {
       jobSearch,
       applicationCoverLetters: new Map([["", draft.coverLetterContent]]),

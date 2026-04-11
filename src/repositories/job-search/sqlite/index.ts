@@ -3,6 +3,7 @@ import {
   DEFAULT_PREFERENCES,
   isMeaningfulJobSearchEditorSnapshot,
   mapSnapshotToPersistedJobSearch,
+  resolveDraftJobSearchEditorSnapshot,
 } from "@/models/job-search/index.js"
 import type {
   JobSearchDraft,
@@ -151,19 +152,18 @@ class SqliteJobSearchRepository implements JobSearchRepository {
       const draft = this.loadDraft(applicantId)
       if (!draft)
         throw new Error(`Draft for applicant "${applicantId}" not found`)
-      const searchTerm = draft.snapshot.params.searchTerm.trim()
-      const resolvedSearchTerm =
-        searchTerm.length > 0 ? searchTerm : "Neue Suche"
+      const resolvedSnapshot = resolveDraftJobSearchEditorSnapshot(
+        draft.snapshot,
+      )
+      const resolvedSearchTerm = resolvedSnapshot.params.searchTerm
       const id = createUniqueDerivedId(resolvedSearchTerm, (searchId) =>
         this.exists(searchId),
       )
-      const jobSearch = mapSnapshotToPersistedJobSearch(id, applicantId, {
-        ...draft.snapshot,
-        params: {
-          ...draft.snapshot.params,
-          searchTerm: resolvedSearchTerm,
-        },
-      })
+      const jobSearch = mapSnapshotToPersistedJobSearch(
+        id,
+        applicantId,
+        resolvedSnapshot,
+      )
       this.insertStmt.run(
         id,
         applicantId,

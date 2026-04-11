@@ -108,14 +108,39 @@ export class ApplicantPage {
   }
 
   async createJobSearch(term: string) {
-    await this.newSearchButton.click()
+    await this.openWizard()
     if (term.length > 0) {
       await this.field("Suchbegriff").fill(term)
     }
   }
 
-  async createJobSearchViaEnter(term: string) {
-    await this.createJobSearch(term)
+  wizardStepHeading(step: 1 | 2 | 3 | 4 | 5): Locator {
+    const headingText =
+      step === 5
+        ? "Schritt 5 von 5: Anschreiben"
+        : `Schritt ${step} von 5: Suchkonfiguration`
+    return this.page.getByText(headingText)
+  }
+
+  async openWizard() {
+    await this.newSearchButton.click()
+    await expect(this.wizardStepHeading(1)).toBeVisible()
+  }
+
+  async advanceWizardToCoverLetter() {
+    for (const step of [2, 3, 4, 5] as const) {
+      await this.wizardContinueButton.click()
+      await expect(this.wizardStepHeading(step)).toBeVisible()
+    }
+  }
+
+  async finishWizard(searchTerm: string) {
+    await this.openWizard()
+    if (searchTerm.length > 0) {
+      await this.field("Suchbegriff").fill(searchTerm)
+    }
+    await this.advanceWizardToCoverLetter()
+    await this.wizardFinishButton.click()
   }
 
   async openAndDismissSearchForm(term: string) {

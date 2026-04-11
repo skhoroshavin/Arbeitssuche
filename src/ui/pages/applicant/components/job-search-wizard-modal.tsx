@@ -1,4 +1,5 @@
 import { useRef, useState } from "react"
+import type { UseFormSetValue } from "react-hook-form"
 import {
   Dialog,
   DialogBackdrop,
@@ -17,7 +18,10 @@ import {
 } from "@/ui/data"
 import { useAutoSaveForm } from "@/ui/hooks"
 import { JobSearchCoverLetterView, JobSearchSearchConfigView } from "@/ui/views"
-import type { JobSearchConfigSection } from "@/ui/views"
+import type {
+  JobSearchConfigSection,
+  JobSearchEditorConfigValue,
+} from "@/ui/views"
 
 export function JobSearchWizardModal({
   open,
@@ -137,26 +141,7 @@ export function JobSearchWizardModal({
                     maxCommuteMinutes: watch("maxCommuteMinutes"),
                     freeText: watch("freeText"),
                   }}
-                  onUpdate={(value) => {
-                    setValue("searchTerm", value.searchTerm, {
-                      shouldDirty: true,
-                    })
-                    setValue("radiusKm", value.radiusKm, { shouldDirty: true })
-                    setValue("searchMode", value.searchMode, {
-                      shouldDirty: true,
-                    })
-                    setValue("sources", value.sources, { shouldDirty: true })
-                    setValue("maxResults", value.maxResults, {
-                      shouldDirty: true,
-                    })
-                    setValue("maxDistanceKm", value.maxDistanceKm, {
-                      shouldDirty: true,
-                    })
-                    setValue("maxCommuteMinutes", value.maxCommuteMinutes, {
-                      shouldDirty: true,
-                    })
-                    setValue("freeText", value.freeText, { shouldDirty: true })
-                  }}
+                  onUpdate={(value) => applyWizardConfigValue(setValue, value)}
                 />
               </div>
             )}
@@ -362,3 +347,27 @@ const CONFIG_STEPS: JobSearchConfigSection[] = [
 ]
 
 const WIZARD_STEPS: WizardStep[] = [...CONFIG_STEPS, "cover-letter"]
+
+function applyWizardConfigValue(
+  setValue: UseFormSetValue<WizardFormValues>,
+  value: JobSearchEditorConfigValue,
+): void {
+  setValue("searchTerm", value.searchTerm, {
+    shouldDirty: true,
+  })
+  setValue("radiusKm", value.radiusKm, { shouldDirty: true })
+  setValue("searchMode", value.searchMode, {
+    shouldDirty: true,
+  })
+  setValue("sources", value.sources, { shouldDirty: true })
+  setValue("maxResults", value.maxResults, {
+    shouldDirty: true,
+  })
+  setValue("maxDistanceKm", value.maxDistanceKm, {
+    shouldDirty: true,
+  })
+  setValue("maxCommuteMinutes", value.maxCommuteMinutes, {
+    shouldDirty: true,
+  })
+  setValue("freeText", value.freeText, { shouldDirty: true })
+}
