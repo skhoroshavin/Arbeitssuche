@@ -1,13 +1,20 @@
 import {
-  type ApplicantPersonal,
   type Applicant,
+  type ApplicantDraft,
+  type ApplicantDraftSnapshot,
   type ApplicantInfo,
+  type ApplicantPersonal,
 } from "@/models/applicant/types.js"
 import {
   DEFAULT_APPLICANT,
+  isMeaningfulApplicantDraftSnapshot,
   resolveApplicant,
+  resolveApplicantDraftSnapshot,
 } from "@/models/applicant/index.js"
-import type { ApplicantRepository } from "@/repositories/applicant/types.js"
+import {
+  finalizeApplicantDraftData,
+  type ApplicantRepository,
+} from "@/repositories/applicant/types.js"
 import { createUniqueDerivedId } from "@/utils/node/index.js"
 
 export function createStubApplicantRepository(
@@ -28,10 +35,6 @@ class StubApplicantRepository implements ApplicantRepository {
     }))
   }
 
-  exists(id: string): boolean {
-    return this.store.has(id)
-  }
-
   load(id: string): Applicant {
     return resolveApplicant(structuredClone(this.getOrThrow(id)))
   }
@@ -42,7 +45,7 @@ class StubApplicantRepository implements ApplicantRepository {
   }
 
   create(name: string): string {
-    const id = createUniqueDerivedId(name, (id) => this.store.has(id))
+    const id = createUniqueDerivedId(name, (id) => this.exists(id))
     const personal: ApplicantPersonal = {
       ...DEFAULT_APPLICANT.personal,
       name,
@@ -56,6 +59,38 @@ class StubApplicantRepository implements ApplicantRepository {
     this.store.delete(id)
   }
 
+  loadDraft(): ApplicantDraft | undefined {
+    if (!this.draft) return undefined
+    return {
+      snapshot: structuredClone(this.draft),
+      meaningful: isMeaningfulApplicantDraftSnapshot(this.draft),
+    }
+  }
+
+  saveDraft(draft: ApplicantDraftSnapshot): void {
+    this.draft = resolveApplicantDraftSnapshot(structuredClone(draft))
+  }
+
+  finalizeDraft(): string {
+    const draft = this.draft
+    if (!draft) throw new Error("Applicant draft not found")
+    const { id, data } = finalizeApplicantDraftData({
+      snapshot: draft,
+      exists: (candidate) => this.exists(candidate),
+    })
+    this.store.set(id, data)
+    this.deleteDraft()
+    return id
+  }
+
+  exists(id: string): boolean {
+    return this.store.has(id)
+  }
+
+  deleteDraft(): void {
+    this.draft = undefined
+  }
+
   private getOrThrow(id: string): Applicant {
     const data = this.store.get(id)
     if (!data) throw new Error(`Applicant "${id}" not found`)
@@ -63,4 +98,5 @@ class StubApplicantRepository implements ApplicantRepository {
   }
 
   private readonly store: Map<string, Applicant>
+  private draft?: ApplicantDraftSnapshot
 }

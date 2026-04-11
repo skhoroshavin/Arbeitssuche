@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import type {
   Applicant,
+  ApplicantDraft,
+  ApplicantDraftSnapshot,
   ApplicantInfo,
   ResumeTemplate,
 } from "@/models/applicant/types"
@@ -33,13 +35,47 @@ export function useApplicant(id: string) {
   })
 }
 
-export function useCreateApplicant() {
+export function useApplicantDraft() {
+  return useQuery({
+    queryKey: ["applicant-draft"],
+    queryFn: async () =>
+      typia.assert<{ draft?: ApplicantDraft }>(
+        await api().invoke("applicants:draft:load"),
+      ),
+  })
+}
+
+export function useSaveApplicantDraft() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (body: { name: string }) =>
-      api().invoke("applicants:create", body.name),
+    mutationFn: (snapshot: ApplicantDraftSnapshot) =>
+      api().invoke("applicants:draft:save", snapshot),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["applicants"] }),
+      queryClient.invalidateQueries({ queryKey: ["applicant-draft"] }),
+  })
+}
+
+export function useDeleteApplicantDraft() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api().invoke("applicants:draft:delete"),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["applicant-draft"] }),
+  })
+}
+
+export function useFinalizeApplicantDraft() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () =>
+      typia.assert<{ id: string }>(
+        await api().invoke("applicants:draft:finalize"),
+      ),
+    onSuccess: async ({ id }) => {
+      await queryClient.invalidateQueries({ queryKey: ["applicant-draft"] })
+      await queryClient.invalidateQueries({ queryKey: ["applicants"] })
+      await queryClient.invalidateQueries({ queryKey: ["applicant", id] })
+    },
   })
 }
 

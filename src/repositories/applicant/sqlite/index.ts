@@ -1,13 +1,21 @@
+import type { StatementSync } from "node:sqlite"
 import {
-  type ApplicantPersonal,
   type Applicant,
+  type ApplicantDraft,
+  type ApplicantDraftSnapshot,
   type ApplicantInfo,
+  type ApplicantPersonal,
 } from "@/models/applicant/types.js"
 import {
   DEFAULT_APPLICANT,
+  isMeaningfulApplicantDraftSnapshot,
   resolveApplicant,
+  resolveApplicantDraftSnapshot,
 } from "@/models/applicant/index.js"
-import type { ApplicantRepository } from "@/repositories/applicant/types.js"
+import {
+  finalizeApplicantDraftData,
+  type ApplicantRepository,
+} from "@/repositories/applicant/types.js"
 import {
   Database,
   createUniqueDerivedId,
@@ -23,6 +31,12 @@ export function createSqliteApplicantRepository(
       id TEXT PRIMARY KEY,
       name TEXT,
       data TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS applicant_draft (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      data TEXT NOT NULL,
+      meaningful INTEGER NOT NULL
     )
   `)
   return new SqliteApplicantRepository(database)
@@ -30,6 +44,7 @@ export function createSqliteApplicantRepository(
 
 class SqliteApplicantRepository implements ApplicantRepository {
   constructor(database: Database) {
+    this.database = database
     this.listStmt = database.prepare("SELECT id, name FROM applicants")
     this.existsStmt = database.prepare("SELECT 1 FROM applicants WHERE id = ?")
     this.loadStmt = database.prepare("SELECT data FROM applicants WHERE id = ?")
@@ -40,25 +55,19 @@ class SqliteApplicantRepository implements ApplicantRepository {
       "INSERT INTO applicants (id, name, data) VALUES (?, ?, ?)",
     )
     this.deleteStmt = database.prepare("DELETE FROM applicants WHERE id = ?")
+    this.loadDraftStmt = database.prepare(
+      "SELECT data, meaningful FROM applicant_draft WHERE id = 1",
+    )
+    this.saveDraftStmt = database.prepare(
+      "INSERT OR REPLACE INTO applicant_draft (id, data, meaningful) VALUES (1, ?, ?)",
+    )
+    this.deleteDraftStmt = database.prepare(
+      "DELETE FROM applicant_draft WHERE id = 1",
+    )
   }
 
   list(): ApplicantInfo[] {
     return this.listStmt.all().map((row) => parseApplicantRow(row))
-  }
-
-  create(name: string): string {
-    const id = createUniqueDerivedId(name, (id) => this.exists(id))
-    const personal: ApplicantPersonal = {
-      ...DEFAULT_APPLICANT.personal,
-      name,
-    }
-    const data = resolveApplicant({ ...DEFAULT_APPLICANT, id, personal })
-    this.insertStmt.run(id, name, JSON.stringify(data))
-    return id
-  }
-
-  exists(id: string): boolean {
-    return this.existsStmt.get(id) !== undefined
   }
 
   load(id: string): Applicant {
@@ -77,19 +86,85 @@ class SqliteApplicantRepository implements ApplicantRepository {
     if (result.changes === 0) throw new Error(`Applicant "${id}" not found`)
   }
 
+  create(name: string): string {
+    const id = createUniqueDerivedId(name, (id) => this.exists(id))
+    const personal: ApplicantPersonal = {
+      ...DEFAULT_APPLICANT.personal,
+      name,
+    }
+    const data = resolveApplicant({ ...DEFAULT_APPLICANT, id, personal })
+    this.insertStmt.run(id, name, JSON.stringify(data))
+    return id
+  }
+
   delete(id: string): void {
     this.deleteStmt.run(id)
   }
 
-  private readonly listStmt
-  private readonly existsStmt
-  private readonly loadStmt
-  private readonly updateStmt
-  private readonly insertStmt
-  private readonly deleteStmt
+  saveDraft(draft: ApplicantDraftSnapshot): void {
+    const snapshot = resolveApplicantDraftSnapshot(draft)
+    const meaningful = isMeaningfulApplicantDraftSnapshot(snapshot)
+    this.saveDraftStmt.run(JSON.stringify(snapshot), meaningful ? 1 : 0)
+  }
+
+  finalizeDraft(): string {
+    return this.database.transaction(() => {
+      const draft = this.loadDraft()
+      if (!draft) throw new Error("Applicant draft not found")
+      const { id, data } = finalizeApplicantDraftData({
+        snapshot: draft.snapshot,
+        exists: (candidate) => this.exists(candidate),
+      })
+      this.insertStmt.run(id, data.personal.name, JSON.stringify(data))
+      this.deleteDraft()
+      return id
+    })
+  }
+
+  exists(id: string): boolean {
+    return this.existsStmt.get(id) !== undefined
+  }
+
+  loadDraft(): ApplicantDraft | undefined {
+    const raw = this.loadDraftStmt.get()
+    if (raw === undefined) return undefined
+    const parsed = typia.assert<ApplicantDraftRow>(raw)
+    const snapshot = resolveApplicantDraftSnapshot(
+      typia.assert<ApplicantDraftSnapshot>(JSON.parse(parsed.data)),
+    )
+    return {
+      snapshot,
+      meaningful: parsed.meaningful === 1,
+    }
+  }
+
+  deleteDraft(): void {
+    this.deleteDraftStmt.run()
+  }
+
+  private readonly database: Database
+  private readonly listStmt: StatementSync
+  private readonly existsStmt: StatementSync
+  private readonly loadStmt: StatementSync
+  private readonly updateStmt: StatementSync
+  private readonly insertStmt: StatementSync
+  private readonly deleteStmt: StatementSync
+  private readonly loadDraftStmt: StatementSync
+  private readonly saveDraftStmt: StatementSync
+  private readonly deleteDraftStmt: StatementSync
 }
 
 function parseApplicantRow(raw: unknown): ApplicantInfo {
-  const r = typia.assert<{ id: string; name: string | null }>(raw)
-  return { id: r.id, name: r.name || undefined }
+  const row = typia.assert<ApplicantRow>(raw)
+  return { id: row.id, name: row.name || undefined }
+}
+
+interface ApplicantRow {
+  id: string
+  name: string | null
+}
+
+interface ApplicantDraftRow {
+  data: string
+  meaningful: number
 }

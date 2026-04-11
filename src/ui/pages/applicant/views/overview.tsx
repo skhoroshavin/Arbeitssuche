@@ -21,6 +21,11 @@ import { ConsultationModal } from "@/ui/pages/applicant/components"
 import { JobSearchResumeDraftModal } from "@/ui/pages/applicant/components"
 import { JobSearchWizardModal } from "@/ui/pages/applicant/components"
 import type { ConsultationSuggestion } from "@/models/job-search/types"
+import {
+  closeDraftPrompt,
+  discardDraftAndOpen,
+  resumeDraftSnapshot,
+} from "@/ui/pages/applicant/hooks"
 
 export default function ApplicantOverview() {
   const { id = "" } = useParams<{ id: string }>()
@@ -97,6 +102,7 @@ function ApplicantOverviewContent({
     snapshot.params.searchTerm = searchTerm
     setWizardSnapshot(snapshot)
   }
+  const closePrompt = closeDraftPrompt(setShowResumeDraftModal)
 
   return (
     <div className="space-y-4">
@@ -156,25 +162,20 @@ function ApplicantOverviewContent({
       <JobSearchResumeDraftModal
         open={showResumeDraftModal}
         onResume={() => {
-          if (draftQuery.data?.draft) {
-            setWizardSnapshot(draftQuery.data.draft.snapshot)
-          }
-          setShowResumeDraftModal(false)
+          resumeDraftSnapshot({
+            draft: draftQuery.data?.draft,
+            openSnapshot: setWizardSnapshot,
+            closePrompt,
+          })
         }}
         onDiscardAndStartOver={() => {
-          void deleteDraft
-            .mutateAsync()
-            .then(() => {
-              openFreshWizard("")
-              setShowResumeDraftModal(false)
-            })
-            .catch(() => {
-              setShowResumeDraftModal(false)
-            })
+          discardDraftAndOpen({
+            deleteDraft: () => deleteDraft.mutateAsync(),
+            openFresh: () => openFreshWizard(""),
+            closePrompt,
+          })
         }}
-        onCancel={() => {
-          setShowResumeDraftModal(false)
-        }}
+        onCancel={closePrompt}
       />
 
       {wizardSnapshot && (

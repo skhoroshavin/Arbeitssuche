@@ -2,6 +2,13 @@ import type { Address } from "@/models/config/types.js"
 
 export { type Address } from "@/models/config/types.js"
 
+export interface ApplicantDraft {
+  snapshot: ApplicantDraftSnapshot
+  meaningful: boolean
+}
+
+export type ApplicantDraftSnapshot = Applicant
+
 export interface Applicant {
   id: string
   personal: ApplicantPersonal

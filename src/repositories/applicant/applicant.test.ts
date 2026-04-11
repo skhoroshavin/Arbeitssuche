@@ -3,6 +3,7 @@ import {
   createStubApplicantRepository,
   createSqliteApplicantRepository,
 } from "."
+import { createDefaultApplicantDraftSnapshot } from "@/models/applicant"
 import type { Applicant } from "@/models/applicant/types"
 import type { ApplicantRepository } from "./types"
 import {
@@ -120,6 +121,62 @@ function applicantRepositoryTests(
       expect(repo.exists(id)).toBe(true)
       repo.delete(id)
       expect(repo.exists(id)).toBe(false)
+      teardown()
+    })
+
+    test("save/load draft round-trips and remains globally unique", () => {
+      const { repo, teardown } = createRepo()
+      const first = createDefaultApplicantDraftSnapshot()
+      first.personal.name = "First"
+      const second = createDefaultApplicantDraftSnapshot()
+      second.personal.name = "Second"
+
+      repo.saveDraft(first)
+      repo.saveDraft(second)
+
+      expect(repo.loadDraft()?.snapshot.personal.name).toBe("Second")
+      teardown()
+    })
+
+    test("blank draft is not meaningful", () => {
+      const { repo, teardown } = createRepo()
+      repo.saveDraft(createDefaultApplicantDraftSnapshot())
+      expect(repo.loadDraft()?.meaningful).toBe(false)
+      teardown()
+    })
+
+    test("edited draft is meaningful", () => {
+      const { repo, teardown } = createRepo()
+      const draft = createDefaultApplicantDraftSnapshot()
+      draft.personal.name = "Ada Lovelace"
+
+      repo.saveDraft(draft)
+
+      expect(repo.loadDraft()?.meaningful).toBe(true)
+      teardown()
+    })
+
+    test("deleteDraft removes saved draft", () => {
+      const { repo, teardown } = createRepo()
+      repo.saveDraft(createDefaultApplicantDraftSnapshot())
+      repo.deleteDraft()
+      expect(repo.loadDraft()).toBeUndefined()
+      teardown()
+    })
+
+    test("finalizeDraft creates persisted applicant and deletes draft", () => {
+      const { repo, teardown } = createRepo()
+      const draft = createDefaultApplicantDraftSnapshot()
+      draft.personal.name = "Ada Lovelace"
+      draft.personal.email = "ada@example.com"
+
+      repo.saveDraft(draft)
+
+      const id = repo.finalizeDraft()
+
+      expect(repo.load(id).personal.name).toBe("Ada Lovelace")
+      expect(repo.load(id).personal.email).toBe("ada@example.com")
+      expect(repo.loadDraft()).toBeUndefined()
       teardown()
     })
   })
