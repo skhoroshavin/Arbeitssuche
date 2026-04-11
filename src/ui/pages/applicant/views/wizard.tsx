@@ -57,7 +57,7 @@ export default function ApplicantWizardPage() {
 
   useDraftWizardInitialization({
     refetch: () => draftQuery.refetch(),
-    createDefaultSnapshot: createFreshApplicantWizardSnapshot,
+    createDefaultSnapshot: createDefaultApplicantDraftSnapshot,
     setResolvedSnapshot,
     setPhase,
   })
@@ -75,7 +75,7 @@ export default function ApplicantWizardPage() {
     },
     formOptions: {
       defaultValues: toApplicantFormValues(
-        createFreshApplicantWizardSnapshot(),
+        createDefaultApplicantDraftSnapshot(),
       ),
     },
     shouldFlushOnUnmount: () => lifecycle.shouldFlushOnUnmount(),
@@ -124,7 +124,7 @@ export default function ApplicantWizardPage() {
           onResume={() => setPhase("editing")}
           onDiscardAndStartFresh={async () => {
             await deleteDraft.mutateAsync()
-            setResolvedSnapshot(createFreshApplicantWizardSnapshot())
+            setResolvedSnapshot(createDefaultApplicantDraftSnapshot())
             setPhase("editing")
           }}
         />
@@ -162,10 +162,6 @@ export function canFinalizeApplicantWizard(
   snapshot: ApplicantDraftSnapshot,
 ): boolean {
   return snapshot.personal.name.trim().length > 0
-}
-
-export function createFreshApplicantWizardSnapshot(): ApplicantDraftSnapshot {
-  return createDefaultApplicantDraftSnapshot()
 }
 
 type Phase = "loading" | "resume-prompt" | "editing"

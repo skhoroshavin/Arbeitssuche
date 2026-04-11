@@ -63,16 +63,15 @@ export class ApplicantListPage {
   }
 
   async advanceWizardToLastStep() {
-    const stepHeadings: Record<number, string> = {
-      2: "Berufserfahrung",
-      3: "Ausbildung",
-      4: "Zertifikate",
-      5: "Sonstiges",
-    }
-    for (const step of [2, 3, 4, 5] as const) {
+    for (const heading of [
+      "Berufserfahrung",
+      "Ausbildung",
+      "Zertifikate",
+      "Sonstiges",
+    ]) {
       await this.wizardContinueButton.click()
       await expect(
-        this.page.getByRole("heading", { name: stepHeadings[step], level: 1 }),
+        this.page.getByRole("heading", { name: heading, level: 1 }),
       ).toBeVisible()
     }
   }

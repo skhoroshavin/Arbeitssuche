@@ -113,14 +113,11 @@ export class ApplicantPage {
   }
 
   wizardStepHeading(step: 1 | 2 | 3 | 4 | 5): Locator {
-    if (step === 1)
-      return this.page.getByRole("heading", { name: "Suchparameter" })
-    if (step === 2) return this.page.getByRole("heading", { name: "Suchmodus" })
-    if (step === 3)
-      return this.page.getByRole("heading", { name: /Jobboersen/ })
-    if (step === 4)
-      return this.page.getByRole("heading", { name: "Praferenzen" })
-    return this.page.getByLabel("Anschreiben")
+    if (step === 1) return this.wizardStepOneHeading
+    if (step === 2) return this.wizardStepTwoHeading
+    if (step === 3) return this.wizardStepThreeHeading
+    if (step === 4) return this.wizardStepFourHeading
+    return this.wizardStepFiveHeading
   }
 
   async openWizard() {

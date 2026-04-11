@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 
 export function useDraftWizardInitialization<TSnapshot>({
   refetch,
@@ -6,13 +6,7 @@ export function useDraftWizardInitialization<TSnapshot>({
   setResolvedSnapshot,
   setPhase,
 }: DraftWizardInitializationOptions<TSnapshot>): void {
-  const initialized = useRef(false)
-
   useEffect(() => {
-    if (initialized.current) return
-    initialized.current = true
-    void initWizard()
-
     async function initWizard() {
       const result = await refetch()
       const draft = result.data?.draft
@@ -24,7 +18,9 @@ export function useDraftWizardInitialization<TSnapshot>({
         setPhase("editing")
       }
     }
-  })
+
+    void initWizard()
+  }, [])
 }
 
 interface DraftWizardInitializationOptions<TSnapshot> {

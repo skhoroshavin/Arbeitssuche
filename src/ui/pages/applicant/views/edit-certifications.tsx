@@ -3,5 +3,11 @@ import { ApplicantEditorCertificationsView } from "./shared-certifications"
 
 export default function ApplicantEditCertifications() {
   const form = useApplicantForm()
-  return <ApplicantEditorCertificationsView form={form} {...form} />
+  return (
+    <ApplicantEditorCertificationsView
+      form={form}
+      isLoading={form.isLoading}
+      saveStatus={form.saveStatus}
+    />
+  )
 }

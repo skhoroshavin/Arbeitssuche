@@ -29,19 +29,17 @@ export function useDraftWizardLifecycle<TSnapshot, TResult>({
     onFinished(result)
   }
 
-  const keepDraftAndClose = () => {
-    void saveDraft(snapshot).then(() => {
-      setShowCancelChoices(false)
-      onClose()
-    })
+  const keepDraftAndClose = async () => {
+    await saveDraft(snapshot)
+    setShowCancelChoices(false)
+    onClose()
   }
 
-  const discardDraftAndClose = () => {
+  const discardDraftAndClose = async () => {
     skipFlushOnUnmount.current = true
-    void deleteDraft().then(() => {
-      setShowCancelChoices(false)
-      onClose()
-    })
+    await deleteDraft()
+    setShowCancelChoices(false)
+    onClose()
   }
 
   return {
