@@ -10,12 +10,7 @@ describe("createOpenRouterModelRegistry", () => {
 
   function mockFetch(body: unknown) {
     globalThis.fetch = vi.fn<typeof fetch>(() =>
-      Promise.resolve({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve(body),
-        text: () => Promise.resolve(JSON.stringify(body)),
-      } as Response),
+      Promise.resolve(Response.json(body, { status: 200 })),
     )
   }
 

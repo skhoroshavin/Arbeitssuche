@@ -56,12 +56,18 @@ describe("xing", () => {
     const browser = createStubBrowser({ [vacancyUrl]: html })
     const site = createXingSite(browser)
     const vacancy = await site.getVacancyDetails(vacancyUrl)
-    expect(vacancy.descriptionHtml).toBeTruthy()
-    expect(vacancy.descriptionHtml!.includes("<li>React</li>")).toBeTruthy()
-    expect(
-      vacancy.descriptionHtml!.includes("<strong>TypeScript</strong>"),
-    ).toBeTruthy()
+    const descriptionHtml = expectDescriptionHtml(vacancy.descriptionHtml)
+    expect(descriptionHtml.includes("<li>React</li>")).toBeTruthy()
+    expect(descriptionHtml.includes("<strong>TypeScript</strong>")).toBeTruthy()
   })
 })
 
 const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples")
+
+function expectDescriptionHtml(descriptionHtml: string | undefined): string {
+  expect(descriptionHtml).toBeTruthy()
+  if (!descriptionHtml) {
+    throw new Error("Expected vacancy description HTML")
+  }
+  return descriptionHtml
+}

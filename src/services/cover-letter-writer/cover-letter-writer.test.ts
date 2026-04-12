@@ -4,7 +4,7 @@ import { createDefaultJobSearchEditorSnapshot } from "@/models/job-search"
 import { createStubApplicantRepository } from "@/repositories/applicant/stub"
 import { createStubJobSearchRepository } from "@/repositories/job-search/stub"
 import { createStubVacancyRepository } from "@/repositories/vacancy/stub"
-import { CoverLetterWriter } from "./cover-letter-writer"
+import { CoverLetterWriter } from "."
 
 describe("CoverLetterWriter", () => {
   test("generates cover letter from applicant draft", async () => {

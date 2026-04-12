@@ -1,5 +1,5 @@
 import { describe, it, test, expect } from "vitest"
-import { createUniqueDerivedId } from "./node/index.js"
+import { createUniqueDerivedId } from "./node"
 import { deriveId, createWithUniqueId } from "./node/id.js"
 
 describe("deriveId", () => {

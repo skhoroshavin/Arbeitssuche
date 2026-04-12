@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from "vitest"
 import { EnrichQueue } from "."
 import { Vacancy } from "@/models/vacancy/index.js"
-import type {
+import {
   VacancyEnricher,
-  EnrichContext,
-} from "@/services/vacancy-enricher/index.js"
+  type EnrichContext,
+} from "@/services/vacancy-enricher"
 import type { Applicant } from "@/models/applicant"
 import type { SearchPreferences } from "@/models/job-search"
 
@@ -30,18 +30,16 @@ describe("EnrichQueue", () => {
   it("respects concurrency limit", async () => {
     let running = 0
     let maxRunning = 0
-    const enricher: VacancyEnricher = {
-      enrich: vi.fn().mockImplementation((vacancy: Vacancy) => {
-        running++
-        maxRunning = Math.max(maxRunning, running)
-        return new Promise<Vacancy>((resolve) => {
-          setTimeout(() => {
-            running--
-            resolve(vacancy)
-          }, 10)
-        })
-      }),
-    } as unknown as VacancyEnricher
+    const enricher = new StubVacancyEnricher((vacancy) => {
+      running++
+      maxRunning = Math.max(maxRunning, running)
+      return new Promise<Vacancy>((resolve) => {
+        setTimeout(() => {
+          running--
+          resolve(vacancy)
+        }, 10)
+      })
+    })
 
     const queue = new EnrichQueue({
       enricher,
@@ -117,13 +115,11 @@ describe("EnrichQueue", () => {
 
   it("continues processing after error", async () => {
     let callCount = 0
-    const enricher: VacancyEnricher = {
-      enrich: vi.fn().mockImplementation((vacancy: Vacancy) => {
-        callCount++
-        if (callCount === 1) return Promise.reject(new Error("fail"))
-        return Promise.resolve(vacancy)
-      }),
-    } as unknown as VacancyEnricher
+    const enricher = new StubVacancyEnricher((vacancy) => {
+      callCount++
+      if (callCount === 1) return Promise.reject(new Error("fail"))
+      return Promise.resolve(vacancy)
+    })
 
     const onEnriched = vi.fn()
     const queue = new EnrichQueue({
@@ -179,23 +175,29 @@ describe("EnrichQueue", () => {
   })
 })
 
+const APPLICANT: Applicant = {
+  id: "a1",
+  personal: { name: "Test", hobbies: [] },
+  disclose: {
+    birthdate: false,
+    gender: false,
+    address: false,
+    hobbies: false,
+  },
+  experience: [],
+  education: [],
+  skills: [],
+  languages: [],
+  certifications: [],
+}
+
+const PREFERENCES: SearchPreferences = {
+  freeText: [],
+}
+
 const CONTEXT: EnrichContext = {
-  applicant: {
-    id: "a1",
-    personal: { name: "Test", hobbies: [] },
-    disclose: {
-      birthdate: false,
-      gender: false,
-      address: false,
-      hobbies: false,
-    },
-    experience: [],
-    education: [],
-    skills: [],
-    languages: [],
-    certifications: [],
-  } as Applicant,
-  preferences: { freeText: [] } as SearchPreferences,
+  applicant: APPLICANT,
+  preferences: PREFERENCES,
 }
 
 function makeVacancy(hash: string): Vacancy {
@@ -209,17 +211,30 @@ function makeVacancy(hash: string): Vacancy {
 }
 
 function makeEnricher(delayMs = 0, shouldFail = false): VacancyEnricher {
-  return {
-    enrich: vi.fn().mockImplementation((vacancy: Vacancy) => {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (shouldFail) {
-            reject(new Error("enrichment failed"))
-          } else {
-            resolve(vacancy.with({ enriched: true, enrichmentDirty: false }))
-          }
-        }, delayMs)
-      })
-    }),
-  } as unknown as VacancyEnricher
+  return new StubVacancyEnricher((vacancy) => {
+    return new Promise<Vacancy>((resolve, reject) => {
+      setTimeout(() => {
+        if (shouldFail) {
+          reject(new Error("enrichment failed"))
+        } else {
+          resolve(vacancy.with({ enriched: true, enrichmentDirty: false }))
+        }
+      }, delayMs)
+    })
+  })
+}
+
+class StubVacancyEnricher extends VacancyEnricher {
+  constructor(
+    private readonly enrichImpl: (
+      vacancy: Vacancy,
+      context: EnrichContext,
+    ) => Promise<Vacancy>,
+  ) {
+    super({})
+  }
+
+  override enrich(vacancy: Vacancy, context: EnrichContext): Promise<Vacancy> {
+    return this.enrichImpl(vacancy, context)
+  }
 }

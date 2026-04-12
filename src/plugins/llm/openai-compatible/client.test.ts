@@ -11,12 +11,7 @@ describe("OpenAICompatibleClient", () => {
 
   function mockFetch(body: unknown, status = 200) {
     globalThis.fetch = vi.fn<typeof fetch>(() =>
-      Promise.resolve({
-        ok: status >= 200 && status < 300,
-        status,
-        json: () => Promise.resolve(body),
-        text: () => Promise.resolve(JSON.stringify(body)),
-      } as Response),
+      Promise.resolve(Response.json(body, { status })),
     )
   }
 
@@ -85,7 +80,7 @@ describe("OpenAICompatibleClient", () => {
         ) {
           throw new Error("Validation failed")
         }
-        return parsed as { score: number }
+        return { score: parsed.score }
       },
     }
 
@@ -173,13 +168,10 @@ describe("OpenAICompatibleClient", () => {
         throw new Error("Unexpected completion request shape")
       }
 
-      const body = parsedBody as {
-        model: string
-        messages: Array<{ content: string }>
-        max_tokens: number
-      }
+      const message = parsedBody.messages[0]
+      const body = parsedBody
       expect(body.model).toBe("my/model")
-      expect(body.messages[0].content).toBe("test prompt")
+      expect(message.content).toBe("test prompt")
       expect(body.max_tokens).toBe(200)
     })
   })
