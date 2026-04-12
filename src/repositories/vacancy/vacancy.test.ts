@@ -1,4 +1,5 @@
 import { test, describe, expect } from "vitest"
+import type { VacancyRepository } from "."
 import { createStubVacancyRepository } from "./stub"
 import { createSqliteVacancyRepository } from "./sqlite"
 import { createSqliteJobSearchRepository } from "@/repositories/job-search/sqlite"
@@ -8,7 +9,6 @@ import {
 } from "@/utils/node/index.js"
 import type { VacancyDTO, Activity } from "@/models/vacancy"
 import { Vacancy } from "@/models/vacancy/index.js"
-import type { VacancyRepository } from "./types"
 
 vacancyRepositoryTests("StubVacancyRepository", () => ({
   repo: createStubVacancyRepository(),
