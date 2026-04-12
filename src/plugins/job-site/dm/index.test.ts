@@ -56,13 +56,9 @@ describe("dm", () => {
     const browser = createStubBrowser({ [vacancyUrl]: html })
     const site = createDmSite(browser)
     const vacancy = await site.getVacancyDetails(vacancyUrl)
-    expect(vacancy.descriptionHtml).toBeTruthy()
-    expect(
-      vacancy.descriptionHtml!.includes("<strong>Drogist</strong>"),
-    ).toBeTruthy()
-    expect(
-      vacancy.descriptionHtml!.includes("<li>Training provided</li>"),
-    ).toBeTruthy()
+    const descriptionHtml = expectDescriptionHtml(vacancy.descriptionHtml)
+    expect(descriptionHtml.includes("<strong>Drogist</strong>")).toBeTruthy()
+    expect(descriptionHtml.includes("<li>Training provided</li>")).toBeTruthy()
   })
 
   test("getVacancyDetails DOM fallback produces HTML with headings", async () => {
@@ -79,9 +75,9 @@ describe("dm", () => {
     const browser = createStubBrowser({ [vacancyUrl]: html })
     const site = createDmSite(browser)
     const vacancy = await site.getVacancyDetails(vacancyUrl)
-    expect(vacancy.descriptionHtml).toBeTruthy()
-    expect(vacancy.descriptionHtml!.includes("<h2>Aufgaben</h2>")).toBeTruthy()
-    expect(vacancy.descriptionHtml!.includes("<li>Task one</li>")).toBeTruthy()
+    const descriptionHtml = expectDescriptionHtml(vacancy.descriptionHtml)
+    expect(descriptionHtml.includes("<h2>Aufgaben</h2>")).toBeTruthy()
+    expect(descriptionHtml.includes("<li>Task one</li>")).toBeTruthy()
   })
 
   test("getVacancyList returns no pagination (single page)", async () => {
@@ -99,3 +95,11 @@ describe("dm", () => {
 })
 
 const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples")
+
+function expectDescriptionHtml(descriptionHtml: string | undefined): string {
+  expect(descriptionHtml).toBeTruthy()
+  if (!descriptionHtml) {
+    throw new Error("Expected vacancy description HTML")
+  }
+  return descriptionHtml
+}

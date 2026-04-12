@@ -134,10 +134,6 @@ export default tseslint.config(
       "scratchpad/",
       "scratchpad_dev/",
       "test-results/",
-      "**/*.test.ts",
-      "**/*.test.tsx",
-      "**/*.test-suite.ts",
-      "**/*.integration-test.ts",
     ],
   },
   {
@@ -201,14 +197,6 @@ export default tseslint.config(
       "import-x/no-useless-path-segments": ["error", { noUselessIndex: true }],
     },
   },
-  {
-    files: ["**/*.test.ts", "**/*.test-suite.ts", "**/*.integration-test.ts"],
-    rules: {
-      "@typescript-eslint/consistent-type-assertions": "off",
-      "@typescript-eslint/no-non-null-assertion": "off",
-    },
-  },
-
   // Utils: tighter file-size limit (small, focused utilities)
   {
     files: ["src/utils/*.ts"],

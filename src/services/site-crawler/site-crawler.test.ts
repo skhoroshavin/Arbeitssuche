@@ -9,17 +9,16 @@ import type { JobSearchCriteria } from "@/models/job-search"
 
 describe("SiteCrawler", () => {
   it("calls onResult for each vacancy detail fetched", async () => {
-    const details = makeDetails()
+    const getVacancyDetailsMock = vi
+      .fn<JobSite["getVacancyDetails"]>()
+      .mockResolvedValueOnce(makeDetails({ url: "https://example.com/job/1" }))
+      .mockResolvedValueOnce(makeDetails({ url: "https://example.com/job/2" }))
     const site = makeSite({
       pages: [
         { urls: ["https://example.com/job/1", "https://example.com/job/2"] },
       ],
-      details,
+      getVacancyDetails: getVacancyDetailsMock,
     })
-    site.getVacancyDetails = vi
-      .fn()
-      .mockResolvedValueOnce(makeDetails({ url: "https://example.com/job/1" }))
-      .mockResolvedValueOnce(makeDetails({ url: "https://example.com/job/2" }))
 
     const results: VacancyDetails[] = []
     const crawler = new SiteCrawler()
@@ -33,7 +32,9 @@ describe("SiteCrawler", () => {
   })
 
   it("respects limit from criteria", async () => {
-    const getVacancyDetailsMock = vi.fn().mockResolvedValue(makeDetails())
+    const getVacancyDetailsMock = vi
+      .fn<JobSite["getVacancyDetails"]>()
+      .mockResolvedValue(makeDetails())
     const site = makeSite({
       pages: [
         { urls: ["url1", "url2", "url3", "url4", "url5"], nextPageId: "p2" },
@@ -54,15 +55,17 @@ describe("SiteCrawler", () => {
 
   it("stops on abort signal", async () => {
     const controller = new AbortController()
-    const site: JobSite = {
-      name: "test-site",
-      supportedModes: ["employment"],
-      getVacancyList: vi.fn().mockImplementation(() => {
-        controller.abort()
-        return Promise.resolve({ urls: ["url1"] })
-      }),
-      getVacancyDetails: vi.fn().mockResolvedValue(makeDetails()),
-    }
+    const site = makeSite({
+      getVacancyList: vi
+        .fn<JobSite["getVacancyList"]>()
+        .mockImplementation(() => {
+          controller.abort()
+          return Promise.resolve({ urls: ["url1"] })
+        }),
+      getVacancyDetails: vi
+        .fn<JobSite["getVacancyDetails"]>()
+        .mockResolvedValue(makeDetails()),
+    })
 
     const results: VacancyDetails[] = []
     const crawler = new SiteCrawler()
@@ -77,9 +80,13 @@ describe("SiteCrawler", () => {
   })
 
   it("skips site with unsupported mode", async () => {
-    const getVacancyListMock = vi.fn().mockResolvedValue({ urls: ["url1"] })
-    const site = makeSite({ getVacancyList: getVacancyListMock })
-    ;(site as { supportedModes: string[] }).supportedModes = ["apprenticeship"]
+    const getVacancyListMock = vi
+      .fn<JobSite["getVacancyList"]>()
+      .mockResolvedValue({ urls: ["url1"] })
+    const site = makeSite({
+      getVacancyList: getVacancyListMock,
+      supportedModes: ["apprenticeship"],
+    })
 
     const results: VacancyDetails[] = []
     const crawler = new SiteCrawler()
@@ -94,12 +101,14 @@ describe("SiteCrawler", () => {
   })
 
   it("falls back to employment mode for entry-level when site supports employment", async () => {
-    const getVacancyListMock = vi.fn().mockResolvedValue({ urls: ["url1"] })
+    const getVacancyListMock = vi
+      .fn<JobSite["getVacancyList"]>()
+      .mockResolvedValue({ urls: ["url1"] })
     const site = makeSite({
       pages: [{ urls: ["url1"] }],
       getVacancyList: getVacancyListMock,
+      supportedModes: ["employment"],
     })
-    ;(site as { supportedModes: string[] }).supportedModes = ["employment"]
 
     const results: VacancyDetails[] = []
     const crawler = new SiteCrawler()
@@ -116,7 +125,9 @@ describe("SiteCrawler", () => {
   })
 
   it("passes resolved plugin criteria without crawler limit", async () => {
-    const getVacancyListMock = vi.fn().mockResolvedValue({ urls: [] })
+    const getVacancyListMock = vi
+      .fn<JobSite["getVacancyList"]>()
+      .mockResolvedValue({ urls: [] })
     const site = makeSite({ getVacancyList: getVacancyListMock })
 
     const crawler = new SiteCrawler()
@@ -126,7 +137,8 @@ describe("SiteCrawler", () => {
       onResult: vi.fn(),
     })
 
-    const criteria = getVacancyListMock.mock.calls[0][0]
+    expect(getVacancyListMock).toHaveBeenCalledOnce()
+    const [criteria] = getVacancyListMock.mock.calls[0]
     expect(criteria).toMatchObject({
       location: CRITERIA.location,
       query: CRITERIA.query,
@@ -137,12 +149,13 @@ describe("SiteCrawler", () => {
   })
 
   it("continues after search page fetch failure", async () => {
-    const site1: JobSite = {
+    const site1 = makeSite({
       name: "failing-site",
-      supportedModes: ["employment"],
-      getVacancyList: vi.fn().mockRejectedValue(new Error("network error")),
-      getVacancyDetails: vi.fn(),
-    }
+      getVacancyList: vi
+        .fn<JobSite["getVacancyList"]>()
+        .mockRejectedValue(new Error("network error")),
+      getVacancyDetails: vi.fn<JobSite["getVacancyDetails"]>(),
+    })
     const site2 = makeSite({
       pages: [{ urls: ["url1"] }],
     })
@@ -159,12 +172,14 @@ describe("SiteCrawler", () => {
   })
 
   it("skips URL when vacancy detail fetch fails", async () => {
-    const site = makeSite({
-      pages: [{ urls: ["url1", "url2"] }],
-    })
-    ;(site.getVacancyDetails as ReturnType<typeof vi.fn>)
+    const getVacancyDetailsMock = vi
+      .fn<JobSite["getVacancyDetails"]>()
       .mockRejectedValueOnce(new Error("timeout"))
       .mockResolvedValueOnce(makeDetails({ url: "url2" }))
+    const site = makeSite({
+      pages: [{ urls: ["url1", "url2"] }],
+      getVacancyDetails: getVacancyDetailsMock,
+    })
 
     const results: VacancyDetails[] = []
     const crawler = new SiteCrawler()
@@ -182,8 +197,11 @@ describe("SiteCrawler", () => {
     const details1 = makeDetails({ url: "url1", company: "A" })
     const details2 = makeDetails({ url: "url2", company: "B" })
     const site1 = makeSite({ pages: [{ urls: ["url1"] }], details: details1 })
-    const site2 = makeSite({ pages: [{ urls: ["url2"] }], details: details2 })
-    ;(site2 as { name: string }).name = "site2"
+    const site2 = makeSite({
+      name: "site2",
+      pages: [{ urls: ["url2"] }],
+      details: details2,
+    })
 
     const results: VacancyDetails[] = []
     const crawler = new SiteCrawler()
@@ -205,24 +223,49 @@ const CRITERIA: JobSearchCriteria = {
   mode: "employment",
 }
 
-function makeSite(
-  overrides: Partial<JobSite> & {
-    pages?: VacancyListPage[]
-    details?: VacancyDetails
-  } = {},
-): JobSite {
-  const { pages = [], details = makeDetails(), ...rest } = overrides
-  let pageIndex = 0
-  return {
+function makeSite(overrides: MakeSiteOptions = {}): JobSite {
+  const site: JobSite = {
     name: "test-site",
     supportedModes: ["employment"],
-    getVacancyList: vi.fn().mockImplementation(() => {
-      const page = pages[pageIndex++]
-      return Promise.resolve(page)
-    }),
-    getVacancyDetails: vi.fn().mockResolvedValue(details),
-    ...rest,
+    getVacancyList: createVacancyListMock(overrides.pages),
+    getVacancyDetails: createVacancyDetailsMock(overrides.details),
   }
+
+  if (overrides.name) {
+    site.name = overrides.name
+  }
+  if (overrides.supportedModes) {
+    site.supportedModes = overrides.supportedModes
+  }
+  if (overrides.getVacancyList) {
+    site.getVacancyList = overrides.getVacancyList
+  }
+  if (overrides.getVacancyDetails) {
+    site.getVacancyDetails = overrides.getVacancyDetails
+  }
+
+  return site
+}
+
+type MakeSiteOptions = {
+  name?: string
+  supportedModes?: JobSite["supportedModes"]
+  pages?: VacancyListPage[]
+  details?: VacancyDetails
+  getVacancyList?: JobSite["getVacancyList"]
+  getVacancyDetails?: JobSite["getVacancyDetails"]
+}
+
+function createVacancyListMock(pages: VacancyListPage[] = []) {
+  let pageIndex = 0
+  return vi.fn<JobSite["getVacancyList"]>().mockImplementation(() => {
+    const page = pages[pageIndex++] ?? { urls: [] }
+    return Promise.resolve(page)
+  })
+}
+
+function createVacancyDetailsMock(details: VacancyDetails = makeDetails()) {
+  return vi.fn<JobSite["getVacancyDetails"]>().mockResolvedValue(details)
 }
 
 function makeDetails(overrides: Partial<VacancyDetails> = {}): VacancyDetails {

@@ -34,7 +34,9 @@ describe("GoogleMapsCommuteClient", () => {
 
       expect(requestedUrls.length).toBe(3)
       for (const url of requestedUrls) {
-        expect(url).toMatch(new RegExp(API_PATTERN))
+        expect(url).toMatch(
+          new RegExp(String.raw`maps\.googleapis\.com/maps/api/distancematrix`),
+        )
         expect(url).toMatch(/key=test-key/)
         expect(url).toMatch(/mode=transit/)
       }
@@ -79,8 +81,6 @@ describe("GoogleMapsCommuteClient", () => {
   })
 })
 
-const API_PATTERN = String.raw`maps\.googleapis\.com/maps/api/distancematrix`
-
 function matrixResponse(distanceText: string, durationSeconds: number): object {
   return {
     status: "OK",
@@ -100,9 +100,21 @@ function matrixResponse(distanceText: string, durationSeconds: number): object {
 
 function createStubFetch(response: object) {
   const requestedUrls: string[] = []
-  const stubFetch = (url: string, _init?: RequestInit): Promise<Response> => {
-    requestedUrls.push(url)
+  const stubFetch: typeof globalThis.fetch = (input) => {
+    requestedUrls.push(resolveRequestUrl(input))
     return Promise.resolve(Response.json(response, { status: 200 }))
   }
-  return { fetch: stubFetch as typeof globalThis.fetch, requestedUrls }
+  return { fetch: stubFetch, requestedUrls }
+}
+
+function resolveRequestUrl(
+  input: Parameters<typeof globalThis.fetch>[0],
+): string {
+  if (typeof input === "string") {
+    return input
+  }
+  if (input instanceof URL) {
+    return input.toString()
+  }
+  return input.url
 }
