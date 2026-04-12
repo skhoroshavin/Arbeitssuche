@@ -16,16 +16,6 @@ The system MUST enforce architectural import boundaries using `eslint-plugin-uns
 - **THEN** `unslop/import-control` determines whether internal imports are valid
 - **AND** boundary outcomes are not dependent on duplicated architecture policies in other tools
 
-## REMOVED Requirements
-
-### Requirement: Layer dependency directions
-
-**Reason**: Replaced by the more precise module-level allow lists in `linting-policy` spec. The old layer-level table listed `repositories -> plugins` which was never used in practice, and `app -> app` which creates a circular module dependency. The new allow lists reflect the tightened and verified target architecture.
-
-**Migration**: See `linting-policy` spec, Requirement: Module-level import allow lists.
-
-## ADDED Requirements
-
 ### Requirement: Allow-list only, default-deny boundaries
 
 The system MUST represent boundaries as explicit allow lists where any unlisted internal dependency is forbidden.
@@ -47,7 +37,7 @@ The system MUST enforce a uniform cross-module public surface convention.
 #### Scenario: Cross-module type-only import
 
 - **WHEN** a file imports types from another module
-- **THEN** only that module's `index.ts` or `types.ts` surfaces are allowed
+- **THEN** only that module's `index.ts` surface is allowed
 
 ### Requirement: Parent imports are forbidden under src
 
@@ -57,3 +47,17 @@ The system MUST forbid parent-relative imports (`../`) in `src/`.
 
 - **WHEN** a source file under `src/` uses a parent-relative import
 - **THEN** the import is rejected
+
+## REMOVED Requirements
+
+### Requirement: Layer dependency directions
+
+**Reason**: Replaced by the more precise module-level allow lists in `linting-policy` spec. The old layer-level table listed `repositories -> plugins` which was never used in practice, and `app -> app` which creates a circular module dependency. The new allow lists reflect the tightened and verified target architecture.
+
+**Migration**: See `linting-policy` spec, Requirement: Module-level import allow lists.
+
+### Requirement: Uniform public surface convention (types.ts allowance)
+
+**Reason**: The previous version of this requirement allowed cross-module type imports through both `index.ts` and `types.ts`. With the move to index-only public surfaces, `types.ts` is no longer a valid cross-module import target. Types are either merged into `index.ts` (models) or re-exported from `types.ts` through `index.ts` (repositories, plugins).
+
+**Migration**: Update all cross-module imports from `@/<module>/types` to `@/<module>`. For models, the types are directly in `index.ts`. For repositories and plugins, `index.ts` re-exports the contract interface from `types.ts`.
