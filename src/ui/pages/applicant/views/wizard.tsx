@@ -100,7 +100,15 @@ export default function ApplicantWizardPage() {
       <DraftWizardPage
         phase={phase}
         title="Neuen Bewerber erstellen"
-        steps={WIZARD_STEPS}
+        steps={
+          [
+            "personal",
+            "experience",
+            "education",
+            "certifications",
+            "other",
+          ] as const
+        }
         currentStep={step}
         stepLabels={STEP_LABELS}
         setStep={setStep}
@@ -151,7 +159,15 @@ function ApplicantWizardStepView({
     useHeaderAutoSave: false,
   }
 
-  const StepView = STEP_VIEWS[step]
+  const StepView = (
+    {
+      personal: ApplicantEditorPersonalView,
+      experience: ApplicantEditorExperienceView,
+      education: ApplicantEditorEducationView,
+      certifications: ApplicantEditorCertificationsView,
+      other: ApplicantEditorOtherView,
+    } satisfies Record<ApplicantWizardStep, StepView>
+  )[step]
 
   return <StepView {...properties} />
 }
@@ -180,28 +196,12 @@ const STEP_LABELS: Record<ApplicantWizardStep, string> = {
   other: "Sonstiges",
 }
 
-const WIZARD_STEPS: [ApplicantWizardStep, ...ApplicantWizardStep[]] = [
-  "personal",
-  "experience",
-  "education",
-  "certifications",
-  "other",
-]
-
 type ApplicantWizardStep =
   | "personal"
   | "experience"
   | "education"
   | "certifications"
   | "other"
-
-const STEP_VIEWS = {
-  personal: ApplicantEditorPersonalView,
-  experience: ApplicantEditorExperienceView,
-  education: ApplicantEditorEducationView,
-  certifications: ApplicantEditorCertificationsView,
-  other: ApplicantEditorOtherView,
-} satisfies Record<ApplicantWizardStep, StepView>
 
 type StepView = (
   properties: ApplicantWizardStepViewSharedProperties,

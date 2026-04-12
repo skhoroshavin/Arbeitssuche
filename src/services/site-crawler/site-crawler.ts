@@ -7,7 +7,6 @@ import type { JobSearchCriteria } from "@/models/job-search/types.js"
 import type { ProgressEvent } from "@/models/progress/index.js"
 import { formatError } from "@/services/vacancy-scanner/index.js"
 import {
-  MAX_PAGES,
   resolveEffectiveMode,
   derivePluginCriteria,
   fetchSearchPage,
@@ -45,7 +44,7 @@ export class SiteCrawler {
     const pluginCriteria = derivePluginCriteria(options.criteria, effectiveMode)
     let pageId: string | undefined
 
-    for (let page = 0; page < MAX_PAGES; page++) {
+    for (let page = 0; page < 20; page++) {
       if (options.signal?.aborted) break
       const next = await this.crawlPage(
         site,

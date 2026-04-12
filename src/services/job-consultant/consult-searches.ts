@@ -9,14 +9,8 @@ export async function consultSearches(
   llmClient: LlmClient,
 ): Promise<ConsultationSuggestion[]> {
   const prompt = buildConsultSearchesPrompt(applicant)
-  return llmClient.completeJSON(
-    prompt,
-    CONSULT_MAX_TOKENS,
-    CONSULT_SEARCHES_SCHEMA,
-  )
+  return llmClient.completeJSON(prompt, 4096, CONSULT_SEARCHES_SCHEMA)
 }
-
-const CONSULT_MAX_TOKENS = 4096
 
 const CONSULT_SEARCHES_SCHEMA: TypedSchema<ConsultationSuggestion[]> = {
   schema: typia.json.schema<ConsultationSuggestion[]>(),

@@ -7,8 +7,6 @@ import type {
 import type { JobSearchCriteria } from "@/models/job-search/types.js"
 import { formatError } from "@/services/vacancy-scanner/index.js"
 
-export const MAX_PAGES = 20
-
 export function resolveEffectiveMode(
   site: JobSite,
   mode: SearchMode,

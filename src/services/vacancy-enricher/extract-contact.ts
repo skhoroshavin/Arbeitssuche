@@ -19,11 +19,7 @@ export async function extractContactInfo(
   llmClient: LlmClient,
 ): Promise<ContactExtractionResult | undefined> {
   const prompt = buildContactExtractionPrompt(vacancy)
-  const raw = await llmClient.completeJSON(
-    prompt,
-    EXTRACT_CONTACT_MAX_TOKENS,
-    EXTRACT_CONTACT_SCHEMA,
-  )
+  const raw = await llmClient.completeJSON(prompt, 512, EXTRACT_CONTACT_SCHEMA)
 
   const addresses = raw.addresses.map((s) => s.trim()).filter(Boolean)
   const contact = cleanContact(raw.contact)
@@ -57,8 +53,6 @@ interface ContactExtractionResult {
   addresses: string[]
   contact?: VacancyContact
 }
-
-const EXTRACT_CONTACT_MAX_TOKENS = 512
 
 const EXTRACT_CONTACT_SCHEMA: TypedSchema<RawContactResult> = {
   schema: typia.json.schema<RawContactResult>(),

@@ -30,7 +30,7 @@ export function ModelCombobox({
             m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q),
         )
       : models
-    return list.slice(0, MAX_VISIBLE)
+    return list.slice(0, 50)
   }, [models, query])
 
   const grouped = useMemo(() => groupByProvider(filtered), [filtered])
@@ -125,5 +125,3 @@ function groupByProvider(models: LlmModel[]): Map<string, LlmModel[]> {
   }
   return groups
 }
-
-const MAX_VISIBLE = 50

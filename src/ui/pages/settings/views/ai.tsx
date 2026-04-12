@@ -10,7 +10,33 @@ import { ModelCombobox } from "@/ui/pages/settings/components"
 import { ProviderSecretCard } from "@/ui/pages/settings/components"
 
 export default function SettingsAI() {
-  const ai = useAISettingsView(MODEL_OPTIONS)
+  const ai = useAISettingsView([
+    {
+      id: "google/gemini-2.5-flash",
+      name: "Gemini 2.5 Flash",
+      pricing: { prompt: "0", completion: "0" },
+    },
+    {
+      id: "google/gemini-2.5-pro",
+      name: "Gemini 2.5 Pro",
+      pricing: { prompt: "0", completion: "0" },
+    },
+    {
+      id: "anthropic/claude-haiku-4",
+      name: "Claude Haiku 4",
+      pricing: { prompt: "0.000001", completion: "0.000005" },
+    },
+    {
+      id: "anthropic/claude-sonnet-4",
+      name: "Claude Sonnet 4",
+      pricing: { prompt: "0.000003", completion: "0.000015" },
+    },
+    {
+      id: "anthropic/claude-opus-4",
+      name: "Claude Opus 4",
+      pricing: { prompt: "0.000015", completion: "0.000075" },
+    },
+  ])
 
   if (ai.isLoading) return <Loading />
 
@@ -32,34 +58,6 @@ export default function SettingsAI() {
     </>
   )
 }
-
-const MODEL_OPTIONS: LlmModel[] = [
-  {
-    id: "google/gemini-2.5-flash",
-    name: "Gemini 2.5 Flash",
-    pricing: { prompt: "0", completion: "0" },
-  },
-  {
-    id: "google/gemini-2.5-pro",
-    name: "Gemini 2.5 Pro",
-    pricing: { prompt: "0", completion: "0" },
-  },
-  {
-    id: "anthropic/claude-haiku-4",
-    name: "Claude Haiku 4",
-    pricing: { prompt: "0.000001", completion: "0.000005" },
-  },
-  {
-    id: "anthropic/claude-sonnet-4",
-    name: "Claude Sonnet 4",
-    pricing: { prompt: "0.000003", completion: "0.000015" },
-  },
-  {
-    id: "anthropic/claude-opus-4",
-    name: "Claude Opus 4",
-    pricing: { prompt: "0.000015", completion: "0.000075" },
-  },
-]
 
 function ProviderSecretSection({
   providerId,

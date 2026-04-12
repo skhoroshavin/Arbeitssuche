@@ -45,20 +45,16 @@ function resolveCommute(
 const DEFAULT_COMMUTE: Record<string, CommuteInfo> = {}
 
 function resolveActivityHistory(activityHistory?: Activity[]): Activity[] {
-  return activityHistory ?? DEFAULT_ACTIVITY_HISTORY
+  return activityHistory ?? []
 }
-
-const DEFAULT_ACTIVITY_HISTORY: Activity[] = []
 
 function resolveFlag(value: boolean | undefined, fallback: boolean): boolean {
   return value ?? fallback
 }
 
 function resolveMatchScore(value?: MatchScore): MatchScore {
-  return value ?? DEFAULT_MATCH_SCORE
+  return value ?? "ok"
 }
-
-const DEFAULT_MATCH_SCORE: MatchScore = "ok"
 
 function resolveVacancyContact(contact?: VacancyContact): VacancyContact {
   return {

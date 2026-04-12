@@ -50,7 +50,17 @@ function tryServeFile(
       MIME_TYPES[path.extname(resolved)] || "application/octet-stream"
     const headers: Record<string, string> = { "Content-Type": mimeType }
     if (path.extname(resolved) === ".html") {
-      headers["Content-Security-Policy"] = CSP
+      headers["Content-Security-Policy"] = [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'none'",
+        "form-action 'none'",
+      ].join("; ")
     }
     return new Response(data, { headers })
   } catch {
@@ -71,15 +81,3 @@ const MIME_TYPES: Record<string, string> = {
   ".woff2": "font/woff2",
   ".ttf": "font/ttf",
 }
-
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
-  "font-src 'self'",
-  "connect-src 'self'",
-  "object-src 'none'",
-  "base-uri 'none'",
-  "form-action 'none'",
-].join("; ")

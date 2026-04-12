@@ -10,7 +10,10 @@ export default function SettingsLayout() {
   useLayoutConfig(
     () => ({
       sidebarTitle: "Einstellungen",
-      sidebarNavItems: navItems,
+      sidebarNavItems: [
+        { to: "/settings", label: "Künstliche Intelligenz", end: true },
+        { to: "/settings/maps", label: "Karten" },
+      ],
       headerTitle: "Einstellungen",
       headerBackLink: (
         <Link
@@ -27,11 +30,6 @@ export default function SettingsLayout() {
 
   return <Outlet />
 }
-
-const navItems = [
-  { to: "/settings", label: "Künstliche Intelligenz", end: true },
-  { to: "/settings/maps", label: "Karten" },
-]
 
 function extractReturnTo(state: unknown): string {
   if (

@@ -7,7 +7,37 @@ import type {
 export function formatApplicantSections(applicant: Applicant): string[] {
   const sections: string[] = [formatPersonalSection(applicant.personal)]
 
-  for (const section of OPTIONAL_SECTIONS) {
+  for (const section of [
+    {
+      items: (a: Applicant) => a.experience,
+      format: (a: Applicant) =>
+        `## Experience\n${a.experience.map((entry) => formatExperienceLine(entry)).join("\n")}`,
+    },
+    {
+      items: (a: Applicant) => a.education,
+      format: (a: Applicant) =>
+        `## Education\n${a.education.map((entry) => formatEducationLine(entry)).join("\n")}`,
+    },
+    {
+      items: (a: Applicant) => a.skills,
+      format: (a: Applicant) =>
+        `## Skills\n${a.skills.map((s) => s.name).join(", ")}`,
+    },
+    {
+      items: (a: Applicant) => a.languages,
+      format: (a: Applicant) =>
+        `## Languages\n${a.languages.map((l) => `${l.language} (${l.level})`).join(", ")}`,
+    },
+    {
+      items: (a: Applicant) => a.certifications,
+      format: (a: Applicant) => {
+        const lines = a.certifications.map(
+          (c) => `- ${c.name}${c.issuer ? ` (${c.issuer})` : ""}`,
+        )
+        return `## Certifications\n${lines.join("\n")}`
+      },
+    },
+  ]) {
     if (section.items(applicant).length > 0) {
       sections.push(section.format(applicant))
     }
@@ -29,40 +59,6 @@ function formatPersonalSection(p: Applicant["personal"]): string {
   if (p.phone) lines.push(`Telefon: ${p.phone}`)
   return `## Applicant\n${lines.join("\n")}`
 }
-
-const OPTIONAL_SECTIONS: Array<{
-  items: (a: Applicant) => unknown[]
-  format: (a: Applicant) => string
-}> = [
-  {
-    items: (a) => a.experience,
-    format: (a) =>
-      `## Experience\n${a.experience.map((entry) => formatExperienceLine(entry)).join("\n")}`,
-  },
-  {
-    items: (a) => a.education,
-    format: (a) =>
-      `## Education\n${a.education.map((entry) => formatEducationLine(entry)).join("\n")}`,
-  },
-  {
-    items: (a) => a.skills,
-    format: (a) => `## Skills\n${a.skills.map((s) => s.name).join(", ")}`,
-  },
-  {
-    items: (a) => a.languages,
-    format: (a) =>
-      `## Languages\n${a.languages.map((l) => `${l.language} (${l.level})`).join(", ")}`,
-  },
-  {
-    items: (a) => a.certifications,
-    format: (a) => {
-      const lines = a.certifications.map(
-        (c) => `- ${c.name}${c.issuer ? ` (${c.issuer})` : ""}`,
-      )
-      return `## Certifications\n${lines.join("\n")}`
-    },
-  },
-]
 
 function formatPersonalNotes(
   notes: Applicant["personalNotes"],

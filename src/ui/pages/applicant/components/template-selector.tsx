@@ -15,7 +15,34 @@ export function TemplateSelector({
   return (
     <Card className="p-4">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {TEMPLATE_OPTIONS.map((opt) => (
+        {(
+          [
+            {
+              value: "resume_classic" as const,
+              label: "Klassisch",
+              description: "Serif, zentriert, schlicht",
+              preview: <ResumeClassicPreview />,
+            },
+            {
+              value: "resume_elegant" as const,
+              label: "Elegant",
+              description: "Tabellarisch, Garamond",
+              preview: <ResumeElegantPreview />,
+            },
+            {
+              value: "resume_modern" as const,
+              label: "Modern",
+              description: "Seitenleiste, Akzentfarbe",
+              preview: <ResumeModernPreview />,
+            },
+            {
+              value: "resume_minimal" as const,
+              label: "Minimal",
+              description: "Kopfleiste, Farbverlauf",
+              preview: <ResumeMinimalPreview />,
+            },
+          ] satisfies TemplateOption[]
+        ).map((opt) => (
           <button
             key={opt.value}
             type="button"
@@ -33,33 +60,6 @@ export function TemplateSelector({
     </Card>
   )
 }
-
-const TEMPLATE_OPTIONS: TemplateOption[] = [
-  {
-    value: "resume_classic",
-    label: "Klassisch",
-    description: "Serif, zentriert, schlicht",
-    preview: <ResumeClassicPreview />,
-  },
-  {
-    value: "resume_elegant",
-    label: "Elegant",
-    description: "Tabellarisch, Garamond",
-    preview: <ResumeElegantPreview />,
-  },
-  {
-    value: "resume_modern",
-    label: "Modern",
-    description: "Seitenleiste, Akzentfarbe",
-    preview: <ResumeModernPreview />,
-  },
-  {
-    value: "resume_minimal",
-    label: "Minimal",
-    description: "Kopfleiste, Farbverlauf",
-    preview: <ResumeMinimalPreview />,
-  },
-]
 
 interface TemplateOption {
   value: ResumeTemplate

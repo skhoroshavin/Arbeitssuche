@@ -14,7 +14,7 @@ export function useApplicantListView() {
   const query = useApplicants()
   return {
     ...query,
-    data: query.data?.applicants ?? EMPTY_APPLICANTS,
+    data: query.data?.applicants ?? [],
   }
 }
 
@@ -118,17 +118,13 @@ export function useDownloadResume(id: string, applicantName: string) {
   })
 }
 
-const EMPTY_APPLICANTS: ApplicantInfo[] = []
-
 export function useConsultSearchesView(applicantId: string) {
   const mutation = useConsultSearches(applicantId)
   return {
     ...mutation,
-    suggestions: mutation.data?.suggestions ?? EMPTY_CONSULTATION_SUGGESTIONS,
+    suggestions: mutation.data?.suggestions ?? [],
   }
 }
-
-const EMPTY_CONSULTATION_SUGGESTIONS: ConsultationSuggestion[] = []
 
 function useConsultSearches(applicantId: string) {
   return useMutation({
