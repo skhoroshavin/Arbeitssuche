@@ -1,4 +1,4 @@
-import type { AppConfig, LlmProvider } from "@/models/config/types.js"
+import type { AppConfig, LlmProvider } from "@/models/config"
 
 import {
   DEFAULT_PROVIDER,

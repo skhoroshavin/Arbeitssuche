@@ -1,6 +1,6 @@
 import { describe, it, test, expect } from "vitest"
 import { Vacancy } from "."
-import type { VacancyDTO } from "./types"
+import type { VacancyDTO } from "./index.js"
 
 describe("deriveStatus", () => {
   it("returns 'new' for active vacancy with no history", () => {

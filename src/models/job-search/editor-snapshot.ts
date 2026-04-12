@@ -7,7 +7,7 @@ import type {
   JobSearchEditorSnapshot,
   SearchParameters,
   SearchPreferences,
-} from "@/models/job-search/types.js"
+} from "@/models/job-search"
 
 export function createDefaultJobSearchEditorSnapshot(): JobSearchEditorSnapshot {
   return {

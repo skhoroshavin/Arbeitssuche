@@ -1,4 +1,4 @@
-import type { CommuteInfo } from "@/models/vacancy/types"
+import type { CommuteInfo } from "@/models/vacancy"
 
 export function VacancyCommuteSection({
   commute,

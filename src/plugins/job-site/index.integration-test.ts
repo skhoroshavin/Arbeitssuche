@@ -1,7 +1,7 @@
 import { test, describe, beforeAll, afterAll, expect } from "vitest"
-import { createPlaywrightBrowser } from "@/plugins/browser/index.js"
-import type { Browser } from "@/plugins/browser/types"
-import { createJobSite, getJobSiteInfos } from "."
+import { createPlaywrightBrowser } from "@/plugins/browser/create"
+import type { Browser } from "@/plugins/browser"
+import { createJobSite, getJobSiteInfos } from "./create.js"
 
 describe("job-site plugins", () => {
   let browser: Browser

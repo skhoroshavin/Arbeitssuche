@@ -6,7 +6,7 @@ import type {
   ApplicantDisclose,
   ApplicantLanguage,
   ApplicantSkill,
-} from "@/models/applicant/types"
+} from "@/models/applicant"
 
 export function toApplicantFormValues(
   applicant: Applicant,

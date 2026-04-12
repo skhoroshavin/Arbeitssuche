@@ -1,6 +1,6 @@
-import type { ApplicantRepository } from "@/repositories/applicant/types.js"
-import type { LlmClient } from "@/plugins/llm/types.js"
-import type { ConsultationSuggestion } from "@/models/job-search/types.js"
+import type { ApplicantRepository } from "@/repositories/applicant"
+import type { LlmClient } from "@/plugins/llm"
+import type { ConsultationSuggestion } from "@/models/job-search"
 import { ensureLlmAvailable } from "@/services/llm/index.js"
 import { consultSearches } from "./consult-searches.js"
 

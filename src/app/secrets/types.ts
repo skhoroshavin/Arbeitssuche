@@ -1,4 +1,4 @@
-import type { Secrets } from "@/models/secrets/types.js"
+import type { Secrets } from "@/models/secrets"
 
 export interface Cipher {
   encryptString(plainText: string): Buffer

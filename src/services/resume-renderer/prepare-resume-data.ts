@@ -1,4 +1,4 @@
-import type { Applicant } from "@/models/applicant/types.js"
+import type { Applicant } from "@/models/applicant"
 
 export function prepareResumeData(applicant: Applicant) {
   const { personal, disclose } = applicant

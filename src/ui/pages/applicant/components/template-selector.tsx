@@ -1,5 +1,5 @@
 import { Card } from "@/ui/components"
-import type { ResumeTemplate } from "@/models/applicant/types"
+import type { ResumeTemplate } from "@/models/applicant"
 import { ResumeClassicPreview } from "./templates/resume-classic-preview"
 import { ResumeElegantPreview } from "./templates/resume-elegant-preview"
 import { ResumeModernPreview } from "./templates/resume-modern-preview"

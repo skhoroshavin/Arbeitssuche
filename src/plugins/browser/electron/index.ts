@@ -1,5 +1,5 @@
 import { BrowserWindow } from "electron"
-import type { Browser, Page, OpenPageOptions } from "@/plugins/browser/types.js"
+import type { Browser, Page, OpenPageOptions } from "@/plugins/browser"
 
 export function createElectronBrowser(): Browser {
   return new ElectronBrowser()

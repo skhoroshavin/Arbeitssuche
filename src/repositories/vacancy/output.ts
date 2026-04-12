@@ -1,5 +1,5 @@
 import { Vacancy } from "@/models/vacancy/index.js"
-import type { VacancyListOutput } from "@/repositories/vacancy/types.js"
+import type { VacancyListOutput } from "@/repositories/vacancy"
 
 export const EMPTY_VACANCY_LIST_OUTPUT: VacancyListOutput = {
   generatedAt: "",

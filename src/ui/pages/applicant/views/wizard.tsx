@@ -7,7 +7,7 @@ import {
   isMeaningfulApplicantDraftSnapshot,
 } from "@/models/applicant"
 
-import type { ApplicantDraftSnapshot } from "@/models/applicant/types"
+import type { ApplicantDraftSnapshot } from "@/models/applicant"
 
 import {
   useApplicantDraft,

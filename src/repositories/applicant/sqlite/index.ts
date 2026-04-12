@@ -5,7 +5,7 @@ import {
   type ApplicantDraftSnapshot,
   type ApplicantInfo,
   type ApplicantPersonal,
-} from "@/models/applicant/types.js"
+} from "@/models/applicant"
 import {
   DEFAULT_APPLICANT,
   isMeaningfulApplicantDraftSnapshot,
@@ -14,7 +14,7 @@ import {
 import {
   loadFinalizedApplicantDraft,
   type ApplicantRepository,
-} from "@/repositories/applicant/types.js"
+} from "../types.js"
 import {
   Database,
   createUniqueDerivedId,

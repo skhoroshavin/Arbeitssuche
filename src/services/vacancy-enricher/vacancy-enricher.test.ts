@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from "vitest"
 import { VacancyEnricher } from "."
 import { Vacancy } from "@/models/vacancy/index.js"
-import type { Applicant } from "@/models/applicant/types.js"
-import type { SearchPreferences } from "@/models/job-search/types.js"
-import type { LlmClient } from "@/plugins/llm/types.js"
-import type { CommuteClient } from "@/plugins/commute/types.js"
+import type { Applicant } from "@/models/applicant"
+import type { SearchPreferences } from "@/models/job-search"
+import type { LlmClient } from "@/plugins/llm"
+import type { CommuteClient } from "@/plugins/commute"
 
 describe("VacancyEnricher", () => {
   it("sets enriched=true and enrichmentDirty=false after successful enrichment", async () => {

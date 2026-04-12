@@ -1,4 +1,4 @@
-import type { VacancyContact } from "@/models/vacancy/types"
+import type { VacancyContact } from "@/models/vacancy"
 
 export function VacancyContactSection({
   contact,

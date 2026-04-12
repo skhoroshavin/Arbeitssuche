@@ -5,7 +5,7 @@ import type {
   LlmPricing,
   LlmModelRegistry,
   TypedSchema,
-} from "@/plugins/llm/types.js"
+} from "@/plugins/llm"
 import { toStrictSchema } from "./strict-schema.js"
 
 export function normalizeNestedPricing(raw: unknown): LlmPricing {

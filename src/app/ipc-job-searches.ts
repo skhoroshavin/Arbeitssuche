@@ -2,7 +2,7 @@ import type {
   JobSearch,
   JobSearchEditorSnapshot,
   SearchMode,
-} from "@/models/job-search/types.js"
+} from "@/models/job-search"
 import type { AppServices } from "."
 import type { IpcHandle } from "./ipc-handlers.js"
 

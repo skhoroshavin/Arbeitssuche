@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio/slim"
-import type { Browser, OpenPageOptions } from "@/plugins/browser/types.js"
+import type { Browser, OpenPageOptions } from "@/plugins/browser"
 
 export async function withOpenedPage<T>(
   browser: Browser,

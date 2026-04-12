@@ -5,14 +5,14 @@ import type {
   JobSearchDraft,
   JobSearchEditorSnapshot,
   JobSearchInfo,
-} from "@/models/job-search/types"
+} from "@/models/job-search"
 
 import type {
   Activity,
   VacancyDTO,
   VacancySource,
   VacancyStatus,
-} from "@/models/vacancy/types"
+} from "@/models/vacancy"
 
 import typia from "typia"
 

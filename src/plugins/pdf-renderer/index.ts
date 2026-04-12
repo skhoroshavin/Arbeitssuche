@@ -1,2 +1,1 @@
-export { createElectronPdfRenderer } from "./electron"
-export { createStubPdfRenderer } from "./stub"
+export type { PdfRenderer } from "./types.js"

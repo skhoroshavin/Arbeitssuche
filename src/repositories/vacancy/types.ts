@@ -1,6 +1,6 @@
 import { Vacancy } from "@/models/vacancy/index.js"
 
-import type { Activity } from "@/models/vacancy/types.js"
+import type { Activity } from "@/models/vacancy"
 
 export interface VacancyRepository {
   loadAll(jobSearchId: string): VacancyListOutput

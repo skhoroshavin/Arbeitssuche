@@ -1,7 +1,7 @@
 import typia from "typia"
 import type { Vacancy } from "@/models/vacancy/index.js"
-import type { VacancyContact } from "@/models/vacancy/types.js"
-import type { LlmClient, TypedSchema } from "@/plugins/llm/types.js"
+import type { VacancyContact } from "@/models/vacancy"
+import type { LlmClient, TypedSchema } from "@/plugins/llm"
 import { mergeAddresses } from "@/services/vacancy-processor/index.js"
 
 export function needsContactExtraction(vacancy: Vacancy): boolean {

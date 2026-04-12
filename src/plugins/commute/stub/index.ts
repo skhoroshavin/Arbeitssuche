@@ -1,4 +1,4 @@
-import type { CommuteResult, CommuteClient } from "@/plugins/commute/types.js"
+import type { CommuteResult, CommuteClient } from "@/plugins/commute"
 
 export function createStubCommuteClient(
   results?: CommuteResult | Map<string, CommuteResult> | Error,

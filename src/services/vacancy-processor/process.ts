@@ -1,6 +1,6 @@
-import type { VacancyDetails } from "@/plugins/job-site/types.js"
+import type { VacancyDetails } from "@/plugins/job-site"
 import { Vacancy } from "@/models/vacancy/index.js"
-import type { FoundActivity, VacancyContact } from "@/models/vacancy/types.js"
+import type { FoundActivity, VacancyContact } from "@/models/vacancy"
 import { vacancyHash } from "./vacancy-hash.js"
 import { htmlToMarkdown } from "./markdown.js"
 

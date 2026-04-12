@@ -30,6 +30,22 @@ export default tseslint.config(
           "plugins/*": {
             imports: ["plugins/*", "utils", "utils/node"],
           },
+          "plugins/llm": {
+            imports: ["plugins/*", "utils", "utils/node"],
+            entrypoints: ["index.ts", "create.ts"],
+          },
+          "plugins/commute": {
+            imports: ["plugins/*", "utils", "utils/node"],
+            entrypoints: ["index.ts", "create.ts"],
+          },
+          "plugins/browser": {
+            imports: ["plugins/*", "utils", "utils/node"],
+            entrypoints: ["index.ts", "create.ts"],
+          },
+          "plugins/job-site": {
+            imports: ["plugins/*", "plugins/browser", "utils", "utils/node"],
+            entrypoints: ["index.ts", "create.ts"],
+          },
           "repositories/*": {
             imports: [
               "repositories/*",

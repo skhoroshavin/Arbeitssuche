@@ -1,11 +1,11 @@
 import typia from "typia"
-import type { Browser } from "@/plugins/browser/types.js"
-import type { Fetch } from "@/plugins/fetch/types.js"
+import type { Browser } from "@/plugins/browser"
+import type { Fetch } from "@/plugins/fetch"
 import type {
   VacancyDetails,
   JobSite,
   SearchCriteria,
-} from "@/plugins/job-site/types.js"
+} from "@/plugins/job-site"
 import { joinNormalizedText } from "@/utils/index.js"
 
 export function createArbeitsagenturSite(

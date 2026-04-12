@@ -87,10 +87,13 @@ It focuses on how to build/test/lint and which coding rules to follow.
 - Under `src/`, parent imports (`../`) are forbidden
 - Use `@/...` for cross-module imports via public surfaces
 - Use `./...` for local, same-module imports
-- Cross-folder imports should go through `index.ts` or `types.ts`
+- Cross-folder imports should go through the configured public surface only:
+  - models, repositories, services, and non-factory plugins: `index.ts`
+  - factory plugins (`plugins/llm`, `plugins/commute`, `plugins/browser`, `plugins/job-site`): `index.ts` for contracts, `create.ts` for app-layer factories
+- `types.ts` is an internal contract file for repositories and plugins; do not import it cross-module
 - Tests are stricter:
   - no parent imports (`../`)
-  - relative imports should use `index`/`types` surfaces
+  - relative imports should use public/internal module surfaces (`index`, `create`, `types`, or direct implementation submodules when intentionally testing internals)
   - aliased imports should use public surfaces
 
 ### Architecture Rules (eslint-plugin-unslop)
@@ -100,10 +103,11 @@ Architecture is enforced by `eslint-plugin-unslop` configured in `eslint.config.
 - **import-control**: Enforces module-level allow lists for cross-module imports
   - `utils` — shared, no declared imports
   - `models/*` — may import `models/*`
-  - `plugins/*` — may import `plugins/*`, `utils`
+  - `plugins/*` — may import `plugins/*`, exact factory-plugin modules, `utils`
+  - `plugins/llm`, `plugins/commute`, `plugins/browser`, `plugins/job-site` — same as plugins, but also allow `create.ts` as an entrypoint
   - `repositories/*` — may import `repositories/*`, `models`, `models/*`, `utils`
-  - `services/*` — may import `services/*`, `plugins/*`, `models`, `models/*`, `repositories/*`, `utils`
-  - `app` and `app/*` — may import `utils`, `models`, `models/*`, `plugins/*`, `repositories/*`, `services/*`
+  - `services/*` — may import `services/*`, `plugins/*`, exact factory-plugin modules, `models`, `models/*`, `repositories/*`, `utils`
+  - `app` and `app/*` — may import `utils`, `models`, `models/*`, `plugins/*`, exact factory-plugin modules, `repositories/*`, `services/*`
   - `ui/components` — shared, may import `ui/hooks`
   - `ui/layout` — may import `ui/hooks`, `ui/components`, `models`
   - `ui/data` — may import `models`

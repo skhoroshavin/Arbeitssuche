@@ -1,4 +1,4 @@
-import type { CommuteClient } from "@/plugins/commute/types.js"
+import type { CommuteClient } from "@/plugins/commute"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import { formatError } from "@/services/vacancy-scanner/index.js"
 

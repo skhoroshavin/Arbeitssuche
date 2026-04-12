@@ -4,8 +4,8 @@ import type {
   JobSite,
   VacancyDetails,
   VacancyListPage,
-} from "@/plugins/job-site/types.js"
-import type { JobSearchCriteria } from "@/models/job-search/types.js"
+} from "@/plugins/job-site"
+import type { JobSearchCriteria } from "@/models/job-search"
 
 describe("SiteCrawler", () => {
   it("calls onResult for each vacancy detail fetched", async () => {

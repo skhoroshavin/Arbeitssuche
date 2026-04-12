@@ -6,7 +6,7 @@ import type {
   ApplicantDraftSnapshot,
   ApplicantEducation,
   ApplicantExperience,
-} from "@/models/applicant/types.js"
+} from "@/models/applicant"
 
 import { resolveApplicant } from "@/models/applicant/resolve.js"
 

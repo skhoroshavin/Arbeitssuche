@@ -3,7 +3,7 @@ import type { UseFormSetValue } from "react-hook-form"
 import { useJobSearch, useUpdateJobSearch, useSiteListView } from "@/ui/data"
 import { useAutoSaveForm } from "@/ui/hooks"
 import { mapPersistedJobSearchToSnapshot } from "@/models/job-search"
-import type { SearchMode } from "@/models/job-search/types"
+import type { SearchMode } from "@/models/job-search"
 import { PageHeader, Loading } from "@/ui/components"
 import { useAutoSaveHeader } from "@/ui/layout"
 import {
@@ -11,7 +11,7 @@ import {
   splitLines,
   stringifyOptionalNumber,
 } from "@/ui/views"
-import type { JobSearch } from "@/models/job-search/types"
+import type { JobSearch } from "@/models/job-search"
 import type { JobSearchEditorConfigValue } from "@/ui/views"
 
 export default function JobSearchConfig() {

@@ -15,7 +15,7 @@ import { CoverLetterEditor } from "@/ui/pages/job-search/components"
 import { Markdown } from "@/ui/components"
 import { StatusBadge } from "@/ui/pages/job-search/components"
 import { useLayoutConfig } from "@/ui/layout"
-import type { Activity, ActivityType } from "@/models/vacancy/types"
+import type { Activity, ActivityType } from "@/models/vacancy"
 import {
   MATCH_SCORE_LABELS,
   STATUS_LABELS,

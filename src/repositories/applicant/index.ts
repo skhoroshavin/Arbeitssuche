@@ -1,2 +1,1 @@
-export { createStubApplicantRepository } from "./stub"
-export { createSqliteApplicantRepository } from "./sqlite"
+export type { ApplicantRepository } from "./types.js"

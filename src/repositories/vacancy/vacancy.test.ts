@@ -1,11 +1,12 @@
 import { test, describe, expect } from "vitest"
-import { createStubVacancyRepository, createSqliteVacancyRepository } from "."
-import { createSqliteJobSearchRepository } from "@/repositories/job-search/index.js"
+import { createStubVacancyRepository } from "./stub"
+import { createSqliteVacancyRepository } from "./sqlite"
+import { createSqliteJobSearchRepository } from "@/repositories/job-search/sqlite"
 import {
   Database,
   setupTemporaryDatabaseDirectory,
 } from "@/utils/node/index.js"
-import type { VacancyDTO, Activity } from "@/models/vacancy/types"
+import type { VacancyDTO, Activity } from "@/models/vacancy"
 import { Vacancy } from "@/models/vacancy/index.js"
 import type { VacancyRepository } from "./types"
 

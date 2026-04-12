@@ -1,12 +1,12 @@
 import typia from "typia"
 import * as cheerio from "cheerio/slim"
-import type { Browser } from "@/plugins/browser/types.js"
+import type { Browser } from "@/plugins/browser"
 import type {
   VacancyDetails,
   JobSite,
   JobPostingJsonLd,
   SearchCriteria,
-} from "@/plugins/job-site/types.js"
+} from "@/plugins/job-site"
 import { withOpenedPage } from "@/plugins/job-site/utils/index.js"
 import {
   extractAddressFromJsonLd,

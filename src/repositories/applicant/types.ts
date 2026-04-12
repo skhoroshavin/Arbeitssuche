@@ -3,7 +3,7 @@ import type {
   ApplicantDraft,
   ApplicantDraftSnapshot,
   ApplicantInfo,
-} from "@/models/applicant/types.js"
+} from "@/models/applicant"
 
 import { resolveApplicant } from "@/models/applicant/index.js"
 

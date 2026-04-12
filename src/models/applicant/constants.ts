@@ -1,4 +1,4 @@
-import type { Applicant } from "./types.js"
+import type { Applicant } from "."
 
 export const RESUME_TEMPLATES = [
   "resume_classic",

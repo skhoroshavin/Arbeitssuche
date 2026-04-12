@@ -1,4 +1,4 @@
-import type { Fetch } from "@/plugins/fetch/types.js"
+import type { Fetch } from "@/plugins/fetch"
 import { findStubMatch } from "@/utils/index.js"
 
 export function createStubFetch(routes: Record<string, StubRoute>): StubFetch {

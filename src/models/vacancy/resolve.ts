@@ -4,7 +4,7 @@ import type {
   MatchScore,
   VacancyContact,
   VacancyDTO,
-} from "@/models/vacancy/types.js"
+} from "@/models/vacancy"
 
 export function resolveVacancy(data: Partial<VacancyDTO>): VacancyDTO {
   return {

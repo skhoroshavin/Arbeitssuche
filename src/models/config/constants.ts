@@ -1,4 +1,4 @@
-import type { AppConfig, LlmProvider } from "./types.js"
+import type { AppConfig, LlmProvider } from "."
 
 export const DEFAULT_PROVIDER: LlmProvider = "openrouter"
 

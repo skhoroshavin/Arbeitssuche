@@ -7,7 +7,7 @@ import type {
   LlmClient,
   LlmModelRegistry,
   LlmProviderInfo,
-} from "@/plugins/llm/types.js"
+} from "@/plugins/llm"
 
 export function createOpenRouterClient(
   apiKey: string,

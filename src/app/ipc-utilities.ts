@@ -1,4 +1,4 @@
-import type { SecretKey } from "@/models/secrets/types.js"
+import type { SecretKey } from "@/models/secrets"
 
 export const LLM_SECRET_KEYS = {
   openrouter: "openrouterApiKey",

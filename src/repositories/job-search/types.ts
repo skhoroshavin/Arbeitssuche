@@ -3,7 +3,7 @@ import type {
   JobSearch,
   JobSearchInfo,
   SearchMode,
-} from "@/models/job-search/types.js"
+} from "@/models/job-search"
 
 export interface JobSearchRepository {
   list(): JobSearchInfo[]

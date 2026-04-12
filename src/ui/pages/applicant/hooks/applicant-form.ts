@@ -1,7 +1,7 @@
 import { useParams } from "react-router"
 import { useApplicant, useUpdateApplicant } from "@/ui/data"
 import { useAutoSaveForm } from "@/ui/hooks"
-import type { Applicant } from "@/models/applicant/types"
+import type { Applicant } from "@/models/applicant"
 import {
   fromApplicantFormValues,
   toApplicantFormValues,

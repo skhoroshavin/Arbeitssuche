@@ -1,7 +1,7 @@
-import type { JobSearchRepository } from "@/repositories/job-search/types.js"
-import type { ApplicantRepository } from "@/repositories/applicant/types.js"
-import type { VacancyRepository } from "@/repositories/vacancy/types.js"
-import type { LlmClient } from "@/plugins/llm/types.js"
+import type { JobSearchRepository } from "@/repositories/job-search"
+import type { ApplicantRepository } from "@/repositories/applicant"
+import type { VacancyRepository } from "@/repositories/vacancy"
+import type { LlmClient } from "@/plugins/llm"
 import { ensureLlmAvailable } from "@/services/llm/index.js"
 import {
   mapSnapshotToPersistedJobSearch,

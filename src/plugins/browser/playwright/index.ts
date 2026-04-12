@@ -6,7 +6,7 @@ import {
   type Page as PwPage,
   type Browser as PwBrowser,
 } from "playwright"
-import type { Browser, Page, OpenPageOptions } from "@/plugins/browser/types.js"
+import type { Browser, Page, OpenPageOptions } from "@/plugins/browser"
 
 export async function createPlaywrightBrowser(options?: {
   headless?: boolean

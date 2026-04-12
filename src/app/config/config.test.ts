@@ -1,5 +1,5 @@
 import { test, describe, expect } from "vitest"
-import type { AppConfig } from "@/models/config/types"
+import type { AppConfig } from "@/models/config"
 import { createStubConfigRepository } from "."
 
 function configRepositoryTests(name: string) {

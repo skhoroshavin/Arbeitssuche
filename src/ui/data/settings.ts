@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import type { MaskedSecret } from "@/models/secrets/types"
+import type { MaskedSecret } from "@/models/secrets"
 import type {
   ConfigKey,
   LlmModel,
   LlmProvider,
   LlmProviderInfo,
   CommuteProviderInfo,
-} from "@/models/config/types"
+} from "@/models/config"
 import {
   DEFAULT_ASSESSMENT_MODEL,
   DEFAULT_CONSULTATION_MODEL,
