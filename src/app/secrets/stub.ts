@@ -1,5 +1,5 @@
 import { resolveSecrets } from "@/models/secrets/index.js"
-import type { Secrets } from "@/models/secrets/types.js"
+import type { Secrets } from "@/models/secrets"
 import type { SecretsRepository } from "./types.js"
 
 export function createStubSecretsRepository(

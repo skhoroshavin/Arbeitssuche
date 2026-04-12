@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import typia from "typia"
-import type { Secrets } from "@/models/secrets/types.js"
+import type { Secrets } from "@/models/secrets"
 import { resolveSecrets } from "@/models/secrets/index.js"
 import type { Cipher, SecretsRepository } from "./types.js"
 

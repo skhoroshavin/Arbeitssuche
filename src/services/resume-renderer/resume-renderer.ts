@@ -1,5 +1,5 @@
-import type { ApplicantRepository } from "@/repositories/applicant/types.js"
-import type { PdfRenderer } from "@/plugins/pdf-renderer/types.js"
+import type { ApplicantRepository } from "@/repositories/applicant"
+import type { PdfRenderer } from "@/plugins/pdf-renderer"
 import { RESUME_TEMPLATES } from "@/models/applicant/index.js"
 import { prepareResumeData } from "./prepare-resume-data.js"
 import path from "node:path"

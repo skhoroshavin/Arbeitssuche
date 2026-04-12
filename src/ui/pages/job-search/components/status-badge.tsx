@@ -1,5 +1,5 @@
 import { STATUS_COLORS } from "@/models/vacancy/index"
-import type { VacancyStatus } from "@/models/vacancy/types"
+import type { VacancyStatus } from "@/models/vacancy"
 
 export function StatusBadge({
   status,

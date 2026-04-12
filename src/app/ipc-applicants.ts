@@ -1,7 +1,4 @@
-import type {
-  Applicant,
-  ApplicantDraftSnapshot,
-} from "@/models/applicant/types.js"
+import type { Applicant, ApplicantDraftSnapshot } from "@/models/applicant"
 import type { AppServices } from "."
 import type { IpcHandle } from "./ipc-handlers.js"
 

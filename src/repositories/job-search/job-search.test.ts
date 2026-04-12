@@ -1,10 +1,8 @@
 import { test, describe, expect } from "vitest"
-import {
-  createStubJobSearchRepository,
-  createSqliteJobSearchRepository,
-} from "."
+import { createStubJobSearchRepository } from "./stub"
+import { createSqliteJobSearchRepository } from "./sqlite"
 import { createDefaultJobSearchEditorSnapshot } from "@/models/job-search"
-import type { JobSearch } from "@/models/job-search/types"
+import type { JobSearch } from "@/models/job-search"
 import type { JobSearchRepository } from "./types"
 import {
   Database,

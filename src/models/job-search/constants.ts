@@ -1,8 +1,4 @@
-import type {
-  SearchMode,
-  SearchParameters,
-  SearchPreferences,
-} from "./types.js"
+import type { SearchMode, SearchParameters, SearchPreferences } from "."
 
 export const SEARCH_MODES = [
   "employment",

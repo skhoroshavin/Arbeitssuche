@@ -1,11 +1,11 @@
 import * as cheerio from "cheerio/slim"
-import type { Browser } from "@/plugins/browser/types.js"
+import type { Browser } from "@/plugins/browser"
 import type {
   VacancyContact,
   VacancyDetails,
   JobSite,
   SearchCriteria,
-} from "@/plugins/job-site/types.js"
+} from "@/plugins/job-site"
 import { extractAbsoluteLinks } from "@/plugins/job-site/utils/index.js"
 import { normalizeContact, normalizeOptionalText } from "@/utils/index.js"
 

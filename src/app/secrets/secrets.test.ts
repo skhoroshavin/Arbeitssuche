@@ -2,7 +2,7 @@ import { test, describe, expect, beforeAll, afterAll } from "vitest"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import type { Secrets } from "@/models/secrets/types"
+import type { Secrets } from "@/models/secrets"
 import {
   createEncryptedSecretsRepository,
   createStubSecretsRepository,

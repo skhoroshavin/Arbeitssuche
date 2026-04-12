@@ -1,4 +1,4 @@
-import type { PdfRenderer } from "@/plugins/pdf-renderer/types.js"
+import type { PdfRenderer } from "@/plugins/pdf-renderer"
 
 export function createStubPdfRenderer(
   fixedBuffer?: Buffer | Uint8Array,

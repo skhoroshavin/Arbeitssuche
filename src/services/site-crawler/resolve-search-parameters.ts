@@ -1,6 +1,6 @@
-import type { Applicant } from "@/models/applicant/types.js"
-import type { JobSearch } from "@/models/job-search/types.js"
-import type { JobSearchCriteria } from "@/models/job-search/types.js"
+import type { Applicant } from "@/models/applicant"
+import type { JobSearch } from "@/models/job-search"
+import type { JobSearchCriteria } from "@/models/job-search"
 
 export function resolveSearchParameters(
   jobSearch: JobSearch,

@@ -1,9 +1,9 @@
 import path from "node:path"
 import { parseArgs } from "node:util"
 import { SEARCH_MODES } from "@/models/job-search/index.js"
-import { createPlaywrightBrowser } from "@/plugins/browser/index.js"
-import { createJobSite, getJobSiteNames } from "@/plugins/job-site/index.js"
-import type { SearchMode } from "@/models/job-search/types.js"
+import type { SearchMode } from "@/models/job-search"
+import { createPlaywrightBrowser } from "@/plugins/browser/create"
+import { createJobSite, getJobSiteNames } from "@/plugins/job-site/create"
 
 const { values } = parseArgs({
   options: {

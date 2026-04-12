@@ -1,6 +1,6 @@
 import { BrowserWindow } from "electron"
 
-import type { PdfRenderer } from "@/plugins/pdf-renderer/types.js"
+import type { PdfRenderer } from "@/plugins/pdf-renderer"
 
 export function createElectronPdfRenderer(): PdfRenderer {
   return new ElectronPdfRenderer()

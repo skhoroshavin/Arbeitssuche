@@ -1,4 +1,4 @@
-import type { LlmClient } from "@/plugins/llm/types.js"
+import type { LlmClient } from "@/plugins/llm"
 
 export function ensureLlmAvailable(llm?: LlmClient): asserts llm is LlmClient {
   if (!llm) {

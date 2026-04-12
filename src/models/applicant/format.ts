@@ -2,7 +2,7 @@ import type {
   Applicant,
   ApplicantExperience,
   ApplicantEducation,
-} from "@/models/applicant/types.js"
+} from "@/models/applicant"
 
 export function formatApplicantSections(applicant: Applicant): string[] {
   const sections: string[] = [formatPersonalSection(applicant.personal)]

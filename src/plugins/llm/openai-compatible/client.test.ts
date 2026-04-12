@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest"
-import type { TypedSchema } from "@/plugins/llm/types.js"
+import type { TypedSchema } from "@/plugins/llm"
 import { createOpenAICompatibleClient } from "."
 
 describe("OpenAICompatibleClient", () => {

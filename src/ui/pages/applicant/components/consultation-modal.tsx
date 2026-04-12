@@ -5,7 +5,7 @@ import {
   DialogPanel,
   DialogTitle,
 } from "@headlessui/react"
-import type { ConsultationSuggestion } from "@/models/job-search/types"
+import type { ConsultationSuggestion } from "@/models/job-search"
 import { SEARCH_MODE_LABELS } from "@/models/job-search/index"
 import { Loading } from "@/ui/components"
 import { useSelectionSet } from "@/ui/pages/applicant/hooks"

@@ -11,9 +11,9 @@ import type {
   JobSearchInfo,
   JobSearchEditorSnapshot,
   SearchMode,
-} from "@/models/job-search/types.js"
+} from "@/models/job-search"
 import { resolveJobSearch } from "@/models/job-search/index.js"
-import type { JobSearchRepository } from "@/repositories/job-search/types.js"
+import type { JobSearchRepository } from "../types.js"
 import {
   Database,
   createUniqueDerivedId,

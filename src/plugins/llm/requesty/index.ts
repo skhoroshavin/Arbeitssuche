@@ -8,7 +8,7 @@ import type {
   LlmModelInfo,
   LlmModelRegistry,
   LlmProviderInfo,
-} from "@/plugins/llm/types.js"
+} from "@/plugins/llm"
 
 export function createRequestyClient(apiKey: string, model: string): LlmClient {
   return createOpenAICompatibleClient(

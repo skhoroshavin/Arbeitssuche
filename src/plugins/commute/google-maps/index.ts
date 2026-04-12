@@ -3,7 +3,7 @@ import type {
   CommuteResult,
   CommuteClient,
   CommuteProviderInfo,
-} from "@/plugins/commute/types.js"
+} from "@/plugins/commute"
 
 export const googleMapsProviderInfo: CommuteProviderInfo = {
   id: "google-maps",

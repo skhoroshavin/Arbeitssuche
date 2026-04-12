@@ -1,6 +1,6 @@
 import ElectronStoreModule from "electron-store"
 
-import type { AppConfig } from "@/models/config/types.js"
+import type { AppConfig } from "@/models/config"
 
 import type { ConfigRepository } from "./types.js"
 

@@ -1,13 +1,10 @@
 import { Vacancy } from "@/models/vacancy/index.js"
-import type { Activity } from "@/models/vacancy/types.js"
+import type { Activity } from "@/models/vacancy"
 import {
   EMPTY_VACANCY_LIST_OUTPUT,
   createVacancyListOutput,
 } from "@/repositories/vacancy/output.js"
-import type {
-  VacancyListOutput,
-  VacancyRepository,
-} from "@/repositories/vacancy/types.js"
+import type { VacancyListOutput, VacancyRepository } from "../types.js"
 
 export function createStubVacancyRepository(
   initial?: Record<string, { vacancies: Vacancy[]; latestCrawl: string }>,

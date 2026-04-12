@@ -1,5 +1,5 @@
 import { Vacancy } from "@/models/vacancy/index.js"
-import type { NotFoundActivity } from "@/models/vacancy/types.js"
+import type { NotFoundActivity } from "@/models/vacancy"
 
 export function markUnseenAsGone(
   allVacancies: Vacancy[],

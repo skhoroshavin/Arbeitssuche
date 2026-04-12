@@ -2,7 +2,7 @@ import type {
   JobSearch,
   SearchParameters,
   SearchPreferences,
-} from "@/models/job-search/types.js"
+} from "@/models/job-search"
 import {
   DEFAULT_PREFERENCES,
   DEFAULT_SEARCH_PARAMS,

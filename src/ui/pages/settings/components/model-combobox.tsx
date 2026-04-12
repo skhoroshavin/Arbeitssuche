@@ -5,7 +5,7 @@ import {
   ComboboxOptions,
   ComboboxOption,
 } from "@headlessui/react"
-import type { LlmModel } from "@/models/config/types"
+import type { LlmModel } from "@/models/config"
 
 export function ModelCombobox({
   models,

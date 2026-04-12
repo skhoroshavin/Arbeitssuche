@@ -1,4 +1,4 @@
-import type { Activity } from "@/models/vacancy/types.js"
+import type { Activity } from "@/models/vacancy"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { AppServices } from "."
 import { EnrichQueue } from "@/services/vacancy-scanner/index.js"

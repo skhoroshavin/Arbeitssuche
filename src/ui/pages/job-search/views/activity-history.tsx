@@ -1,6 +1,6 @@
 import { Card, SectionHeader } from "@/ui/components"
 import { STATUS_LABELS } from "@/models/vacancy/index"
-import type { ActivityType } from "@/models/vacancy/types"
+import type { ActivityType } from "@/models/vacancy"
 
 export function ActivityHistory({
   activities,

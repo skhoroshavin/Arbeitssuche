@@ -17,6 +17,11 @@ export interface JobSite {
 
 export type SearchMode = "employment" | "entry-level" | "apprenticeship"
 
+export interface JobSiteInfo {
+  name: string
+  supportedModes: readonly SearchMode[]
+}
+
 export interface VacancyListPage {
   urls: string[]
   nextPageId?: string

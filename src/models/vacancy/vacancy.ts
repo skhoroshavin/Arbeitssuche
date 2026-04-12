@@ -6,7 +6,7 @@ import type {
   VacancyContact,
   VacancySource,
   VacancyStatus,
-} from "./types.js"
+} from "."
 import { resolveVacancy } from "./resolve.js"
 
 /** Rich domain object wrapping VacancyDTO with derived methods. */

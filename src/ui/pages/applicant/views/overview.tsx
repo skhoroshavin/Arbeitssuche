@@ -14,7 +14,7 @@ import { PageHeader, Loading } from "@/ui/components"
 import { EntityList } from "@/ui/pages/applicant/components"
 import { TemplateSelector } from "@/ui/pages/applicant/components"
 import { ConsultationModal } from "@/ui/pages/applicant/components"
-import type { ConsultationSuggestion } from "@/models/job-search/types"
+import type { ConsultationSuggestion } from "@/models/job-search"
 
 export default function ApplicantOverview() {
   const { id = "" } = useParams<{ id: string }>()

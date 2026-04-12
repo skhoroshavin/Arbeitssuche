@@ -1,2 +1,1 @@
-export { createStubJobSearchRepository } from "./stub"
-export { createSqliteJobSearchRepository } from "./sqlite"
+export type { JobSearchRepository } from "./types.js"

@@ -1,5 +1,5 @@
 import { Card, SectionHeader } from "@/ui/components"
-import type { ActivityType } from "@/models/vacancy/types"
+import type { ActivityType } from "@/models/vacancy"
 import type { StatusAction } from "@/models/vacancy/index"
 
 export function VacancyActivityForm({

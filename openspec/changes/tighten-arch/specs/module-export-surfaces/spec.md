@@ -71,12 +71,12 @@ Plugin modules SHALL retain `types.ts` as an internal file defining the contract
 
 #### Scenario: Cross-module import of plugin types.ts is rejected
 
-- **WHEN** a file in `services/*` attempts to import from `@/plugins/llm/types`
+- **WHEN** a file in `services/*` attempts to import from `@/plugins/llm`
 - **THEN** the linter SHALL report an `unslop/import-control` error
 
 ### Requirement: Factory plugins isolate runtime selection in create.ts
 
-Plugin modules with factory functions that perform runtime provider selection SHALL place those factories in a `create.ts` file. `create.ts` SHALL import from `types.ts` and implementation submodules. Only the app wiring layer SHALL import from `create.ts`.
+Plugin modules with factory functions that perform runtime provider selection SHALL place those factories in a `create.ts` file. `create.ts` SHALL import from `types.ts` and implementation submodules. Only the app wiring layer SHALL import from `create.ts`. For these factory plugin modules, `create.ts` is a second valid cross-module entrypoint alongside `index.ts`.
 
 #### Scenario: Factory function lives in create.ts
 
@@ -109,9 +109,9 @@ The following plugin modules SHALL be treated as factory plugins (having `create
 - **WHEN** a developer inspects `plugins/fetch` or `plugins/pdf-renderer`
 - **THEN** each SHALL contain `index.ts` and `types.ts` but no `create.ts`
 
-### Requirement: index.ts is the single cross-module public surface
+### Requirement: Cross-module public surfaces are explicit entrypoints
 
-For all module kinds (models, repositories, plugins, services), `index.ts` SHALL be the only file importable by other modules. `types.ts` and `create.ts` SHALL be internal files that are not valid cross-module import targets.
+For models, repositories, services, and plugins without factories, `index.ts` SHALL be the only file importable by other modules. For factory plugins, `index.ts` and `create.ts` SHALL be the only cross-module entrypoints. `types.ts` SHALL remain internal and SHALL NOT be a valid cross-module import target.
 
 #### Scenario: Cross-module import through index.ts succeeds
 

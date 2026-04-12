@@ -5,8 +5,8 @@ import type {
   ApplicantDraftSnapshot,
   ApplicantInfo,
   ResumeTemplate,
-} from "@/models/applicant/types"
-import type { ConsultationSuggestion } from "@/models/job-search/types"
+} from "@/models/applicant"
+import type { ConsultationSuggestion } from "@/models/job-search"
 import typia from "typia"
 import { api } from "./internal/api"
 

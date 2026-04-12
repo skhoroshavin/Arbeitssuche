@@ -117,11 +117,13 @@ Four plugin modules have factory functions that import all implementations and p
 
 **Alternative considered:** Keep factories in `index.ts`. Rejected because `index.ts` would then import from implementation submodules that import from `types.ts` — if `index.ts` also re-exports from `types.ts`, the module's internal dependency graph becomes fragile. Separating `create.ts` makes the dependency flow explicit: `create.ts → types.ts + implementations`, `index.ts → types.ts`.
 
-### 6. ESLint architecture config: no `entrypoints` overrides needed
+### 6. ESLint architecture config: factory plugins allow `create.ts`
 
-Since the local unslop plugin defaults to `entrypoints: ['index.ts']`, and cross-module imports should only go through `index.ts`, no per-module `entrypoints` overrides are needed in the architecture config. Same-module relative imports (`./types.js` within a repository or plugin) are not subject to `import-control`'s entrypoint check.
+The local unslop plugin defaults to `entrypoints: ['index.ts']`. That remains correct for models, repositories, services, and plugins without factories. Factory plugins need an explicit override so the app wiring layer can import `create.ts`.
 
-The only config change is updating `package.json` to point `eslint-plugin-unslop` at the local fork and ensuring the build of the local plugin is up to date.
+**Config change:** Add exact module declarations for `plugins/llm`, `plugins/commute`, `plugins/browser`, and `plugins/job-site` with `entrypoints: ['index.ts', 'create.ts']`. Keep the broader `plugins/*` rule without overrides so all other plugin modules still allow only `index.ts`.
+
+Same-module relative imports (`./types.js` within a repository or plugin) are not subject to `import-control`'s entrypoint check.
 
 ### 7. Test files are excluded from `import-control`
 
@@ -133,10 +135,10 @@ The current ESLint config already ignores test files (`**/*.test.ts`, `**/*.test
 
 **[Risk] Local unslop plugin not built / out of sync** → Mitigation: Add a `preinstall` or `prepare` script, or document that `npm run build` must be run in `../eslint-plugin-unslop` before `npm install` in this project. The `file:` dependency resolves to the built output.
 
-**[Risk] `plugins/job-site` submodules import from parent's `types.ts` via aliased path** → Mitigation: Currently they use `@/plugins/job-site/types.js` which is a cross-module import in unslop's view (same module matcher `plugins/*` but aliased). Verify that `import-control` treats `plugins/job-site/arbeitsagentur` importing from `plugins/job-site/types.ts` as a same-module import (both match `plugins/*`). If not, these need to switch to relative imports (`../types.js`).
+**[Risk] `plugins/job-site` submodules import from parent's `types.ts` via aliased path** → Mitigation: Currently they use `@/plugins/job-site` which is a cross-module import in unslop's view (same module matcher `plugins/*` but aliased). Verify that `import-control` treats `plugins/job-site/arbeitsagentur` importing from `plugins/job-site/types.ts` as a same-module import (both match `plugins/*`). If not, these need to switch to relative imports (`../types.js`).
 
-**[Risk] `services/*` currently import from `@/plugins/job-site/types.js` and `@/repositories/*/types.js`** → After this change, services must import from `@/plugins/job-site` and `@/repositories/*` (the index). Since `index.ts` will re-export everything from `types.ts`, this is a path-only change with no runtime impact.
+**[Risk] `services/*` currently import from `@/plugins/job-site` and `@/repositories/*/types.js`** → After this change, services must import from `@/plugins/job-site` and `@/repositories/*` (the index). Since `index.ts` will re-export everything from `types.ts`, this is a path-only change with no runtime impact.
 
 **[Trade-off] `types.ts` still exists in repositories and plugins** — This is necessary to break circular dependencies. The file is internal to the module; cross-module consumers never see it. The naming convention is consistent and documented.
 
-**[Trade-off] `create.ts` is a new convention** — Adds a third file to the module surface (alongside `index.ts` and `types.ts`), but only for 4 plugin modules. The alternative (keeping factories in `index.ts`) creates circular import risk.
+**[Trade-off] `create.ts` is a new convention** — Adds a third file to the module surface (alongside `index.ts` and `types.ts`) for 4 plugin modules, and requires explicit lint config entrypoints for those modules. The alternative (keeping factories in `index.ts`) creates circular import risk.

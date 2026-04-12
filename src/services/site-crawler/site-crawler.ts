@@ -2,8 +2,8 @@ import type {
   JobSite,
   VacancyDetails,
   SearchCriteria,
-} from "@/plugins/job-site/types.js"
-import type { JobSearchCriteria } from "@/models/job-search/types.js"
+} from "@/plugins/job-site"
+import type { JobSearchCriteria } from "@/models/job-search"
 import type { ProgressEvent } from "@/models/progress/index.js"
 import { formatError } from "@/services/vacancy-scanner/index.js"
 import {

@@ -1,7 +1,7 @@
-import type { Applicant } from "@/models/applicant/types.js"
-import type { JobSearch } from "@/models/job-search/types.js"
+import type { Applicant } from "@/models/applicant"
+import type { JobSearch } from "@/models/job-search"
 import type { Vacancy } from "@/models/vacancy/index.js"
-import type { LlmClient } from "@/plugins/llm/types.js"
+import type { LlmClient } from "@/plugins/llm"
 import { formatApplicantSections } from "@/models/applicant/index.js"
 
 export async function generatePersonalizedCoverLetter(

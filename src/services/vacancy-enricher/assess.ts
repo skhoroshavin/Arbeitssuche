@@ -1,9 +1,9 @@
 import typia from "typia"
-import type { Applicant } from "@/models/applicant/types.js"
-import type { SearchPreferences } from "@/models/job-search/types.js"
+import type { Applicant } from "@/models/applicant"
+import type { SearchPreferences } from "@/models/job-search"
 import type { Vacancy } from "@/models/vacancy/index.js"
-import type { MatchScore } from "@/models/vacancy/types.js"
-import type { LlmClient, TypedSchema } from "@/plugins/llm/types.js"
+import type { MatchScore } from "@/models/vacancy"
+import type { LlmClient, TypedSchema } from "@/plugins/llm"
 import { formatApplicantSections } from "@/models/applicant/index.js"
 
 export function needsAssessment(vacancy: Vacancy): boolean {

@@ -5,8 +5,8 @@ import type {
   VacancyEnricher,
   EnrichContext,
 } from "@/services/vacancy-enricher/index.js"
-import type { Applicant } from "@/models/applicant/types.js"
-import type { SearchPreferences } from "@/models/job-search/types.js"
+import type { Applicant } from "@/models/applicant"
+import type { SearchPreferences } from "@/models/job-search"
 
 describe("EnrichQueue", () => {
   it("calls onEnriched after enrichment completes", async () => {

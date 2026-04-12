@@ -1,4 +1,4 @@
-import type { AppConfig } from "@/models/config/types.js"
+import type { AppConfig } from "@/models/config"
 
 export interface ConfigRepository {
   load(): AppConfig

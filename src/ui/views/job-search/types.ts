@@ -1,4 +1,4 @@
-import type { SearchMode } from "@/models/job-search/types"
+import type { SearchMode } from "@/models/job-search"
 
 export interface JobSearchEditorConfigValue {
   searchTerm: string

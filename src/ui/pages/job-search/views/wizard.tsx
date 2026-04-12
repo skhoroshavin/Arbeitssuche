@@ -9,7 +9,7 @@ import {
   isMeaningfulJobSearchEditorSnapshot,
 } from "@/models/job-search"
 
-import type { JobSearchEditorSnapshot } from "@/models/job-search/types"
+import type { JobSearchEditorSnapshot } from "@/models/job-search"
 
 import {
   useApiKeyStatus,

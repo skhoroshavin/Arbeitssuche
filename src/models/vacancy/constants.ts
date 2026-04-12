@@ -1,4 +1,4 @@
-import type { ActivityType, MatchScore, VacancyStatus } from "./types.js"
+import type { ActivityType, MatchScore, VacancyStatus } from "."
 
 export type StatusLabelKey = VacancyStatus | "all" | ActivityType
 

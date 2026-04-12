@@ -28,7 +28,31 @@ export default tseslint.config(
             imports: ["models/*"],
           },
           "plugins/*": {
+            imports: [
+              "plugins/*",
+              "plugins/llm",
+              "plugins/commute",
+              "plugins/browser",
+              "plugins/job-site",
+              "utils",
+              "utils/node",
+            ],
+          },
+          "plugins/llm": {
             imports: ["plugins/*", "utils", "utils/node"],
+            entrypoints: ["index.ts", "create.ts"],
+          },
+          "plugins/commute": {
+            imports: ["plugins/*", "utils", "utils/node"],
+            entrypoints: ["index.ts", "create.ts"],
+          },
+          "plugins/browser": {
+            imports: ["plugins/*", "utils", "utils/node"],
+            entrypoints: ["index.ts", "create.ts"],
+          },
+          "plugins/job-site": {
+            imports: ["plugins/*", "plugins/browser", "utils", "utils/node"],
+            entrypoints: ["index.ts", "create.ts"],
           },
           "repositories/*": {
             imports: [
@@ -43,6 +67,10 @@ export default tseslint.config(
             imports: [
               "services/*",
               "plugins/*",
+              "plugins/llm",
+              "plugins/commute",
+              "plugins/browser",
+              "plugins/job-site",
               "models",
               "models/*",
               "repositories/*",
@@ -57,6 +85,10 @@ export default tseslint.config(
               "models",
               "models/*",
               "plugins/*",
+              "plugins/llm",
+              "plugins/commute",
+              "plugins/browser",
+              "plugins/job-site",
               "repositories/*",
               "services/*",
             ],
@@ -68,6 +100,10 @@ export default tseslint.config(
               "models",
               "models/*",
               "plugins/*",
+              "plugins/llm",
+              "plugins/commute",
+              "plugins/browser",
+              "plugins/job-site",
               "repositories/*",
               "services/*",
             ],

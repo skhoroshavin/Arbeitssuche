@@ -1,12 +1,12 @@
 import { Database, parseRow } from "@/utils/node/index.js"
 import { Vacancy } from "@/models/vacancy/index.js"
-import type { Activity, VacancyDTO } from "@/models/vacancy/types.js"
+import type { Activity, VacancyDTO } from "@/models/vacancy"
 import { resolveVacancy } from "@/models/vacancy/index.js"
 import {
   EMPTY_VACANCY_LIST_OUTPUT,
   createVacancyListOutput,
 } from "@/repositories/vacancy/output.js"
-import type { VacancyRepository } from "@/repositories/vacancy/types.js"
+import type { VacancyRepository } from "../types.js"
 import typia from "typia"
 
 export function createSqliteVacancyRepository(

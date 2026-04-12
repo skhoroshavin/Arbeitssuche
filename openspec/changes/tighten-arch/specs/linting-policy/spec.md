@@ -17,14 +17,15 @@ The project MUST use `unslop.configs.full` from the local `eslint-plugin-unslop`
 
 ## ADDED Requirements
 
-### Requirement: Default entrypoints enforce index-only imports
+### Requirement: Entrypoints enforce module public surfaces
 
-The unslop architecture config SHALL rely on the default `entrypoints: ['index.ts']` for all modules. No per-module `entrypoints` overrides SHALL be declared. The `import-control` rule SHALL reject cross-module imports targeting any file other than `index.ts`.
+The unslop architecture config SHALL rely on the default `entrypoints: ['index.ts']` for all modules except factory plugins. The factory plugin modules `plugins/llm`, `plugins/commute`, `plugins/browser`, and `plugins/job-site` SHALL declare `entrypoints: ['index.ts', 'create.ts']`. The `import-control` rule SHALL reject cross-module imports targeting any file outside the configured entrypoints for that module.
 
-#### Scenario: No entrypoints overrides in config
+#### Scenario: Factory plugins declare create.ts entrypoint
 
 - **WHEN** a developer reads the architecture config in `eslint.config.ts`
-- **THEN** no module declaration SHALL contain an `entrypoints` property
+- **THEN** `plugins/llm`, `plugins/commute`, `plugins/browser`, and `plugins/job-site` SHALL declare `entrypoints: ['index.ts', 'create.ts']`
+- **AND** other modules SHALL continue using the default `index.ts` entrypoint
 
 #### Scenario: Cross-module import of types.ts is rejected
 
@@ -35,3 +36,8 @@ The unslop architecture config SHALL rely on the default `entrypoints: ['index.t
 
 - **WHEN** a file in `services/*` imports from `@/plugins/llm`
 - **THEN** the import SHALL be accepted because `index.ts` is the default entrypoint
+
+#### Scenario: App import of create.ts is accepted for factory plugin
+
+- **WHEN** a file in `app/*` imports from `@/plugins/llm/create`
+- **THEN** the import SHALL be accepted because `create.ts` is configured as an entrypoint for `plugins/llm`
