@@ -17,10 +17,8 @@ export async function assessVacancy(
   llmClient: LlmClient,
 ): Promise<AssessResult> {
   const prompt = buildAssessPrompt(vacancy, applicant, preferences)
-  return await llmClient.completeJSON(prompt, ASSESS_MAX_TOKENS, ASSESS_SCHEMA)
+  return await llmClient.completeJSON(prompt, 2048, ASSESS_SCHEMA)
 }
-
-const ASSESS_MAX_TOKENS = 2048
 
 const ASSESS_SCHEMA: TypedSchema<AssessResult> = {
   schema: typia.json.schema<AssessResult>(),

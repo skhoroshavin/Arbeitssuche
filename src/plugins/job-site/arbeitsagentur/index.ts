@@ -96,7 +96,7 @@ function buildSearchApiUrl(criteria: SearchCriteria, pageId?: string): string {
 }
 
 function refnrToUrl(refnr: string): string {
-  return `${SITE_BASE}/jobsuche/jobdetail/${refnr}`
+  return `https://www.arbeitsagentur.de/jobsuche/jobdetail/${refnr}`
 }
 
 function buildAddressFromLocations(
@@ -121,9 +121,7 @@ export const SUPPORTED_MODES = [
 ] as const
 
 const API_BASE = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service"
-const API_KEY = "jobboerse-jobsuche"
-const SITE_BASE = "https://www.arbeitsagentur.de"
-const API_HEADERS = { "X-API-Key": API_KEY }
+const API_HEADERS = { "X-API-Key": "jobboerse-jobsuche" }
 
 interface ApiSearchResponse {
   stellenangebote?: ApiSearchResult[]

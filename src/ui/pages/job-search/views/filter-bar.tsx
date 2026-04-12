@@ -41,7 +41,21 @@ export function FilterBar({
         ))}
       </div>
       <div className="flex flex-wrap gap-2">
-        {FILTER_ORDER.map((status) => {
+        {(
+          [
+            "all",
+            "new",
+            "gone",
+            "renewed",
+            "applied",
+            "ignored",
+            "invited",
+            "interviewed",
+            "offered",
+            "rejected",
+            "not-interested",
+          ] satisfies StatusLabelKey[]
+        ).map((status) => {
           const count = statusCounts[status] ?? 0
           if (status !== "all" && count === 0) return
           return (
@@ -68,20 +82,6 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "company", label: "Unternehmen" },
   { key: "commute", label: "Fahrtzeit" },
   { key: "score", label: "Bewertung" },
-]
-
-const FILTER_ORDER: StatusLabelKey[] = [
-  "all",
-  "new",
-  "gone",
-  "renewed",
-  "applied",
-  "ignored",
-  "invited",
-  "interviewed",
-  "offered",
-  "rejected",
-  "not-interested",
 ]
 
 type SortKey = "date" | "company" | "commute" | "score"

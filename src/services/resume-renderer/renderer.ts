@@ -2,11 +2,6 @@ import Handlebars from "handlebars"
 import fs from "node:fs"
 import path from "node:path"
 
-export const templatesDirectory = path.resolve(
-  import.meta.dirname,
-  "./templates",
-)
-
 Handlebars.registerHelper("json", (value: unknown) => JSON.stringify(value))
 Handlebars.registerHelper("join", (array: unknown, separator: unknown) =>
   Array.isArray(array) && typeof separator === "string"

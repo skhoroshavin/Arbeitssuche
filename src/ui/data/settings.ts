@@ -52,7 +52,7 @@ export function useCommuteProviderListView() {
   const query = useCommuteProviders()
   return {
     ...query,
-    data: query.data ?? EMPTY_COMMUTE_PROVIDERS,
+    data: query.data ?? [],
   }
 }
 
@@ -113,7 +113,6 @@ export function useLlmProviders() {
 }
 
 const EMPTY_MASKED_SECRET: MaskedSecret = { masked: "", isSet: false }
-const EMPTY_COMMUTE_PROVIDERS: CommuteProviderInfo[] = []
 
 function useLlmSecrets() {
   return llmHooks.useSecrets()

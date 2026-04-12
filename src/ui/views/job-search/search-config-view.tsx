@@ -6,7 +6,7 @@ export function JobSearchSearchConfigView({
   value,
   allSites,
   onUpdate,
-  sections = DEFAULT_SECTIONS,
+  sections = ["parameters", "mode", "sources", "preferences"],
 }: JobSearchSearchConfigViewProperties) {
   return (
     <>
@@ -31,13 +31,6 @@ export type JobSearchConfigSection =
   | "mode"
   | "sources"
   | "preferences"
-
-const DEFAULT_SECTIONS: JobSearchConfigSection[] = [
-  "parameters",
-  "mode",
-  "sources",
-  "preferences",
-]
 
 const SECTION_RENDERERS: Record<
   JobSearchConfigSection,

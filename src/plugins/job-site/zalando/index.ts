@@ -21,7 +21,7 @@ class ZalandoSite implements JobSite {
 
   async getVacancyList(criteria: SearchCriteria, pageId?: string) {
     const page = await this.browser.openPage(buildSearchUrl(criteria, pageId), {
-      waitFor: SEARCH_READY_SELECTOR,
+      waitFor: "a[href*='/en/jobs/']",
       blockPatterns: BLOCK_PATTERNS,
     })
     try {
@@ -29,9 +29,7 @@ class ZalandoSite implements JobSite {
       return {
         urls,
         nextPageId:
-          urls.length > 0
-            ? String(Number(pageId ?? "0") + PAGE_SIZE)
-            : undefined,
+          urls.length > 0 ? String(Number(pageId ?? "0") + 15) : undefined,
       }
     } finally {
       await page.close()
@@ -115,12 +113,9 @@ function createContact(contact: VacancyContact): VacancyContact | undefined {
 export const SUPPORTED_MODES = ["employment"] as const
 
 const BASE_URL = "https://jobs.zalando.com"
-const PAGE_SIZE = 15
 const BLOCK_PATTERNS = [/usercentrics\.eu/]
 
 const SELECTORS = {
   jobLink: "a[href*='/en/jobs/']",
   title: "h1",
 }
-
-const SEARCH_READY_SELECTOR = "a[href*='/en/jobs/']"

@@ -104,7 +104,15 @@ export default function JobSearchWizardPage() {
       <DraftWizardPage
         phase={phase}
         title="Neue Jobsuche erstellen"
-        steps={WIZARD_STEPS}
+        steps={
+          [
+            "parameters",
+            "mode",
+            "sources",
+            "preferences",
+            "cover-letter",
+          ] as const
+        }
         currentStep={step}
         stepLabels={STEP_LABELS}
         setStep={setStep}
@@ -188,14 +196,6 @@ function mapFormValuesToSnapshot(
     coverLetterContent: values.coverLetterContent,
   }
 }
-
-const WIZARD_STEPS: [WizardStep_, ...WizardStep_[]] = [
-  "parameters",
-  "mode",
-  "sources",
-  "preferences",
-  "cover-letter",
-]
 
 function JobSearchWizardStepView({
   step,
