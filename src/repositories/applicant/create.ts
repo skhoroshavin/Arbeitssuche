@@ -1,0 +1,1 @@
+export { createSqliteApplicantRepository } from "./sqlite"

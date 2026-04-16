@@ -1,9 +1,9 @@
 import { describe, expect, test, vi } from "vitest"
 import { DEFAULT_APPLICANT } from "@/models/applicant"
 import { createDefaultJobSearchEditorSnapshot } from "@/models/job-search"
-import { createStubApplicantRepository } from "@/repositories/applicant/stub"
-import { createStubJobSearchRepository } from "@/repositories/job-search/stub"
-import { createStubVacancyRepository } from "@/repositories/vacancy/stub"
+import { createStubApplicantRepository } from "@/repositories/applicant/testing"
+import { createStubJobSearchRepository } from "@/repositories/job-search/testing"
+import { createStubVacancyRepository } from "@/repositories/vacancy/testing"
 import { CoverLetterWriter } from "."
 
 describe("CoverLetterWriter", () => {

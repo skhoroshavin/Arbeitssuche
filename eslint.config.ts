@@ -29,41 +29,11 @@ export default tseslint.config(
           },
           "plugins/*": {
             imports: ["plugins/+", "utils/+"],
-          },
-          "plugins/llm": {
-            imports: ["plugins/+", "utils/+"],
-            entrypoints: ["index.ts", "create.ts"],
-          },
-          "plugins/commute": {
-            imports: ["plugins/+", "utils/+"],
-            entrypoints: ["index.ts", "create.ts"],
-          },
-          "plugins/browser": {
-            imports: ["plugins/+", "utils/+"],
-            entrypoints: ["index.ts", "create.ts"],
-          },
-          "plugins/job-site": {
-            imports: [
-              "plugins/+",
-              "utils/+",
-              "plugins/browser/stub",
-              "plugins/fetch/stub",
-            ],
-            entrypoints: ["index.ts", "create.ts"],
-          },
-          "plugins/openai-compatible": {
-            imports: ["plugins/llm/openai-compatible"],
+            entrypoints: ["index.ts", "create.ts", "testing.ts"],
           },
           "repositories/*": {
             imports: ["repositories/+", "models/+", "utils/+"],
-          },
-          "repositories/vacancy": {
-            imports: [
-              "repositories/+",
-              "models/+",
-              "utils/+",
-              "repositories/job-search/sqlite",
-            ],
+            entrypoints: ["index.ts", "create.ts", "testing.ts"],
           },
           "services/*": {
             imports: [
@@ -74,30 +44,12 @@ export default tseslint.config(
               "utils/+",
             ],
           },
-          "services/cover-letter-writer": {
-            imports: [
-              "services/+",
-              "plugins/+",
-              "models/+",
-              "repositories/+",
-              "utils/+",
-              "repositories/applicant/stub",
-              "repositories/job-search/stub",
-              "repositories/vacancy/stub",
-            ],
-          },
           app: {
             imports: [
               "app/+",
               "utils/+",
               "models/+",
               "plugins/+",
-              "plugins/commute/google-maps",
-              "plugins/pdf-renderer/electron",
-              "repositories/+",
-              "repositories/applicant/sqlite",
-              "repositories/job-search/sqlite",
-              "repositories/vacancy/sqlite",
               "services/+",
             ],
           },
@@ -107,15 +59,18 @@ export default tseslint.config(
               "utils/+",
               "models/+",
               "plugins/+",
-              "plugins/commute/google-maps",
-              "plugins/pdf-renderer/electron",
-              "repositories/+",
-              "repositories/applicant/sqlite",
-              "repositories/job-search/sqlite",
-              "repositories/vacancy/sqlite",
               "services/+",
             ],
-            entrypoints: ["index.ts", "types.ts"],
+          },
+          "app/composition": {
+            imports: [
+              "app/+",
+              "utils/+",
+              "models/+",
+              "plugins/+",
+              "repositories/+",
+              "services/+",
+            ],
           },
           "ui/components": {
             shared: true,

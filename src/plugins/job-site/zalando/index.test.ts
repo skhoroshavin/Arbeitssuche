@@ -1,7 +1,7 @@
 import { test, describe, expect } from "vitest"
 import path from "node:path"
 import { createZalandoSite } from "."
-import { createStubBrowser } from "@/plugins/browser/stub"
+import { createStubBrowser } from "@/plugins/browser/testing"
 
 describe("zalando", () => {
   test("getVacancyList returns absolute URLs from search page", async () => {

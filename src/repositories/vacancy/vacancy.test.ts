@@ -2,7 +2,7 @@ import { test, describe, expect } from "vitest"
 import type { VacancyRepository } from "."
 import { createStubVacancyRepository } from "./stub"
 import { createSqliteVacancyRepository } from "./sqlite"
-import { createSqliteJobSearchRepository } from "@/repositories/job-search/sqlite"
+import { createSqliteJobSearchRepository } from "@/repositories/job-search/create"
 import {
   Database,
   setupTemporaryDatabaseDirectory,
