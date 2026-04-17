@@ -1,1 +1,0 @@
-export { createStubBrowser } from "./stub"

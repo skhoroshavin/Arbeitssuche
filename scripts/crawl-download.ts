@@ -2,8 +2,8 @@ import path from "node:path"
 import { parseArgs } from "node:util"
 import { SEARCH_MODES } from "@/models/job-search/index.js"
 import type { SearchMode } from "@/models/job-search"
-import { createPlaywrightBrowser } from "@/plugins/browser/create"
-import { createJobSite, getJobSiteNames } from "@/plugins/job-site/create"
+import { createPlaywrightBrowser } from "@/plugins/browser"
+import { createJobSite, getJobSiteNames } from "@/plugins/job-site"
 
 const { values } = parseArgs({
   options: {
@@ -51,7 +51,7 @@ for (const siteName of sitesToRun) {
   const browser = await createPlaywrightBrowser({ recordDirectory })
   try {
     const site = createJobSite(siteName, browser)
-    const criteria = { location, query, mode }
+    const criteria = { location, query, mode, radiusKm: 25 }
 
     // Collect URLs via pagination
     let pageId: string | undefined

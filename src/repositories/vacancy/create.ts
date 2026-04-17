@@ -1,1 +1,0 @@
-export { createSqliteVacancyRepository } from "./sqlite"

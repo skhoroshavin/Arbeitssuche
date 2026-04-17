@@ -2,12 +2,9 @@ import type { AppServices } from "."
 import type { Secrets } from "@/models/secrets"
 import type { ConfigKey } from "@/models/config"
 import { resolveConfig } from "@/models/config/index.js"
-import { getJobSiteInfos } from "@/plugins/job-site/create"
-import { getLlmProviders, createLlmClientForPing } from "@/plugins/llm/create"
-import {
-  getCommuteProviders,
-  createCommuteClient,
-} from "@/plugins/commute/create"
+import { getJobSiteInfos } from "@/plugins/job-site"
+import { getLlmProviders, createLlmClientForPing } from "@/plugins/llm"
+import { getCommuteProviders, createCommuteClient } from "@/plugins/commute"
 import {
   LLM_SECRET_KEYS,
   COMMUTE_SECRET_KEYS,

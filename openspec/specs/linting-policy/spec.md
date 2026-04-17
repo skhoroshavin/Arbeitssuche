@@ -23,13 +23,12 @@ The project MUST use `unslop.configs.full` from the local `eslint-plugin-unslop`
 
 ### Requirement: Entrypoints enforce module public surfaces
 
-The unslop architecture config SHALL rely on the default `entrypoints: ['index.ts']` for all modules except factory plugins. The factory plugin modules `plugins/llm`, `plugins/commute`, `plugins/browser`, and `plugins/job-site` SHALL declare `entrypoints: ['index.ts', 'create.ts']`. The `import-control` rule SHALL reject cross-module imports targeting any file outside the configured entrypoints for that module.
+The unslop architecture config SHALL rely on the default `entrypoints: ['index.ts']` for all modules. The `import-control` rule SHALL reject cross-module imports targeting any file outside that public entrypoint.
 
-#### Scenario: Factory plugins declare create.ts entrypoint
+#### Scenario: Modules rely on index.ts entrypoint
 
 - **WHEN** a developer reads the architecture config in `eslint.config.ts`
-- **THEN** `plugins/llm`, `plugins/commute`, `plugins/browser`, and `plugins/job-site` SHALL declare `entrypoints: ['index.ts', 'create.ts']`
-- **AND** other modules SHALL continue using the default `index.ts` entrypoint
+- **THEN** modules SHALL rely on the default `index.ts` entrypoint
 
 #### Scenario: Cross-module import of types.ts is rejected
 
@@ -41,10 +40,10 @@ The unslop architecture config SHALL rely on the default `entrypoints: ['index.t
 - **WHEN** a file in `services/*` imports from `@/plugins/llm`
 - **THEN** the import SHALL be accepted because `index.ts` is the default entrypoint
 
-#### Scenario: App import of create.ts is accepted for factory plugin
+#### Scenario: Cross-module import of create.ts is rejected
 
 - **WHEN** a file in `app/*` imports from `@/plugins/llm/create`
-- **THEN** the import SHALL be accepted because `create.ts` is configured as an entrypoint for `plugins/llm`
+- **THEN** ESLint SHALL report an `unslop/import-control` error because `create.ts` is not a configured entrypoint
 
 ### Requirement: Module-level import allow lists
 
@@ -52,9 +51,9 @@ The project MUST declare the following module-level import allow lists in the un
 
 - `utils` — may import (empty list, no internal dependencies)
 - `models/*` — may import `models/*`
-- `plugins/*` — may import `plugins/*`, `utils`
+- `plugins/*` — may import `plugins/*`, `utils`; modules that only need plugin contracts MAY use `typeImports`
 - `repositories/*` — may import `repositories/*`, `models`, `models/*`, `utils`
-- `services/*` — may import `services/*`, `plugins/*`, `models`, `models/*`, `repositories/*`, `utils`
+- `services/*` — may import `services/*`, `models`, `models/*`, `utils`; modules that only need plugin or repository contracts MAY use `typeImports`
 - `app` — may import `utils`, `models`, `models/*`, `plugins/*`, `repositories/*`, `services/*`
 - `app/*` — may import `utils`, `models`, `models/*`, `plugins/*`, `repositories/*`, `services/*`
 - `ui/components` — shared, may import `ui/hooks`

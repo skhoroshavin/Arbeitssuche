@@ -22,21 +22,19 @@ Model modules (`models/*`) SHALL export all types and runtime values from `index
 - **THEN** it SHALL import from `@/models/<module>` (the `index.ts` surface)
 - **AND** importing from `@/models/<module>/types` SHALL be rejected by the linter
 
-### Requirement: Repository index.ts exports only the contract interface
+### Requirement: Repository index.ts is the public surface
 
-Repository modules (`repositories/*`) SHALL have an `index.ts` that re-exports only the contract interface and related types from `types.ts`. Concrete implementation factories (e.g. `createSqliteVacancyRepository`) SHALL NOT be exported from `index.ts`.
+Repository modules (`repositories/*`) SHALL expose their public API from `index.ts`. That surface MAY include contract types, concrete factory functions, and testing helpers when they are intended for cross-module use.
 
 #### Scenario: Service imports repository contract
 
 - **WHEN** a service needs the repository interface (e.g. `VacancyRepository`)
 - **THEN** it SHALL import from `@/repositories/<module>` (the `index.ts` surface)
-- **AND** the import resolves to the contract interface, not a concrete implementation
 
-#### Scenario: App layer imports concrete repository implementation
+#### Scenario: App layer imports concrete repository factory
 
 - **WHEN** the app wiring layer needs a concrete repository (e.g. `createSqliteVacancyRepository`)
-- **THEN** it SHALL import directly from the implementation submodule (e.g. `@/repositories/vacancy/sqlite`)
-- **AND** it SHALL NOT import the implementation from `@/repositories/vacancy`
+- **THEN** it SHALL import from `@/repositories/<module>`
 
 ### Requirement: Repository types.ts defines the contract interface
 
@@ -52,19 +50,19 @@ Repository modules SHALL retain `types.ts` as an internal file defining the cont
 - **WHEN** a file in `services/*` attempts to import from `@/repositories/vacancy/types`
 - **THEN** the linter SHALL report an `unslop/import-control` error
 
-### Requirement: Plugin index.ts exports only the contract interface
+### Requirement: Plugin index.ts is the public surface
 
-Plugin modules (`plugins/*`) without factory functions SHALL have an `index.ts` that re-exports only the contract interface from `types.ts`. Concrete implementations SHALL NOT be exported from `index.ts`.
+Plugin modules (`plugins/*`) SHALL expose their public API from `index.ts`. That surface MAY include contract types, factories, and testing helpers when they are intended for cross-module use.
 
 #### Scenario: Service imports plugin contract
 
 - **WHEN** a service needs the plugin interface (e.g. `Fetch`, `PdfRenderer`)
 - **THEN** it SHALL import from `@/plugins/<module>` (the `index.ts` surface)
 
-#### Scenario: App layer imports concrete plugin implementation
+#### Scenario: App layer imports plugin factory
 
 - **WHEN** the app wiring layer needs a concrete plugin (e.g. `createElectronPdfRenderer`)
-- **THEN** it SHALL import directly from the implementation submodule (e.g. `@/plugins/pdf-renderer/electron`)
+- **THEN** it SHALL import from `@/plugins/<module>`
 
 ### Requirement: Plugin types.ts defines the contract interface
 
@@ -80,61 +78,31 @@ Plugin modules SHALL retain `types.ts` as an internal file defining the contract
 - **WHEN** a file in `services/*` attempts to import from `@/plugins/llm/types`
 - **THEN** the linter SHALL report an `unslop/import-control` error
 
-### Requirement: Factory plugins isolate runtime selection in create.ts
+### Requirement: Type-only access can be stricter than value access
 
-Plugin modules with factory functions that perform runtime provider selection SHALL place those factories in a `create.ts` file. `create.ts` SHALL import from `types.ts` and implementation submodules. Only the app wiring layer SHALL import from `create.ts`. For these factory plugin modules, `create.ts` is a second valid cross-module entrypoint alongside `index.ts`.
+When a module should depend only on another module's contract, the architecture config SHALL prefer `typeImports` from that module's `index.ts` instead of allowing general value imports.
 
-#### Scenario: Factory function lives in create.ts
+#### Scenario: Service imports plugin type without value access
 
-- **WHEN** a plugin has a factory with runtime selection (e.g. `createLlmClient` switching on provider string)
-- **THEN** that factory SHALL be defined in `<plugin>/create.ts`
-- **AND** `<plugin>/index.ts` SHALL NOT contain or re-export the factory
+- **WHEN** a service only needs a plugin contract type
+- **THEN** it SHALL import that type from `@/plugins/<module>`
+- **AND** lint configuration MAY allow that access via `typeImports` while keeping value imports forbidden
 
-#### Scenario: App layer imports factory from create.ts
+### Requirement: Cross-module public surface is index.ts
 
-- **WHEN** the app wiring layer needs to create a plugin instance with runtime selection
-- **THEN** it SHALL import from `@/plugins/<module>/create` (e.g. `@/plugins/llm/create`)
-
-#### Scenario: Service does not import from create.ts
-
-- **WHEN** a service needs a plugin interface
-- **THEN** it SHALL import only from `@/plugins/<module>` (the `index.ts` surface)
-- **AND** it SHALL NOT import from `@/plugins/<module>/create`
-
-### Requirement: Factory plugin classification
-
-The following plugin modules SHALL be treated as factory plugins (having `create.ts`): `plugins/llm`, `plugins/commute`, `plugins/browser`, `plugins/job-site`. The following plugin modules SHALL be treated as contract-only plugins (no `create.ts`): `plugins/fetch`, `plugins/pdf-renderer`.
-
-#### Scenario: Factory plugins have create.ts
-
-- **WHEN** a developer inspects `plugins/llm`, `plugins/commute`, `plugins/browser`, or `plugins/job-site`
-- **THEN** each SHALL contain `index.ts`, `types.ts`, and `create.ts`
-
-#### Scenario: Contract-only plugins have no create.ts
-
-- **WHEN** a developer inspects `plugins/fetch` or `plugins/pdf-renderer`
-- **THEN** each SHALL contain `index.ts` and `types.ts` but no `create.ts`
-
-### Requirement: Cross-module public surfaces are explicit entrypoints
-
-For models, repositories, services, and plugins without factories, `index.ts` SHALL be the only file importable by other modules. For factory plugins, `index.ts` and `create.ts` SHALL be the only cross-module entrypoints. `types.ts` SHALL remain internal and SHALL NOT be a valid cross-module import target.
+For models, repositories, services, and plugins, `index.ts` SHALL be the only cross-module public entrypoint. `types.ts` SHALL remain internal and SHALL NOT be a valid cross-module import target.
 
 #### Scenario: Cross-module import through index.ts succeeds
 
-- **WHEN** a file in `services/*` imports from `@/models/vacancy`
-- **THEN** the import resolves to `models/vacancy/index.ts` and is accepted
+- **WHEN** a file in `services/*` imports from `@/plugins/llm`
+- **THEN** the import resolves to `plugins/llm/index.ts` and is evaluated against that module policy
 
 #### Scenario: Cross-module import through types.ts is rejected
 
-- **WHEN** a file in `services/*` imports from `@/models/vacancy/types`
+- **WHEN** a file in `services/*` imports from `@/plugins/llm/types`
 - **THEN** the linter SHALL report an error
 
-#### Scenario: Cross-module import through create.ts is rejected for non-app layers
+#### Scenario: Cross-module import through create.ts is rejected
 
 - **WHEN** a file in `services/*` imports from `@/plugins/llm/create`
 - **THEN** the linter SHALL report an error
-
-#### Scenario: App layer import through create.ts is accepted
-
-- **WHEN** a file in `app/*` imports from `@/plugins/llm/create`
-- **THEN** the import SHALL be accepted because `app/*` is allowed to import from `plugins/*` submodules

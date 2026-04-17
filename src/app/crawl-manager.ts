@@ -2,8 +2,8 @@ import type {
   VacancyScanner,
   OnProgress,
 } from "@/services/vacancy-scanner/index.js"
-import { createJobSite } from "@/plugins/job-site/create"
-import { createElectronBrowser } from "@/plugins/browser/create"
+import { createJobSite } from "@/plugins/job-site"
+import { createElectronBrowser } from "@/plugins/browser"
 
 export function startCrawl(options: StartCrawlOptions): void {
   const { jobSearchId, vacancyScanner, onProgress, onComplete, onError } =

@@ -1,5 +1,5 @@
 import { test, describe, expect } from "vitest"
-import { createStubPdfRenderer } from "@/plugins/pdf-renderer/testing"
+import { createStubPdfRenderer } from "@/plugins/pdf-renderer"
 
 describe("StubPdfRenderer", () => {
   test("returns default buffer", async () => {

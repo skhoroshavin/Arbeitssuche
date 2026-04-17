@@ -1,11 +1,17 @@
 import type { ConfigRepository } from "@/app/config"
 import type { SecretsRepository } from "@/app/secrets"
-import type { ApplicantRepository } from "@/repositories/applicant"
-import { createSqliteApplicantRepository } from "@/repositories/applicant/create"
-import type { JobSearchRepository } from "@/repositories/job-search"
-import { createSqliteJobSearchRepository } from "@/repositories/job-search/create"
-import type { VacancyRepository } from "@/repositories/vacancy"
-import { createSqliteVacancyRepository } from "@/repositories/vacancy/create"
+import {
+  createSqliteApplicantRepository,
+  type ApplicantRepository,
+} from "@/repositories/applicant"
+import {
+  createSqliteJobSearchRepository,
+  type JobSearchRepository,
+} from "@/repositories/job-search"
+import {
+  createSqliteVacancyRepository,
+  type VacancyRepository,
+} from "@/repositories/vacancy"
 import type { CommuteClient } from "@/plugins/commute"
 import type { LlmModelRegistry } from "@/plugins/llm"
 import type { PdfRenderer } from "@/plugins/pdf-renderer"

@@ -28,19 +28,17 @@ export default tseslint.config(
             imports: ["models/+"],
           },
           "plugins/*": {
-            imports: ["plugins/+", "utils/+"],
-            entrypoints: ["index.ts", "create.ts", "testing.ts"],
+            imports: ["plugins/*", "utils/+"],
           },
           "repositories/*": {
             imports: ["repositories/+", "models/+", "utils/+"],
-            entrypoints: ["index.ts", "create.ts", "testing.ts"],
           },
           "services/*": {
             imports: [
-              "services/+",
-              "plugins/+",
+              "services/*",
+              "repositories/*",
+              "plugins/*",
               "models/+",
-              "repositories/+",
               "utils/+",
             ],
           },
