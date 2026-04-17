@@ -1,0 +1,1 @@
+export { createSqliteVacancyRepository } from "./sqlite"

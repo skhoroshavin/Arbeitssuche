@@ -1,8 +1,10 @@
 import {
-  createGoogleMapsCommuteClient,
+  createGoogleMapsCommuteClient as buildGoogleMapsCommuteClient,
   googleMapsProviderInfo,
 } from "./google-maps"
 import type { CommuteClient, CommuteProviderInfo } from "./types.js"
+
+export { createGoogleMapsCommuteClient } from "./google-maps"
 
 export function getCommuteProviders(): CommuteProviderInfo[] {
   return [googleMapsProviderInfo]
@@ -14,7 +16,7 @@ export function createCommuteClient(
 ): CommuteClient {
   switch (provider) {
     case "google-maps": {
-      return createGoogleMapsCommuteClient(apiKey)
+      return buildGoogleMapsCommuteClient(apiKey)
     }
     default: {
       throw new Error(`Unknown commute provider: ${provider}`)

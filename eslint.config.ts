@@ -25,67 +25,51 @@ export default tseslint.config(
             shared: true,
           },
           "models/*": {
-            imports: ["models/*"],
+            imports: ["models/+"],
           },
           "plugins/*": {
-            imports: ["plugins/*", "utils", "utils/node"],
-          },
-          "plugins/llm": {
-            imports: ["plugins/*", "utils", "utils/node"],
-            entrypoints: ["index.ts", "create.ts"],
-          },
-          "plugins/commute": {
-            imports: ["plugins/*", "utils", "utils/node"],
-            entrypoints: ["index.ts", "create.ts"],
-          },
-          "plugins/browser": {
-            imports: ["plugins/*", "utils", "utils/node"],
-            entrypoints: ["index.ts", "create.ts"],
-          },
-          "plugins/job-site": {
-            imports: ["plugins/*", "plugins/browser", "utils", "utils/node"],
-            entrypoints: ["index.ts", "create.ts"],
+            imports: ["plugins/+", "utils/+"],
+            entrypoints: ["index.ts", "create.ts", "testing.ts"],
           },
           "repositories/*": {
-            imports: [
-              "repositories/*",
-              "models",
-              "models/*",
-              "utils",
-              "utils/node",
-            ],
+            imports: ["repositories/+", "models/+", "utils/+"],
+            entrypoints: ["index.ts", "create.ts", "testing.ts"],
           },
           "services/*": {
             imports: [
-              "services/*",
-              "plugins/*",
-              "models",
-              "models/*",
-              "repositories/*",
-              "utils",
-              "utils/node",
+              "services/+",
+              "plugins/+",
+              "models/+",
+              "repositories/+",
+              "utils/+",
             ],
           },
           app: {
             imports: [
-              "utils",
-              "utils/node",
-              "models",
-              "models/*",
-              "plugins/*",
-              "repositories/*",
-              "services/*",
+              "app/+",
+              "utils/+",
+              "models/+",
+              "plugins/+",
+              "services/+",
             ],
           },
           "app/*": {
             imports: [
-              "utils",
-              "utils/node",
-              "models",
-              "models/*",
-              "plugins/*",
-              "repositories/*",
-              "services/*",
+              "app/+",
+              "utils/+",
+              "models/+",
+              "plugins/+",
+              "services/+",
+            ],
+          },
+          "app/composition": {
+            imports: [
+              "app/+",
+              "utils/+",
+              "models/+",
+              "plugins/+",
+              "repositories/+",
+              "services/+",
             ],
           },
           "ui/components": {
@@ -96,16 +80,16 @@ export default tseslint.config(
             imports: [],
           },
           "ui/layout": {
-            imports: ["ui/hooks", "ui/components", "models", "models/*"],
+            imports: ["ui/hooks", "ui/components", "models/+"],
           },
           "ui/data": {
-            imports: ["models", "models/*"],
+            imports: ["models/+"],
           },
           "ui/views": {
-            imports: ["ui/components", "models", "models/*"],
+            imports: ["ui/components", "models/+"],
           },
           "ui/views/*": {
-            imports: ["ui/views", "ui/components", "models", "models/*"],
+            imports: ["ui/views", "ui/components", "models/+"],
           },
           "ui/pages/*": {
             imports: [
@@ -113,10 +97,8 @@ export default tseslint.config(
               "ui/components",
               "ui/layout",
               "ui/data",
-              "ui/views",
-              "ui/views/*",
-              "models",
-              "models/*",
+              "ui/views/+",
+              "models/+",
               "utils",
             ],
           },
