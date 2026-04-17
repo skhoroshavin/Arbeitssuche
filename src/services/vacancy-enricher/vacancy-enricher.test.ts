@@ -3,7 +3,7 @@ import { VacancyEnricher } from "."
 import { Vacancy } from "@/models/vacancy/index.js"
 import type { Applicant } from "@/models/applicant"
 import type { SearchPreferences } from "@/models/job-search"
-import type { LlmClient } from "@/plugins/llm"
+import type { LlmClient, TypedSchema } from "@/plugins/llm"
 import type { CommuteClient } from "@/plugins/commute"
 
 describe("VacancyEnricher", () => {
@@ -53,7 +53,7 @@ describe("VacancyEnricher", () => {
   })
 
   it("skips LLM when no client configured", async () => {
-    const commuteClient = makeCommuteClient()
+    const { commuteClient } = makeCommuteClient()
     const enricher = new VacancyEnricher({ commuteClient })
     const vacancy = makeVacancy()
 
@@ -67,9 +67,7 @@ describe("VacancyEnricher", () => {
   })
 
   it("continues enrichment after commute failure", async () => {
-    const commuteClient: CommuteClient = {
-      getCommute: vi.fn().mockRejectedValue(new Error("API down")),
-    } as unknown as CommuteClient
+    const { commuteClient } = makeCommuteClient({ shouldFail: true })
     const llmClient = makeLlmClient()
     const enricher = new VacancyEnricher({ commuteClient, llmClient })
     const vacancy = makeVacancy()
@@ -85,9 +83,7 @@ describe("VacancyEnricher", () => {
   })
 
   it("keeps enrichmentDirty=true after LLM failure so user can retry", async () => {
-    const llmClient: LlmClient = {
-      completeJSON: vi.fn().mockRejectedValue(new Error("LLM unavailable")),
-    } as unknown as LlmClient
+    const llmClient = makeLlmClient({ shouldFail: true })
     const enricher = new VacancyEnricher({ llmClient })
     const vacancy = makeVacancy()
 
@@ -160,28 +156,46 @@ function makeVacancy(
   })
 }
 
-function makeLlmClient(): LlmClient {
+function makeLlmClient(options: { shouldFail?: boolean } = {}): LlmClient {
+  const completeJSON: LlmClient["completeJSON"] = options.shouldFail
+    ? <T>(
+        _prompt: string,
+        _maxTokens: number,
+        _schema: TypedSchema<T>,
+      ): Promise<T> => Promise.reject(new Error("LLM unavailable"))
+    : <T>(
+        _prompt: string,
+        _maxTokens: number,
+        schema: TypedSchema<T>,
+      ): Promise<T> =>
+        Promise.resolve(
+          schema.parse(
+            JSON.stringify({ summary: "- Good match", matchScore: "good" }),
+          ),
+        )
+
   return {
-    completeJSON: vi.fn().mockResolvedValue({
-      summary: "- Good match",
-      matchScore: "good",
-    }),
-  } as unknown as LlmClient
+    complete: vi.fn<LlmClient["complete"]>().mockResolvedValue(""),
+    completeJSON,
+    ping: vi.fn<LlmClient["ping"]>().mockResolvedValue(true),
+  }
 }
 
-function makeCommuteClient(): {
-  commuteClient: CommuteClient
-  getCommuteMock: ReturnType<typeof vi.fn>
-} {
-  const getCommuteMock = vi.fn().mockResolvedValue({
-    distance: "10 km",
-    durations: { morning: 20, day: 15, evening: 25 },
-    fetchedAt: "2026-01-01",
-  })
+function makeCommuteClient(options: { shouldFail?: boolean } = {}) {
+  const getCommuteMock = options.shouldFail
+    ? vi
+        .fn<CommuteClient["getCommute"]>()
+        .mockRejectedValue(new Error("API down"))
+    : vi.fn<CommuteClient["getCommute"]>().mockResolvedValue({
+        distance: "10 km",
+        durations: { morning: 20, day: 15, evening: 25 },
+        fetchedAt: "2026-01-01",
+      })
 
-  const commuteClient = {
+  const commuteClient: CommuteClient = {
     getCommute: getCommuteMock,
-  } satisfies CommuteClient
+    ping: vi.fn<CommuteClient["ping"]>().mockResolvedValue(true),
+  }
 
   return {
     commuteClient,

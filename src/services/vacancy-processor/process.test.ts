@@ -14,12 +14,14 @@ describe("process", () => {
 
   it("adds found activity on new vacancy", () => {
     const result = process(makeDetails(), "test-site", new Map(), CRAWL_DATE)
+    const [firstActivity] = result.vacancy.activityHistory
 
     expect(result.vacancy.activityHistory.length).toBe(1)
-    expect(result.vacancy.activityHistory[0].type).toBe("found")
-    expect((result.vacancy.activityHistory[0] as { site: string }).site).toBe(
-      "test-site",
-    )
+    expect(firstActivity.type).toBe("found")
+    if (firstActivity.type !== "found") {
+      throw new Error("Expected a found activity for new vacancies")
+    }
+    expect(firstActivity.site).toBe("test-site")
   })
 
   it("merges existing vacancy with unchanged description", () => {

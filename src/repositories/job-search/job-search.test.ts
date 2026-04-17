@@ -1,9 +1,9 @@
 import { test, describe, expect } from "vitest"
+import type { JobSearchRepository } from "."
 import { createStubJobSearchRepository } from "./stub"
 import { createSqliteJobSearchRepository } from "./sqlite"
 import { createDefaultJobSearchEditorSnapshot } from "@/models/job-search"
 import type { JobSearch } from "@/models/job-search"
-import type { JobSearchRepository } from "./types"
 import {
   Database,
   setupTemporaryDatabaseDirectory,

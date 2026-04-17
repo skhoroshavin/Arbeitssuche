@@ -7,7 +7,6 @@ import {
   createEncryptedSecretsRepository,
   createStubSecretsRepository,
 } from "."
-import type { Cipher } from "./types"
 
 let temporaryDirectory: string
 let counter = 0
@@ -145,7 +144,7 @@ const SAMPLE_SECRETS: Secrets = {
 }
 
 /** Simple XOR cipher — enough to verify encrypt/decrypt round-trips. */
-const testCipher: Cipher = {
+const testCipher = {
   encryptString(plainText: string): Buffer {
     const buf = Buffer.from(plainText, "utf8")
     for (let index = 0; index < buf.length; index++) buf[index] ^= 0x42
@@ -156,4 +155,4 @@ const testCipher: Cipher = {
     for (let index = 0; index < buf.length; index++) buf[index] ^= 0x42
     return buf.toString("utf8")
   },
-}
+} satisfies Parameters<typeof createEncryptedSecretsRepository>[1]

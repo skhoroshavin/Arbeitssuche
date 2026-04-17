@@ -1,5 +1,5 @@
 import { test, describe, expect } from "vitest"
-import { createStubCommuteClient } from "@/plugins/commute/stub"
+import { createStubCommuteClient } from "@/plugins/commute/testing"
 
 describe("StubCommuteClient", () => {
   test("returns default result", async () => {

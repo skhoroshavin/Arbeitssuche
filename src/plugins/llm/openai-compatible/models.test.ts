@@ -14,12 +14,7 @@ describe("createModelRegistry", () => {
 
   function mockFetch(body: unknown, status = 200) {
     globalThis.fetch = vi.fn<typeof fetch>(() =>
-      Promise.resolve({
-        ok: status >= 200 && status < 300,
-        status,
-        json: () => Promise.resolve(body),
-        text: () => Promise.resolve(JSON.stringify(body)),
-      } as Response),
+      Promise.resolve(Response.json(body, { status })),
     )
   }
 

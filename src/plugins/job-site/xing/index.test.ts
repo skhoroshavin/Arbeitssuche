@@ -1,7 +1,7 @@
 import { test, describe, expect } from "vitest"
 import path from "node:path"
 import { createXingSite } from "."
-import { createStubBrowser } from "@/plugins/browser/stub"
+import { createStubBrowser } from "@/plugins/browser/testing"
 
 describe("xing", () => {
   test("getVacancyList returns absolute URLs from search page", async () => {
@@ -56,12 +56,18 @@ describe("xing", () => {
     const browser = createStubBrowser({ [vacancyUrl]: html })
     const site = createXingSite(browser)
     const vacancy = await site.getVacancyDetails(vacancyUrl)
-    expect(vacancy.descriptionHtml).toBeTruthy()
-    expect(vacancy.descriptionHtml!.includes("<li>React</li>")).toBeTruthy()
-    expect(
-      vacancy.descriptionHtml!.includes("<strong>TypeScript</strong>"),
-    ).toBeTruthy()
+    const descriptionHtml = expectDescriptionHtml(vacancy.descriptionHtml)
+    expect(descriptionHtml.includes("<li>React</li>")).toBeTruthy()
+    expect(descriptionHtml.includes("<strong>TypeScript</strong>")).toBeTruthy()
   })
 })
 
 const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples")
+
+function expectDescriptionHtml(descriptionHtml: string | undefined): string {
+  expect(descriptionHtml).toBeTruthy()
+  if (!descriptionHtml) {
+    throw new Error("Expected vacancy description HTML")
+  }
+  return descriptionHtml
+}

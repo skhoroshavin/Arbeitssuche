@@ -140,9 +140,7 @@ export default function ApplicantWizardPage() {
   )
 }
 
-export function canFinalizeApplicantWizard(
-  snapshot: ApplicantDraftSnapshot,
-): boolean {
+function canFinalizeApplicantWizard(snapshot: ApplicantDraftSnapshot): boolean {
   return snapshot.personal.name.trim().length > 0
 }
 

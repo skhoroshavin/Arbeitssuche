@@ -2,7 +2,7 @@ import { afterAll, describe, it, expect } from "vitest"
 import { rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { Database } from "./node/index.js"
+import { Database } from "./node"
 
 describe("Database", () => {
   const testDirectory = path.join(tmpdir(), `db-test-${Date.now()}`)

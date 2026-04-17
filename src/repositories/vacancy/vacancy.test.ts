@@ -1,14 +1,14 @@
 import { test, describe, expect } from "vitest"
+import type { VacancyRepository } from "."
 import { createStubVacancyRepository } from "./stub"
 import { createSqliteVacancyRepository } from "./sqlite"
-import { createSqliteJobSearchRepository } from "@/repositories/job-search/sqlite"
+import { createSqliteJobSearchRepository } from "@/repositories/job-search/create"
 import {
   Database,
   setupTemporaryDatabaseDirectory,
 } from "@/utils/node/index.js"
 import type { VacancyDTO, Activity } from "@/models/vacancy"
 import { Vacancy } from "@/models/vacancy/index.js"
-import type { VacancyRepository } from "./types"
 
 vacancyRepositoryTests("StubVacancyRepository", () => ({
   repo: createStubVacancyRepository(),
@@ -19,7 +19,7 @@ vacancyRepositoryTests("StubVacancyRepository", () => ({
 
 test("StubVacancyRepository initializes from provided data", () => {
   const repo = createStubVacancyRepository({
-    s1: { vacancies: [SAMPLE_VACANCY], latestCrawl: "2026-01-01.yaml" },
+    s1: { vacancies: [makeVacancy()], latestCrawl: "2026-01-01.yaml" },
   })
   const output = repo.loadAll("s1")
   expect(output.vacancies.length).toBe(1)
@@ -75,7 +75,11 @@ test("findByHash works across instances", () => {
 
   const { repo: repo2, teardown: t2 } = openDatabaseById(id)
   const found = repo2.findByHash("s1", "abc123")
-  expect(found!.company).toBe("ACME")
+  expect(found).toBeDefined()
+  if (!found) {
+    throw new Error("Expected persisted vacancy to be found by hash")
+  }
+  expect(found.company).toBe("ACME")
   t2()
 })
 
@@ -234,8 +238,6 @@ function vacancyRepositoryTests(
     })
   })
 }
-
-const SAMPLE_VACANCY = makeVacancy()
 
 function makeVacancy(overrides: Partial<VacancyDTO> = {}): Vacancy {
   return new Vacancy({

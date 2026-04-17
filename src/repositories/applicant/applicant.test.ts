@@ -1,9 +1,9 @@
 import { test, describe, expect } from "vitest"
+import type { ApplicantRepository } from "."
 import { createStubApplicantRepository } from "./stub"
 import { createSqliteApplicantRepository } from "./sqlite"
 import { createDefaultApplicantDraftSnapshot } from "@/models/applicant"
 import type { Applicant } from "@/models/applicant"
-import type { ApplicantRepository } from "./types"
 import {
   Database,
   setupTemporaryDatabaseDirectory,

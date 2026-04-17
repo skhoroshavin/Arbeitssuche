@@ -76,7 +76,9 @@ function makeStrictObject(result: Record<string, unknown>): void {
 
   const required = isStringArray(result.required) ? result.required : []
   const allProperties = Object.keys(result.properties)
-  const optional = allProperties.filter((p) => !required.includes(p))
+  const optional = allProperties.filter(
+    (property) => !required.includes(property),
+  )
 
   if (optional.length > 0) {
     const properties = result.properties
@@ -98,9 +100,9 @@ function resolveOneOf(
 ): void {
   if (isConstEnum(value)) {
     result.type = "string"
-    result.enum = value.map((v) => v.const)
+    result.enum = value.map((entry) => entry.const)
   } else {
-    result.anyOf = value.map((v) => resolve(v, definitions))
+    result.anyOf = value.map((entry) => resolve(entry, definitions))
   }
 }
 
@@ -144,11 +146,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((v) => typeof v === "string")
+  return (
+    Array.isArray(value) && value.every((entry) => typeof entry === "string")
+  )
 }
 
 function isConstEnum(
   items: Record<string, unknown>[],
 ): items is Array<{ const: unknown }> {
-  return items.every((v) => "const" in v)
+  return items.every((entry) => "const" in entry)
 }
