@@ -5,6 +5,7 @@ import { registerJobSearchesHandlers } from "./ipc-job-searches.js"
 import { registerVacanciesHandlers } from "./ipc-vacancies.js"
 import { registerCrawlHandlers } from "./ipc-crawl.js"
 import { registerSettingsHandlers } from "./ipc-settings.js"
+import { registerSetupHandlers } from "./ipc-setup.js"
 
 export type IpcHandle = <A extends unknown[], R>(
   channel: string,
@@ -22,11 +23,23 @@ export function registerIpcHandlers(options: IpcHandlerOptions): void {
   registerVacanciesHandlers(handle, services, safeSend)
   registerCrawlHandlers(handle, services, safeSend)
   registerSettingsHandlers(handle, services)
+  registerSetupHandlers(handle, services, {
+    closeDatabase: options.closeDatabase,
+    deleteDatabaseFiles: options.deleteDatabaseFiles,
+    deleteSecretsFile: options.deleteSecretsFile,
+    reopenDatabase: options.reopenDatabase,
+    closeApp: options.closeApp,
+  })
 }
 
 interface IpcHandlerOptions {
   services: AppServices
   getWebContents: () => WebContents | undefined
+  closeDatabase: () => void
+  deleteDatabaseFiles: () => void
+  deleteSecretsFile: () => void
+  reopenDatabase: () => void
+  closeApp: () => void
 }
 
 function handle<A extends unknown[], R>(

@@ -5,6 +5,7 @@ export function useDraftWizardInitialization<TSnapshot>({
   createDefaultSnapshot,
   setResolvedSnapshot,
   setPhase,
+  skipResumePrompt = false,
 }: DraftWizardInitializationOptions<TSnapshot>): void {
   useEffect(() => {
     async function initWizard() {
@@ -12,7 +13,7 @@ export function useDraftWizardInitialization<TSnapshot>({
       const draft = result.data?.draft
       if (draft?.meaningful) {
         setResolvedSnapshot(draft.snapshot)
-        setPhase("resume-prompt")
+        setPhase(skipResumePrompt ? "editing" : "resume-prompt")
       } else {
         setResolvedSnapshot(createDefaultSnapshot())
         setPhase("editing")
@@ -32,4 +33,5 @@ interface DraftWizardInitializationOptions<TSnapshot> {
   createDefaultSnapshot: () => TSnapshot
   setResolvedSnapshot: (snapshot: TSnapshot) => void
   setPhase: (phase: "resume-prompt" | "editing") => void
+  skipResumePrompt?: boolean
 }

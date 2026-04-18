@@ -2,7 +2,7 @@
 
 ### Requirement: App detects whether initial setup has been completed
 
-The system SHALL persist an `AppSetupState` record that tracks whether the first-start wizard has been completed, and the last active phase and step if it was interrupted.
+The system SHALL persist an `AppSetupState` record that tracks whether the first-start wizard has been completed, the last active phase and step if it was interrupted, and the created applicant ID once the applicant phase is finished.
 
 #### Scenario: Fresh install with no setup state
 
@@ -56,6 +56,7 @@ The system SHALL guide the user through three sequential phases: settings config
 - **WHEN** the user completes the applicant creation wizard
 - **THEN** the system SHALL advance to the job-search creation phase using the newly created applicant
 - **THEN** the system SHALL persist `lastPhase: "job-search"` to the `AppSetupState`
+- **THEN** the system SHALL persist the created applicant ID to the `AppSetupState`
 
 #### Scenario: Completing the job-search phase
 

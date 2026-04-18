@@ -1,29 +1,42 @@
-import ElectronStoreModule from "electron-store"
-
 import type { AppConfig } from "@/models/config"
+import type { AppSetupState } from "@/models/setup"
 
 import type { ConfigRepository } from "./types.js"
+import {
+  createAppElectronStore,
+  type AppStoreData,
+} from "./electron-store-store.js"
 
 export function createElectronStoreConfigRepository(): ConfigRepository {
-  const store = new (
-    hasCjsDefault(ElectronStoreModule)
-      ? ElectronStoreModule.default
-      : ElectronStoreModule
-  )<AppConfig>({ name: "config" })
+  const store = createAppElectronStore()
 
   return {
     load(): AppConfig {
-      return structuredClone(store.store)
+      return cloneConfig(store.store)
     },
 
     save(data: AppConfig): Promise<void> {
-      store.store = data
+      store.store = mergeStoreData(data, store.store.setup)
       return Promise.resolve()
     },
   }
 }
 
-// Handle CJS/ESM interop: bundled CJS wraps default export as { default: ... }
-function hasCjsDefault<T>(module_: T): module_ is T & { default: T } {
-  return typeof module_ === "object" && module_ !== null && "default" in module_
+function cloneConfig(storeData: AppStoreData): AppConfig {
+  const { setup: _setup, ...config } = storeData
+  return structuredClone(config)
+}
+
+function mergeStoreData(
+  config: AppConfig,
+  setup: AppSetupState | undefined,
+): AppStoreData {
+  if (setup === undefined) {
+    return structuredClone(config)
+  }
+
+  return {
+    ...structuredClone(config),
+    setup: structuredClone(setup),
+  }
 }

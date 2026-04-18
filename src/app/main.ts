@@ -7,6 +7,7 @@ import {
   session,
   shell,
 } from "electron"
+import { rmSync } from "node:fs"
 import path from "node:path"
 import { registerIpcHandlers } from "./ipc.js"
 import { registerAppProtocol } from "./protocol.js"
@@ -16,10 +17,14 @@ import {
   createEncryptedSecretsRepository,
 } from "./secrets"
 import { createElectronStoreConfigRepository } from "./config"
+import { createElectronStoreSetupRepository } from "./setup"
 import { Database } from "@/utils/node/index.js"
 import { getDataDirectory, getSecretsPath } from "./data-paths.js"
+import type { AppServices } from "."
 
 let mainWindow: BrowserWindow | undefined
+let appDatabase: Database | undefined
+let currentServices: AppServices | undefined
 
 const isDevelopment = process.env.NODE_ENV === "development"
 const isTest = process.env.ELECTRON_TEST === "1"
@@ -50,6 +55,8 @@ void (async () => {
   const dataDirectory = isTest
     ? (process.env.ELECTRON_TEST_DATA_DIR ?? "data")
     : getDataDirectory()
+  const databasePath = path.join(dataDirectory, "arbeitssuche.db")
+  const secretsPath = getSecretsPath()
 
   // Register custom protocol handler for serving renderer files
   if (!isDevelopment) {
@@ -61,21 +68,38 @@ void (async () => {
     callback(false),
   )
 
-  const appDatabase = Database.open(path.join(dataDirectory, "arbeitssuche.db"))
+  appDatabase = Database.open(databasePath)
 
   const secretsRepo = isTest
     ? createStubSecretsRepository()
-    : createEncryptedSecretsRepository(getSecretsPath(), safeStorage)
+    : createEncryptedSecretsRepository(secretsPath, safeStorage)
 
   const configRepo = createElectronStoreConfigRepository()
+  const setupRepo = createElectronStoreSetupRepository()
 
-  const services = createAppServices(
-    createSqliteServiceContext(appDatabase, secretsRepo, configRepo),
+  currentServices = createAppServices(
+    createSqliteServiceContext(appDatabase, secretsRepo, configRepo, setupRepo),
   )
+  const services = createMutableAppServices(() => getCurrentServices())
 
   registerIpcHandlers({
     services,
     getWebContents: () => mainWindow?.webContents,
+    closeDatabase: () => getCurrentDatabase().close(),
+    deleteDatabaseFiles: () => deleteDatabaseFiles(databasePath),
+    deleteSecretsFile: () => rmSync(secretsPath, { force: true }),
+    reopenDatabase: () => {
+      appDatabase = Database.open(databasePath)
+      currentServices = createAppServices(
+        createSqliteServiceContext(
+          appDatabase,
+          secretsRepo,
+          configRepo,
+          setupRepo,
+        ),
+      )
+    },
+    closeApp: () => app.quit(),
   })
 
   await createAndShowWindow()
@@ -91,12 +115,28 @@ void (async () => {
   })
 
   app.on("before-quit", () => {
-    appDatabase.close()
+    appDatabase?.close()
   })
 })()
 
+function getCurrentDatabase(): Database {
+  if (!appDatabase) throw new Error("App database not initialized")
+  return appDatabase
+}
+
+function getCurrentServices(): AppServices {
+  if (!currentServices) throw new Error("App services not initialized")
+  return currentServices
+}
+
 function getRendererDirectory(): string {
   return path.join(__dirname, "../renderer")
+}
+
+function deleteDatabaseFiles(databasePath: string): void {
+  rmSync(databasePath, { force: true })
+  rmSync(`${databasePath}-shm`, { force: true })
+  rmSync(`${databasePath}-wal`, { force: true })
 }
 
 async function createAndShowWindow(): Promise<void> {
@@ -138,4 +178,48 @@ function createBrowserWindow(): BrowserWindow {
       devTools: isDevelopment || isTest,
     },
   })
+}
+
+function createMutableAppServices(getServices: () => AppServices): AppServices {
+  return {
+    get applicantRepo() {
+      return getServices().applicantRepo
+    },
+    get jobSearchRepo() {
+      return getServices().jobSearchRepo
+    },
+    get vacancyRepo() {
+      return getServices().vacancyRepo
+    },
+    get secretsRepo() {
+      return getServices().secretsRepo
+    },
+    get configRepo() {
+      return getServices().configRepo
+    },
+    get setupRepo() {
+      return getServices().setupRepo
+    },
+    get modelRegistry() {
+      return getServices().modelRegistry
+    },
+    get resumeRenderer() {
+      return getServices().resumeRenderer
+    },
+    get jobConsultant() {
+      return getServices().jobConsultant
+    },
+    get vacancyEnricher() {
+      return getServices().vacancyEnricher
+    },
+    get vacancyScanner() {
+      return getServices().vacancyScanner
+    },
+    get coverLetterWriter() {
+      return getServices().coverLetterWriter
+    },
+    rebuild() {
+      getServices().rebuild()
+    },
+  }
 }

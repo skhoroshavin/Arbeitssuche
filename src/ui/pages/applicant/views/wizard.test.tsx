@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import {
   createDefaultApplicantDraftSnapshot,
   isMeaningfulApplicantDraftSnapshot,
 } from "@/models/applicant"
+import { FirstStartWizardContext } from "@/ui/layout"
 import { ApplicantWizardPage } from "@/ui/pages/applicant"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -94,6 +95,63 @@ describe("Applicant wizard state", () => {
     await user.click(screen.getByRole("button", { name: "Weiter" }))
 
     expect(screen.getByRole("button", { name: "Fertigstellen" })).toBeDisabled()
+  })
+
+  it("calls first-start completion instead of navigating after finish", async () => {
+    const user = userEvent.setup()
+    const onPhaseComplete = vi.fn()
+
+    render(
+      <FirstStartWizardContext.Provider
+        value={{
+          isInFirstStart: true,
+          onPhaseComplete,
+          skipDraftResume: false,
+        }}
+      >
+        <ApplicantWizardPage />
+      </FirstStartWizardContext.Provider>,
+    )
+
+    await user.type(await screen.findByLabelText("Name"), "Ada Lovelace")
+    await goToLastStep(user)
+    await user.click(screen.getByRole("button", { name: "Fertigstellen" }))
+
+    expect(onPhaseComplete).toHaveBeenCalledWith({
+      applicantId: "ada-lovelace",
+      nextPhase: "job-search",
+      nextStep: "parameters",
+    })
+    expect(navigate).not.toHaveBeenCalledWith("/applicants/ada-lovelace")
+  })
+
+  it("skips the draft resume prompt when first-start already resumed", async () => {
+    const snapshot = createDefaultApplicantDraftSnapshot()
+    snapshot.personal.name = "Ada Lovelace"
+    refetchDraft.mockResolvedValue({
+      data: { draft: { meaningful: true, snapshot } },
+    })
+
+    render(
+      <FirstStartWizardContext.Provider
+        value={{
+          isInFirstStart: true,
+          onPhaseComplete: vi.fn(),
+          skipDraftResume: true,
+        }}
+      >
+        <ApplicantWizardPage />
+      </FirstStartWizardContext.Provider>,
+    )
+
+    expect(
+      screen.queryByText(/Es gibt einen fortsetzbaren Bewerberentwurf/i),
+    ).not.toBeInTheDocument()
+
+    const nameInput = await screen.findByLabelText("Name")
+    await waitFor(() => {
+      expect(nameInput).toHaveValue("Ada Lovelace")
+    })
   })
 })
 

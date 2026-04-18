@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { useNavigate, useParams } from "react-router"
 
@@ -28,7 +28,7 @@ import {
   useDraftWizardInitialization,
 } from "@/ui/hooks"
 
-import { DraftWizardPage } from "@/ui/layout"
+import { DraftWizardPage, useFirstStartWizardContext } from "@/ui/layout"
 import { WizardCancelChoicesModal } from "@/ui/components"
 
 import { JobSearchCoverLetterView, JobSearchSearchConfigView } from "@/ui/views"
@@ -38,11 +38,15 @@ import type {
   JobSearchEditorConfigValue,
 } from "@/ui/views"
 
-export default function JobSearchWizardPage() {
+export default function JobSearchWizardPage({
+  initialStep,
+  onStepChange,
+}: JobSearchWizardPageProperties = {}) {
   const { applicantId = "" } = useParams<{ applicantId: string }>()
   const navigate = useNavigate()
+  const firstStart = useFirstStartWizardContext()
   const [phase, setPhase] = useState<Phase>("loading")
-  const [step, setStep] = useState<WizardStep_>("parameters")
+  const [step, setStep] = useState<WizardStep_>(initialStep ?? "parameters")
   const [resolvedSnapshot, setResolvedSnapshot] = useState<
     JobSearchEditorSnapshot | undefined
   >()
@@ -60,7 +64,14 @@ export default function JobSearchWizardPage() {
     createDefaultSnapshot: createDefaultJobSearchEditorSnapshot,
     setResolvedSnapshot,
     setPhase,
+    skipResumePrompt: firstStart.skipDraftResume,
   })
+
+  useEffect(() => {
+    if (initialStep) {
+      setStep(initialStep)
+    }
+  }, [initialStep])
 
   const isEditing = phase === "editing"
 
@@ -93,11 +104,21 @@ export default function JobSearchWizardPage() {
       void navigate(`/applicants/${applicantId}`)
     },
     onFinished: ({ id }) => {
+      if (firstStart.isInFirstStart) {
+        firstStart.onPhaseComplete({ jobSearchId: id })
+        return
+      }
+
       void navigate(`/job-searches/${id}/vacancies`, {
         state: { startInitialUpdate: true },
       })
     },
   })
+
+  function handleStepChange(nextStep: WizardStep_) {
+    setStep(nextStep)
+    onStepChange?.(nextStep, currentSnapshot)
+  }
 
   return (
     <>
@@ -115,7 +136,7 @@ export default function JobSearchWizardPage() {
         }
         currentStep={step}
         stepLabels={STEP_LABELS}
-        setStep={setStep}
+        setStep={handleStepChange}
         onCancel={() => {
           void lifecycle.cancelWizard()
         }}
@@ -152,6 +173,11 @@ export default function JobSearchWizardPage() {
       />
     </>
   )
+}
+
+interface JobSearchWizardPageProperties {
+  initialStep?: WizardStep_
+  onStepChange?: (step: WizardStep_, snapshot: JobSearchEditorSnapshot) => void
 }
 
 type Phase = "loading" | "resume-prompt" | "editing"

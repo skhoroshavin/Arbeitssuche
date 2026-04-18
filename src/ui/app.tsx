@@ -19,13 +19,21 @@ import {
   SettingsLayout,
   SettingsAI,
   SettingsMaps,
+  DataClearedPage,
+  FirstStartApplicantRoute,
+  FirstStartJobSearchRoute,
+  FirstStartSettingsStep,
+  FirstStartWizard,
+  SetupGuard,
 } from "./pages"
 
 export default function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route path="/" element={<ApplicantList />} />
+        <Route element={<SetupGuard />}>
+          <Route path="/" element={<ApplicantList />} />
+        </Route>
         <Route path="/settings" element={<SettingsLayout />}>
           <Route index element={<SettingsAI />} />
           <Route path="maps" element={<SettingsMaps />} />
@@ -57,6 +65,17 @@ export default function App() {
         path="/applicants/:applicantId/job-searches/new"
         element={<JobSearchWizardPage />}
       />
+      <Route path="/first-start" element={<FirstStartWizard />}>
+        <Route index element={<Navigate to="settings" replace />} />
+        <Route path="settings" element={<FirstStartSettingsStep />} />
+        <Route path="applicant" element={<FirstStartApplicantRoute />} />
+        <Route path="job-search" element={<FirstStartJobSearchRoute />} />
+        <Route
+          path="job-search/:applicantId"
+          element={<FirstStartJobSearchRoute />}
+        />
+      </Route>
+      <Route path="/data-cleared" element={<DataClearedPage />} />
     </Routes>
   )
 }

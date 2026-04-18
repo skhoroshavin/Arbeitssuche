@@ -1,4 +1,5 @@
 import type { ConfigRepository } from "@/app/config"
+import type { SetupRepository } from "@/app/setup"
 import type { SecretsRepository } from "@/app/secrets"
 import {
   createSqliteApplicantRepository,
@@ -22,12 +23,14 @@ export function createSqliteServiceContext(
   database: Database,
   secretsRepo: SecretsRepository,
   configRepo: ConfigRepository,
+  setupRepo: SetupRepository,
 ): ServiceContext {
   return {
     applicantRepo: createSqliteApplicantRepository(database),
     jobSearchRepo: createSqliteJobSearchRepository(database),
     secretsRepo,
     configRepo,
+    setupRepo,
     vacancyRepo: createSqliteVacancyRepository(database),
   }
 }
@@ -37,6 +40,7 @@ export interface ServiceContext {
   jobSearchRepo: JobSearchRepository
   secretsRepo: SecretsRepository
   configRepo: ConfigRepository
+  setupRepo: SetupRepository
   vacancyRepo: VacancyRepository
   pdfRenderer?: PdfRenderer
   modelRegistry?: LlmModelRegistry

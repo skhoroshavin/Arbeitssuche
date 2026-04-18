@@ -2,6 +2,7 @@ export {
   ApplicantList,
   ApplicantLayout,
   ApplicantOverview,
+  FirstStartApplicantRoute,
   ApplicantWizardPage,
   ApplicantEditPersonal,
   ApplicantEditExperience,
@@ -13,8 +14,15 @@ export {
   JobSearchLayout,
   JobSearchConfig,
   JobSearchCoverLetter,
+  FirstStartJobSearchRoute,
   JobSearchVacancyList,
   JobSearchVacancyDetail,
   JobSearchWizardPage,
 } from "./job-search"
-export { SettingsLayout, SettingsAI, SettingsMaps } from "./settings"
+export {
+  SettingsLayout,
+  SettingsAI,
+  FirstStartSettingsStep,
+  SettingsMaps,
+} from "./settings"
+export { DataClearedPage, FirstStartWizard, SetupGuard } from "./first-start"

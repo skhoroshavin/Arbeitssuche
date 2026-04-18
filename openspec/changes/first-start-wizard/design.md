@@ -43,11 +43,13 @@ interface AppSetupState {
   completed: boolean
   lastPhase?: SetupPhase
   lastStep?: string
+  applicantId?: string
 }
 type SetupPhase = "settings" | "applicant" | "job-search"
 ```
 
 - `completed: false` with `lastPhase`/`lastStep` set means the user was mid-wizard — resume prompt expected.
+- `applicantId` stores the applicant created during the applicant phase so an interrupted setup can resume directly into the job-search phase.
 - `completed: false` with no `lastPhase` means fresh start — show wizard from beginning.
 - `completed: true` means never show wizard again on launch.
 

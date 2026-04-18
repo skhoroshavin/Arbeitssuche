@@ -4,6 +4,7 @@ export function WizardLayout({
   title,
   steps,
   onCancel,
+  onSkip,
   onBack,
   onNext,
   onFinish,
@@ -17,6 +18,7 @@ export function WizardLayout({
         <main className="flex-1 overflow-y-auto p-8">{children}</main>
         <NavigationFooter
           onCancel={onCancel}
+          onSkip={onSkip}
           onBack={onBack}
           onNext={onNext}
           onFinish={onFinish}
@@ -69,12 +71,14 @@ function StepItem({ step }: { step: WizardStep }) {
 
 function NavigationFooter({
   onCancel,
+  onSkip,
   onBack,
   onNext,
   onFinish,
   finishDisabled,
 }: {
   onCancel: () => void
+  onSkip?: () => void
   onBack?: () => void
   onNext?: () => void
   onFinish?: () => Promise<void> | void
@@ -90,6 +94,15 @@ function NavigationFooter({
         >
           Abbrechen
         </button>
+        {onSkip && (
+          <button
+            type="button"
+            onClick={onSkip}
+            className="rounded-lg bg-amber-100 px-4 py-2 text-sm text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50"
+          >
+            Überspringen
+          </button>
+        )}
         {onBack && (
           <button
             type="button"
@@ -154,6 +167,7 @@ interface WizardLayoutProperties {
   title: string
   steps: WizardStep[]
   onCancel: () => void
+  onSkip?: () => void
   onBack?: () => void
   onNext?: () => void
   onFinish?: () => Promise<void> | void
