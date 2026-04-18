@@ -173,6 +173,124 @@ describe("EnrichQueue", () => {
     expect(queue.total).toBe(3)
     expect(queue.pending).toBe(1)
   })
+
+  it("rejects drain with AbortError when signal is aborted before drain", async () => {
+    const controller = new AbortController()
+    controller.abort()
+
+    const enricher = makeEnricher(100)
+    const onEnriched = vi.fn()
+    const queue = new EnrichQueue({
+      enricher,
+      context: CONTEXT,
+      onEnriched,
+      onError: vi.fn(),
+      signal: controller.signal,
+    })
+
+    queue.submit(makeVacancy("h1"), "h1")
+
+    await expect(queue.drain()).rejects.toThrow("Aborted")
+    expect(onEnriched).not.toHaveBeenCalled()
+  })
+
+  it("rejects drain with AbortError when signal is aborted during processing", async () => {
+    const controller = new AbortController()
+    const enricher = makeEnricher(50)
+
+    const onEnriched = vi.fn()
+    const queue = new EnrichQueue({
+      enricher,
+      context: CONTEXT,
+      concurrency: 2,
+      onEnriched,
+      onError: vi.fn(),
+      signal: controller.signal,
+    })
+
+    queue.submit(makeVacancy("h1"), "h1")
+    queue.submit(makeVacancy("h2"), "h2")
+    queue.submit(makeVacancy("h3"), "h3")
+
+    setTimeout(() => controller.abort(), 10)
+
+    await expect(queue.drain()).rejects.toThrow("Aborted")
+  })
+
+  it("does not call onEnriched after abort", async () => {
+    const controller = new AbortController()
+    let startedCount = 0
+    const enricher = new StubVacancyEnricher(
+      (vacancy) =>
+        new Promise<Vacancy>((resolve) => {
+          startedCount++
+          setTimeout(() => resolve(vacancy), 50)
+        }),
+    )
+
+    const onEnriched = vi.fn()
+    const queue = new EnrichQueue({
+      enricher,
+      context: CONTEXT,
+      concurrency: 1,
+      onEnriched,
+      onError: vi.fn(),
+      signal: controller.signal,
+    })
+
+    queue.submit(makeVacancy("h1"), "h1")
+    queue.submit(makeVacancy("h2"), "h2")
+
+    await new Promise((r) => setTimeout(r, 10))
+    controller.abort()
+
+    await expect(queue.drain()).rejects.toThrow("Aborted")
+    expect(startedCount).toBeLessThanOrEqual(1)
+  })
+
+  it("passes signal through to enricher", async () => {
+    const controller = new AbortController()
+    const enrichCalls: (AbortSignal | undefined)[] = []
+
+    class SignalCapturingEnricher extends VacancyEnricher {
+      override enrich(
+        vacancy: Vacancy,
+        _context: EnrichContext,
+        signal?: AbortSignal,
+      ): Promise<Vacancy> {
+        enrichCalls.push(signal)
+        return Promise.resolve(
+          vacancy.with({ enriched: true, enrichmentDirty: false }),
+        )
+      }
+    }
+
+    const queue = new EnrichQueue({
+      enricher: new SignalCapturingEnricher({}),
+      context: CONTEXT,
+      onEnriched: vi.fn(),
+      onError: vi.fn(),
+      signal: controller.signal,
+    })
+
+    queue.submit(makeVacancy("h1"), "h1")
+    await expect(queue.drain()).resolves.toBeUndefined()
+
+    expect(enrichCalls.length).toBeGreaterThanOrEqual(1)
+    expect(enrichCalls[0]).toBe(controller.signal)
+  })
+
+  it("resolves drain immediately when no work is submitted", async () => {
+    const enricher = makeEnricher()
+    const queue = new EnrichQueue({
+      enricher,
+      context: CONTEXT,
+      onEnriched: vi.fn(),
+      onError: vi.fn(),
+    })
+
+    await expect(queue.drain()).resolves.toBeUndefined()
+  })
 })
 
 const APPLICANT: Applicant = {
@@ -234,7 +352,11 @@ class StubVacancyEnricher extends VacancyEnricher {
     super({})
   }
 
-  override enrich(vacancy: Vacancy, context: EnrichContext): Promise<Vacancy> {
+  override enrich(
+    vacancy: Vacancy,
+    context: EnrichContext,
+    _signal?: AbortSignal,
+  ): Promise<Vacancy> {
     return this.enrichImpl(vacancy, context)
   }
 }

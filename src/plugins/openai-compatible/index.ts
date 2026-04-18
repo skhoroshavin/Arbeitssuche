@@ -49,25 +49,35 @@ class OpenAICompatibleClient implements LlmClient {
     private readonly providerName: string,
   ) {}
 
-  async complete(prompt: string, maxTokens: number): Promise<string> {
-    return this.fetchCompletion(prompt, maxTokens)
+  async complete(
+    prompt: string,
+    maxTokens: number,
+    signal?: AbortSignal,
+  ): Promise<string> {
+    return this.fetchCompletion(prompt, maxTokens, undefined, signal)
   }
 
   async completeJSON<T>(
     prompt: string,
     maxTokens: number,
     schema: TypedSchema<T>,
+    signal?: AbortSignal,
   ): Promise<T> {
-    const content = await this.fetchCompletion(prompt, maxTokens, {
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "response",
-          strict: true,
-          schema: toStrictSchema(schema.schema),
+    const content = await this.fetchCompletion(
+      prompt,
+      maxTokens,
+      {
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "response",
+            strict: true,
+            schema: toStrictSchema(schema.schema),
+          },
         },
       },
-    })
+      signal,
+    )
     return schema.parse(content)
   }
 
@@ -84,7 +94,12 @@ class OpenAICompatibleClient implements LlmClient {
     prompt: string,
     maxTokens: number,
     extraBody?: Record<string, unknown>,
+    signal?: AbortSignal,
   ): Promise<string> {
+    const combinedSignal = signal
+      ? AbortSignal.any([signal, AbortSignal.timeout(120_000)])
+      : AbortSignal.timeout(120_000)
+
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
@@ -97,7 +112,7 @@ class OpenAICompatibleClient implements LlmClient {
         max_tokens: maxTokens,
         ...extraBody,
       }),
-      signal: AbortSignal.timeout(120_000),
+      signal: combinedSignal,
     })
 
     if (!response.ok) {

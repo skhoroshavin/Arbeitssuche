@@ -31,6 +31,7 @@ class GoogleMapsCommuteClient implements CommuteClient {
   async getCommute(
     origin: string,
     destination: string,
+    signal?: AbortSignal,
   ): Promise<CommuteResult> {
     const nextWeekday = getNextWeekday()
     const atHour = (hour: number) =>
@@ -39,6 +40,7 @@ class GoogleMapsCommuteClient implements CommuteClient {
         destination,
         this.apiKey,
         departureTimestamp(nextWeekday, hour),
+        signal,
       )
 
     const [morning, day, evening] = await Promise.all([
@@ -78,6 +80,7 @@ async function fetchDuration(
   destination: string,
   apiKey: string,
   departureTime: number,
+  signal?: AbortSignal,
 ): Promise<{ distance: string; durationMinutes: number }> {
   const parameters = new URLSearchParams({
     origins: origin,
@@ -88,7 +91,10 @@ async function fetchDuration(
   })
 
   const url = `https://maps.googleapis.com/maps/api/distancematrix/json?${parameters}`
-  const response = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+  const combinedSignal = signal
+    ? AbortSignal.any([signal, AbortSignal.timeout(10_000)])
+    : AbortSignal.timeout(10_000)
+  const response = await fetch(url, { signal: combinedSignal })
 
   if (!response.ok) {
     throw new Error(

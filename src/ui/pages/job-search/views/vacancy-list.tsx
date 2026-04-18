@@ -221,8 +221,6 @@ function useEnrichControl(id: string, vacancies: VacancyWithStatus[]) {
 
   const handleAbort = () => {
     abortEnrichment.mutate()
-    setIsEnriching(false)
-    setEnrichProgressJobId(undefined)
   }
 
   return { hasUnenriched, isEnriching, handleEnrichAll, handleAbort }

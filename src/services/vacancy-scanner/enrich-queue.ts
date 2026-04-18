@@ -16,6 +16,7 @@ export class EnrichQueue {
   }
 
   submit(vacancy: Vacancy, hash: string): void {
+    if (this.signal?.aborted) return
     this._total++
     if (this.running < this.concurrency) {
       this.startTask(vacancy, hash)
@@ -25,11 +26,15 @@ export class EnrichQueue {
   }
 
   drain(): Promise<void> {
+    if (this.signal?.aborted) {
+      return Promise.reject(new DOMException("Aborted", "AbortError"))
+    }
     if (this.running === 0 && this.queue.length === 0) {
       return Promise.resolve()
     }
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       this.drainResolve = resolve
+      this.drainReject = reject
     })
   }
 
@@ -50,24 +55,50 @@ export class EnrichQueue {
   }
 
   private processNext(): void {
-    if (this.signal?.aborted) this.queue = []
+    if (this.signal?.aborted) {
+      this.queue = []
+      this.resolveDrainOnAbort()
+      return
+    }
     const next = this.queue.shift()
     if (next) {
       this.startTask(next.vacancy, next.hash)
     } else if (this.running === 0) {
-      this.drainResolve?.()
-      this.drainResolve = undefined
+      this.completeDrain()
     }
+  }
+
+  private resolveDrainOnAbort(): void {
+    if (this.running === 0) {
+      this.drainReject?.(new DOMException("Aborted", "AbortError"))
+      this.drainResolve = undefined
+      this.drainReject = undefined
+    }
+  }
+
+  private completeDrain(): void {
+    this.drainResolve?.()
+    this.drainResolve = undefined
+    this.drainReject = undefined
   }
 
   private startTask(vacancy: Vacancy, hash: string): void {
     this.running++
     this.enricher
-      .enrich(vacancy, this.context)
+      .enrich(vacancy, this.context, this.signal)
       .then((enriched) => {
-        this.onEnriched(enriched, hash)
+        if (!this.signal?.aborted) {
+          this.onEnriched(enriched, hash)
+        }
       })
       .catch((error: unknown) => {
+        if (
+          error instanceof DOMException &&
+          error.name === "AbortError" &&
+          this.signal?.aborted
+        ) {
+          return
+        }
         this.onError(
           hash,
           error instanceof Error ? error : new Error(String(error)),
@@ -93,6 +124,7 @@ export class EnrichQueue {
   private _completed = 0
   private _total = 0
   private drainResolve?: () => void
+  private drainReject?: (error: unknown) => void
 }
 
 interface EnrichQueueOptions {

@@ -15,9 +15,10 @@ export async function assessVacancy(
   applicant: Applicant,
   preferences: SearchPreferences,
   llmClient: LlmClient,
+  signal?: AbortSignal,
 ): Promise<AssessResult> {
   const prompt = buildAssessPrompt(vacancy, applicant, preferences)
-  return await llmClient.completeJSON(prompt, 2048, ASSESS_SCHEMA)
+  return await llmClient.completeJSON(prompt, 2048, ASSESS_SCHEMA, signal)
 }
 
 const ASSESS_SCHEMA: TypedSchema<AssessResult> = {

@@ -4,11 +4,16 @@ export interface TypedSchema<T> {
 }
 
 export interface LlmClient {
-  complete(prompt: string, maxTokens: number): Promise<string>
+  complete(
+    prompt: string,
+    maxTokens: number,
+    signal?: AbortSignal,
+  ): Promise<string>
   completeJSON<T>(
     prompt: string,
     maxTokens: number,
     schema: TypedSchema<T>,
+    signal?: AbortSignal,
   ): Promise<T>
   ping(): Promise<boolean>
 }

@@ -115,7 +115,7 @@ export class VacancyScanner {
     })
 
     if (!abortController.signal.aborted) {
-      await queue.drain()
+      await drainQueue(queue)
     }
 
     if (abortController.signal.aborted) return
@@ -140,3 +140,12 @@ export class VacancyScanner {
 export type OnProgress = (event: ProgressEvent) => void
 
 type JobSiteFactory = (name: string) => JobSite
+
+async function drainQueue(queue: EnrichQueue): Promise<void> {
+  try {
+    await queue.drain()
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") return
+    throw error
+  }
+}

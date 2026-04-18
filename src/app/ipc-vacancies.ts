@@ -1,5 +1,7 @@
 import type { Activity } from "@/models/vacancy"
 import type { Vacancy } from "@/models/vacancy/index.js"
+import type { Applicant } from "@/models/applicant"
+import type { SearchPreferences } from "@/models/job-search"
 import type { AppServices } from "."
 import { EnrichQueue } from "@/services/vacancy-scanner/index.js"
 import type { IpcHandle, SafeSend } from "./ipc-handlers.js"
@@ -123,48 +125,33 @@ export function registerVacanciesHandlers(
     const existingByHash = new Map(output.vacancies.map((v) => [v.hash, v]))
 
     try {
-      const queue = new EnrichQueue({
-        enricher: services.vacancyEnricher,
-        context: { applicant, preferences: jobSearch.preferences },
-        onEnriched: (enriched, hash) => {
-          existingByHash.set(hash, enriched)
-          services.vacancyRepo.save(
-            jobSearchId,
-            [...existingByHash.values()],
-            output.latestCrawl,
-          )
-          safeSend("job:progress", {
-            jobSearchId,
-            message: "",
-            phase: "enrich",
-            vacanciesUpdated: true,
-          })
-        },
-        onError: (hash, error) => {
-          console.error(`Batch enrichment failed for "${hash}":`, error)
-        },
-        onProgress: (event) => {
-          safeSend("job:progress", {
-            jobSearchId,
-            message: `Analysiere ${event.completed}/${event.total}`,
-            phase: "enrich",
-            enrichProgress: event,
-          })
-        },
-        signal: abortController.signal,
-      })
+      const queue = createEnrichQueue(
+        services,
+        jobSearchId,
+        applicant,
+        jobSearch.preferences,
+        existingByHash,
+        output.latestCrawl,
+        safeSend,
+        abortController.signal,
+      )
 
       for (const vacancy of vacanciesNeedingEnrichment) {
         queue.submit(vacancy, vacancy.hash)
       }
-      await queue.drain()
+
+      const aborted = await drainAndCheckAbort(queue, abortController.signal)
 
       safeSend("job:progress", {
         jobSearchId,
-        message: "Analyse abgeschlossen",
+        message: aborted ? "Analyse abgebrochen" : "Analyse abgeschlossen",
         phase: "done",
         source: "enrich",
       })
+
+      if (aborted) {
+        return { count: 0, aborted: true }
+      }
 
       return { count: vacanciesNeedingEnrichment.length }
     } catch (error) {
@@ -186,6 +173,63 @@ export function registerVacanciesHandlers(
     controller.abort()
     return { aborted: true }
   })
+}
+
+function createEnrichQueue(
+  services: AppServices,
+  jobSearchId: string,
+  applicant: Applicant,
+  preferences: SearchPreferences,
+  existingByHash: Map<string, Vacancy>,
+  latestCrawl: string,
+  safeSend: SafeSend,
+  signal: AbortSignal,
+): EnrichQueue {
+  return new EnrichQueue({
+    enricher: services.vacancyEnricher,
+    context: { applicant, preferences },
+    onEnriched: (enriched, hash) => {
+      existingByHash.set(hash, enriched)
+      services.vacancyRepo.save(
+        jobSearchId,
+        [...existingByHash.values()],
+        latestCrawl,
+      )
+      safeSend("job:progress", {
+        jobSearchId,
+        message: "",
+        phase: "enrich",
+        vacanciesUpdated: true,
+      })
+    },
+    onError: (hash, error) => {
+      console.error(`Batch enrichment failed for "${hash}":`, error)
+    },
+    onProgress: (event) => {
+      safeSend("job:progress", {
+        jobSearchId,
+        message: `Analysiere ${event.completed}/${event.total}`,
+        phase: "enrich",
+        enrichProgress: event,
+      })
+    },
+    signal,
+  })
+}
+
+async function drainAndCheckAbort(
+  queue: EnrichQueue,
+  _signal: AbortSignal,
+): Promise<boolean> {
+  try {
+    await queue.drain()
+    return false
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return true
+    }
+    throw error
+  }
 }
 
 const batchEnrichAbortControllers = new Map<string, AbortController>()
