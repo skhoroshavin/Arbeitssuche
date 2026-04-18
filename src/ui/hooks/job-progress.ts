@@ -1,30 +1,19 @@
-import { useEffect, useSyncExternalStore } from "react"
+import { useSyncExternalStore } from "react"
 
 import typia from "typia"
 
 export function useJobProgress(jobSearchId?: string) {
   const state = useGlobalJobProgress()
+  const entry = getJobProgressEntry(state, jobSearchId)
 
-  if (!jobSearchId) {
-    return {
-      scan: undefined,
-      enrich: undefined,
-      vacancyUpdateCount: 0,
-      hasActiveScan: false,
-      hasActiveEnrich: false,
-    }
-  }
-
-  const entry = state.byJobSearchId[jobSearchId] ?? EMPTY_JOB_PROGRESS
   return {
     ...entry,
-    hasActiveScan: !!entry.scan,
-    hasActiveEnrich: !!entry.enrich,
+    hasActiveScan: entry.scan !== undefined,
+    hasActiveEnrich: entry.enrich !== undefined,
   }
 }
 
 export function useGlobalJobProgress() {
-  useJobProgressSubscription()
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
 
@@ -33,12 +22,6 @@ export function resetProgressTestingState() {
   cleanupListener = undefined
   globalState = { byJobSearchId: {} }
   listeners.clear()
-}
-
-function useJobProgressSubscription() {
-  useEffect(() => {
-    ensureListening()
-  }, [])
 }
 
 function subscribe(listener: () => void) {
@@ -103,7 +86,7 @@ function reduceProgress(previous: JobProgressEntry, payload: ProgressPayload) {
   if (!phase) return next
 
   if (isDonePhase(phase)) return clearFinishedState(next, payload)
-  if (isScanPhase(phase)) return setScanState(next, payload, phase)
+  if (isScanPhase(phase)) return setScanState(next, phase)
   if (!shouldShowEnrichState(payload)) return next
 
   return setEnrichState(next, payload)
@@ -141,12 +124,10 @@ interface JobProgressEntry {
 }
 
 interface ProgressEntry {
-  jobSearchId?: string
   phase: "search" | "scan"
 }
 
 interface EnrichProgressEntry {
-  jobSearchId?: string
   owner: "crawl" | "batch"
   phase: "enrich"
   enrichProgress?: { completed: number; total: number }
@@ -184,13 +165,11 @@ function shouldShowEnrichState(payload: ProgressPayload): boolean {
 
 function setScanState(
   previous: JobProgressEntry,
-  payload: ProgressPayload,
   phase: "search" | "scan",
 ): JobProgressEntry {
   return {
     ...previous,
     scan: {
-      jobSearchId: payload.jobSearchId,
       phase,
     },
   }
@@ -203,10 +182,26 @@ function setEnrichState(
   return {
     ...previous,
     enrich: {
-      jobSearchId: payload.jobSearchId,
       owner: payload.owner ?? "batch",
       phase: "enrich",
       enrichProgress: payload.enrichProgress,
     },
   }
+}
+
+function getJobProgressEntry(
+  state: GlobalJobProgressState,
+  jobSearchId?: string,
+): JobProgressEntry {
+  if (!jobSearchId) {
+    return EMPTY_JOB_PROGRESS
+  }
+
+  return state.byJobSearchId[jobSearchId] ?? EMPTY_JOB_PROGRESS
+}
+
+export function getEnrichAbortChannel(owner: "crawl" | "batch") {
+  return owner === "crawl"
+    ? "job-searches:crawl:enrich:abort"
+    : "vacancies:enrich:abort"
 }

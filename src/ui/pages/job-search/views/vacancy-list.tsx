@@ -9,7 +9,10 @@ import {
   useAbortEnrichment,
   type VacancyWithStatus,
 } from "@/ui/data"
-import { useJobProgress } from "@/ui/pages/job-search/hooks"
+import {
+  getEnrichAbortChannel,
+  useJobProgress,
+} from "@/ui/pages/job-search/hooks"
 import { PageHeader, EmptyState, Loading } from "@/ui/components"
 import { FilterBar } from "./filter-bar"
 import { VacancyCard } from "./vacancy-card"
@@ -156,11 +159,7 @@ function useCrawlControl(id: string) {
   const abortCrawl = useAbortJobSearchCrawl(id)
   const { hasActiveScan, vacancyUpdateCount } = useJobProgress(id)
 
-  useEffect(() => {
-    if (vacancyUpdateCount > 0) {
-      void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
-    }
-  }, [vacancyUpdateCount, queryClient, id])
+  useInvalidateVacancyListOnUpdates(id, vacancyUpdateCount)
 
   const handleStartCrawl = useCallback(() => {
     startCrawl.mutate(undefined, {
@@ -194,11 +193,7 @@ function useEnrichControl(id: string, vacancies: VacancyWithStatus[]) {
 
   const hasUnenriched = vacancies.some((v) => !v.enriched || v.enrichmentDirty)
 
-  useEffect(() => {
-    if (vacancyUpdateCount > 0) {
-      void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
-    }
-  }, [vacancyUpdateCount, queryClient, id])
+  useInvalidateVacancyListOnUpdates(id, vacancyUpdateCount)
 
   const handleEnrichAll = () => {
     enrichAll.mutate(undefined, {
@@ -210,9 +205,10 @@ function useEnrichControl(id: string, vacancies: VacancyWithStatus[]) {
 
   const handleAbort = () => {
     if (enrich?.owner === "crawl") {
-      void electronAPI?.invoke("job-searches:crawl:enrich:abort", id)
+      void electronAPI?.invoke(getEnrichAbortChannel(enrich.owner), id)
       return
     }
+
     abortEnrichment.mutate()
   }
 
@@ -222,6 +218,21 @@ function useEnrichControl(id: string, vacancies: VacancyWithStatus[]) {
     handleEnrichAll,
     handleAbort,
   }
+}
+
+function useInvalidateVacancyListOnUpdates(
+  id: string,
+  vacancyUpdateCount: number,
+): void {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (vacancyUpdateCount === 0) {
+      return
+    }
+
+    void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
+  }, [id, queryClient, vacancyUpdateCount])
 }
 
 function hasStartInitialUpdateFlag(state: unknown): boolean {

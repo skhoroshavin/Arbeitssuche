@@ -96,25 +96,15 @@ function updateActiveCrawl(
     return
   }
 
-  if (isEnrichDoneEvent(event)) {
+  if (event.phase !== "done" && event.phase !== "complete") {
+    return
+  }
+
+  if (event.phase === "done" && event.source === "enrich") {
     activeCrawl.phase = "crawling"
     activeCrawl.enrichProgress = undefined
     return
   }
 
-  if (isCrawlDoneEvent(event)) {
-    activeCrawl.phase = "done"
-  }
-}
-
-function isEnrichDoneEvent(event: ProgressEvent): boolean {
-  return event.phase === "done" && event.source === "enrich"
-}
-
-function isCrawlDoneEvent(event: ProgressEvent): boolean {
-  return event.phase === "complete" || isNonEnrichDoneEvent(event)
-}
-
-function isNonEnrichDoneEvent(event: ProgressEvent): boolean {
-  return event.phase === "done" && event.source !== "enrich"
+  activeCrawl.phase = "done"
 }

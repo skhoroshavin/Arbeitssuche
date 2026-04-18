@@ -4,6 +4,7 @@ export {
   useDraftWizardLifecycle,
 } from "./draft-wizard-lifecycle"
 export {
+  getEnrichAbortChannel,
   resetProgressTestingState,
   useGlobalJobProgress,
   useJobProgress,

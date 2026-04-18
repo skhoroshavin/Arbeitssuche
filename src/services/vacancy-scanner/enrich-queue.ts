@@ -27,7 +27,7 @@ export class EnrichQueue {
 
   drain(): Promise<void> {
     if (this.signal?.aborted) {
-      return Promise.reject(new DOMException("Aborted", "AbortError"))
+      return Promise.reject(createAbortError())
     }
     if (this.running === 0 && this.queue.length === 0) {
       return Promise.resolve()
@@ -57,27 +57,27 @@ export class EnrichQueue {
   private processNext(): void {
     if (this.signal?.aborted) {
       this.queue = []
-      this.resolveDrainOnAbort()
+      if (this.running === 0) {
+        this.finishDrain(createAbortError())
+      }
       return
     }
+
     const next = this.queue.shift()
     if (next) {
       this.startTask(next.vacancy, next.hash)
     } else if (this.running === 0) {
-      this.completeDrain()
+      this.finishDrain()
     }
   }
 
-  private resolveDrainOnAbort(): void {
-    if (this.running === 0) {
-      this.drainReject?.(new DOMException("Aborted", "AbortError"))
-      this.drainResolve = undefined
-      this.drainReject = undefined
+  private finishDrain(error?: unknown): void {
+    if (error) {
+      this.drainReject?.(error)
+    } else {
+      this.drainResolve?.()
     }
-  }
 
-  private completeDrain(): void {
-    this.drainResolve?.()
     this.drainResolve = undefined
     this.drainReject = undefined
   }
@@ -92,11 +92,7 @@ export class EnrichQueue {
         }
       })
       .catch((error: unknown) => {
-        if (
-          error instanceof DOMException &&
-          error.name === "AbortError" &&
-          this.signal?.aborted
-        ) {
+        if (this.signal?.aborted && isAbortError(error)) {
           return
         }
         this.onError(
@@ -140,4 +136,12 @@ interface EnrichQueueOptions {
 interface EnrichProgressEvent {
   completed: number
   total: number
+}
+
+function createAbortError(): DOMException {
+  return new DOMException("Aborted", "AbortError")
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError"
 }

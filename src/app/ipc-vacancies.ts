@@ -140,15 +140,9 @@ export function registerVacanciesHandlers(
         queue.submit(vacancy, vacancy.hash)
       }
 
-      const aborted = await drainAndCheckAbort(queue, abortController.signal)
+      const aborted = await drainAndCheckAbort(queue)
 
-      safeSend("job:progress", {
-        jobSearchId,
-        message: aborted ? "Analyse abgebrochen" : "Analyse abgeschlossen",
-        phase: "done",
-        source: "enrich",
-        owner: "batch",
-      })
+      sendBatchEnrichDoneProgress(safeSend, jobSearchId, aborted)
 
       if (aborted) {
         return { count: 0, aborted: true }
@@ -156,13 +150,7 @@ export function registerVacanciesHandlers(
 
       return { count: vacanciesNeedingEnrichment.length }
     } catch (error) {
-      safeSend("job:progress", {
-        jobSearchId,
-        message: "Analyse abgebrochen",
-        phase: "done",
-        source: "enrich",
-        owner: "batch",
-      })
+      sendBatchEnrichDoneProgress(safeSend, jobSearchId, true)
       throw error
     } finally {
       batchEnrichAbortControllers.delete(jobSearchId)
@@ -220,19 +208,34 @@ function createEnrichQueue(
   })
 }
 
-async function drainAndCheckAbort(
-  queue: EnrichQueue,
-  _signal: AbortSignal,
-): Promise<boolean> {
+async function drainAndCheckAbort(queue: EnrichQueue): Promise<boolean> {
   try {
     await queue.drain()
     return false
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
+    if (isAbortError(error)) {
       return true
     }
     throw error
   }
+}
+
+function sendBatchEnrichDoneProgress(
+  safeSend: SafeSend,
+  jobSearchId: string,
+  aborted: boolean,
+): void {
+  safeSend("job:progress", {
+    jobSearchId,
+    message: aborted ? "Analyse abgebrochen" : "Analyse abgeschlossen",
+    phase: "done",
+    source: "enrich",
+    owner: "batch",
+  })
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError"
 }
 
 const batchEnrichAbortControllers = new Map<string, AbortController>()
