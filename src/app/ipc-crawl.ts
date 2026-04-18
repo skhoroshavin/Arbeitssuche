@@ -19,6 +19,7 @@ export function registerCrawlHandlers(
           jobSearchId: id,
           message: "Crawl finished",
           phase: "done",
+          source: "crawl",
         })
       },
       onError: (error) => {
@@ -26,6 +27,7 @@ export function registerCrawlHandlers(
           jobSearchId: id,
           message: `Crawl error: ${error.message}`,
           phase: "done",
+          source: "crawl",
         })
       },
     })

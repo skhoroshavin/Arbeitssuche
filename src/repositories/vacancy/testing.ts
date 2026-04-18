@@ -1,1 +1,0 @@
-export { createStubVacancyRepository } from "./stub"

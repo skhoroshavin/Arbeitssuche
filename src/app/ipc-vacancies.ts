@@ -163,9 +163,18 @@ export function registerVacanciesHandlers(
         jobSearchId,
         message: "Analyse abgeschlossen",
         phase: "done",
+        source: "enrich",
       })
 
       return { count: vacanciesNeedingEnrichment.length }
+    } catch (error) {
+      safeSend("job:progress", {
+        jobSearchId,
+        message: "Analyse abgebrochen",
+        phase: "done",
+        source: "enrich",
+      })
+      throw error
     } finally {
       batchEnrichAbortControllers.delete(jobSearchId)
     }

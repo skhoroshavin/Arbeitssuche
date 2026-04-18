@@ -1,1 +1,0 @@
-export { createElectronPdfRenderer } from "./electron"
