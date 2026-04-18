@@ -32,7 +32,7 @@ vi.mock("@/ui/pages/settings/views/maps", () => ({
   default: () => <div>Maps Step</div>,
 }))
 
-import { FirstStartSettingsStep } from "@/ui/pages/settings/views/first-start-step"
+import { FirstStartSettingsStep } from "@/ui/pages/settings"
 
 describe("FirstStartSettingsStep", () => {
   beforeEach(() => {
