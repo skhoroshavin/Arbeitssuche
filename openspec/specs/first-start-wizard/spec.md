@@ -1,4 +1,10 @@
-## ADDED Requirements
+# first-start-wizard Specification
+
+## Purpose
+
+Define the first-start setup flow that guides new users through initial configuration and creation steps before entering the normal app.
+
+## Requirements
 
 ### Requirement: App detects whether initial setup has been completed
 

@@ -1,4 +1,10 @@
-## ADDED Requirements
+# data-clear Specification
+
+## Purpose
+
+Define how users can clear all persisted app data and how the app behaves immediately after deletion.
+
+## Requirements
 
 ### Requirement: Settings page offers a clear-all-data action
 
