@@ -14,7 +14,6 @@ import { PageHeader, EmptyState, Loading } from "@/ui/components"
 import { FilterBar } from "./filter-bar"
 import { VacancyCard } from "./vacancy-card"
 import { KeyWarnings } from "./key-warnings"
-import { CrawlProgressCard } from "./crawl-progress-card"
 import { useVacancyFilters, useFilteredVacancies } from "./use-vacancy-filters"
 
 export default function JobSearchVacancyList() {
@@ -91,15 +90,6 @@ export default function JobSearchVacancyList() {
         }
       />
 
-      {crawl.progressJobId && crawl.events.length > 0 && (
-        <CrawlProgressCard
-          events={crawl.events}
-          done={crawl.done}
-          onAbort={crawl.handleAbort}
-          onClose={crawl.handleClose}
-        />
-      )}
-
       <FilterBar
         statusCounts={statusCounts}
         filter={filter}
@@ -164,9 +154,8 @@ function useCrawlControl(id: string) {
   const queryClient = useQueryClient()
   const startCrawl = useStartJobSearchCrawl(id)
   const abortCrawl = useAbortJobSearchCrawl(id)
-  const [progressJobId, setProgressJobId] = useState<string>()
-  const { events, done, reset, vacancyUpdateCount } =
-    useJobProgress(progressJobId)
+  const [isCrawling, setIsCrawling] = useState(false)
+  const { vacancyUpdateCount } = useJobProgress(isCrawling ? id : undefined)
 
   useEffect(() => {
     if (vacancyUpdateCount > 0) {
@@ -175,27 +164,21 @@ function useCrawlControl(id: string) {
   }, [vacancyUpdateCount, queryClient, id])
 
   const handleStartCrawl = useCallback(() => {
-    reset()
     startCrawl.mutate(undefined, {
       onSuccess: () => {
-        setProgressJobId(id)
+        setIsCrawling(true)
+      },
+      onSettled: () => {
+        setIsCrawling(false)
+        void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
       },
     })
-  }, [id, reset, startCrawl])
-
-  const handleClose = useCallback(() => {
-    setProgressJobId(undefined)
-    void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
-  }, [id, queryClient])
+  }, [id, startCrawl, queryClient])
 
   return {
-    progressJobId,
-    events,
-    done,
     handleStartCrawl,
     handleAbort: useCallback(() => abortCrawl.mutate(), [abortCrawl]),
-    handleClose,
-    isCrawling: !!(progressJobId && !done),
+    isCrawling,
   }
 }
 
