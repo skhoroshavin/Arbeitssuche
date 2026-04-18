@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { Outlet, useLocation, useNavigate } from "react-router"
 import { Loading } from "@/ui/components"
 import {
@@ -14,6 +14,7 @@ export function SetupGuard() {
   const state = setupState.data?.state
   const applicants = useApplicantListView()
   const completeSetup = useCompleteSetupState()
+  const hasCompletedLegacySetup = useRef(false)
 
   useEffect(() => {
     if (
@@ -27,17 +28,29 @@ export function SetupGuard() {
     }
 
     if (state?.completed) {
+      hasCompletedLegacySetup.current = false
       return
     }
 
     if (state === undefined) {
       if (applicants.data.length > 0) {
-        void completeSetup.mutateAsync()
+        if (hasCompletedLegacySetup.current) {
+          return
+        }
+
+        hasCompletedLegacySetup.current = true
+        void completeSetup.mutateAsync().catch(() => {
+          hasCompletedLegacySetup.current = false
+        })
         return
       }
+
+      hasCompletedLegacySetup.current = false
       void navigate("/first-start/settings", { replace: true })
       return
     }
+
+    hasCompletedLegacySetup.current = false
 
     const target = resolvePhaseRoute(state.lastPhase)
     if (location.pathname !== target) {

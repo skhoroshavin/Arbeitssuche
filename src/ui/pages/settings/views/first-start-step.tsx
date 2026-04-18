@@ -15,6 +15,7 @@ export function FirstStartSettingsStep() {
   const [step, setStep] = useState<SettingsStep>("ai")
   const [showSkipWarning, setShowSkipWarning] = useState(false)
   const hasInitialized = useRef(false)
+  const persistedStep = useRef<SettingsStep | undefined>()
 
   useEffect(() => {
     if (hasInitialized.current || setupState.data === undefined) {
@@ -27,6 +28,7 @@ export function FirstStartSettingsStep() {
         : undefined
 
     if (savedStep) {
+      persistedStep.current = savedStep
       setStep(savedStep)
     }
 
@@ -38,11 +40,23 @@ export function FirstStartSettingsStep() {
       return
     }
 
-    void saveSetup.mutateAsync({
-      completed: false,
-      lastPhase: "settings",
-      lastStep: step,
-    })
+    if (persistedStep.current === step) {
+      return
+    }
+
+    persistedStep.current = step
+
+    void saveSetup
+      .mutateAsync({
+        completed: false,
+        lastPhase: "settings",
+        lastStep: step,
+      })
+      .catch(() => {
+        if (persistedStep.current === step) {
+          persistedStep.current = undefined
+        }
+      })
   }, [saveSetup, step])
 
   return (

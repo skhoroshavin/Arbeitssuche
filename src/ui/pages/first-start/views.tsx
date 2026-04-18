@@ -40,7 +40,7 @@ export function FirstStartWizard() {
       setupState: state,
     })
 
-    if (target) {
+    if (target && target !== location.pathname) {
       void navigate(target, { replace: true })
     }
   }, [location.pathname, navigate, showResumePrompt, state])

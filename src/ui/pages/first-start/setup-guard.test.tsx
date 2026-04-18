@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { StrictMode } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter, Routes, Route } from "react-router"
@@ -96,19 +97,21 @@ function renderGuard(initialEntries: string[]) {
   const queryClient = new QueryClient()
 
   return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={initialEntries}>
-        <Routes>
-          <Route element={<SetupGuard />}>
-            <Route path="/" element={<div>App Ready</div>} />
-          </Route>
-          <Route path="/first-start" element={<div>First Start</div>} />
-          <Route
-            path="/first-start/settings"
-            element={<div>First Start</div>}
-          />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={initialEntries}>
+          <Routes>
+            <Route element={<SetupGuard />}>
+              <Route path="/" element={<div>App Ready</div>} />
+            </Route>
+            <Route path="/first-start" element={<div>First Start</div>} />
+            <Route
+              path="/first-start/settings"
+              element={<div>First Start</div>}
+            />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </StrictMode>,
   )
 }
