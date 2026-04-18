@@ -26,6 +26,7 @@ export class VacancyScanner {
   async scan(
     id: string,
     abortController: AbortController,
+    enrichAbortController: AbortController,
     onProgress: OnProgress,
     siteFactory: JobSiteFactory,
   ): Promise<void> {
@@ -67,10 +68,11 @@ export class VacancyScanner {
         onProgress({
           message: `Enriching ${event.completed}/${event.total}`,
           phase: "enrich",
+          owner: "crawl",
           enrichProgress: event,
         })
       },
-      signal: abortController.signal,
+      signal: enrichAbortController.signal,
     })
 
     await this.siteCrawler.crawl({
@@ -108,14 +110,23 @@ export class VacancyScanner {
           onProgress({ message: "", phase: "scan", vacanciesUpdated: true })
         }
 
-        if (vacancy.enrichmentDirty) {
+        if (vacancy.enrichmentDirty && !enrichAbortController.signal.aborted) {
           queue.submit(vacancy, hash)
         }
       },
     })
 
-    if (!abortController.signal.aborted) {
-      await drainQueue(queue)
+    await drainQueue(queue)
+
+    if (queue.total > 0) {
+      onProgress({
+        message: enrichAbortController.signal.aborted
+          ? "Analyse abgebrochen"
+          : "Analyse abgeschlossen",
+        phase: "done",
+        source: "enrich",
+        owner: "crawl",
+      })
     }
 
     if (abortController.signal.aborted) return

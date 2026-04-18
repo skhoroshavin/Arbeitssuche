@@ -147,6 +147,7 @@ export function registerVacanciesHandlers(
         message: aborted ? "Analyse abgebrochen" : "Analyse abgeschlossen",
         phase: "done",
         source: "enrich",
+        owner: "batch",
       })
 
       if (aborted) {
@@ -160,6 +161,7 @@ export function registerVacanciesHandlers(
         message: "Analyse abgebrochen",
         phase: "done",
         source: "enrich",
+        owner: "batch",
       })
       throw error
     } finally {
@@ -210,6 +212,7 @@ function createEnrichQueue(
         jobSearchId,
         message: `Analysiere ${event.completed}/${event.total}`,
         phase: "enrich",
+        owner: "batch",
         enrichProgress: event,
       })
     },

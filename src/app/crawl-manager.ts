@@ -2,6 +2,7 @@ import type {
   VacancyScanner,
   OnProgress,
 } from "@/services/vacancy-scanner/index.js"
+import type { ProgressEvent } from "@/models/progress/index.js"
 import { createJobSite } from "@/plugins/job-site"
 import { createElectronBrowser } from "@/plugins/browser"
 
@@ -15,28 +16,27 @@ export function startCrawl(options: StartCrawlOptions): void {
   }
 
   const abortController = new AbortController()
+  const enrichAbortController = new AbortController()
   const activeCrawl: ActiveCrawl = {
-    controller: abortController,
+    crawlController: abortController,
+    enrichController: enrichAbortController,
     phase: "crawling",
   }
   activeCrawls.set(jobSearchId, activeCrawl)
   const browser = createElectronBrowser()
 
   const wrappedOnProgress: OnProgress = (event) => {
-    if (event.phase === "enrich") {
-      activeCrawl.phase = "enriching"
-      if (event.enrichProgress) {
-        activeCrawl.enrichProgress = event.enrichProgress
-      }
-    } else if (event.phase === "complete" || event.phase === "done") {
-      activeCrawl.phase = "done"
-    }
+    updateActiveCrawl(activeCrawl, event)
     onProgress(event)
   }
 
   vacancyScanner
-    .scan(jobSearchId, abortController, wrappedOnProgress, (name) =>
-      createJobSite(name, browser),
+    .scan(
+      jobSearchId,
+      abortController,
+      enrichAbortController,
+      wrappedOnProgress,
+      (name) => createJobSite(name, browser),
     )
     .then(() => onComplete())
     .catch((error) =>
@@ -52,14 +52,24 @@ export function abortCrawl(jobSearchId: string): boolean {
   const crawl = activeCrawls.get(jobSearchId)
   if (!crawl) return false
 
-  crawl.controller.abort()
+  crawl.enrichController.abort()
+  crawl.crawlController.abort()
+  return true
+}
+
+export function abortCrawlEnrichment(jobSearchId: string): boolean {
+  const crawl = activeCrawls.get(jobSearchId)
+  if (!crawl || crawl.enrichController.signal.aborted) return false
+
+  crawl.enrichController.abort()
   return true
 }
 
 const activeCrawls = new Map<string, ActiveCrawl>()
 
 interface ActiveCrawl {
-  controller: AbortController
+  crawlController: AbortController
+  enrichController: AbortController
   phase: CrawlPhase
   enrichProgress?: { completed: number; total: number }
 }
@@ -68,8 +78,43 @@ type CrawlPhase = "crawling" | "enriching" | "done"
 
 interface StartCrawlOptions {
   jobSearchId: string
-  vacancyScanner: VacancyScanner
+  vacancyScanner: Pick<VacancyScanner, "scan">
   onProgress: OnProgress
   onComplete: () => void
   onError: (error: Error) => void
+}
+
+function updateActiveCrawl(
+  activeCrawl: ActiveCrawl,
+  event: ProgressEvent,
+): void {
+  if (event.phase === "enrich") {
+    activeCrawl.phase = "enriching"
+    if (event.enrichProgress) {
+      activeCrawl.enrichProgress = event.enrichProgress
+    }
+    return
+  }
+
+  if (isEnrichDoneEvent(event)) {
+    activeCrawl.phase = "crawling"
+    activeCrawl.enrichProgress = undefined
+    return
+  }
+
+  if (isCrawlDoneEvent(event)) {
+    activeCrawl.phase = "done"
+  }
+}
+
+function isEnrichDoneEvent(event: ProgressEvent): boolean {
+  return event.phase === "done" && event.source === "enrich"
+}
+
+function isCrawlDoneEvent(event: ProgressEvent): boolean {
+  return event.phase === "complete" || isNonEnrichDoneEvent(event)
+}
+
+function isNonEnrichDoneEvent(event: ProgressEvent): boolean {
+  return event.phase === "done" && event.source !== "enrich"
 }

@@ -1,1 +1,1 @@
-export { useJobProgress } from "./job-progress"
+export { useJobProgress } from "@/ui/hooks"
