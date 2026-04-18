@@ -1,5 +1,9 @@
 import type { AppServices } from "."
-import { startCrawl, abortCrawl } from "./crawl-manager.js"
+import {
+  startCrawl,
+  abortCrawl,
+  abortCrawlEnrichment,
+} from "./crawl-manager.js"
 import type { IpcHandle, SafeSend } from "./ipc-handlers.js"
 
 export function registerCrawlHandlers(
@@ -36,5 +40,9 @@ export function registerCrawlHandlers(
   handle("job-searches:crawl:abort", (id: string) => {
     abortCrawl(id)
     return { aborted: true }
+  })
+
+  handle("job-searches:crawl:enrich:abort", (id: string) => {
+    return { aborted: abortCrawlEnrichment(id) }
   })
 }

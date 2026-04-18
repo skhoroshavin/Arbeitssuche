@@ -3,4 +3,10 @@ export {
   createDraftWizardMutations,
   useDraftWizardLifecycle,
 } from "./draft-wizard-lifecycle"
+export {
+  getEnrichAbortChannel,
+  resetProgressTestingState,
+  useGlobalJobProgress,
+  useJobProgress,
+} from "./job-progress"
 export { useDraftWizardInitialization } from "./use-draft-wizard-initialization"

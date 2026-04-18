@@ -23,9 +23,23 @@ import {
 export class VacancyEnricher {
   constructor(private readonly deps: EnricherDeps) {}
 
-  async enrich(vacancy: Vacancy, context: EnrichContext): Promise<Vacancy> {
-    const commuted = await this.tryComputeCommute(vacancy, context.applicant)
-    const { result, successful } = await this.tryLlmEnrich(commuted, context)
+  async enrich(
+    vacancy: Vacancy,
+    context: EnrichContext,
+    signal?: AbortSignal,
+  ): Promise<Vacancy> {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError")
+
+    const commuted = await this.tryComputeCommute(
+      vacancy,
+      context.applicant,
+      signal,
+    )
+    const { result, successful } = await this.tryLlmEnrich(
+      commuted,
+      context,
+      signal,
+    )
     if (successful) {
       return result.with({ enriched: true, enrichmentDirty: false })
     }
@@ -35,6 +49,7 @@ export class VacancyEnricher {
   private async tryComputeCommute(
     vacancy: Vacancy,
     applicant: Applicant,
+    signal?: AbortSignal,
   ): Promise<Vacancy> {
     const origin = resolveCommuteOrigin(applicant)
     if (!this.deps.commuteClient || !origin || vacancy.addresses.length === 0) {
@@ -45,9 +60,12 @@ export class VacancyEnricher {
         vacancies: [vacancy],
         origin,
         commuteClient: this.deps.commuteClient,
+        signal,
       })
       return result.vacancies[0]
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError")
+        throw error
       console.error(
         `Failed to compute commute for "${vacancy.title}":`,
         formatError(error),
@@ -59,6 +77,7 @@ export class VacancyEnricher {
   private async tryLlmEnrich(
     vacancy: Vacancy,
     context: EnrichContext,
+    signal?: AbortSignal,
   ): Promise<{ result: Vacancy; successful: boolean }> {
     if (!this.deps.llmClient) return { result: vacancy, successful: true }
 
@@ -67,6 +86,7 @@ export class VacancyEnricher {
       context.applicant,
       context.preferences,
       this.deps.llmClient,
+      signal,
     )
 
     let updated = vacancy
@@ -108,11 +128,14 @@ function runLlmEnrichment(
   applicant: Applicant,
   preferences: SearchPreferences,
   llmClient: LlmClient,
+  signal?: AbortSignal,
 ) {
   return Promise.all([
     needsAssessment(vacancy)
-      ? assessVacancy(vacancy, applicant, preferences, llmClient).catch(
+      ? assessVacancy(vacancy, applicant, preferences, llmClient, signal).catch(
           (error) => {
+            if (error instanceof DOMException && error.name === "AbortError")
+              throw error
             console.error(
               `Failed to assess "${vacancy.title}":`,
               formatError(error),
@@ -122,7 +145,9 @@ function runLlmEnrichment(
         )
       : undefined,
     needsContactExtraction(vacancy)
-      ? extractContactInfo(vacancy, llmClient).catch((error) => {
+      ? extractContactInfo(vacancy, llmClient, signal).catch((error) => {
+          if (error instanceof DOMException && error.name === "AbortError")
+            throw error
           console.error(
             `Failed to extract contact for "${vacancy.title}":`,
             formatError(error),

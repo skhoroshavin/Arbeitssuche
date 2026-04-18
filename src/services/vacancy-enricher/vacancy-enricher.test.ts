@@ -34,6 +34,7 @@ describe("VacancyEnricher", () => {
     expect(getCommuteMock).toHaveBeenCalledWith(
       "Teststr. 1, 10115 Berlin",
       "Berlin",
+      undefined,
     )
     expect(result.summary).toBe("- Good match")
     expect(result.matchScore).toBe("good")
@@ -116,7 +117,72 @@ describe("VacancyEnricher", () => {
     expect(getCommuteMock).toHaveBeenCalledWith(
       "Hauptstr. 5, 80331 München",
       "Berlin",
+      undefined,
     )
+  })
+
+  it("rejects with AbortError when signal is already aborted", async () => {
+    const controller = new AbortController()
+    controller.abort()
+
+    const llmClient = makeLlmClient()
+    const enricher = new VacancyEnricher({ llmClient })
+    const vacancy = makeVacancy()
+
+    await expect(
+      enricher.enrich(
+        vacancy,
+        { applicant: APPLICANT, preferences: PREFERENCES },
+        controller.signal,
+      ),
+    ).rejects.toThrow()
+  })
+
+  it("rejects with AbortError when signal is aborted during LLM call", async () => {
+    const controller = new AbortController()
+
+    const llmClient = makeLlmClient({ delayMs: 500 })
+    const enricher = new VacancyEnricher({ llmClient })
+    const vacancy = makeVacancy()
+
+    const promise = enricher.enrich(
+      vacancy,
+      { applicant: APPLICANT, preferences: PREFERENCES },
+      controller.signal,
+    )
+
+    setTimeout(() => controller.abort(), 10)
+
+    await expect(promise).rejects.toThrow()
+  })
+
+  it("passes signal through to commute client", async () => {
+    const controller = new AbortController()
+    const signalCalls: (AbortSignal | undefined)[] = []
+
+    const commuteClient: CommuteClient = {
+      getCommute: (origin, destination, signal) => {
+        signalCalls.push(signal)
+        return Promise.resolve({
+          distance: "10 km",
+          durations: { morning: 20, day: 15, evening: 25 },
+          fetchedAt: "2026-01-01",
+        })
+      },
+      ping: () => Promise.resolve(true),
+    }
+
+    const enricher = new VacancyEnricher({ commuteClient })
+    const vacancy = makeVacancy()
+
+    await enricher.enrich(
+      vacancy,
+      { applicant: APPLICANT, preferences: PREFERENCES },
+      controller.signal,
+    )
+
+    expect(signalCalls.length).toBeGreaterThanOrEqual(1)
+    expect(signalCalls[0]).toBe(controller.signal)
   })
 })
 
@@ -156,23 +222,55 @@ function makeVacancy(
   })
 }
 
-function makeLlmClient(options: { shouldFail?: boolean } = {}): LlmClient {
+function makeLlmClient(
+  options: { shouldFail?: boolean; delayMs?: number } = {},
+): LlmClient {
+  const delay = options.delayMs ?? 0
+
+  const resolveWithSchema = <T>(
+    schema: TypedSchema<T>,
+    signal?: AbortSignal,
+  ): Promise<T> => {
+    if (delay > 0 && signal) {
+      return new Promise((resolve, reject) => {
+        if (signal.aborted) {
+          reject(new DOMException("Aborted", "AbortError"))
+          return
+        }
+        const timer = setTimeout(() => {
+          resolve(
+            schema.parse(
+              JSON.stringify({ summary: "- Good match", matchScore: "good" }),
+            ),
+          )
+        }, delay)
+        const onAbort = () => {
+          clearTimeout(timer)
+          reject(new DOMException("Aborted", "AbortError"))
+        }
+        signal.addEventListener("abort", onAbort, { once: true })
+      })
+    }
+    return Promise.resolve(
+      schema.parse(
+        JSON.stringify({ summary: "- Good match", matchScore: "good" }),
+      ),
+    )
+  }
+
   const completeJSON: LlmClient["completeJSON"] = options.shouldFail
     ? <T>(
         _prompt: string,
         _maxTokens: number,
         _schema: TypedSchema<T>,
+        _signal?: AbortSignal,
       ): Promise<T> => Promise.reject(new Error("LLM unavailable"))
     : <T>(
         _prompt: string,
         _maxTokens: number,
         schema: TypedSchema<T>,
-      ): Promise<T> =>
-        Promise.resolve(
-          schema.parse(
-            JSON.stringify({ summary: "- Good match", matchScore: "good" }),
-          ),
-        )
+        signal?: AbortSignal,
+      ): Promise<T> => resolveWithSchema(schema, signal)
 
   return {
     complete: vi.fn<LlmClient["complete"]>().mockResolvedValue(""),
@@ -186,11 +284,16 @@ function makeCommuteClient(options: { shouldFail?: boolean } = {}) {
     ? vi
         .fn<CommuteClient["getCommute"]>()
         .mockRejectedValue(new Error("API down"))
-    : vi.fn<CommuteClient["getCommute"]>().mockResolvedValue({
-        distance: "10 km",
-        durations: { morning: 20, day: 15, evening: 25 },
-        fetchedAt: "2026-01-01",
-      })
+    : vi
+        .fn<CommuteClient["getCommute"]>()
+        .mockImplementation(
+          (_origin: string, _destination: string, _signal?: AbortSignal) =>
+            Promise.resolve({
+              distance: "10 km",
+              durations: { morning: 20, day: 15, evening: 25 },
+              fetchedAt: "2026-01-01",
+            }),
+        )
 
   const commuteClient: CommuteClient = {
     getCommute: getCommuteMock,

@@ -14,7 +14,11 @@ class StubCommuteClient implements CommuteClient {
       | Error,
   ) {}
 
-  getCommute(_origin: string, destination: string): Promise<CommuteResult> {
+  getCommute(
+    _origin: string,
+    destination: string,
+    _signal?: AbortSignal,
+  ): Promise<CommuteResult> {
     if (this.results instanceof Error) {
       return Promise.reject(this.results)
     }

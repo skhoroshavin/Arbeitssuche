@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useEffect, useRef, useCallback } from "react"
 import { useParams, useLocation, useNavigate } from "react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { useApiKeyStatus, useJobSearchVacancyListView } from "@/ui/data"
@@ -9,7 +9,10 @@ import {
   useAbortEnrichment,
   type VacancyWithStatus,
 } from "@/ui/data"
-import { useJobProgress } from "@/ui/pages/job-search/hooks"
+import {
+  getEnrichAbortChannel,
+  useJobProgress,
+} from "@/ui/pages/job-search/hooks"
 import { PageHeader, EmptyState, Loading } from "@/ui/components"
 import { FilterBar } from "./filter-bar"
 import { VacancyCard } from "./vacancy-card"
@@ -154,22 +157,13 @@ function useCrawlControl(id: string) {
   const queryClient = useQueryClient()
   const startCrawl = useStartJobSearchCrawl(id)
   const abortCrawl = useAbortJobSearchCrawl(id)
-  const [isCrawling, setIsCrawling] = useState(false)
-  const { vacancyUpdateCount } = useJobProgress(isCrawling ? id : undefined)
+  const { hasActiveScan, vacancyUpdateCount } = useJobProgress(id)
 
-  useEffect(() => {
-    if (vacancyUpdateCount > 0) {
-      void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
-    }
-  }, [vacancyUpdateCount, queryClient, id])
+  useInvalidateVacancyListOnUpdates(id, vacancyUpdateCount)
 
   const handleStartCrawl = useCallback(() => {
     startCrawl.mutate(undefined, {
-      onSuccess: () => {
-        setIsCrawling(true)
-      },
       onSettled: () => {
-        setIsCrawling(false)
         void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
       },
     })
@@ -178,7 +172,7 @@ function useCrawlControl(id: string) {
   return {
     handleStartCrawl,
     handleAbort: useCallback(() => abortCrawl.mutate(), [abortCrawl]),
-    isCrawling,
+    isCrawling: hasActiveScan,
   }
 }
 
@@ -195,37 +189,50 @@ function useEnrichControl(id: string, vacancies: VacancyWithStatus[]) {
   const queryClient = useQueryClient()
   const enrichAll = useEnrichAllUnenriched(id)
   const abortEnrichment = useAbortEnrichment(id)
-  const [isEnriching, setIsEnriching] = useState(false)
-  const [enrichProgressJobId, setEnrichProgressJobId] = useState<string>()
-  const { vacancyUpdateCount } = useJobProgress(enrichProgressJobId)
+  const { hasActiveEnrich, enrich, vacancyUpdateCount } = useJobProgress(id)
 
   const hasUnenriched = vacancies.some((v) => !v.enriched || v.enrichmentDirty)
 
-  useEffect(() => {
-    if (vacancyUpdateCount > 0) {
-      void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
-    }
-  }, [vacancyUpdateCount, queryClient, id])
+  useInvalidateVacancyListOnUpdates(id, vacancyUpdateCount)
 
   const handleEnrichAll = () => {
-    setIsEnriching(true)
-    setEnrichProgressJobId(id)
     enrichAll.mutate(undefined, {
       onSettled: () => {
-        setIsEnriching(false)
-        setEnrichProgressJobId(undefined)
         void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
       },
     })
   }
 
   const handleAbort = () => {
+    if (enrich?.owner === "crawl") {
+      void electronAPI?.invoke(getEnrichAbortChannel(enrich.owner), id)
+      return
+    }
+
     abortEnrichment.mutate()
-    setIsEnriching(false)
-    setEnrichProgressJobId(undefined)
   }
 
-  return { hasUnenriched, isEnriching, handleEnrichAll, handleAbort }
+  return {
+    hasUnenriched,
+    isEnriching: hasActiveEnrich,
+    handleEnrichAll,
+    handleAbort,
+  }
+}
+
+function useInvalidateVacancyListOnUpdates(
+  id: string,
+  vacancyUpdateCount: number,
+): void {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (vacancyUpdateCount === 0) {
+      return
+    }
+
+    void invalidateQuery(queryClient, jobSearchQueryKeys.vacancyList(id))
+  }, [id, queryClient, vacancyUpdateCount])
 }
 
 function hasStartInitialUpdateFlag(state: unknown): boolean {

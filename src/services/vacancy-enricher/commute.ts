@@ -29,6 +29,7 @@ export async function computeCommutes(
       vacancy,
       origin,
       commuteClient,
+      signal,
     )
     errorCount += result.errors
 
@@ -63,6 +64,7 @@ async function computeSingleVacancyCommute(
   vacancy: Vacancy,
   origin: string,
   commuteClient: CommuteClient,
+  signal?: AbortSignal,
 ) {
   const commute = { ...vacancy.commute }
   let computed = false
@@ -70,11 +72,13 @@ async function computeSingleVacancyCommute(
 
   for (const address of vacancy.addresses) {
     if (address in commute) continue
+    if (signal?.aborted) break
 
     try {
-      commute[address] = await commuteClient.getCommute(origin, address)
+      commute[address] = await commuteClient.getCommute(origin, address, signal)
       computed = true
     } catch (error) {
+      rethrowAbortError(error)
       console.error(
         `Commute error for "${vacancy.title}" → "${address}":`,
         formatError(error),
@@ -84,4 +88,8 @@ async function computeSingleVacancyCommute(
   }
 
   return { commute, computed, errors }
+}
+
+function rethrowAbortError(error: unknown): void {
+  if (error instanceof DOMException && error.name === "AbortError") throw error
 }

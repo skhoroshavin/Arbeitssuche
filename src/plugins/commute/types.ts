@@ -1,5 +1,9 @@
 export interface CommuteClient {
-  getCommute(origin: string, destination: string): Promise<CommuteResult>
+  getCommute(
+    origin: string,
+    destination: string,
+    signal?: AbortSignal,
+  ): Promise<CommuteResult>
   ping(): Promise<boolean>
 }
 

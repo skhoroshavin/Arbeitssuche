@@ -27,25 +27,12 @@ export function createAppServices(context: ServiceContext): AppServices {
       resolveConfig(context.configRepo.load())
     const secrets = resolveSecrets(context.secretsRepo.load())
     const apiKey = getProviderApiKey(provider, secrets)
+    const buildConfiguredLlmClient = (model: string) =>
+      buildLlmClient(context.llmClientFactory, provider, apiKey, model)
 
-    const assessmentLlm = buildLlmClient(
-      context.llmClientFactory,
-      provider,
-      apiKey,
-      assessmentModel,
-    )
-    const coverLetterLlm = buildLlmClient(
-      context.llmClientFactory,
-      provider,
-      apiKey,
-      coverLetterModel,
-    )
-    const consultationLlm = buildLlmClient(
-      context.llmClientFactory,
-      provider,
-      apiKey,
-      consultationModel,
-    )
+    const assessmentLlm = buildConfiguredLlmClient(assessmentModel)
+    const coverLetterLlm = buildConfiguredLlmClient(coverLetterModel)
+    const consultationLlm = buildConfiguredLlmClient(consultationModel)
 
     const googleMapsApiKey = secrets.googleMapsApiKey
     const commuteClient = googleMapsApiKey

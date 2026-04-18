@@ -17,9 +17,15 @@ export function needsContactExtraction(vacancy: Vacancy): boolean {
 export async function extractContactInfo(
   vacancy: Vacancy,
   llmClient: LlmClient,
+  signal?: AbortSignal,
 ): Promise<ContactExtractionResult | undefined> {
   const prompt = buildContactExtractionPrompt(vacancy)
-  const raw = await llmClient.completeJSON(prompt, 512, EXTRACT_CONTACT_SCHEMA)
+  const raw = await llmClient.completeJSON(
+    prompt,
+    512,
+    EXTRACT_CONTACT_SCHEMA,
+    signal,
+  )
 
   const addresses = raw.addresses.map((s) => s.trim()).filter(Boolean)
   const contact = cleanContact(raw.contact)
