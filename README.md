@@ -42,13 +42,6 @@ Außerdem ein Experiment in KI-gestützter Entwicklung: Der gesamte Code wurde v
 
 Siehe [AGENTS.md](AGENTS.md) für Architektur, Konventionen und Befehle.
 
-Für die Live-E2E-Suite werden Umgebungsvariablen benötigt:
-
-- `OPENROUTER_API_KEY`
-- `GOOGLE_MAPS_API_KEY`
-
-Dann laufen `npm run test:e2e` und `npm run test:all` ohne weitere manuelle Vorbereitung. `test:e2e` baut die Electron-App automatisch, bevor Playwright startet.
-
 ## Lizenz
 
 [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.html)
@@ -98,13 +91,6 @@ Also an experiment in AI-assisted development: the entire codebase was written b
 ### Development
 
 See [AGENTS.md](AGENTS.md) for architecture, conventions, and commands.
-
-The live E2E suite requires these environment variables:
-
-- `OPENROUTER_API_KEY`
-- `GOOGLE_MAPS_API_KEY`
-
-With those set, `npm run test:e2e` and `npm run test:all` run without extra manual setup. `test:e2e` builds the Electron app automatically before Playwright starts.
 
 ### License
 
