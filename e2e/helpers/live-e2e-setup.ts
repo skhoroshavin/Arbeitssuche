@@ -2,8 +2,8 @@ import { expect } from "@playwright/test"
 import type { ElectronApiHelper } from "./electron-api-helper.js"
 import type { SettingsPage } from "../pages/index.js"
 
-const OPENROUTER_LABEL = "OpenRouter API-Schlüssel"
-const MAPS_LABEL = "Google Maps API-Schlüssel"
+export const OPENROUTER_LABEL = "OpenRouter API-Schlüssel"
+export const MAPS_LABEL = "Google Maps API-Schlüssel"
 
 export async function configureLiveProviders(
   settingsPage: SettingsPage,
@@ -52,18 +52,18 @@ function readRequiredLiveCredentials(): LiveCredentials {
 }
 
 function readRequiredEnvironmentVariable(
-  name: keyof typeof REQUIRED_ENV,
+  name: keyof typeof REQUIRED_E2E_ENV,
 ): string {
   const value = process.env[name]?.trim()
   if (!value) {
     throw new Error(
-      `Missing required E2E environment variable: ${REQUIRED_ENV[name]} (${name})`,
+      `Missing required E2E environment variable: ${REQUIRED_E2E_ENV[name]} (${name})`,
     )
   }
   return value
 }
 
-const REQUIRED_ENV = {
+export const REQUIRED_E2E_ENV = {
   OPENROUTER_API_KEY: "OpenRouter",
   GOOGLE_MAPS_API_KEY: "Google Maps",
 } as const

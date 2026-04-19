@@ -1,9 +1,10 @@
 import { test, expect } from "../fixtures.js"
 import { LiveFlowHelper } from "../helpers/live-flow-helper.js"
-import { configureLiveProviders } from "../helpers/live-e2e-setup.js"
-
-const OPENROUTER_LABEL = "OpenRouter API-Schlüssel"
-const MAPS_LABEL = "Google Maps API-Schlüssel"
+import {
+  configureLiveProviders,
+  OPENROUTER_LABEL,
+  MAPS_LABEL,
+} from "../helpers/live-e2e-setup.js"
 
 test.describe("Live E2E runtime contract", () => {
   test.describe.configure({ mode: "serial" })

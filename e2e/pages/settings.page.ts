@@ -13,10 +13,6 @@ export class SettingsPage {
     await this.page.goto("/settings")
   }
 
-  async gotoMaps() {
-    await this.page.goto("/settings/maps")
-  }
-
   navLink(name: string): Locator {
     return this.page.getByRole("link", { name, exact: true })
   }

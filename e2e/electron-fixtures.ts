@@ -8,6 +8,7 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { ElectronApiHelper } from "./helpers/electron-api-helper.js"
+import { REQUIRED_E2E_ENV } from "./helpers/live-e2e-setup.js"
 import {
   ApplicantListPage,
   ApplicantPage,
@@ -31,11 +32,6 @@ type Fixtures = {
   layoutPage: LayoutPage
   settingsPage: SettingsPage
 }
-
-const REQUIRED_E2E_ENV = {
-  OPENROUTER_API_KEY: "OpenRouter",
-  GOOGLE_MAPS_API_KEY: "Google Maps",
-} as const
 
 export const test = base.extend<Fixtures>({
   electronApp: async ({}, use) => {
@@ -122,11 +118,9 @@ function assertRequiredE2eEnvironment(): void {
 }
 
 function createElectronEnvironment(): NodeJS.ProcessEnv {
-  const {
-    OPENROUTER_API_KEY: _openrouterApiKey,
-    GOOGLE_MAPS_API_KEY: _googleMapsApiKey,
-    ...environment
-  } = process.env
-
+  const environment = { ...process.env }
+  for (const key of Object.keys(REQUIRED_E2E_ENV)) {
+    delete environment[key]
+  }
   return environment
 }

@@ -2,10 +2,9 @@ import { test, expect } from "../fixtures.js"
 import {
   assertLiveProvidersReady,
   configureLiveProviders,
+  OPENROUTER_LABEL,
+  MAPS_LABEL,
 } from "../helpers/live-e2e-setup.js"
-
-const OPENROUTER_LABEL = "OpenRouter API-Schlüssel"
-const MAPS_LABEL = "Google Maps API-Schlüssel"
 
 test.describe("Live enrichment diagnostics", () => {
   test("shows the configured live provider state for E2E", async ({
