@@ -11,6 +11,7 @@ export class JobSearchPage {
   readonly generateButton: Locator
   readonly vacanciesHeading: Locator
   readonly refreshButton: Locator
+  readonly enrichAllButton: Locator
   readonly sortDatum: Locator
   readonly sortUnternehmen: Locator
   readonly sortFahrtzeit: Locator
@@ -43,6 +44,7 @@ export class JobSearchPage {
     this.generateButton = page.getByRole("button", { name: "Generieren" })
     this.vacanciesHeading = page.getByRole("heading", { name: /Stellen/ })
     this.refreshButton = page.getByRole("button", { name: "Aktualisieren" })
+    this.enrichAllButton = page.getByRole("button", { name: "Alle analysieren" })
     this.sortDatum = page.getByRole("button", { name: "Datum" })
     this.sortUnternehmen = page.getByRole("button", { name: "Unternehmen" })
     this.sortFahrtzeit = page.getByRole("button", { name: "Fahrtzeit" })

@@ -85,16 +85,40 @@ export class LiveFlowHelper {
           const vacancyList = await this.api.getVacancyList(jobSearchId)
           const hasBoundedCount =
             vacancyList.totalCount >= 1 && vacancyList.totalCount <= 5
-          const hasSummary = vacancyList.vacancies.some(
-            (vacancy) => vacancy.summary.trim().length > 0,
-          )
           const hasCommute = vacancyList.vacancies.some(
             (vacancy) => Object.keys(vacancy.commute).length > 0,
           )
           const refreshEnabled =
             await this.jobSearchPage.refreshButton.isEnabled()
 
-          return refreshEnabled && hasBoundedCount && hasSummary && hasCommute
+          return refreshEnabled && hasBoundedCount && hasCommute
+        },
+        {
+          timeout: 180_000,
+          intervals: [1_000, 2_000, 5_000],
+        },
+      )
+      .toBe(true)
+
+    return this.api.getVacancyList(jobSearchId)
+  }
+
+  async enrichVacanciesAndWait(jobSearchId: string): Promise<E2eVacancyList> {
+    if (await this.jobSearchPage.enrichAllButton.isVisible()) {
+      await this.jobSearchPage.enrichAllButton.click()
+    }
+
+    await expect
+      .poll(
+        async () => {
+          const vacancyList = await this.api.getVacancyList(jobSearchId)
+          const hasSummary = vacancyList.vacancies.some(
+            (vacancy) => vacancy.summary.trim().length > 0,
+          )
+          const enrichButtonVisible =
+            await this.jobSearchPage.enrichAllButton.isVisible()
+
+          return hasSummary && enrichButtonVisible
         },
         {
           timeout: 180_000,

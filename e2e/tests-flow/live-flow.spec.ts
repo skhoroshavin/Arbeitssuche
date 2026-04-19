@@ -28,14 +28,16 @@ test.describe("Live major flow", () => {
     await expect(jobSearchPage.missingKeyNote).not.toBeVisible()
     await expect(jobSearchPage.missingMapsKeyNote).not.toBeVisible()
 
-    const vacancyList = await helper.waitForCrawlCompletion(jobSearchId)
-    expect(vacancyList.totalCount).toBeGreaterThanOrEqual(1)
-    expect(vacancyList.totalCount).toBeLessThanOrEqual(5)
+    const crawledVacancyList = await helper.waitForCrawlCompletion(jobSearchId)
+    expect(crawledVacancyList.totalCount).toBeGreaterThanOrEqual(1)
+    expect(crawledVacancyList.totalCount).toBeLessThanOrEqual(5)
     expect(
-      vacancyList.vacancies.every((vacancy) =>
+      crawledVacancyList.vacancies.every((vacancy) =>
         vacancy.sources.some((source) => source.site === "arbeitsagentur"),
       ),
     ).toBe(true)
+
+    const vacancyList = await helper.enrichVacanciesAndWait(jobSearchId)
 
     const vacancy = helper.pickEnrichedVacancy(vacancyList)
     await helper.openVacancy(jobSearchId, vacancy)
