@@ -16,6 +16,8 @@ import {
   SettingsPage,
 } from "./pages/index.js"
 
+process.loadEnvFile(resolve(".env"))
+
 type Fixtures = {
   electronApp: ElectronApplication
   api: ElectronApiHelper
