@@ -4,7 +4,7 @@ import {
   type ElectronApplication,
 } from "@playwright/test"
 import { resolve } from "node:path"
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { ElectronApiHelper } from "./helpers/electron-api-helper.js"
@@ -16,7 +16,11 @@ import {
   SettingsPage,
 } from "./pages/index.js"
 
-process.loadEnvFile(resolve(".env"))
+const envFilePath = resolve(".env")
+
+if (existsSync(envFilePath)) {
+  process.loadEnvFile(envFilePath)
+}
 
 type Fixtures = {
   electronApp: ElectronApplication
