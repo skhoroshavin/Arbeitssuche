@@ -15,6 +15,7 @@ import { CoverLetterEditor } from "@/ui/pages/job-search/components"
 import { Markdown } from "@/ui/components"
 import { StatusBadge } from "@/ui/pages/job-search/components"
 import { useLayoutConfig } from "@/ui/layout"
+import { useJobProgress } from "@/ui/pages/job-search/hooks"
 import type { Activity, ActivityType } from "@/models/vacancy"
 import {
   MATCH_SCORE_LABELS,
@@ -32,6 +33,7 @@ export default function JobSearchVacancyDetail() {
   const backSearch = useBackSearch()
   const detail = useVacancyDetailData(id, hash)
   const { hasLlmKey } = useApiKeyStatus()
+  const { hasActiveEnrich } = useJobProgress(id)
   const activity = useActivityRecorder(id, hash)
 
   const title = detail.title
@@ -62,6 +64,7 @@ export default function JobSearchVacancyDetail() {
   const enrichmentState = deriveEnrichmentState(
     data.enriched,
     data.enrichmentDirty,
+    hasActiveEnrich,
   )
 
   return (
@@ -126,6 +129,9 @@ function VacancyEnrichmentHeader({
 
   const showMatchScore =
     enrichmentState === "enriched" || enrichmentState === "stale"
+  const showAction = enrichmentState !== "pending"
+  const actionLabel =
+    enrichmentState === "plain" ? "Analysieren" : "Neu analysieren"
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
@@ -143,10 +149,11 @@ function VacancyEnrichmentHeader({
           veraltet
         </span>
       )}
-      {showMatchScore && (
+      {showAction && (
         <ReEnrichControl
           isEnriching={isEnriching}
           error={reEnrich.error}
+          label={actionLabel}
           onReEnrich={handleReEnrich}
         />
       )}
@@ -157,10 +164,12 @@ function VacancyEnrichmentHeader({
 function ReEnrichControl({
   isEnriching,
   error,
+  label,
   onReEnrich,
 }: {
   isEnriching: boolean
   error: unknown
+  label: string
   onReEnrich: () => void
 }) {
   const errorMessage =
@@ -172,7 +181,7 @@ function ReEnrichControl({
         disabled={isEnriching}
         className={`text-sm px-2 py-1 rounded border transition-colors disabled:opacity-50 ${error ? "border-red-300 dark:border-red-700 text-red-500" : "border-gray-200 dark:border-gray-600 text-gray-500 hover:text-blue-600 hover:border-blue-300"}`}
       >
-        {isEnriching ? "Analysiert..." : "Neu analysieren"}
+        {isEnriching ? "Analysiert..." : label}
       </button>
       {error && <span className="text-xs text-red-500">{errorMessage}</span>}
     </>

@@ -1,15 +1,26 @@
 import {
   useAISettingsView,
+  useClearAllData,
   useLlmProviders,
   useProviderSecretActions,
   resolveSecret,
 } from "@/ui/data"
+import { useState } from "react"
+import { useNavigate } from "react-router"
 import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config"
 import { Card, PageHeader, SectionHeader, Loading } from "@/ui/components"
-import { ModelCombobox } from "@/ui/pages/settings/components"
-import { ProviderSecretCard } from "@/ui/pages/settings/components"
+import {
+  ConfirmationDialog,
+  ModelCombobox,
+  ProviderSecretCard,
+} from "@/ui/pages/settings/components"
 
-export default function SettingsAI() {
+export default function SettingsAI({
+  showDangerZone = true,
+}: {
+  showDangerZone?: boolean
+}) {
+  const navigate = useNavigate()
   const ai = useAISettingsView([
     {
       id: "google/gemini-2.5-flash",
@@ -37,6 +48,8 @@ export default function SettingsAI() {
       pricing: { prompt: "0.000015", completion: "0.000075" },
     },
   ])
+  const clearAllData = useClearAllData()
+  const [confirmClear, setConfirmClear] = useState(false)
 
   if (ai.isLoading) return <Loading />
 
@@ -55,6 +68,25 @@ export default function SettingsAI() {
         isLoading={ai.modelsLoading}
         onModelChange={(key, value) => ai.saveConfig.mutate({ key, value })}
       />
+      {showDangerZone && (
+        <>
+          <DangerZoneCard onClear={() => setConfirmClear(true)} />
+
+          <ConfirmationDialog
+            open={confirmClear}
+            title="Alle Daten löschen?"
+            description="Alle Bewerber, Jobsuchen, Stellen, Konfigurationen und API-Schlüssel werden dauerhaft gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden."
+            confirmLabel="Alles löschen"
+            isConfirming={clearAllData.isPending}
+            destructive
+            onCancel={() => setConfirmClear(false)}
+            onConfirm={async () => {
+              await clearAllData.mutateAsync()
+              void navigate("/data-cleared", { replace: true })
+            }}
+          />
+        </>
+      )}
     </>
   )
 }
@@ -163,6 +195,27 @@ function ModelSettingsCard({
           isLoading={isLoading}
         />
       </div>
+    </Card>
+  )
+}
+
+function DangerZoneCard({ onClear }: { onClear: () => void }) {
+  return (
+    <Card className="mt-4 border border-red-200 p-6 dark:border-red-900/40">
+      <SectionHeader className="text-red-700 dark:text-red-300">
+        Daten zurücksetzen
+      </SectionHeader>
+      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+        Löscht alle gespeicherten Daten inklusive API-Schlüsseln und startet die
+        App ohne Konfiguration neu.
+      </p>
+      <button
+        type="button"
+        onClick={onClear}
+        className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
+      >
+        Alle Daten löschen
+      </button>
     </Card>
   )
 }

@@ -1,3 +1,4 @@
+export { ConfirmationDialog } from "./confirmation-dialog"
 export { Disclosure } from "./disclosure"
 export { ModelCombobox } from "./model-combobox"
 export { ProviderSecretCard } from "./provider-secret-card"

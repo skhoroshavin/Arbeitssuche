@@ -49,6 +49,14 @@ export {
 } from "./settings"
 
 export {
+  useSetupState,
+  useSaveSetupState,
+  useCompleteSetupState,
+  useClearAllData,
+  closeApp,
+} from "./setup"
+
+export {
   useStartJobSearchCrawl,
   useAbortJobSearchCrawl,
   useSiteListView,

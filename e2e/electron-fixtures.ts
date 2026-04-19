@@ -4,7 +4,7 @@ import {
   type ElectronApplication,
 } from "@playwright/test"
 import { resolve } from "node:path"
-import { mkdtempSync, rmSync } from "node:fs"
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { ElectronApiHelper } from "./helpers/electron-api-helper.js"
@@ -29,6 +29,10 @@ type Fixtures = {
 export const test = base.extend<Fixtures>({
   electronApp: async ({}, use) => {
     const dataDir = mkdtempSync(join(tmpdir(), "e2e-data-"))
+    writeFileSync(
+      join(dataDir, "config.json"),
+      JSON.stringify({ setup: { completed: true } }),
+    )
     const isCI = !!process.env.CI
     const electronApp = await electron.launch({
       args: [

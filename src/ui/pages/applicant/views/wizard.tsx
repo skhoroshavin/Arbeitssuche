@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { useNavigate } from "react-router"
 
@@ -24,7 +24,7 @@ import {
   useDraftWizardInitialization,
 } from "@/ui/hooks"
 
-import { DraftWizardPage } from "@/ui/layout"
+import { DraftWizardPage, useFirstStartWizardContext } from "@/ui/layout"
 import { WizardCancelChoicesModal } from "@/ui/components"
 
 import {
@@ -43,10 +43,16 @@ import { ApplicantEditorCertificationsView } from "./shared-certifications"
 
 import { ApplicantEditorOtherView } from "./shared-other"
 
-export default function ApplicantWizardPage() {
+export default function ApplicantWizardPage({
+  initialStep,
+  onStepChange,
+}: ApplicantWizardPageProperties = {}) {
   const navigate = useNavigate()
+  const firstStart = useFirstStartWizardContext()
   const [phase, setPhase] = useState<Phase>("loading")
-  const [step, setStep] = useState<ApplicantWizardStep>("personal")
+  const [step, setStep] = useState<ApplicantWizardStep>(
+    initialStep ?? "personal",
+  )
   const [resolvedSnapshot, setResolvedSnapshot] = useState<
     ApplicantDraftSnapshot | undefined
   >()
@@ -61,7 +67,14 @@ export default function ApplicantWizardPage() {
     createDefaultSnapshot: createDefaultApplicantDraftSnapshot,
     setResolvedSnapshot,
     setPhase,
+    skipResumePrompt: firstStart.skipDraftResume,
   })
+
+  useEffect(() => {
+    if (initialStep) {
+      setStep(initialStep)
+    }
+  }, [initialStep])
 
   const isEditing = phase === "editing"
 
@@ -91,9 +104,23 @@ export default function ApplicantWizardPage() {
       void navigate("/")
     },
     onFinished: ({ id }) => {
+      if (firstStart.isInFirstStart) {
+        firstStart.onPhaseComplete({
+          applicantId: id,
+          nextPhase: "job-search",
+          nextStep: "parameters",
+        })
+        return
+      }
+
       void navigate(`/applicants/${id}`)
     },
   })
+
+  function handleStepChange(nextStep: ApplicantWizardStep) {
+    setStep(nextStep)
+    onStepChange?.(nextStep, watchedSnapshot)
+  }
 
   return (
     <>
@@ -111,7 +138,7 @@ export default function ApplicantWizardPage() {
         }
         currentStep={step}
         stepLabels={STEP_LABELS}
-        setStep={setStep}
+        setStep={handleStepChange}
         onCancel={() => void lifecycle.cancelWizard()}
         onFinish={lifecycle.finishWizard}
         finishDisabled={!canFinalizeApplicantWizard(watchedSnapshot)}
@@ -138,6 +165,14 @@ export default function ApplicantWizardPage() {
       />
     </>
   )
+}
+
+interface ApplicantWizardPageProperties {
+  initialStep?: ApplicantWizardStep
+  onStepChange?: (
+    step: ApplicantWizardStep,
+    snapshot: ApplicantDraftSnapshot,
+  ) => void
 }
 
 function canFinalizeApplicantWizard(snapshot: ApplicantDraftSnapshot): boolean {

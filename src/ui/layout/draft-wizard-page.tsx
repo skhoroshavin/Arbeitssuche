@@ -12,6 +12,7 @@ export function DraftWizardPage<TStep extends string>({
   stepLabels,
   setStep,
   onCancel,
+  onSkip,
   onFinish,
   finishDisabled = false,
   resumePrompt,
@@ -51,6 +52,7 @@ export function DraftWizardPage<TStep extends string>({
       title={title}
       steps={wizardSteps}
       onCancel={onCancel}
+      onSkip={onSkip}
       onBack={navigation.onBack}
       onNext={navigation.onNext}
       onFinish={navigation.onFinish}
@@ -69,6 +71,7 @@ interface DraftWizardPageProperties<TStep extends string> {
   stepLabels: Record<TStep, string>
   setStep: (step: TStep) => void
   onCancel: () => void
+  onSkip?: () => void
   onFinish: () => Promise<void>
   finishDisabled?: boolean
   resumePrompt: {

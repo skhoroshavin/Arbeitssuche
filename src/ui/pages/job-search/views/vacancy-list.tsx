@@ -108,6 +108,7 @@ export default function JobSearchVacancyList() {
             vacancy={v}
             jobSearchId={id}
             searchString={location.search}
+            isEnriching={enrich.isEnriching}
           />
         ))}
         {filtered.length === 0 && (

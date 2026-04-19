@@ -1,4 +1,5 @@
 import type { ConfigRepository } from "@/app/config"
+import type { SetupRepository } from "@/app/setup"
 import type { SecretsRepository } from "@/app/secrets"
 import type { ApplicantRepository } from "@/repositories/applicant"
 import type { JobSearchRepository } from "@/repositories/job-search"
@@ -76,6 +77,7 @@ export function createAppServices(context: ServiceContext): AppServices {
     vacancyRepo: context.vacancyRepo,
     secretsRepo: context.secretsRepo,
     configRepo: context.configRepo,
+    setupRepo: context.setupRepo,
     get modelRegistry() {
       return services.modelRegistry
     },
@@ -106,6 +108,7 @@ export interface AppServices {
   vacancyRepo: VacancyRepository
   secretsRepo: SecretsRepository
   configRepo: ConfigRepository
+  setupRepo: SetupRepository
   modelRegistry: LlmModelRegistry
   resumeRenderer: ResumeRenderer
   jobConsultant: JobConsultant

@@ -26,7 +26,7 @@ The system SHALL display a sidebar listing all wizard steps with visual states t
 
 ### Requirement: Wizard layout provides a fixed navigation footer
 
-The system SHALL display a persistent footer with navigation controls whose presence depends on the current step position.
+The system SHALL display a persistent footer with navigation controls whose presence depends on the current step position. The footer MAY also display a Skip button when the wizard is configured to allow skipping.
 
 #### Scenario: First step omits Back
 
@@ -49,3 +49,13 @@ The system SHALL display a persistent footer with navigation controls whose pres
 - **THEN** the footer SHALL show a Finish button
 - **THEN** the footer SHALL show a Cancel button
 - **THEN** the footer SHALL NOT show a Next button
+
+#### Scenario: Skip button shown when skip is allowed
+
+- **WHEN** the wizard layout is configured with a skip action
+- **THEN** the footer SHALL show a Skip button
+
+#### Scenario: Skip button absent when skip is not allowed
+
+- **WHEN** the wizard layout is not configured with a skip action
+- **THEN** the footer SHALL NOT show a Skip button

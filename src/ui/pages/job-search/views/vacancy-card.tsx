@@ -12,12 +12,18 @@ export function VacancyCard({
   vacancy: v,
   jobSearchId,
   searchString,
+  isEnriching: isJobSearchEnriching,
 }: {
   vacancy: VacancyWithStatus
   jobSearchId: string
   searchString: string
+  isEnriching: boolean
 }) {
-  const enrichmentState = deriveEnrichmentState(v.enriched, v.enrichmentDirty)
+  const enrichmentState = deriveEnrichmentState(
+    v.enriched,
+    v.enrichmentDirty,
+    isJobSearchEnriching,
+  )
   const reEnrich = useReEnrichVacancy(jobSearchId)
   const [isEnriching, setIsEnriching] = useState(false)
 
@@ -74,9 +80,17 @@ export function VacancyCard({
         />
       )}
       {enrichmentState === "plain" && (
-        <p className="mt-2 text-xs text-gray-400 dark:text-gray-500 italic">
-          Nicht analysiert
-        </p>
+        <div className="mt-2 flex items-center gap-2">
+          <p className="text-xs text-gray-400 dark:text-gray-500 italic">
+            Nicht analysiert
+          </p>
+          <EnrichActionButton
+            isEnriching={isEnriching}
+            isError={reEnrich.isError}
+            label="Analysieren"
+            onReEnrich={handleReEnrich}
+          />
+        </div>
       )}
     </Link>
   )
@@ -100,19 +114,44 @@ function EnrichedSummaryRow({
           {summary}
         </Markdown>
       )}
-      <button
-        onClick={onReEnrich}
-        disabled={isEnriching}
-        className={`shrink-0 ml-auto text-xs px-1.5 py-0.5 rounded border transition-colors disabled:opacity-50 ${isError ? "border-red-300 dark:border-red-700 text-red-500" : "border-gray-200 dark:border-gray-600 text-gray-400 hover:text-blue-600 hover:border-blue-300"}`}
-        title={
-          isError
-            ? "Analyse fehlgeschlagen, erneut versuchen"
-            : "Neu analysieren"
-        }
-      >
-        {isEnriching ? "⟳" : "↺"}
-      </button>
+      <EnrichActionButton
+        isEnriching={isEnriching}
+        isError={isError}
+        label="Neu analysieren"
+        onReEnrich={onReEnrich}
+      />
     </div>
+  )
+}
+
+function EnrichActionButton({
+  isEnriching,
+  isError,
+  label,
+  onReEnrich,
+}: {
+  isEnriching: boolean
+  isError: boolean
+  label: string
+  onReEnrich: (event: React.MouseEvent) => void
+}) {
+  const title = isError ? "Analyse fehlgeschlagen, erneut versuchen" : label
+  let content = label
+  if (isEnriching) {
+    content = "⟳"
+  } else if (label === "Neu analysieren") {
+    content = "↺"
+  }
+
+  return (
+    <button
+      onClick={onReEnrich}
+      disabled={isEnriching}
+      className={`shrink-0 ml-auto text-xs px-1.5 py-0.5 rounded border transition-colors disabled:opacity-50 ${isError ? "border-red-300 dark:border-red-700 text-red-500" : "border-gray-200 dark:border-gray-600 text-gray-400 hover:text-blue-600 hover:border-blue-300"}`}
+      title={title}
+    >
+      {content}
+    </button>
   )
 }
 
