@@ -106,6 +106,36 @@ export class ElectronApiHelper {
     return this.invoke<Record<string, string>>("settings:secrets:load-raw")
   }
 
+  async getConfig(): Promise<E2eConfig> {
+    return this.invoke<E2eConfig>("settings:config:load")
+  }
+
+  async getLlmModels(): Promise<Array<{ id: string; name: string }>> {
+    return this.invoke<Array<{ id: string; name: string }>>(
+      "settings:llm-models",
+    )
+  }
+
+  async testLlmProvider(providerId: string): Promise<{
+    ok: boolean
+    error?: string
+  }> {
+    return this.invoke<{ ok: boolean; error?: string }>(
+      "settings:llm:secret:test",
+      providerId,
+    )
+  }
+
+  async testCommuteProvider(providerId: string): Promise<{
+    ok: boolean
+    error?: string
+  }> {
+    return this.invoke<{ ok: boolean; error?: string }>(
+      "settings:commute:secret:test",
+      providerId,
+    )
+  }
+
   async saveSecrets(data: Record<string, string>) {
     await this.invoke("settings:secrets:save", data)
   }
@@ -148,4 +178,11 @@ interface E2eVacancy {
   sources: Array<{ site: string; url: string }>
 }
 
-export type { E2eJobSearch, E2eVacancy, E2eVacancyList }
+interface E2eConfig {
+  provider: string
+  assessmentModel: string
+  coverLetterModel: string
+  consultationModel: string
+}
+
+export type { E2eConfig, E2eJobSearch, E2eVacancy, E2eVacancyList }

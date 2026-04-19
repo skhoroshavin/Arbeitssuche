@@ -108,26 +108,37 @@ export class LiveFlowHelper {
       await this.jobSearchPage.enrichAllButton.click()
     }
 
-    await expect
-      .poll(
-        async () => {
-          const vacancyList = await this.api.getVacancyList(jobSearchId)
-          const hasSummary = vacancyList.vacancies.some(
-            (vacancy) => vacancy.summary.trim().length > 0,
-          )
-          const enrichButtonVisible =
-            await this.jobSearchPage.enrichAllButton.isVisible()
+    let latestVacancyList = await this.api.getVacancyList(jobSearchId)
 
-          return hasSummary && enrichButtonVisible
-        },
-        {
-          timeout: 180_000,
-          intervals: [1_000, 2_000, 5_000],
-        },
+    try {
+      await expect
+        .poll(
+          async () => {
+            latestVacancyList = await this.api.getVacancyList(jobSearchId)
+            return latestVacancyList.vacancies.some(
+              (vacancy) => vacancy.summary.trim().length > 0,
+            )
+          },
+          {
+            timeout: 180_000,
+            intervals: [1_000, 2_000, 5_000],
+          },
+        )
+        .toBe(true)
+    } catch {
+      throw new Error(
+        `Enrichment did not produce summaries: ${JSON.stringify(
+          latestVacancyList.vacancies.map((vacancy) => ({
+            hash: vacancy.hash,
+            title: vacancy.title,
+            hasSummary: vacancy.summary.trim().length > 0,
+            hasCommute: Object.keys(vacancy.commute).length > 0,
+          })),
+        )}`,
       )
-      .toBe(true)
+    }
 
-    return this.api.getVacancyList(jobSearchId)
+    return latestVacancyList
   }
 
   pickEnrichedVacancy(vacancyList: E2eVacancyList): E2eVacancy {

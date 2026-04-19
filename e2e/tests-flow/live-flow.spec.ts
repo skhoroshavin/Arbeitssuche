@@ -9,7 +9,15 @@ test.describe("Live major flow", () => {
     applicantPage,
     jobSearchPage,
     api,
+    page,
   }) => {
+    const consoleErrors: string[] = []
+    page.on("console", (message) => {
+      if (message.type() === "error") {
+        consoleErrors.push(message.text())
+      }
+    })
+
     const helper = new LiveFlowHelper(
       applicantListPage,
       applicantPage,
@@ -38,6 +46,7 @@ test.describe("Live major flow", () => {
     ).toBe(true)
 
     const vacancyList = await helper.enrichVacanciesAndWait(jobSearchId)
+    expect(consoleErrors).toEqual([])
 
     const vacancy = helper.pickEnrichedVacancy(vacancyList)
     await helper.openVacancy(jobSearchId, vacancy)
