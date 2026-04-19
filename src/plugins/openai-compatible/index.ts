@@ -74,12 +74,12 @@ class OpenAICompatibleClient implements LlmClient {
   }
 
   async ping(): Promise<boolean> {
-    try {
-      await this.complete("Reply with OK only.", 8, AbortSignal.timeout(10_000))
-      return true
-    } catch {
-      return false
-    }
+    const response = await fetch(`${this.baseUrl}/models`, {
+      headers: { Authorization: `Bearer ${this.apiKey}` },
+      signal: AbortSignal.timeout(10_000),
+    })
+    await response.text()
+    return response.ok
   }
 
   async complete(

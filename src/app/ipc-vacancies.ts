@@ -148,6 +148,17 @@ export function registerVacanciesHandlers(
         return { count: 0, aborted: true }
       }
 
+      const updatedVacancies =
+        services.vacancyRepo.loadAll(jobSearchId).vacancies
+      const anyStillDirty = updatedVacancies.some(
+        (vacancy) => vacancy.enrichmentDirty,
+      )
+      if (anyStillDirty) {
+        throw new Error(
+          "Analyse fehlgeschlagen: Modell und API-Schlüssel in den Einstellungen überprüfen",
+        )
+      }
+
       return { count: vacanciesNeedingEnrichment.length }
     } catch (error) {
       sendBatchEnrichDoneProgress(safeSend, jobSearchId, true)

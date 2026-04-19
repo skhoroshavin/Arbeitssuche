@@ -4,7 +4,13 @@ import {
   type ElectronApplication,
 } from "@playwright/test"
 import { resolve } from "node:path"
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { ElectronApiHelper } from "./helpers/electron-api-helper.js"
@@ -21,6 +27,7 @@ const envFilePath = resolve(".env")
 
 if (existsSync(envFilePath)) {
   process.loadEnvFile(envFilePath)
+  applyRequiredE2eEnvOverrides(envFilePath)
 }
 
 type Fixtures = {
@@ -123,4 +130,27 @@ function createElectronEnvironment(): NodeJS.ProcessEnv {
     delete environment[key]
   }
   return environment
+}
+
+function applyRequiredE2eEnvOverrides(filePath: string): void {
+  const content = readFileSync(filePath, "utf8")
+
+  for (const line of content.split("\n")) {
+    const entry = line.trim()
+    if (entry.length === 0 || entry.startsWith("#")) {
+      continue
+    }
+
+    const separatorIndex = entry.indexOf("=")
+    if (separatorIndex === -1) {
+      continue
+    }
+
+    const name = entry.slice(0, separatorIndex).trim()
+    if (!(name in REQUIRED_E2E_ENV)) {
+      continue
+    }
+
+    process.env[name] = entry.slice(separatorIndex + 1).trim()
+  }
 }

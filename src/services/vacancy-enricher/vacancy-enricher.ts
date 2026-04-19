@@ -79,7 +79,7 @@ export class VacancyEnricher {
     context: EnrichContext,
     signal?: AbortSignal,
   ): Promise<{ result: Vacancy; successful: boolean }> {
-    if (!this.deps.llmClient) return { result: vacancy, successful: true }
+    if (!this.deps.llmClient) return { result: vacancy, successful: false }
 
     const [assessmentResult, contactResult] = await runLlmEnrichment(
       vacancy,

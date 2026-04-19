@@ -177,10 +177,8 @@ describe("OpenAICompatibleClient", () => {
   })
 
   describe("ping", () => {
-    it("returns true when a tiny completion succeeds", async () => {
-      mockFetch({
-        choices: [{ message: { content: "OK" } }],
-      })
+    it("returns true when the models endpoint succeeds", async () => {
+      mockFetch({ data: [] })
 
       const client = createOpenAICompatibleClient(
         "https://example.com/v1",
@@ -192,7 +190,7 @@ describe("OpenAICompatibleClient", () => {
       await expect(client.ping()).resolves.toBe(true)
     })
 
-    it("returns false when the provider rejects completions", async () => {
+    it("returns false when the models endpoint rejects the key", async () => {
       mockFetch({ error: "unauthorized" }, 401)
 
       const client = createOpenAICompatibleClient(
