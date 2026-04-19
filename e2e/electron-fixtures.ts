@@ -26,8 +26,14 @@ type Fixtures = {
   settingsPage: SettingsPage
 }
 
+const REQUIRED_E2E_ENV = {
+  OPENROUTER_API_KEY: "OpenRouter",
+  GOOGLE_MAPS_API_KEY: "Google Maps",
+} as const
+
 export const test = base.extend<Fixtures>({
   electronApp: async ({}, use) => {
+    assertRequiredE2eEnvironment()
     const dataDir = mkdtempSync(join(tmpdir(), "e2e-data-"))
     writeFileSync(
       join(dataDir, "config.json"),
@@ -94,3 +100,17 @@ export const test = base.extend<Fixtures>({
 })
 
 export { expect } from "@playwright/test"
+
+function assertRequiredE2eEnvironment(): void {
+  const missing = Object.entries(REQUIRED_E2E_ENV)
+    .filter(([name]) => !process.env[name]?.trim())
+    .map(([name, label]) => `${label} (${name})`)
+
+  if (missing.length === 0) {
+    return
+  }
+
+  throw new Error(
+    `Missing required E2E environment variables: ${missing.join(", ")}`,
+  )
+}

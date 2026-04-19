@@ -4,69 +4,53 @@ export class ElectronApiHelper {
   constructor(private readonly page: Page) {}
 
   async createApplicant(name: string): Promise<string> {
-    const result = await this.page.evaluate(async (name) => {
-      return (window as any).electronAPI.invoke("applicants:create", name)
-    }, name)
-    return (result as { id: string }).id
+    const result = await this.invoke<{ id: string }>("applicants:create", name)
+    return result.id
   }
 
   async getApplicant(id: string) {
-    return this.page.evaluate(async (id) => {
-      return (window as any).electronAPI.invoke("applicants:load", id)
-    }, id)
+    return this.invoke("applicants:load", id)
   }
 
   async updateApplicant(id: string, data: Record<string, unknown>) {
-    await this.page.evaluate(
-      async ({ id, data }) => {
-        await (window as any).electronAPI.invoke("applicants:save", id, data)
-      },
-      { id, data },
-    )
+    await this.invoke("applicants:save", id, data)
   }
 
   async deleteApplicant(id: string) {
-    await this.page.evaluate(async (id) => {
-      await (window as any).electronAPI.invoke("applicants:delete", id)
-    }, id)
+    await this.invoke("applicants:delete", id)
   }
 
   async createJobSearch(
     searchTerm: string,
     applicantId: string,
   ): Promise<string> {
-    const result = await this.page.evaluate(
-      async ({ searchTerm, applicantId }) => {
-        return (window as any).electronAPI.invoke(
-          "job-searches:create",
-          searchTerm,
-          applicantId,
-        )
-      },
-      { searchTerm, applicantId },
+    const result = await this.invoke<{ id: string }>(
+      "job-searches:create",
+      searchTerm,
+      applicantId,
     )
-    return (result as { id: string }).id
+    return result.id
+  }
+
+  async getJobSearch(id: string): Promise<E2eJobSearch> {
+    return this.invoke<E2eJobSearch>("job-searches:load", id)
   }
 
   async deleteJobSearchesForApplicant(applicantId: string) {
-    await this.page.evaluate(async (applicantId) => {
-      const result = await (window as any).electronAPI.invoke(
-        "job-searches:list",
-        applicantId,
-      )
-      await Promise.allSettled(
-        result.jobSearches.map(async (js: { id: string }) => {
-          await Promise.allSettled([
-            (window as any).electronAPI.invoke(
-              "job-searches:crawl:abort",
-              js.id,
-            ),
-            (window as any).electronAPI.invoke("vacancies:enrich:abort", js.id),
-          ])
-          await (window as any).electronAPI.invoke("job-searches:delete", js.id)
-        }),
-      )
-    }, applicantId)
+    const result = await this.invoke<{ jobSearches: Array<{ id: string }> }>(
+      "job-searches:list",
+      applicantId,
+    )
+
+    await Promise.allSettled(
+      result.jobSearches.map(async (jobSearch) => {
+        await Promise.allSettled([
+          this.invoke("job-searches:crawl:abort", jobSearch.id),
+          this.invoke("vacancies:enrich:abort", jobSearch.id),
+        ])
+        await this.invoke("job-searches:delete", jobSearch.id)
+      }),
+    )
   }
 
   async seedVacancies(
@@ -74,21 +58,31 @@ export class ElectronApiHelper {
     vacancies: Record<string, unknown>[],
     latestCrawl: string,
   ): Promise<number> {
-    return this.page.evaluate(
-      async ({ jobSearchId, vacancies, latestCrawl }) => {
-        try {
-          await (window as any).electronAPI.invoke(
-            "job-searches:vacancies:seed",
-            jobSearchId,
-            vacancies,
-            latestCrawl,
-          )
-          return 200
-        } catch {
-          return 400
-        }
-      },
-      { jobSearchId, vacancies, latestCrawl },
+    try {
+      await this.invoke(
+        "job-searches:vacancies:seed",
+        jobSearchId,
+        vacancies,
+        latestCrawl,
+      )
+      return 200
+    } catch {
+      return 400
+    }
+  }
+
+  async getVacancyList(jobSearchId: string): Promise<E2eVacancyList> {
+    return this.invoke<E2eVacancyList>(
+      "job-searches:vacancies:list",
+      jobSearchId,
+    )
+  }
+
+  async getVacancy(jobSearchId: string, hash: string): Promise<E2eVacancy> {
+    return this.invoke<E2eVacancy>(
+      "job-searches:vacancies:load",
+      jobSearchId,
+      hash,
     )
   }
 
@@ -96,32 +90,62 @@ export class ElectronApiHelper {
     jobSearchId: string,
     hash: string,
   ): Promise<{ status: number; body: unknown }> {
-    return this.page.evaluate(
-      async ({ jobSearchId, hash }) => {
-        try {
-          const body = await (window as any).electronAPI.invoke(
-            "job-searches:vacancies:cover-letter:load",
-            jobSearchId,
-            hash,
-          )
-          return { status: 200, body }
-        } catch {
-          return { status: 404, body: null }
-        }
-      },
-      { jobSearchId, hash },
-    )
+    try {
+      const body = await this.invoke(
+        "job-searches:vacancies:cover-letter:load",
+        jobSearchId,
+        hash,
+      )
+      return { status: 200, body }
+    } catch {
+      return { status: 404, body: null }
+    }
   }
 
   async getSecrets(): Promise<Record<string, string>> {
-    return this.page.evaluate(async () => {
-      return (window as any).electronAPI.invoke("settings:secrets:load-raw")
-    }) as Promise<Record<string, string>>
+    return this.invoke<Record<string, string>>("settings:secrets:load-raw")
   }
 
   async saveSecrets(data: Record<string, string>) {
-    await this.page.evaluate(async (data) => {
-      await (window as any).electronAPI.invoke("settings:secrets:save", data)
-    }, data)
+    await this.invoke("settings:secrets:save", data)
+  }
+
+  private invoke<T>(channel: string, ...arguments_: unknown[]): Promise<T> {
+    return this.page.evaluate(
+      async ({ channel, arguments_ }) => {
+        return (window as any).electronAPI.invoke(channel, ...arguments_)
+      },
+      { channel, arguments_ },
+    ) as Promise<T>
   }
 }
+
+interface E2eJobSearch {
+  id: string
+  applicantId: string
+  params: {
+    searchTerm: string
+    radiusKm: number
+    searchMode: string
+    sources: string[]
+    maxResults?: number
+  }
+}
+
+interface E2eVacancyList {
+  vacancies: E2eVacancy[]
+  totalCount: number
+  generatedAt: string
+  latestCrawl: string
+}
+
+interface E2eVacancy {
+  hash: string
+  title: string
+  company: string
+  summary: string
+  commute: Record<string, { distance: string }>
+  sources: Array<{ site: string; url: string }>
+}
+
+export type { E2eJobSearch, E2eVacancy, E2eVacancyList }

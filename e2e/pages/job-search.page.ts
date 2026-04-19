@@ -16,6 +16,9 @@ export class JobSearchPage {
   readonly sortFahrtzeit: Locator
   readonly sortBewertung: Locator
   readonly contactSection: Locator
+  readonly summaryHeading: Locator
+  readonly commuteHeading: Locator
+  readonly coverLetterInput: Locator
 
   constructor(page: Page) {
     this.page = page
@@ -45,6 +48,9 @@ export class JobSearchPage {
     this.sortFahrtzeit = page.getByRole("button", { name: "Fahrtzeit" })
     this.sortBewertung = page.getByRole("button", { name: "Bewertung" })
     this.contactSection = page.getByText("Ansprechpartner")
+    this.summaryHeading = page.getByRole("heading", { name: "Zusammenfassung" })
+    this.commuteHeading = page.getByRole("heading", { name: "Fahrtweg" })
+    this.coverLetterInput = page.getByLabel("Anschreiben")
   }
 
   filterButton(label: string): Locator {

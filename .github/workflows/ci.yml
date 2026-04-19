@@ -38,5 +38,27 @@ jobs:
       - name: Crawler tests
         run: npm run test:crawler
 
+  e2e-live:
+    name: Live E2E tests
+    runs-on: ubuntu-latest
+    needs: validate
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright and system dependencies
+        run: npx playwright install --with-deps chromium
+
       - name: E2E tests
         run: xvfb-run --auto-servernum npm run test:e2e
