@@ -102,10 +102,6 @@ export class ElectronApiHelper {
     }
   }
 
-  async getSecrets(): Promise<Record<string, string>> {
-    return this.invoke<Record<string, string>>("settings:secrets:load-raw")
-  }
-
   async getConfig(): Promise<E2eConfig> {
     return this.invoke<E2eConfig>("settings:config:load")
   }
@@ -134,10 +130,6 @@ export class ElectronApiHelper {
       "settings:commute:secret:test",
       providerId,
     )
-  }
-
-  async saveSecrets(data: Record<string, string>) {
-    await this.invoke("settings:secrets:save", data)
   }
 
   private invoke<T>(channel: string, ...arguments_: unknown[]): Promise<T> {

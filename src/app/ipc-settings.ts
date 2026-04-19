@@ -1,5 +1,4 @@
 import type { AppServices } from "."
-import type { Secrets } from "@/models/secrets"
 import type { ConfigKey } from "@/models/config"
 import { resolveConfig } from "@/models/config/index.js"
 import { getJobSiteInfos } from "@/plugins/job-site"
@@ -55,16 +54,6 @@ export function registerSettingsHandlers(
   // Provider info
   handle("settings:llm-providers", () => getLlmProviders())
   handle("settings:commute-providers", () => getCommuteProviders())
-
-  // E2E test helpers
-  if (process.env.ELECTRON_TEST === "1") {
-    handle("settings:secrets:load-raw", () => services.secretsRepo.load())
-  }
-  handle("settings:secrets:save", async (data: Secrets) => {
-    await services.secretsRepo.save(data)
-    services.rebuild()
-    return { ok: true }
-  })
 
   // LLM models
   handle("settings:llm-models", () => services.modelRegistry.fetchModels())

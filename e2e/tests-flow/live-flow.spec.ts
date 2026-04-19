@@ -1,4 +1,8 @@
 import { test, expect } from "../fixtures.js"
+import {
+  assertLiveProvidersReady,
+  configureLiveProviders,
+} from "../helpers/live-e2e-setup.js"
 import { LiveFlowHelper } from "../helpers/live-flow-helper.js"
 
 test.describe("Live major flow", () => {
@@ -10,6 +14,7 @@ test.describe("Live major flow", () => {
     jobSearchPage,
     api,
     page,
+    settingsPage,
   }) => {
     const consoleErrors: string[] = []
     page.on("console", (message) => {
@@ -24,6 +29,9 @@ test.describe("Live major flow", () => {
       jobSearchPage,
       api,
     )
+
+    await configureLiveProviders(settingsPage)
+    await assertLiveProvidersReady(api)
 
     const applicantId = await helper.createApplicantWithCity(
       `e2e-live-${Date.now()}`,

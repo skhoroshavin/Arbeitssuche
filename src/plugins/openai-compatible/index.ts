@@ -49,14 +49,6 @@ class OpenAICompatibleClient implements LlmClient {
     private readonly providerName: string,
   ) {}
 
-  async complete(
-    prompt: string,
-    maxTokens: number,
-    signal?: AbortSignal,
-  ): Promise<string> {
-    return this.fetchCompletion(prompt, maxTokens, undefined, signal)
-  }
-
   async completeJSON<T>(
     prompt: string,
     maxTokens: number,
@@ -82,12 +74,20 @@ class OpenAICompatibleClient implements LlmClient {
   }
 
   async ping(): Promise<boolean> {
-    const response = await fetch(`${this.baseUrl}/models`, {
-      headers: { Authorization: `Bearer ${this.apiKey}` },
-      signal: AbortSignal.timeout(10_000),
-    })
-    await response.text()
-    return response.ok
+    try {
+      await this.complete("Reply with OK only.", 8, AbortSignal.timeout(10_000))
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async complete(
+    prompt: string,
+    maxTokens: number,
+    signal?: AbortSignal,
+  ): Promise<string> {
+    return this.fetchCompletion(prompt, maxTokens, undefined, signal)
   }
 
   private async fetchCompletion(

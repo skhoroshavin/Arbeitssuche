@@ -12,16 +12,12 @@ import path from "node:path"
 import { registerIpcHandlers } from "./ipc.js"
 import { registerAppProtocol } from "./protocol.js"
 import { createAppServices, createSqliteServiceContext } from "."
-import {
-  createStubSecretsRepository,
-  createEncryptedSecretsRepository,
-} from "./secrets"
+import { createEncryptedSecretsRepository } from "./secrets"
 import { createElectronStoreConfigRepository } from "./config"
 import { createElectronStoreSetupRepository } from "./setup"
 import { Database } from "@/utils/node/index.js"
 import { getDataDirectory, getSecretsPath } from "./data-paths.js"
 import type { AppServices } from "."
-import type { Secrets } from "@/models/secrets"
 
 let mainWindow: BrowserWindow | undefined
 let appDatabase: Database | undefined
@@ -71,9 +67,7 @@ void (async () => {
 
   appDatabase = Database.open(databasePath)
 
-  const secretsRepo = isTest
-    ? createStubSecretsRepository(readTestSecretsFromEnvironment())
-    : createEncryptedSecretsRepository(secretsPath, safeStorage)
+  const secretsRepo = createEncryptedSecretsRepository(secretsPath, safeStorage)
 
   const configRepo = createElectronStoreConfigRepository()
   const setupRepo = createElectronStoreSetupRepository()
@@ -223,21 +217,4 @@ function createMutableAppServices(getServices: () => AppServices): AppServices {
       getServices().rebuild()
     },
   }
-}
-
-function readTestSecretsFromEnvironment(): Secrets {
-  return {
-    openrouterApiKey: readEnvironmentVariable("OPENROUTER_API_KEY"),
-    googleMapsApiKey: readEnvironmentVariable("GOOGLE_MAPS_API_KEY"),
-  }
-}
-
-function readEnvironmentVariable(name: string): string | undefined {
-  const value = process.env[name]
-  if (!value) {
-    return undefined
-  }
-
-  const trimmedValue = value.trim()
-  return trimmedValue.length === 0 ? undefined : trimmedValue
 }

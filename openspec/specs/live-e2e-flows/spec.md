@@ -16,15 +16,15 @@ The E2E system MUST launch each test run against a fresh isolated app instance w
 - **THEN** the app launches with a fresh temporary data directory and fresh persisted state
 - **AND** data created by that test run is not reused by later E2E runs
 
-### Requirement: E2E credentials are injected automatically
+### Requirement: E2E credentials are configured through the Settings UI
 
-The E2E system MUST treat OpenRouter and Google Maps credentials as required ambient input, inject them automatically into test runs from environment variables, and validate that contract before Electron launches.
+The E2E system MUST treat OpenRouter and Google Maps credentials as required ambient input, validate that the required environment variables are present before Electron launches, and configure them through the Settings UI during test execution.
 
 #### Scenario: Required credentials are available
 
 - **WHEN** `npm run test:e2e` starts with valid OpenRouter and Google Maps environment variables
 - **THEN** the Playwright harness validates that the required variables are present before launching Electron
-- **AND** the launched app has both provider credentials available without manual setup inside the test
+- **AND** the live E2E scenario configures each provider key through the Settings UI before executing provider-dependent actions
 
 #### Scenario: Required credentials are missing
 

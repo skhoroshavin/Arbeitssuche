@@ -52,7 +52,7 @@ export const test = base.extend<Fixtures>({
         ...(isCI ? ["--no-sandbox", "--disable-gpu"] : []),
       ],
       env: {
-        ...process.env,
+        ...createElectronEnvironment(),
         NODE_ENV: "production",
         ELECTRON_TEST: "1",
         ELECTRON_TEST_DATA_DIR: dataDir,
@@ -119,4 +119,14 @@ function assertRequiredE2eEnvironment(): void {
   throw new Error(
     `Missing required E2E environment variables: ${missing.join(", ")}`,
   )
+}
+
+function createElectronEnvironment(): NodeJS.ProcessEnv {
+  const {
+    OPENROUTER_API_KEY: _openrouterApiKey,
+    GOOGLE_MAPS_API_KEY: _googleMapsApiKey,
+    ...environment
+  } = process.env
+
+  return environment
 }
