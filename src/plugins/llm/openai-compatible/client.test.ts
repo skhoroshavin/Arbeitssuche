@@ -202,6 +202,21 @@ describe("OpenAICompatibleClient", () => {
 
       await expect(client.ping()).resolves.toBe(false)
     })
+
+    it("returns false when fetch throws a network error", async () => {
+      globalThis.fetch = vi.fn<typeof fetch>(() =>
+        Promise.reject(new Error("Network error")),
+      )
+
+      const client = createOpenAICompatibleClient(
+        "https://example.com/v1",
+        "test-key",
+        "test/model",
+        "TestProvider",
+      )
+
+      await expect(client.ping()).resolves.toBe(false)
+    })
   })
 })
 
