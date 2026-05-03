@@ -12,7 +12,10 @@ import path from "node:path"
 import { registerIpcHandlers } from "./ipc.js"
 import { registerAppProtocol } from "./protocol.js"
 import { createAppServices, createSqliteServiceContext } from "."
-import { createEncryptedSecretsRepository } from "./secrets"
+import {
+  createStubSecretsRepository,
+  createEncryptedSecretsRepository,
+} from "./secrets"
 import { createElectronStoreConfigRepository } from "./config"
 import { createElectronStoreSetupRepository } from "./setup"
 import { Database } from "@/utils/node/index.js"
@@ -67,7 +70,9 @@ void (async () => {
 
   appDatabase = Database.open(databasePath)
 
-  const secretsRepo = createEncryptedSecretsRepository(secretsPath, safeStorage)
+  const secretsRepo = isTest
+    ? createStubSecretsRepository()
+    : createEncryptedSecretsRepository(secretsPath, safeStorage)
 
   const configRepo = createElectronStoreConfigRepository()
   const setupRepo = createElectronStoreSetupRepository()
