@@ -53,7 +53,7 @@ describe("VacancyEnricher", () => {
     expect(Object.keys(result.commute)).toHaveLength(0)
   })
 
-  it("skips LLM when no client configured", async () => {
+  it("keeps vacancies retryable when no LLM client is configured", async () => {
     const { commuteClient } = makeCommuteClient()
     const enricher = new VacancyEnricher({ commuteClient })
     const vacancy = makeVacancy()
@@ -64,7 +64,8 @@ describe("VacancyEnricher", () => {
     })
 
     expect(result.summary).toBe("")
-    expect(result.enriched).toBe(true)
+    expect(result.enriched).toBe(false)
+    expect(result.enrichmentDirty).toBe(true)
   })
 
   it("continues enrichment after commute failure", async () => {

@@ -4,10 +4,17 @@ import {
   type ElectronApplication,
 } from "@playwright/test"
 import { resolve } from "node:path"
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { ElectronApiHelper } from "./helpers/electron-api-helper.js"
+import { REQUIRED_E2E_ENV } from "./helpers/live-e2e-setup.js"
 import {
   ApplicantListPage,
   ApplicantPage,
@@ -20,6 +27,7 @@ const envFilePath = resolve(".env")
 
 if (existsSync(envFilePath)) {
   process.loadEnvFile(envFilePath)
+  applyRequiredE2eEnvOverrides(envFilePath)
 }
 
 type Fixtures = {
@@ -31,11 +39,6 @@ type Fixtures = {
   layoutPage: LayoutPage
   settingsPage: SettingsPage
 }
-
-const REQUIRED_E2E_ENV = {
-  OPENROUTER_API_KEY: "OpenRouter",
-  GOOGLE_MAPS_API_KEY: "Google Maps",
-} as const
 
 export const test = base.extend<Fixtures>({
   electronApp: async ({}, use) => {
@@ -52,7 +55,7 @@ export const test = base.extend<Fixtures>({
         ...(isCI ? ["--no-sandbox", "--disable-gpu"] : []),
       ],
       env: {
-        ...process.env,
+        ...createElectronEnvironment(),
         NODE_ENV: "production",
         ELECTRON_TEST: "1",
         ELECTRON_TEST_DATA_DIR: dataDir,
@@ -119,4 +122,35 @@ function assertRequiredE2eEnvironment(): void {
   throw new Error(
     `Missing required E2E environment variables: ${missing.join(", ")}`,
   )
+}
+
+function createElectronEnvironment(): NodeJS.ProcessEnv {
+  const environment = { ...process.env }
+  for (const key of Object.keys(REQUIRED_E2E_ENV)) {
+    delete environment[key]
+  }
+  return environment
+}
+
+function applyRequiredE2eEnvOverrides(filePath: string): void {
+  const content = readFileSync(filePath, "utf8")
+
+  for (const line of content.split("\n")) {
+    const entry = line.trim()
+    if (entry.length === 0 || entry.startsWith("#")) {
+      continue
+    }
+
+    const separatorIndex = entry.indexOf("=")
+    if (separatorIndex === -1) {
+      continue
+    }
+
+    const name = entry.slice(0, separatorIndex).trim()
+    if (!(name in REQUIRED_E2E_ENV)) {
+      continue
+    }
+
+    process.env[name] = entry.slice(separatorIndex + 1).trim()
+  }
 }

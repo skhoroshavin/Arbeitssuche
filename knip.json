@@ -6,7 +6,7 @@
     "src/ui/main.tsx",
     "electron.vite.config.ts"
   ],
-  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts", ".jscpd.json"],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts"],
   "ignoreDependencies": ["@tailwindcss/typography", "tailwindcss"],
   "eslint": {
     "config": ["eslint.config.ts"],

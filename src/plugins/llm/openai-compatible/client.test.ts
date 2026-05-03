@@ -175,6 +175,49 @@ describe("OpenAICompatibleClient", () => {
       expect(body.max_tokens).toBe(200)
     })
   })
+
+  describe("ping", () => {
+    it("returns true when the models endpoint succeeds", async () => {
+      mockFetch({ data: [] })
+
+      const client = createOpenAICompatibleClient(
+        "https://example.com/v1",
+        "test-key",
+        "test/model",
+        "TestProvider",
+      )
+
+      await expect(client.ping()).resolves.toBe(true)
+    })
+
+    it("returns false when the models endpoint rejects the key", async () => {
+      mockFetch({ error: "unauthorized" }, 401)
+
+      const client = createOpenAICompatibleClient(
+        "https://example.com/v1",
+        "test-key",
+        "test/model",
+        "TestProvider",
+      )
+
+      await expect(client.ping()).resolves.toBe(false)
+    })
+
+    it("returns false when fetch throws a network error", async () => {
+      globalThis.fetch = vi.fn<typeof fetch>(() =>
+        Promise.reject(new Error("Network error")),
+      )
+
+      const client = createOpenAICompatibleClient(
+        "https://example.com/v1",
+        "test-key",
+        "test/model",
+        "TestProvider",
+      )
+
+      await expect(client.ping()).resolves.toBe(false)
+    })
+  })
 })
 
 function isCompletionRequestBody(value: unknown): value is {

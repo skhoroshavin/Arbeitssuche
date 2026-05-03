@@ -61,7 +61,7 @@ export interface ApplicantFormValues {
   personalNotes?: string
 }
 
-export interface ApplicantFormExperience {
+interface ApplicantFormExperience {
   role: string
   company: string
   startDate: string
@@ -71,7 +71,7 @@ export interface ApplicantFormExperience {
   highlights?: string
 }
 
-export interface ApplicantFormEducation {
+interface ApplicantFormEducation {
   institution: string
   course: string
   startDate?: string
@@ -81,7 +81,7 @@ export interface ApplicantFormEducation {
   highlights?: string
 }
 
-export interface ApplicantFormPersonal {
+interface ApplicantFormPersonal {
   name: string
   email?: string
   phone?: string

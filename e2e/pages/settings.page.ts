@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 
 export class SettingsPage {
   readonly page: Page
@@ -69,6 +69,33 @@ export class SettingsPage {
       .filter({
         hasText: /(Gültig|HTTP|API-Status|Kein Schlüssel)/,
       })
+  }
+
+  secretValue(): Locator {
+    return this.page
+      .locator("span")
+      .filter({ hasText: /Nicht gesetzt|••••••••/ })
+      .first()
+  }
+
+  async assertUnsetSecret(label: string) {
+    await expect(this.addButton(label)).toBeVisible()
+    await expect(this.secretValue()).toHaveText("Nicht gesetzt")
+    await expect(this.replaceButton(label)).toHaveCount(0)
+    await expect(this.clearButton(label)).toHaveCount(0)
+  }
+
+  async addAndSave(label: string, value: string) {
+    await this.addButton(label).click()
+    await this.tokenInput(label).fill(value)
+    await this.saveFieldButton(label).click()
+  }
+
+  async assertSavedSecret(label: string) {
+    await expect(this.replaceButton(label)).toBeVisible()
+    await expect(this.clearButton(label)).toBeVisible()
+    await expect(this.addButton(label)).toHaveCount(0)
+    await expect(this.secretValue()).toContainText("••••••••")
   }
 
   async replaceAndSave(label: string, value: string) {
