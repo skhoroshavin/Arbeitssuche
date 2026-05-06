@@ -1,20 +1,12 @@
 import type { LlmClient } from "@/plugins/llm"
-
-import type { CommuteClient } from "@/plugins/commute"
-
 import type { Applicant } from "@/models/applicant"
-
 import type { SearchPreferences } from "@/models/job-search"
-
 import type { Vacancy } from "@/models/vacancy/index.js"
-
 import { formatError } from "@/utils"
-import { rethrowIfAborted } from "./commute.js"
-
-import { computeCommutes } from "./commute.js"
-
-import { needsAssessment, assessVacancy } from "./assess.js"
-
+import {
+  needsAssessment,
+  assessVacancy,
+} from "./assess.js"
 import {
   needsContactExtraction,
   extractContactInfo,
@@ -31,13 +23,8 @@ export class VacancyEnricher {
   ): Promise<Vacancy> {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError")
 
-    const commuted = await this.tryComputeCommute(
-      vacancy,
-      context.applicant,
-      signal,
-    )
     const { result, successful } = await this.tryLlmEnrich(
-      commuted,
+      vacancy,
       context,
       signal,
     )
@@ -45,33 +32,6 @@ export class VacancyEnricher {
       return result.with({ enriched: true, enrichmentDirty: false })
     }
     return result
-  }
-
-  private async tryComputeCommute(
-    vacancy: Vacancy,
-    applicant: Applicant,
-    signal?: AbortSignal,
-  ): Promise<Vacancy> {
-    const origin = resolveCommuteOrigin(applicant)
-    if (!this.deps.commuteClient || !origin || vacancy.addresses.length === 0) {
-      return vacancy
-    }
-    try {
-      const result = await computeCommutes({
-        vacancies: [vacancy],
-        origin,
-        commuteClient: this.deps.commuteClient,
-        signal,
-      })
-      return result.vacancies[0]
-    } catch (error) {
-      rethrowIfAborted(error)
-      console.error(
-        `Failed to compute commute for "${vacancy.title}":`,
-        formatError(error),
-      )
-      return vacancy
-    }
   }
 
   private async tryLlmEnrich(
@@ -114,13 +74,6 @@ export interface EnrichContext {
 
 interface EnricherDeps {
   llmClient?: LlmClient
-  commuteClient?: CommuteClient
-}
-
-function resolveCommuteOrigin(applicant: Applicant): string | undefined {
-  const address = applicant.personal.address
-  if (!address) return undefined
-  return `${address.street}, ${address.zip} ${address.city}`
 }
 
 function runLlmEnrichment(
@@ -154,4 +107,8 @@ function runLlmEnrichment(
         })
       : undefined,
   ])
+}
+
+function rethrowIfAborted(error: unknown): void {
+  if (error instanceof DOMException && error.name === "AbortError") throw error
 }
