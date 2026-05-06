@@ -35,9 +35,19 @@ export default tseslint.config(
           },
           "services/*": {
             imports: [
-              "services/*",
-              "repositories/*",
-              "plugins/*",
+              "repositories/+",
+              "plugins/+",
+              "models/+",
+              "utils/+",
+            ],
+          },
+          "services/scan-pipeline": {
+            imports: [
+              "services/site-crawler",
+              "services/commute-computer",
+              "services/vacancy-enricher",
+              "repositories/+",
+              "plugins/+",
               "models/+",
               "utils/+",
             ],
