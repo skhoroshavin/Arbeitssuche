@@ -8,7 +8,7 @@ import type { SearchPreferences } from "@/models/job-search"
 
 import type { Vacancy } from "@/models/vacancy/index.js"
 
-import { formatError } from "@/services/vacancy-scanner/index.js"
+import { formatError } from "@/utils"
 import { rethrowIfAborted } from "./commute.js"
 
 import { computeCommutes } from "./commute.js"

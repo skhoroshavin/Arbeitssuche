@@ -5,7 +5,7 @@ import type {
 } from "@/plugins/job-site"
 import type { JobSearchCriteria } from "@/models/job-search"
 import type { ProgressEvent } from "@/models/progress/index.js"
-import { formatError } from "@/services/vacancy-scanner/index.js"
+import { formatError } from "@/utils"
 import {
   resolveEffectiveMode,
   derivePluginCriteria,

@@ -5,7 +5,7 @@ import type {
   VacancyListPage,
 } from "@/plugins/job-site"
 import type { JobSearchCriteria } from "@/models/job-search"
-import { formatError } from "@/services/vacancy-scanner/index.js"
+import { formatError } from "@/utils"
 
 export function resolveEffectiveMode(
   site: JobSite,
