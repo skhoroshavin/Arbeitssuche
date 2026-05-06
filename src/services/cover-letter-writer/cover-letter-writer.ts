@@ -2,7 +2,7 @@ import type { JobSearchRepository } from "@/repositories/job-search"
 import type { ApplicantRepository } from "@/repositories/applicant"
 import type { VacancyRepository } from "@/repositories/vacancy"
 import type { LlmClient } from "@/plugins/llm"
-import { ensureLlmAvailable } from "@/services/llm/index.js"
+import { ensureLlmAvailable } from "@/utils"
 import {
   mapSnapshotToPersistedJobSearch,
   resolveDraftJobSearchEditorSnapshot,
