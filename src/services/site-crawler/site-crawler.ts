@@ -1,10 +1,7 @@
-import type {
-  JobSite,
-  VacancyDetails,
-  SearchCriteria,
-} from "@/plugins/job-site"
+import type { JobSite, SearchCriteria } from "@/plugins/job-site"
 import type { JobSearchCriteria } from "@/models/job-search"
 import type { ProgressEvent } from "@/models/progress/index.js"
+import type { Vacancy } from "@/models/vacancy/index.js"
 import { formatError } from "@/utils"
 import {
   resolveEffectiveMode,
@@ -14,6 +11,7 @@ import {
   sliceToLimit,
   shouldContinuePaging,
 } from "./paginate.js"
+import { process as processVacancyDetails } from "./process.js"
 
 export class SiteCrawler {
   async crawl(options: CrawlOptions): Promise<CrawlSummary> {
@@ -136,7 +134,13 @@ export class SiteCrawler {
       })
       return
     }
-    options.onResult(details, site.name)
+    const result = processVacancyDetails(
+      details,
+      site.name,
+      options.existingByHash,
+      options.crawlDate,
+    )
+    options.onResult({ ...result, siteName: site.name })
   }
 }
 
@@ -145,7 +149,9 @@ interface CrawlOptions {
   criteria: JobSearchCriteria
   signal?: AbortSignal
   onProgress?: (event: ProgressEvent) => void
-  onResult: (details: VacancyDetails, siteName: string) => void
+  onResult: (result: { vacancy: Vacancy; hash: string; isNew: boolean; siteName: string }) => void
+  existingByHash: Map<string, Vacancy>
+  crawlDate: string
 }
 
 interface CrawlSummary {

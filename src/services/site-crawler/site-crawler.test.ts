@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from "vitest"
 import { SiteCrawler } from "."
-import type {
-  JobSite,
-  VacancyDetails,
-  VacancyListPage,
-} from "@/plugins/job-site"
+import type { JobSite, VacancyListPage } from "@/plugins/job-site"
 import type { JobSearchCriteria } from "@/models/job-search"
+import type { Vacancy } from "@/models/vacancy/index.js"
 
 describe("SiteCrawler", () => {
+  const existingByHash = new Map<string, Vacancy>()
+  const crawlDate = "2026-05-07"
+
   it("calls onResult for each vacancy detail fetched", async () => {
     const getVacancyDetailsMock = vi
       .fn<JobSite["getVacancyDetails"]>()
@@ -20,12 +20,14 @@ describe("SiteCrawler", () => {
       getVacancyDetails: getVacancyDetailsMock,
     })
 
-    const results: VacancyDetails[] = []
+    const results: { hash: string; isNew: boolean }[] = []
     const crawler = new SiteCrawler()
     await crawler.crawl({
       sites: [site],
       criteria: CRITERIA,
-      onResult: (d) => results.push(d),
+      existingByHash,
+      crawlDate,
+      onResult: (r) => results.push(r),
     })
 
     expect(results.length).toBe(2)
@@ -42,12 +44,14 @@ describe("SiteCrawler", () => {
       getVacancyDetails: getVacancyDetailsMock,
     })
 
-    const results: VacancyDetails[] = []
+    const results: { hash: string; isNew: boolean }[] = []
     const crawler = new SiteCrawler()
     await crawler.crawl({
       sites: [site],
       criteria: { ...CRITERIA, limit: 2 },
-      onResult: (d) => results.push(d),
+      existingByHash,
+      crawlDate,
+      onResult: (r) => results.push(r),
     })
 
     expect(getVacancyDetailsMock).toHaveBeenCalledTimes(2)
@@ -67,13 +71,15 @@ describe("SiteCrawler", () => {
         .mockResolvedValue(makeDetails()),
     })
 
-    const results: VacancyDetails[] = []
+    const results: { hash: string; isNew: boolean }[] = []
     const crawler = new SiteCrawler()
     await crawler.crawl({
       sites: [site],
       criteria: CRITERIA,
       signal: controller.signal,
-      onResult: (d) => results.push(d),
+      existingByHash,
+      crawlDate,
+      onResult: (r) => results.push(r),
     })
 
     expect(results.length).toBe(0)
@@ -88,12 +94,14 @@ describe("SiteCrawler", () => {
       supportedModes: ["apprenticeship"],
     })
 
-    const results: VacancyDetails[] = []
+    const results: { hash: string; isNew: boolean }[] = []
     const crawler = new SiteCrawler()
     await crawler.crawl({
       sites: [site],
       criteria: { ...CRITERIA, mode: "employment" },
-      onResult: (d) => results.push(d),
+      existingByHash,
+      crawlDate,
+      onResult: (r) => results.push(r),
     })
 
     expect(getVacancyListMock).not.toHaveBeenCalled()
@@ -110,12 +118,14 @@ describe("SiteCrawler", () => {
       supportedModes: ["employment"],
     })
 
-    const results: VacancyDetails[] = []
+    const results: { hash: string; isNew: boolean }[] = []
     const crawler = new SiteCrawler()
     await crawler.crawl({
       sites: [site],
       criteria: { ...CRITERIA, mode: "entry-level" },
-      onResult: (d) => results.push(d),
+      existingByHash,
+      crawlDate,
+      onResult: (r) => results.push(r),
     })
 
     expect(getVacancyListMock).toHaveBeenCalledWith(
@@ -134,6 +144,8 @@ describe("SiteCrawler", () => {
     await crawler.crawl({
       sites: [site],
       criteria: { ...CRITERIA, limit: 2 },
+      existingByHash,
+      crawlDate,
       onResult: vi.fn(),
     })
 
@@ -160,12 +172,14 @@ describe("SiteCrawler", () => {
       pages: [{ urls: ["url1"] }],
     })
 
-    const results: VacancyDetails[] = []
+    const results: { hash: string; isNew: boolean }[] = []
     const crawler = new SiteCrawler()
     await crawler.crawl({
       sites: [site1, site2],
       criteria: CRITERIA,
-      onResult: (d) => results.push(d),
+      existingByHash,
+      crawlDate,
+      onResult: (r) => results.push(r),
     })
 
     expect(results.length).toBe(1)
@@ -181,16 +195,18 @@ describe("SiteCrawler", () => {
       getVacancyDetails: getVacancyDetailsMock,
     })
 
-    const results: VacancyDetails[] = []
+    const results: { vacancy: Vacancy }[] = []
     const crawler = new SiteCrawler()
     await crawler.crawl({
       sites: [site],
       criteria: CRITERIA,
-      onResult: (d) => results.push(d),
+      existingByHash,
+      crawlDate,
+      onResult: (r) => results.push(r),
     })
 
     expect(results.length).toBe(1)
-    expect(results[0].url).toBe("url2")
+    expect(results[0].vacancy.urls).toContain("url2")
   })
 
   it("processes multiple sites sequentially", async () => {
@@ -203,16 +219,18 @@ describe("SiteCrawler", () => {
       details: details2,
     })
 
-    const results: VacancyDetails[] = []
+    const results: { vacancy: Vacancy }[] = []
     const crawler = new SiteCrawler()
     await crawler.crawl({
       sites: [site1, site2],
       criteria: CRITERIA,
-      onResult: (d) => results.push(d),
+      existingByHash,
+      crawlDate,
+      onResult: (r) => results.push(r),
     })
 
     expect(results.length).toBe(2)
-    expect(results.map((r) => r.company)).toEqual(["A", "B"])
+    expect(results.map((r) => r.vacancy.company)).toEqual(["A", "B"])
   })
 })
 
