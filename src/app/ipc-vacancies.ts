@@ -4,6 +4,7 @@ import type { Applicant } from "@/models/applicant"
 import type { SearchPreferences } from "@/models/job-search"
 import type { AppServices } from "."
 import { EnrichQueue } from "@/services/vacancy-scanner/index.js"
+import { isAbortError } from "@/utils"
 import type { IpcHandle, SafeSend } from "./ipc-handlers.js"
 
 export function registerVacanciesHandlers(
@@ -245,8 +246,5 @@ function sendBatchEnrichDoneProgress(
   })
 }
 
-function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError"
-}
 
 const batchEnrichAbortControllers = new Map<string, AbortController>()

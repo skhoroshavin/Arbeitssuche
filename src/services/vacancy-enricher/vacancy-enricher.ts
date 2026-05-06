@@ -9,6 +9,7 @@ import type { SearchPreferences } from "@/models/job-search"
 import type { Vacancy } from "@/models/vacancy/index.js"
 
 import { formatError } from "@/services/vacancy-scanner/index.js"
+import { rethrowIfAborted } from "./commute.js"
 
 import { computeCommutes } from "./commute.js"
 
@@ -64,8 +65,7 @@ export class VacancyEnricher {
       })
       return result.vacancies[0]
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError")
-        throw error
+      rethrowIfAborted(error)
       console.error(
         `Failed to compute commute for "${vacancy.title}":`,
         formatError(error),
@@ -134,8 +134,7 @@ function runLlmEnrichment(
     needsAssessment(vacancy)
       ? assessVacancy(vacancy, applicant, preferences, llmClient, signal).catch(
           (error) => {
-            if (error instanceof DOMException && error.name === "AbortError")
-              throw error
+            rethrowIfAborted(error)
             console.error(
               `Failed to assess "${vacancy.title}":`,
               formatError(error),
@@ -146,8 +145,7 @@ function runLlmEnrichment(
       : undefined,
     needsContactExtraction(vacancy)
       ? extractContactInfo(vacancy, llmClient, signal).catch((error) => {
-          if (error instanceof DOMException && error.name === "AbortError")
-            throw error
+          rethrowIfAborted(error)
           console.error(
             `Failed to extract contact for "${vacancy.title}":`,
             formatError(error),

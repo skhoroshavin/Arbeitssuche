@@ -17,7 +17,6 @@ import type { CommuteClient } from "@/plugins/commute"
 import type { LlmModelRegistry } from "@/plugins/llm"
 import type { PdfRenderer } from "@/plugins/pdf-renderer"
 import type { Database } from "@/utils/node/index.js"
-import type { LlmClientFactory } from "./llm-factory.js"
 
 export function createSqliteServiceContext(
   database: Database,
@@ -47,3 +46,7 @@ export interface ServiceContext {
   llmClientFactory?: LlmClientFactory
   commuteClient?: CommuteClient
 }
+
+import type { LlmClient } from "@/plugins/llm"
+
+export type LlmClientFactory = (model: string) => LlmClient

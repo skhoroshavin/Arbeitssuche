@@ -4,6 +4,7 @@ import type { ApplicantRepository } from "@/repositories/applicant"
 import type { JobSite } from "@/plugins/job-site"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { ProgressEvent } from "@/models/progress/index.js"
+import { isAbortError } from "@/utils"
 import { SiteCrawler } from "@/services/site-crawler/index.js"
 import { resolveSearchParameters } from "@/services/site-crawler/index.js"
 import {
@@ -156,7 +157,7 @@ async function drainQueue(queue: EnrichQueue): Promise<void> {
   try {
     await queue.drain()
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") return
+    if (isAbortError(error)) return
     throw error
   }
 }

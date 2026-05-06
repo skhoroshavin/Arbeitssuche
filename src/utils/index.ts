@@ -7,3 +7,4 @@ export {
   normalizeOptionalText,
 } from "./text.js"
 export { findStubMatch } from "./stub-utilities.js"
+export { isAbortError } from "./abort-error.js"

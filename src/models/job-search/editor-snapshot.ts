@@ -89,17 +89,9 @@ function hasMeaningfulPreferences(preferences: SearchPreferences): boolean {
 }
 
 function resolveParameters(parameters: SearchParameters): SearchParameters {
-  return {
-    ...DEFAULT_SEARCH_PARAMS,
-    ...parameters,
-    sources: parameters.sources,
-  }
+  return { ...DEFAULT_SEARCH_PARAMS, ...parameters }
 }
 
 function resolvePreferences(preferences: SearchPreferences): SearchPreferences {
-  return {
-    ...DEFAULT_PREFERENCES,
-    ...preferences,
-    freeText: preferences.freeText,
-  }
+  return { ...DEFAULT_PREFERENCES, ...preferences }
 }

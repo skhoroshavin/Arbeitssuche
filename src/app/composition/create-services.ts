@@ -18,7 +18,7 @@ import { SiteCrawler } from "@/services/site-crawler/index.js"
 import { VacancyEnricher } from "@/services/vacancy-enricher/index.js"
 import { VacancyScanner } from "@/services/vacancy-scanner/index.js"
 import type { ServiceContext } from "./create-service-context.js"
-import type { LlmClientFactory } from "./llm-factory.js"
+import type { LlmClientFactory } from "./create-service-context.js"
 
 export function createAppServices(context: ServiceContext): AppServices {
   const pdfRenderer = context.pdfRenderer ?? createElectronPdfRenderer()

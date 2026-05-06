@@ -3,6 +3,7 @@ import type { ConfigRepository } from "@/app/config"
 import type { SecretsRepository } from "@/app/secrets"
 import type { SetupRepository } from "@/app/setup"
 import type { IpcHandle } from "./ipc-handlers.js"
+import { toError } from "@/services/vacancy-scanner/index.js"
 
 export function registerSetupHandlers(
   handle: IpcHandle,
@@ -65,6 +66,3 @@ interface SetupHandlerServices {
   setupRepo: SetupRepository
 }
 
-function toError(error: unknown): Error {
-  return error instanceof Error ? error : new Error(String(error))
-}

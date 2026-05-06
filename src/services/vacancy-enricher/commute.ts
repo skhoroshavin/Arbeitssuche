@@ -78,7 +78,7 @@ async function computeSingleVacancyCommute(
       commute[address] = await commuteClient.getCommute(origin, address, signal)
       computed = true
     } catch (error) {
-      rethrowAbortError(error)
+      rethrowIfAborted(error)
       console.error(
         `Commute error for "${vacancy.title}" → "${address}":`,
         formatError(error),
@@ -90,6 +90,6 @@ async function computeSingleVacancyCommute(
   return { commute, computed, errors }
 }
 
-function rethrowAbortError(error: unknown): void {
+export function rethrowIfAborted(error: unknown): void {
   if (error instanceof DOMException && error.name === "AbortError") throw error
 }

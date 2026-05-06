@@ -6,13 +6,7 @@ export function mergeSetupState(
 ): AppSetupState {
   const base = resolveSetupState(current)
 
-  return resolveSetupState({
-    completed: "completed" in update ? update.completed : base.completed,
-    lastPhase: "lastPhase" in update ? update.lastPhase : base.lastPhase,
-    lastStep: "lastStep" in update ? update.lastStep : base.lastStep,
-    applicantId:
-      "applicantId" in update ? update.applicantId : base.applicantId,
-  })
+  return resolveSetupState({ ...base, ...update })
 }
 
 export function resolveSetupState(

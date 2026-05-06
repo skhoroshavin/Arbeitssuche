@@ -3,6 +3,7 @@ import type {
   VacancyEnricher,
   EnrichContext,
 } from "@/services/vacancy-enricher/index.js"
+import { isAbortError } from "@/utils"
 
 export class EnrichQueue {
   constructor(options: EnrichQueueOptions) {
@@ -142,6 +143,3 @@ function createAbortError(): DOMException {
   return new DOMException("Aborted", "AbortError")
 }
 
-function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError"
-}
