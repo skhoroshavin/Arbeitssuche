@@ -3,7 +3,7 @@ import type { Vacancy } from "@/models/vacancy/index.js"
 import type { Applicant } from "@/models/applicant"
 import type { SearchPreferences } from "@/models/job-search"
 import type { AppServices } from "."
-import { EnrichQueue } from "@/services/vacancy-scanner/index.js"
+import { EnrichQueue } from "@/services/scan-pipeline/index.js"
 import { isAbortError } from "@/utils"
 import type { IpcHandle, SafeSend } from "./ipc-handlers.js"
 
@@ -245,6 +245,5 @@ function sendBatchEnrichDoneProgress(
     owner: "batch",
   })
 }
-
 
 const batchEnrichAbortControllers = new Map<string, AbortController>()

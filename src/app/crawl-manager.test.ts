@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import type { VacancyScanner, OnProgress } from "@/services/vacancy-scanner"
+import type { ScanPipeline, OnProgress } from "@/services/scan-pipeline"
 import { abortCrawlEnrichment, startCrawl } from "@/app"
 
 vi.mock("@/plugins/job-site", () => ({

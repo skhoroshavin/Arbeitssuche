@@ -1,7 +1,7 @@
 import type {
-  VacancyScanner,
+  ScanPipeline,
   OnProgress,
-} from "@/services/vacancy-scanner/index.js"
+} from "@/services/scan-pipeline/index.js"
 import type { ProgressEvent } from "@/models/progress/index.js"
 import { createJobSite } from "@/plugins/job-site"
 import { createElectronBrowser } from "@/plugins/browser"
@@ -77,7 +77,7 @@ type CrawlPhase = "crawling" | "enriching" | "done"
 
 interface StartCrawlOptions {
   jobSearchId: string
-  vacancyScanner: Pick<VacancyScanner, "scan">
+  vacancyScanner: Pick<ScanPipeline, "scan">
   onProgress: OnProgress
   onComplete: () => void
   onError: (error: Error) => void

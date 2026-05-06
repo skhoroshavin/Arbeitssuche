@@ -16,7 +16,8 @@ import { JobConsultant } from "@/services/job-consultant/index.js"
 import { ResumeRenderer } from "@/services/resume-renderer/index.js"
 import { SiteCrawler } from "@/services/site-crawler/index.js"
 import { VacancyEnricher } from "@/services/vacancy-enricher/index.js"
-import { VacancyScanner } from "@/services/vacancy-scanner/index.js"
+import { ScanPipeline } from "@/services/scan-pipeline/index.js"
+import { CommuteComputer } from "@/services/commute-computer/index.js"
 import type { ServiceContext } from "./create-service-context.js"
 import type { LlmClientFactory } from "./create-service-context.js"
 
@@ -44,19 +45,22 @@ export function createAppServices(context: ServiceContext): AppServices {
 
     const vacancyEnricher = new VacancyEnricher({
       llmClient: assessmentLlm,
-      commuteClient,
     })
+
+    const commuteComputer = new CommuteComputer(commuteClient)
 
     return {
       modelRegistry,
       vacancyEnricher,
+      commuteComputer,
       resumeRenderer: new ResumeRenderer(context.applicantRepo, pdfRenderer),
       jobConsultant: new JobConsultant(context.applicantRepo, consultationLlm),
-      vacancyScanner: new VacancyScanner(
+      vacancyScanner: new ScanPipeline(
         context.vacancyRepo,
         context.jobSearchRepo,
         context.applicantRepo,
         new SiteCrawler(),
+        commuteComputer,
         vacancyEnricher,
         getJobSiteNames,
       ),
@@ -113,7 +117,7 @@ export interface AppServices {
   resumeRenderer: ResumeRenderer
   jobConsultant: JobConsultant
   vacancyEnricher: VacancyEnricher
-  vacancyScanner: VacancyScanner
+  vacancyScanner: ScanPipeline
   coverLetterWriter: CoverLetterWriter
   rebuild: () => void
 }
