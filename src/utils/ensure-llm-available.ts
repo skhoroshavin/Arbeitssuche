@@ -1,7 +1,9 @@
-import type { LlmClient } from "@/plugins/llm"
-
-export function ensureLlmAvailable(llm?: LlmClient): asserts llm is LlmClient {
+export function ensureLlmAvailable(llm?: LlmClientLike): asserts llm is LlmClientLike {
   if (!llm) {
     throw new Error("No LLM API key configured")
   }
+}
+
+interface LlmClientLike {
+  ping(): Promise<boolean>
 }

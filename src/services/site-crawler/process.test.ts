@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { process } from "./process.js"
+import { process } from "."
 import { Vacancy } from "@/models/vacancy/index.js"
 import type { VacancyDetails } from "@/plugins/job-site"
 

@@ -5,7 +5,7 @@ import type {
 import type { ProgressEvent } from "@/models/progress/index.js"
 import { createJobSite } from "@/plugins/job-site"
 import { createElectronBrowser } from "@/plugins/browser"
-import { toError } from "@/utils"
+import { toError } from "@/app/to-error.js"
 
 export function startCrawl(options: StartCrawlOptions): void {
   const { jobSearchId, vacancyScanner, onProgress, onComplete, onError } =

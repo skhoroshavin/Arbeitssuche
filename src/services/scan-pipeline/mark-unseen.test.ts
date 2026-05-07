@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { markUnseenAsGone } from "./mark-unseen.js"
+import { markUnseenAsGone } from "."
 import { Vacancy } from "@/models/vacancy/index.js"
 
 describe("markUnseenAsGone", () => {

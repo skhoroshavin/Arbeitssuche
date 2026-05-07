@@ -3,10 +3,7 @@ import type { Applicant } from "@/models/applicant"
 import type { SearchPreferences } from "@/models/job-search"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import { formatError } from "@/utils"
-import {
-  needsAssessment,
-  assessVacancy,
-} from "./assess.js"
+import { needsAssessment, assessVacancy } from "./assess.js"
 import {
   needsContactExtraction,
   extractContactInfo,

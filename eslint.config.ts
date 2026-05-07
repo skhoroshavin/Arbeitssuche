@@ -34,12 +34,7 @@ export default tseslint.config(
             imports: ["repositories/+", "models/+", "utils/+"],
           },
           "services/*": {
-            imports: [
-              "repositories/+",
-              "plugins/+",
-              "models/+",
-              "utils/+",
-            ],
+            imports: ["repositories/+", "plugins/+", "models/+", "utils/+"],
           },
           "services/scan-pipeline": {
             imports: [

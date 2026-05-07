@@ -149,7 +149,12 @@ interface CrawlOptions {
   criteria: JobSearchCriteria
   signal?: AbortSignal
   onProgress?: (event: ProgressEvent) => void
-  onResult: (result: { vacancy: Vacancy; hash: string; isNew: boolean; siteName: string }) => void
+  onResult: (result: {
+    vacancy: Vacancy
+    hash: string
+    isNew: boolean
+    siteName: string
+  }) => void
   existingByHash: Map<string, Vacancy>
   crawlDate: string
 }

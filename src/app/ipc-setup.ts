@@ -3,7 +3,7 @@ import type { ConfigRepository } from "@/app/config"
 import type { SecretsRepository } from "@/app/secrets"
 import type { SetupRepository } from "@/app/setup"
 import type { IpcHandle } from "./ipc-handlers.js"
-import { toError } from "@/utils"
+import { toError } from "@/app/to-error.js"
 
 export function registerSetupHandlers(
   handle: IpcHandle,

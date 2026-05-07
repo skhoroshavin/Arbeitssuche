@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import type { ScanPipeline, OnProgress } from "@/services/scan-pipeline"
+import type { OnProgress } from "@/services/scan-pipeline"
 import { abortCrawlEnrichment, startCrawl } from "@/app"
 
 vi.mock("@/plugins/job-site", () => ({
@@ -103,7 +103,7 @@ function makeScanner(
     enrichController: AbortController,
     onProgress: OnProgress,
   ) => Promise<void>,
-): Pick<VacancyScanner, "scan"> {
+): Pick<import("@/services/scan-pipeline").ScanPipeline, "scan"> {
   return {
     scan: implementation,
   }

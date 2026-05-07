@@ -1,6 +1,9 @@
 import type { CommuteClient } from "@/plugins/commute"
+
 import type { Vacancy } from "@/models/vacancy/index.js"
+
 import type { Applicant } from "@/models/applicant"
+
 import { formatError } from "@/utils"
 
 export class CommuteComputer {
@@ -25,20 +28,6 @@ export class CommuteComputer {
 
     return output.vacancies
   }
-}
-
-interface ComputeCommutesInput {
-  vacancies: Vacancy[]
-  origin: string
-  commuteClient: CommuteClient
-  signal?: AbortSignal
-}
-
-interface ComputeCommutesOutput {
-  vacancies: Vacancy[]
-  computedCount: number
-  skippedCount: number
-  errorCount: number
 }
 
 async function computeCommutes(
@@ -75,6 +64,20 @@ async function computeCommutes(
   const skippedCount = vacancies.length - needsCommute.length
 
   return { vacancies: mapped, computedCount, skippedCount, errorCount }
+}
+
+interface ComputeCommutesInput {
+  vacancies: Vacancy[]
+  origin: string
+  commuteClient: CommuteClient
+  signal?: AbortSignal
+}
+
+interface ComputeCommutesOutput {
+  vacancies: Vacancy[]
+  computedCount: number
+  skippedCount: number
+  errorCount: number
 }
 
 async function computeSingleVacancyCommute(

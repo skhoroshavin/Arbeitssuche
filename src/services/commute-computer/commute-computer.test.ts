@@ -14,9 +14,8 @@ describe("CommuteComputer", () => {
   })
 
   it("returns vacancies unchanged when applicant has no address", async () => {
-    const client: CommuteClient = {
-      getCommute: vi.fn(),
-    }
+    const getCommute = vi.fn<CommuteClient["getCommute"]>()
+    const client: CommuteClient = { getCommute, ping: vi.fn() }
     const computer = new CommuteComputer(client)
     const applicantWithoutAddress = {
       ...APPLICANT,
@@ -24,31 +23,34 @@ describe("CommuteComputer", () => {
     }
     const vacancies = [makeVacancy("h1")]
 
-    const result = await computer.compute(
-      vacancies,
-      applicantWithoutAddress,
-    )
+    const result = await computer.compute(vacancies, applicantWithoutAddress)
     expect(result).toBe(vacancies)
-    expect(client.getCommute).not.toHaveBeenCalled()
+    expect(getCommute).not.toHaveBeenCalled()
   })
 
   it("computes commute for vacancies with addresses", async () => {
-    const client: CommuteClient = {
-      getCommute: vi.fn().mockResolvedValue("15 min"),
-    }
+    const getCommute = vi
+      .fn<CommuteClient["getCommute"]>()
+      .mockResolvedValue({
+        distance: "5 km",
+        durations: { morning: 30, day: 25, evening: 35 },
+        fetchedAt: "2026-01-01T00:00:00Z",
+      })
+    const client: CommuteClient = { getCommute, ping: vi.fn() }
     const computer = new CommuteComputer(client)
     const vacancy = makeVacancy("h1", { addresses: ["Berlin"] })
     const vacancies = [vacancy]
 
     const result = await computer.compute(vacancies, APPLICANT)
-    expect(result[0].commute["Berlin"]).toBe("15 min")
-    expect(client.getCommute).toHaveBeenCalled()
+    expect(result[0].commute["Berlin"].distance).toBe("5 km")
+    expect(getCommute).toHaveBeenCalled()
   })
 
   it("handles API errors gracefully and continues", async () => {
-    const client: CommuteClient = {
-      getCommute: vi.fn().mockRejectedValue(new Error("API error")),
-    }
+    const getCommute = vi
+      .fn<CommuteClient["getCommute"]>()
+      .mockRejectedValue(new Error("API error"))
+    const client: CommuteClient = { getCommute, ping: vi.fn() }
     const computer = new CommuteComputer(client)
     const vacancy = makeVacancy("h1", { addresses: ["Berlin"] })
     const vacancies = [vacancy]
@@ -58,9 +60,8 @@ describe("CommuteComputer", () => {
   })
 
   it("respects abort signal", async () => {
-    const client: CommuteClient = {
-      getCommute: vi.fn().mockResolvedValue("15 min"),
-    }
+    const getCommute = vi.fn<CommuteClient["getCommute"]>()
+    const client: CommuteClient = { getCommute, ping: vi.fn() }
     const computer = new CommuteComputer(client)
     const controller = new AbortController()
     controller.abort()
