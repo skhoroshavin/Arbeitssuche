@@ -4,6 +4,8 @@ import type { ApplicantRepository } from "@/repositories/applicant"
 import type { JobSite } from "@/plugins/job-site"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { ProgressEvent } from "@/models/progress/index.js"
+import type { Applicant } from "@/models/applicant"
+import type { EnrichContext } from "@/services/vacancy-enricher/index.js"
 import { isAbortError } from "@/utils"
 import { SiteCrawler } from "@/services/site-crawler/index.js"
 import { resolveSearchParameters } from "@/services/site-crawler/index.js"
@@ -48,14 +50,72 @@ export class ScanPipeline {
 
     const sites = sitesToRun.map((name) => siteFactory(name))
 
-    let lastSaveTime = 0
     const seenHashes = new Set<string>()
     const newCount = { value: 0 }
     const updatedCount = { value: 0 }
 
-    const queue = new EnrichQueue({
-      enricher: this.enricher,
+    const queue = this.createEnrichQueue({
       context: { applicant, preferences: jobSearch.preferences },
+      existingByHash,
+      id,
+      crawlDate,
+      onProgress,
+      enrichAbortController,
+    })
+
+    await this.siteCrawler.crawl({
+      sites,
+      criteria,
+      signal: abortController.signal,
+      onProgress,
+      existingByHash,
+      crawlDate,
+      onResult: this.createOnResultHandler({
+        existingByHash,
+        seenHashes,
+        newCount,
+        updatedCount,
+        crawlDate,
+        onProgress,
+        id,
+      }),
+    })
+
+    await this.processPostCrawl({
+      existingByHash,
+      seenHashes,
+      newCount,
+      updatedCount,
+      applicant,
+      crawlDate,
+      id,
+      queue,
+      abortController,
+      enrichAbortController,
+      onProgress,
+    })
+  }
+
+  private createEnrichQueue(parameters: {
+    context: EnrichContext
+    existingByHash: Map<string, Vacancy>
+    id: string
+    crawlDate: string
+    onProgress: OnProgress
+    enrichAbortController: AbortController
+  }): EnrichQueue {
+    const {
+      context,
+      existingByHash,
+      id,
+      crawlDate,
+      onProgress,
+      enrichAbortController,
+    } = parameters
+
+    return new EnrichQueue({
+      enricher: this.enricher,
+      context,
       onEnriched: (enriched, hash) => {
         existingByHash.set(hash, enriched)
         this.vacancyRepo.save(id, [...existingByHash.values()], crawlDate)
@@ -74,55 +134,87 @@ export class ScanPipeline {
       },
       signal: enrichAbortController.signal,
     })
+  }
 
-    await this.siteCrawler.crawl({
-      sites,
-      criteria,
-      signal: abortController.signal,
-      onProgress,
+  private createOnResultHandler(parameters: {
+    existingByHash: Map<string, Vacancy>
+    seenHashes: Set<string>
+    newCount: { value: number }
+    updatedCount: { value: number }
+    crawlDate: string
+    onProgress: OnProgress
+    id: string
+  }): (result: {
+    vacancy: Vacancy
+    hash: string
+    isNew: boolean
+    siteName: string
+  }) => void {
+    const {
       existingByHash,
+      seenHashes,
+      newCount,
+      updatedCount,
       crawlDate,
-      onResult: (result) => {
-        const { vacancy, hash, isNew, siteName } = result
+      onProgress,
+      id,
+    } = parameters
+    let lastSaveTime = 0
 
-        existingByHash.set(hash, vacancy)
-        seenHashes.add(hash)
+    return (result) => {
+      const { vacancy, hash, isNew, siteName } = result
 
-        if (isNew) {
-          newCount.value++
-        } else {
-          updatedCount.value++
-        }
+      existingByHash.set(hash, vacancy)
+      seenHashes.add(hash)
 
-        onProgress({
-          message: `[${siteName}] ${isNew ? "New" : "Updated"}: ${vacancy.title}`,
-          phase: "scan",
-        })
+      if (isNew) {
+        newCount.value++
+      } else {
+        updatedCount.value++
+      }
 
-        const now = Date.now()
-        if (now - lastSaveTime >= 1000) {
-          this.vacancyRepo.save(id, [...existingByHash.values()], crawlDate)
-          lastSaveTime = now
-          onProgress({ message: "", phase: "scan", vacanciesUpdated: true })
-        }
-      },
-    })
+      onProgress({
+        message: `[${siteName}] ${isNew ? "New" : "Updated"}: ${vacancy.title}`,
+        phase: "scan",
+      })
 
-    const allVacancies = [...existingByHash.values()]
-    const dirtyForCommute = allVacancies.filter(
-      (v) => v.enrichmentDirty && v.addresses.length > 0,
-    )
-
-    if (dirtyForCommute.length > 0 && !enrichAbortController.signal.aborted) {
-      const commuted = await this.commuteComputer.compute(
-        dirtyForCommute,
-        applicant,
-        enrichAbortController.signal,
-      )
-      for (const v of commuted) {
-        existingByHash.set(v.hash, v)
+      const now = Date.now()
+      if (now - lastSaveTime >= 1000) {
+        this.vacancyRepo.save(id, [...existingByHash.values()], crawlDate)
+        lastSaveTime = now
+        onProgress({ message: "", phase: "scan", vacanciesUpdated: true })
       }
     }
+  }
+
+  private async processPostCrawl(parameters: {
+    existingByHash: Map<string, Vacancy>
+    seenHashes: Set<string>
+    newCount: { value: number }
+    updatedCount: { value: number }
+    applicant: Applicant
+    crawlDate: string
+    id: string
+    queue: EnrichQueue
+    abortController: AbortController
+    enrichAbortController: AbortController
+    onProgress: OnProgress
+  }): Promise<void> {
+    const {
+      existingByHash,
+      seenHashes,
+      newCount,
+      updatedCount,
+      applicant,
+      crawlDate,
+      id,
+      queue,
+      abortController,
+      enrichAbortController,
+      onProgress,
+    } = parameters
+
+    await this.computeCommute(existingByHash, applicant, enrichAbortController)
 
     for (const [, v] of existingByHash) {
       if (v.enrichmentDirty && !enrichAbortController.signal.aborted) {
@@ -159,6 +251,28 @@ export class ScanPipeline {
       message: `Scan complete: ${newCount.value} new, ${updatedCount.value} updated, ${goneCount} gone`,
       phase: "complete",
     })
+  }
+
+  private async computeCommute(
+    existingByHash: Map<string, Vacancy>,
+    applicant: Applicant,
+    enrichAbortController: AbortController,
+  ): Promise<void> {
+    const allVacancies = [...existingByHash.values()]
+    const dirtyForCommute = allVacancies.filter(
+      (v) => v.enrichmentDirty && v.addresses.length > 0,
+    )
+
+    if (dirtyForCommute.length > 0 && !enrichAbortController.signal.aborted) {
+      const commuted = await this.commuteComputer.compute(
+        dirtyForCommute,
+        applicant,
+        enrichAbortController.signal,
+      )
+      for (const v of commuted) {
+        existingByHash.set(v.hash, v)
+      }
+    }
   }
 }
 

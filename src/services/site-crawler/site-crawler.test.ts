@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from "vitest"
 import { SiteCrawler } from "."
-import type { JobSite, VacancyListPage } from "@/plugins/job-site"
+import type {
+  JobSite,
+  VacancyListPage,
+  VacancyDetails,
+} from "@/plugins/job-site"
 import type { JobSearchCriteria } from "@/models/job-search"
 import type { Vacancy } from "@/models/vacancy/index.js"
 

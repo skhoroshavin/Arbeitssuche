@@ -29,13 +29,11 @@ describe("CommuteComputer", () => {
   })
 
   it("computes commute for vacancies with addresses", async () => {
-    const getCommute = vi
-      .fn<CommuteClient["getCommute"]>()
-      .mockResolvedValue({
-        distance: "5 km",
-        durations: { morning: 30, day: 25, evening: 35 },
-        fetchedAt: "2026-01-01T00:00:00Z",
-      })
+    const getCommute = vi.fn<CommuteClient["getCommute"]>().mockResolvedValue({
+      distance: "5 km",
+      durations: { morning: 30, day: 25, evening: 35 },
+      fetchedAt: "2026-01-01T00:00:00Z",
+    })
     const client: CommuteClient = { getCommute, ping: vi.fn() }
     const computer = new CommuteComputer(client)
     const vacancy = makeVacancy("h1", { addresses: ["Berlin"] })
