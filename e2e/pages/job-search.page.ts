@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 
 export class JobSearchPage {
   readonly page: Page
@@ -20,6 +20,11 @@ export class JobSearchPage {
   readonly summaryHeading: Locator
   readonly commuteHeading: Locator
   readonly coverLetterInput: Locator
+  readonly activitySection: Locator
+  readonly confirmActivityButton: Locator
+  readonly cancelActivityButton: Locator
+  readonly activityDateInput: Locator
+  readonly activityHistorySection: Locator
 
   constructor(page: Page) {
     this.page = page
@@ -55,6 +60,13 @@ export class JobSearchPage {
     this.summaryHeading = page.getByRole("heading", { name: "Zusammenfassung" })
     this.commuteHeading = page.getByRole("heading", { name: "Fahrtweg" })
     this.coverLetterInput = page.getByLabel("Anschreiben")
+    this.activitySection = page.locator("text=Aktionen")
+    this.confirmActivityButton = page.getByRole("button", {
+      name: "Bestätigen",
+    })
+    this.cancelActivityButton = page.getByRole("button", { name: "Abbrechen" })
+    this.activityDateInput = page.locator('input[type="date"]')
+    this.activityHistorySection = page.getByText("Aktivitätshistorie")
   }
 
   filterButton(label: string): Locator {
@@ -111,5 +123,91 @@ export class JobSearchPage {
 
   async gotoVacancyDetail(id: string, hash: string) {
     await this.page.goto(`/job-searches/${id}/vacancies/${hash}`)
+  }
+
+  async recordActivity(
+    actionLabel: string,
+    details?: { interviewDate?: string },
+  ): Promise<void> {
+    const actionButton = this.page.getByRole("button", { name: actionLabel })
+    await actionButton.click()
+    if (details?.interviewDate) {
+      await this.activityDateInput.fill(details.interviewDate)
+    }
+    await this.confirmActivityButton.click()
+    await expect(this.confirmActivityButton).not.toBeVisible()
+  }
+
+  async expectStatusBadge(statusText: string): Promise<void> {
+    const badge = this.page
+      .locator("span.rounded-full")
+      .filter({ hasText: statusText })
+      .first()
+    await expect(badge).toBeVisible()
+  }
+
+  async expectActivityHistoryContains(
+    statuses: string[],
+  ): Promise<void> {
+    await expect(this.activityHistorySection).toBeVisible()
+    for (const status of statuses) {
+      const entry = this.activityHistorySection
+        .locator("..")
+        .getByText(status)
+      await expect(entry).toBeVisible()
+    }
+  }
+
+  async expectVacancyDetailShows(options: {
+    summary?: boolean
+    commute?: boolean
+  }): Promise<void> {
+    if (options.summary) {
+      await expect(this.summaryHeading).toBeVisible()
+    }
+    if (options.commute) {
+      await expect(this.commuteHeading).toBeVisible()
+    }
+  }
+
+  async waitForCrawlComplete(): Promise<void> {
+    await expect(this.refreshButton).toBeEnabled({ timeout: 300_000 })
+  }
+
+  async waitForEnrichmentComplete(): Promise<void> {
+    const abortButton = this.page.getByRole("button", {
+      name: "Analyse abbrechen",
+    })
+    await expect(abortButton).not.toBeVisible({ timeout: 300_000 })
+  }
+
+  async waitForEnrichmentOnAnyCard(): Promise<void> {
+    await expect(
+      this.page.getByText(/Sehr schlecht|Schlecht|OK|Gut|Ausgezeichnet/),
+    ).toBeVisible({ timeout: 300_000 })
+  }
+
+  async expectEnrichAllButtonNotVisible(): Promise<void> {
+    await expect(this.enrichAllButton).not.toBeVisible()
+  }
+
+  async waitForCoverLetterContent(): Promise<void> {
+    await expect(this.coverLetterInput).not.toBeEmpty({ timeout: 120_000 })
+    const value = await this.coverLetterInput.inputValue()
+    expect(value.trim().length).toBeGreaterThan(0)
+  }
+
+  // Vacancy card list
+  vacancyCardByIndex(index: number): Locator {
+    return this.page.locator("a[href*='/vacancies/']").nth(index)
+  }
+
+  async clickVacancyCardByIndex(index: number): Promise<void> {
+    const card = this.vacancyCardByIndex(index)
+    await card.click()
+  }
+
+  get backToVacanciesLink(): Locator {
+    return this.page.getByRole("link", { name: "Zurück zu Stellen" })
   }
 }
