@@ -1,4 +1,5 @@
 export { Card } from "./card"
+export { DialogLayout } from "./dialog-layout"
 export { PageHeader } from "./page-header"
 export { Input, Textarea } from "./form-field"
 export { SectionHeader } from "./section-header"
