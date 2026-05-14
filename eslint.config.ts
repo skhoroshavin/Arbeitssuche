@@ -113,7 +113,6 @@ export default tseslint.config(
     ignores: [
       "dist/",
       "out/",
-      "e2e/",
       "output/",
       "html_samples/",
       "scratchpad/",
@@ -191,6 +190,21 @@ export default tseslint.config(
         "error",
         { max: 80, skipBlankLines: true, skipComments: true },
       ],
+    },
+  },
+
+  // Test files: strictest complexity rule
+  {
+    files: [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
+      "**/*.integration-test.ts",
+      "**/*.test-suite.ts",
+    ],
+    rules: {
+      complexity: ["error", 1],
     },
   },
 

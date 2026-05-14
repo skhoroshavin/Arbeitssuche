@@ -146,14 +146,10 @@ export class JobSearchPage {
     await expect(badge).toBeVisible()
   }
 
-  async expectActivityHistoryContains(
-    statuses: string[],
-  ): Promise<void> {
+  async expectActivityHistoryContains(statuses: string[]): Promise<void> {
     await expect(this.activityHistorySection).toBeVisible()
     for (const status of statuses) {
-      const entry = this.activityHistorySection
-        .locator("..")
-        .getByText(status)
+      const entry = this.activityHistorySection.locator("..").getByText(status)
       await expect(entry).toBeVisible()
     }
   }

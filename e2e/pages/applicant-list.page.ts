@@ -1,5 +1,4 @@
-import type { Locator, Page } from "@playwright/test"
-import { expect } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 
 export class ApplicantListPage {
   readonly page: Page
@@ -111,10 +110,7 @@ export class ApplicantListPage {
     return readApplicantIdFromUrl(this.page.url())
   }
 
-  async createApplicantFull(
-    name: string,
-    email: string,
-  ): Promise<string> {
+  async createApplicantFull(name: string, email: string): Promise<string> {
     await this.goto()
     await this.newApplicantButton.click()
     await expect(this.wizardCancelButton).toBeVisible()

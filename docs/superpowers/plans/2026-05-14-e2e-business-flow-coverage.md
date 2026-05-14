@@ -15,26 +15,26 @@
 
 ## File Structure
 
-| File | Action | Responsibility |
-|---|---|---|
-| `e2e/helpers/assertions.ts` | Create | Semantic `expect` wrappers for UI state |
-| `e2e/pages/first-start.page.ts` | Create | First-start wizard locators and navigation |
-| `e2e/helpers/first-start-helper.ts` | Create | `fastTrackFirstStart()` to bootstrap past wizard |
-| `e2e/pages/applicant-list.page.ts` | Modify | Add wizard field locators, `createApplicantMinimal`, `createApplicantFull` |
-| `e2e/pages/applicant.page.ts` | Modify | Add `downloadResumeTemplate`, tab content assertion helpers |
-| `e2e/pages/job-search.page.ts` | Modify | Add activity recording, vacancy detail assertions, cover letter template helpers |
-| `e2e/pages/settings.page.ts` | Modify | Add model selection, first-start-specific locators |
-| `e2e/pages/index.ts` | Modify | Export `FirstStartPage` |
-| `e2e/electron-fixtures.ts` | Modify | Remove `api` fixture, add `firstStartPage`, remove `setup.completed` config |
-| `e2e/tests-flow/applicant-lifecycle.spec.ts` | Create | Suite 1 |
-| `e2e/tests-flow/job-search-lifecycle.spec.ts` | Create | Suite 2 |
-| `e2e/tests-flow/settings-lifecycle.spec.ts` | Create | Suite 3 |
-| `e2e/tests-flow/full-application-flow.spec.ts` | Create | Suite 4 |
-| `e2e/helpers/electron-api-helper.ts` | Delete | IPC helper, no longer used |
-| `e2e/helpers/live-flow-helper.ts` | Delete | Absorbed into page objects |
-| `e2e/tests-flow/live-flow.spec.ts` | Delete | Replaced by Suite 4 |
-| `e2e/tests-flow/runtime-contract.spec.ts` | Delete | Replaced by Suite 3 |
-| `e2e/tests-flow/live-enrichment-diagnostics.spec.ts` | Delete | Covered by Suite 4 live setup |
+| File                                                 | Action | Responsibility                                                                   |
+| ---------------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| `e2e/helpers/assertions.ts`                          | Create | Semantic `expect` wrappers for UI state                                          |
+| `e2e/pages/first-start.page.ts`                      | Create | First-start wizard locators and navigation                                       |
+| `e2e/helpers/first-start-helper.ts`                  | Create | `fastTrackFirstStart()` to bootstrap past wizard                                 |
+| `e2e/pages/applicant-list.page.ts`                   | Modify | Add wizard field locators, `createApplicantMinimal`, `createApplicantFull`       |
+| `e2e/pages/applicant.page.ts`                        | Modify | Add `downloadResumeTemplate`, tab content assertion helpers                      |
+| `e2e/pages/job-search.page.ts`                       | Modify | Add activity recording, vacancy detail assertions, cover letter template helpers |
+| `e2e/pages/settings.page.ts`                         | Modify | Add model selection, first-start-specific locators                               |
+| `e2e/pages/index.ts`                                 | Modify | Export `FirstStartPage`                                                          |
+| `e2e/electron-fixtures.ts`                           | Modify | Remove `api` fixture, add `firstStartPage`, remove `setup.completed` config      |
+| `e2e/tests-flow/applicant-lifecycle.spec.ts`         | Create | Suite 1                                                                          |
+| `e2e/tests-flow/job-search-lifecycle.spec.ts`        | Create | Suite 2                                                                          |
+| `e2e/tests-flow/settings-lifecycle.spec.ts`          | Create | Suite 3                                                                          |
+| `e2e/tests-flow/full-application-flow.spec.ts`       | Create | Suite 4                                                                          |
+| `e2e/helpers/electron-api-helper.ts`                 | Delete | IPC helper, no longer used                                                       |
+| `e2e/helpers/live-flow-helper.ts`                    | Delete | Absorbed into page objects                                                       |
+| `e2e/tests-flow/live-flow.spec.ts`                   | Delete | Replaced by Suite 4                                                              |
+| `e2e/tests-flow/runtime-contract.spec.ts`            | Delete | Replaced by Suite 3                                                              |
+| `e2e/tests-flow/live-enrichment-diagnostics.spec.ts` | Delete | Covered by Suite 4 live setup                                                    |
 
 ---
 
@@ -47,7 +47,12 @@
 - [ ] **Step 1: Write the file**
 
 ```typescript
-import { expect, type Download, type Locator, type Page } from "@playwright/test"
+import {
+  expect,
+  type Download,
+  type Locator,
+  type Page,
+} from "@playwright/test"
 
 export async function expectApplicantCardVisible(
   page: Page,
@@ -79,9 +84,7 @@ export async function expectVacancyCardsCount(
   min: number,
   max: number,
 ): Promise<void> {
-  const cards = page.locator(
-    "a[href*='/vacancies/']",
-  )
+  const cards = page.locator("a[href*='/vacancies/']")
   const count = await cards.count()
   expect(count).toBeGreaterThanOrEqual(min)
   expect(count).toBeLessThanOrEqual(max)
@@ -177,7 +180,11 @@ export class FirstStartPage {
   }
 
   async handleResumePromptIfPresent(): Promise<void> {
-    if (await this.resumePromptHeading.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    if (
+      await this.resumePromptHeading
+        .isVisible({ timeout: 5_000 })
+        .catch(() => false)
+    ) {
       await this.skipSetupButton.click()
       await expect(this.skipSetupButton).not.toBeVisible()
     }
@@ -493,13 +500,13 @@ git commit -m "feat: extend ApplicantPage with resume download and tab navigatio
 **Edit 2**: Add the initializers in the constructor after `this.coverLetterInput`:
 
 ```typescript
-    this.activitySection = page.locator("text=Aktionen")
-    this.confirmActivityButton = page.getByRole("button", {
-      name: "Bestätigen",
-    })
-    this.cancelActivityButton = page.getByRole("button", { name: "Abbrechen" })
-    this.activityDateInput = page.locator('input[type="date"]')
-    this.activityHistorySection = page.getByText("Aktivitätshistorie")
+this.activitySection = page.locator("text=Aktionen")
+this.confirmActivityButton = page.getByRole("button", {
+  name: "Bestätigen",
+})
+this.cancelActivityButton = page.getByRole("button", { name: "Abbrechen" })
+this.activityDateInput = page.locator('input[type="date"]')
+this.activityHistorySection = page.getByText("Aktivitätshistorie")
 ```
 
 **Edit 3**: Add compound methods after the `gotoVacancyDetail` method, before the closing `}`:
@@ -684,10 +691,7 @@ import type { Page } from "@playwright/test"
 import { expect } from "@playwright/test"
 import { FirstStartPage } from "../pages/first-start.page.js"
 import { SettingsPage } from "../pages/settings.page.js"
-import {
-  OPENROUTER_LABEL,
-  MAPS_LABEL,
-} from "./live-e2e-setup.js"
+import { OPENROUTER_LABEL, MAPS_LABEL } from "./live-e2e-setup.js"
 import { ApplicantListPage } from "../pages/applicant-list.page.js"
 
 export async function fastTrackFirstStart(
@@ -713,9 +717,7 @@ async function skipSetupAndCreateMinimalApplicant(
   const applicantId = await applicantListPage.createApplicantMinimal(
     `e2e-fast-${Date.now()}`,
   )
-  await expect(
-    page.getByRole("heading", { name: "Lebenslauf" }),
-  ).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Lebenslauf" })).toBeVisible()
   return applicantId
 }
 
@@ -964,6 +966,7 @@ function applyRequiredE2eEnvOverrides(filePath: string): void {
 ```
 
 Key changes from the original:
+
 - Removed `import { ElectronApiHelper }` and `import { writeFileSync }`
 - Removed `api` from `Fixtures` type
 - Removed `api` fixture definition
@@ -1205,15 +1208,13 @@ test.describe("Job search lifecycle", () => {
     await expect(jobSearchPage.configHeading).toBeVisible()
     await expect(page.getByDisplayValue("Softwareentwickler")).toBeVisible()
 
-    await expect(
-      jobSearchPage.festanstellungButton,
-    ).toHaveAttribute("aria-pressed", "true")
+    await expect(jobSearchPage.festanstellungButton).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    )
   })
 
-  test("deletes job search and applicant", async ({
-    applicantPage,
-    page,
-  }) => {
+  test("deletes job search and applicant", async ({ applicantPage, page }) => {
     await applicantPage.goto(applicantId)
     await applicantPage.deleteJobSearchFromList("Softwareentwickler")
 
@@ -1277,9 +1278,7 @@ test.describe("Settings lifecycle", () => {
     expect(applicantId).toBeTruthy()
   })
 
-  test("switches provider and selects a model", async ({
-    settingsPage,
-  }) => {
+  test("switches provider and selects a model", async ({ settingsPage }) => {
     await settingsPage.goto()
     await expect(settingsPage.heading).toBeVisible()
 

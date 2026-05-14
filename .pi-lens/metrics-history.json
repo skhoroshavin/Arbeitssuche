@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "files": {
+    "eslint.config.ts": {
+      "latest": {
+        "commit": "e272eea",
+        "timestamp": "2026-05-14T13:17:19.581Z",
+        "mi": 36.8,
+        "cognitive": 0,
+        "nesting": 0,
+        "lines": 210,
+        "maxCyclomatic": 1,
+        "entropy": 3.98
+      },
+      "history": [
+        {
+          "commit": "e272eea",
+          "timestamp": "2026-05-14T13:17:19.581Z",
+          "mi": 36.8,
+          "cognitive": 0,
+          "nesting": 0,
+          "lines": 210,
+          "maxCyclomatic": 1,
+          "entropy": 3.98
+        }
+      ],
+      "trend": "stable"
+    }
+  },
+  "capturedAt": "2026-05-14T13:17:24.587Z"
+}

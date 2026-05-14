@@ -1,5 +1,9 @@
-import type { Locator, Page } from "@playwright/test"
-import { expect } from "@playwright/test"
+import {
+  expect,
+  type Locator,
+  type Page,
+  type Download,
+} from "@playwright/test"
 
 export class ApplicantPage {
   readonly page: Page
@@ -151,15 +155,16 @@ export class ApplicantPage {
     await this.templateButton(name).click()
   }
 
-  async downloadResumeTemplate(
-    template: string,
-  ): Promise<import("@playwright/test").Download> {
+  async downloadResumeTemplate(template: string): Promise<Download> {
     const downloadPromise = this.page.waitForEvent("download")
     await this.templateButton(template).click()
     return downloadPromise
   }
 
-  async expectFieldHasValue(label: string, expectedValue: string): Promise<void> {
+  async expectFieldHasValue(
+    label: string,
+    expectedValue: string,
+  ): Promise<void> {
     const input = this.field(label)
     await expect(input).toHaveValue(expectedValue)
   }
@@ -171,10 +176,10 @@ export class ApplicantPage {
     ).toBeVisible()
   }
 
-  async deleteJobSearchFromList(
-    jobSearchTerm: string,
-  ): Promise<void> {
-    const card = this.page.locator(".cursor-pointer", { hasText: jobSearchTerm })
+  async deleteJobSearchFromList(jobSearchTerm: string): Promise<void> {
+    const card = this.page.locator(".cursor-pointer", {
+      hasText: jobSearchTerm,
+    })
     const deleteButton = card.locator("button", { hasText: "Löschen" })
     await deleteButton.click()
   }

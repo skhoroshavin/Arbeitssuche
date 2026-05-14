@@ -114,10 +114,7 @@ export class SettingsPage {
     await select.selectOption(modelName)
   }
 
-  async assertModelSelected(
-    label: string,
-    modelName: string,
-  ): Promise<void> {
+  async assertModelSelected(label: string, modelName: string): Promise<void> {
     const select = this.modelSelect(label)
     const value = await select.inputValue()
     expect(value).toBe(modelName)
