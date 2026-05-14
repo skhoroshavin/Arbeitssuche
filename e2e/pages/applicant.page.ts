@@ -150,6 +150,34 @@ export class ApplicantPage {
   async downloadTemplate(name: string) {
     await this.templateButton(name).click()
   }
+
+  async downloadResumeTemplate(
+    template: string,
+  ): Promise<import("@playwright/test").Download> {
+    const downloadPromise = this.page.waitForEvent("download")
+    await this.templateButton(template).click()
+    return downloadPromise
+  }
+
+  async expectFieldHasValue(label: string, expectedValue: string): Promise<void> {
+    const input = this.field(label)
+    await expect(input).toHaveValue(expectedValue)
+  }
+
+  async navigateToOverviewTab(): Promise<void> {
+    await this.tabLink("Übersicht").click()
+    await expect(
+      this.page.getByRole("heading", { name: "Lebenslauf" }),
+    ).toBeVisible()
+  }
+
+  async deleteJobSearchFromList(
+    jobSearchTerm: string,
+  ): Promise<void> {
+    const card = this.page.locator(".cursor-pointer", { hasText: jobSearchTerm })
+    const deleteButton = card.locator("button", { hasText: "Löschen" })
+    await deleteButton.click()
+  }
 }
 
 const JOB_SEARCH_WIZARD_STEPS = [1, 2, 3, 4, 5] as const
