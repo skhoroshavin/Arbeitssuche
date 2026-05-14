@@ -1,22 +1,22 @@
-import { useFieldArray, type UseFormReturn } from "react-hook-form"
+import { useFieldArray } from "react-hook-form"
 import { Input } from "@/ui/components"
 import {
   AddButton,
   ApplicantFormPage,
-  AutoExpandTextarea,
-  Checkbox,
   FieldArrayCard,
   FieldGrid,
 } from "@/ui/pages/applicant/components"
-import type { AutoSaveStatus } from "@/ui/hooks"
-import type { ApplicantFormValues } from "./editor-form"
+import {
+  DateLocationHighlightsFields,
+  type EditorViewProperties,
+} from "./editor-view-base"
 
 export function ApplicantEditorExperienceView({
   form,
   isLoading,
   saveStatus,
   useHeaderAutoSave = true,
-}: ApplicantEditorExperienceViewProperties) {
+}: EditorViewProperties) {
   const { register, control } = form
   const experience = useFieldArray({ control, name: "experience" })
 
@@ -38,22 +38,12 @@ export function ApplicantEditorExperienceView({
               label="Unternehmen"
               {...register(`experience.${index}.company`)}
             />
-            <Input label="Von" {...register(`experience.${index}.startDate`)} />
-            <div className="relative">
-              <Input label="Bis" {...register(`experience.${index}.endDate`)} />
-              <div className="absolute left-0 top-full z-10">
-                <Checkbox
-                  label="Daten offenlegen"
-                  {...register(`experience.${index}.discloseDates`)}
-                />
-              </div>
-            </div>
-            <Input label="Ort" {...register(`experience.${index}.location`)} />
+            <DateLocationHighlightsFields
+              fieldArrayName="experience"
+              index={index}
+              register={register}
+            />
           </FieldGrid>
-          <AutoExpandTextarea
-            label="Highlights (eine pro Zeile)"
-            {...register(`experience.${index}.highlights`)}
-          />
         </FieldArrayCard>
       ))}
       <AddButton
@@ -70,11 +60,4 @@ export function ApplicantEditorExperienceView({
       </AddButton>
     </ApplicantFormPage>
   )
-}
-
-interface ApplicantEditorExperienceViewProperties {
-  form: UseFormReturn<ApplicantFormValues>
-  isLoading: boolean
-  saveStatus: AutoSaveStatus
-  useHeaderAutoSave?: boolean
 }
