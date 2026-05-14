@@ -103,4 +103,28 @@ export class SettingsPage {
     await this.tokenInput(label).fill(value)
     await this.saveFieldButton(label).click()
   }
+
+  async expectProviderSelected(name: string): Promise<void> {
+    const button = this.providerButton(name)
+    await expect(button).toHaveAttribute("aria-pressed", "true")
+  }
+
+  async selectModel(label: string, modelName: string): Promise<void> {
+    const select = this.modelSelect(label)
+    await select.selectOption(modelName)
+  }
+
+  async assertModelSelected(
+    label: string,
+    modelName: string,
+  ): Promise<void> {
+    const select = this.modelSelect(label)
+    const value = await select.inputValue()
+    expect(value).toBe(modelName)
+  }
+
+  async testAndAssertResult(): Promise<void> {
+    const result = this.testResult()
+    await expect(result).toBeVisible({ timeout: 15_000 })
+  }
 }
