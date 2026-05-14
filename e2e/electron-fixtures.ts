@@ -77,12 +77,12 @@ export const test = base.extend<Fixtures>({
       : new URL(currentUrl).origin
 
     const originalGoto = page.goto.bind(page)
-    page.goto = ((url: string, options?: Parameters<typeof page.goto>[1]) => {
+    page.goto = (url: string, options?: Parameters<typeof page.goto>[1]) => {
       if (url.startsWith("/")) {
         return originalGoto(`${baseURL}${url}`, options)
       }
       return originalGoto(url, options)
-    })
+    }
 
     await use(page)
   },
@@ -134,23 +134,26 @@ function createElectronEnvironment(): NodeJS.ProcessEnv {
 
 function applyRequiredE2eEnvOverrides(filePath: string): void {
   const content = readFileSync(filePath, "utf8")
-
   for (const line of content.split("\n")) {
-    const entry = line.trim()
-    if (entry.length === 0 || entry.startsWith("#")) {
-      continue
-    }
-
-    const separatorIndex = entry.indexOf("=")
-    if (separatorIndex === -1) {
-      continue
-    }
-
-    const name = entry.slice(0, separatorIndex).trim()
-    if (!(name in REQUIRED_E2E_ENV)) {
-      continue
-    }
-
-    process.env[name] = entry.slice(separatorIndex + 1).trim()
+    processEnvLine(line)
   }
+}
+
+function processEnvLine(line: string): void {
+  const separatorIndex = line.indexOf("=")
+  if (separatorIndex === -1) {
+    return
+  }
+
+  const entry = line.trim()
+  if (entry.startsWith("#")) {
+    return
+  }
+
+  const name = entry.slice(0, separatorIndex).trim()
+  if (!(name in REQUIRED_E2E_ENV)) {
+    return
+  }
+
+  process.env[name] = entry.slice(separatorIndex + 1).trim()
 }

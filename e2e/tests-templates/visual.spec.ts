@@ -1,53 +1,21 @@
 import { test, expect } from "@playwright/test"
+import {
+  expectPagesResumeToMatchSnapshots,
+  renderResumePages,
+} from "../helpers/resume-renderer-helper.js"
 
-import path from "node:path"
-
-import { renderHTML } from "../../src/services/resume-renderer/renderer.js"
-
-import { pdf } from "pdf-to-img"
-
-for (const template of RESUME_TEMPLATES) {
-  test(`${template}`, async ({ page }) => {
-    const html = renderHTML(templatesDir, template, resumeData)
-    const pages = await renderPdfPages(page, html)
-
-    expect(pages.length).toBeGreaterThanOrEqual(2)
-    for (const [index, page_] of pages.entries()) {
-      expect(page_).toMatchSnapshot(`${template}-page${index + 1}.png`)
-    }
-  })
-}
-
-const RESUME_TEMPLATES = [
+for (const template of [
   "resume_classic",
   "resume_modern",
   "resume_elegant",
   "resume_minimal",
-] as const
-
-async function renderPdfPages(
-  page: import("@playwright/test").Page,
-  html: string,
-): Promise<Buffer[]> {
-  await page.setContent(html, { waitUntil: "networkidle" })
-
-  const pdfBuffer = await page.pdf({
-    format: "A4",
-    margin: { top: "0", bottom: "0", left: "0", right: "0" },
-    printBackground: true,
+]) {
+  test(`${template}`, async ({ page }) => {
+    const pages = await renderResumePages(page, template, resumeData)
+    expect(pages.length).toBeGreaterThanOrEqual(2)
+    expectPagesResumeToMatchSnapshots(pages, template)
   })
-
-  const pages: Buffer[] = []
-  for await (const image of await pdf(pdfBuffer, { scale: 2 })) {
-    pages.push(Buffer.from(image))
-  }
-  return pages
 }
-
-const templatesDir = path.resolve(
-  import.meta.dirname,
-  "../../src/services/resume-renderer/templates",
-)
 
 const resumeData = {
   personal: {

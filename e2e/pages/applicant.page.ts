@@ -28,6 +28,13 @@ export class ApplicantPage {
       name: "Praferenzen",
     })
     this.wizardStepFiveHeading = page.getByLabel("Anschreiben")
+    this.wizardStepHeadings = {
+      1: this.wizardStepOneHeading,
+      2: this.wizardStepTwoHeading,
+      3: this.wizardStepThreeHeading,
+      4: this.wizardStepFourHeading,
+      5: this.wizardStepFiveHeading,
+    }
     this.wizardContinueButton = page.getByRole("button", { name: "Weiter" })
     this.wizardFinishButton = page.getByRole("button", {
       name: "Fertigstellen",
@@ -70,6 +77,8 @@ export class ApplicantPage {
   readonly wizardStepFourHeading: Locator
 
   readonly wizardStepFiveHeading: Locator
+
+  readonly wizardStepHeadings: Record<number, Locator>
 
   readonly wizardContinueButton: Locator
 
@@ -145,11 +154,7 @@ export class ApplicantPage {
   }
 
   wizardStepHeading(step: 1 | 2 | 3 | 4 | 5): Locator {
-    if (step === 1) return this.wizardStepOneHeading
-    if (step === 2) return this.wizardStepTwoHeading
-    if (step === 3) return this.wizardStepThreeHeading
-    if (step === 4) return this.wizardStepFourHeading
-    return this.wizardStepFiveHeading
+    return this.wizardStepHeadings[step]
   }
 
   async openAndDismissSearchForm(term: string) {

@@ -105,6 +105,39 @@ export default tseslint.config(
               "utils",
             ],
           },
+          e2e: {
+            imports: ["e2e/helpers/+", "e2e/pages/+"],
+            entrypoints: ["fixtures.ts", "electron-fixtures.ts"],
+          },
+          "e2e/pages": {
+            imports: ["e2e/pages/+"],
+            entrypoints: [
+              "index.ts",
+              "applicant-list.page.ts",
+              "applicant.page.ts",
+              "first-start.page.ts",
+              "job-search.page.ts",
+              "layout.page.ts",
+              "settings.page.ts",
+            ],
+          },
+          "e2e/helpers": {
+            imports: ["e2e/helpers/+", "e2e/pages/+", "services/+"],
+            entrypoints: [
+              "electron-api-helper.ts",
+              "live-e2e-setup.ts",
+              "live-flow-helper.ts",
+              "first-start-helper.ts",
+              "assertions.ts",
+              "resume-renderer-helper.ts",
+            ],
+          },
+          "e2e/tests-flow": {
+            imports: ["e2e/helpers/+", "e2e/pages/+", "e2e/+"],
+          },
+          "e2e/tests-templates": {
+            imports: ["e2e/helpers/+", "e2e/pages/+", "e2e/+"],
+          },
         },
       },
     },
@@ -193,7 +226,7 @@ export default tseslint.config(
     },
   },
 
-  // Test files: strictest complexity rule
+  // Test files: strictest complexity rule (unit/integration)
   {
     files: [
       "**/*.test.ts",
@@ -203,14 +236,36 @@ export default tseslint.config(
       "**/*.integration-test.ts",
       "**/*.test-suite.ts",
     ],
+    ignores: ["e2e/**/*"],
     rules: {
       complexity: ["error", 2],
     },
   },
 
-  // Disable read-friendly-order for config files and scripts
+  // E2E test specs: simplest possible (flat describe/test blocks)
   {
-    files: ["*.config.ts", "scripts/**/*.ts"],
+    files: ["e2e/tests-*/**/*.spec.ts"],
+    rules: {
+      complexity: ["error", 1],
+    },
+  },
+
+  // E2E helpers, pages, fixtures: allow moderate complexity for setup
+  {
+    files: [
+      "e2e/helpers/**/*.ts",
+      "e2e/pages/**/*.ts",
+      "e2e/electron-fixtures.ts",
+      "e2e/fixtures.ts",
+    ],
+    rules: {
+      complexity: ["error", 4],
+    },
+  },
+
+  // Disable read-friendly-order for config files and scripts, and e2e helpers/pages
+  {
+    files: ["*.config.ts", "scripts/**/*.ts", "e2e/**/*.ts"],
     rules: {
       "unslop/read-friendly-order": "off",
     },
@@ -221,6 +276,24 @@ export default tseslint.config(
     rules: {
       "unicorn/no-null": "off",
       "unicorn/prefer-top-level-await": "off",
+    },
+  },
+
+  // E2E tests: relax rules appropriate for Playwright-based test code
+  {
+    files: ["e2e/**/*.ts"],
+    rules: {
+      "unicorn/no-null": "off",
+      "unicorn/prevent-abbreviations": "off",
+      "unicorn/import-style": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/require-await": "off",
+      "no-empty-pattern": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
     },
   },
 

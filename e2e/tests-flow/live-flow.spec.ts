@@ -1,7 +1,9 @@
 import { test, expect } from "../fixtures.js"
 import {
   assertLiveProvidersReady,
+  collectConsoleErrors,
   configureLiveProviders,
+  resolveCoverLetterLength,
 } from "../helpers/live-e2e-setup.js"
 import { LiveFlowHelper } from "../helpers/live-flow-helper.js"
 
@@ -16,12 +18,7 @@ test.describe("Live major flow", () => {
     page,
     settingsPage,
   }) => {
-    const consoleErrors: string[] = []
-    page.on("console", (message) => {
-      if (message.type() === "error") {
-        consoleErrors.push(message.text())
-      }
-    })
+    const consoleErrors = collectConsoleErrors(page)
 
     const helper = new LiveFlowHelper(
       applicantListPage,
@@ -71,24 +68,10 @@ test.describe("Live major flow", () => {
     await jobSearchPage.generateButton.click()
 
     await expect
-      .poll(
-        async () => {
-          const result = await api.getVacancyCoverLetter(
-            jobSearchId,
-            vacancy.hash,
-          )
-          if (result.status !== 200) {
-            return 0
-          }
-
-          const body = result.body as { content?: string }
-          return body.content?.trim().length ?? 0
-        },
-        {
-          timeout: 120_000,
-          intervals: [1000, 2000, 5000],
-        },
-      )
+      .poll(() => resolveCoverLetterLength(api, jobSearchId, vacancy.hash), {
+        timeout: 120_000,
+        intervals: [1000, 2000, 5000],
+      })
       .toBeGreaterThan(0)
 
     await expect(jobSearchPage.coverLetterInput).toHaveValue(/\S/)

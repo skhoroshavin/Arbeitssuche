@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test"
+import { expect, type ConsoleMessage, type Page } from "@playwright/test"
 
 import type { ElectronApiHelper } from "./electron-api-helper.js"
 
@@ -41,15 +41,48 @@ export async function assertLiveProvidersReady(
 
   if (!llmStatus.ok) {
     throw new Error(
-      `Live LLM provider validation failed for ${config.provider}: ${llmStatus.error ?? "unknown error"}`,
+      formatProviderError(
+        `Live LLM provider validation failed for ${config.provider}`,
+        llmStatus.error,
+      ),
     )
   }
 
   if (!mapsStatus.ok) {
     throw new Error(
-      `Live commute provider validation failed: ${mapsStatus.error ?? "unknown error"}`,
+      formatProviderError(
+        "Live commute provider validation failed",
+        mapsStatus.error,
+      ),
     )
   }
+}
+
+export function collectConsoleErrors(page: Page): string[] {
+  const errors: string[] = []
+  page.on("console", (message: ConsoleMessage) => {
+    if (message.type() === "error") {
+      errors.push(message.text())
+    }
+  })
+  return errors
+}
+
+export async function resolveCoverLetterLength(
+  api: ElectronApiHelper,
+  jobSearchId: string,
+  vacancyHash: string,
+): Promise<number> {
+  const result = await api.getVacancyCoverLetter(jobSearchId, vacancyHash)
+  if (result.status !== 200) {
+    return 0
+  }
+  const body = result.body as { content?: string }
+  return body.content ? body.content.trim().length : 0
+}
+
+function formatProviderError(prefix: string, error?: string): string {
+  return `${prefix}: ${error ?? "unknown error"}`
 }
 
 function readRequiredLiveCredentials(): LiveCredentials {
