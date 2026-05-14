@@ -1,6 +1,6 @@
 {
   "mode": "mild",
-  "threshold": 5,
+  "threshold": 0,
   "reporters": ["console"],
   "minTokens": 60,
   "minLines": 5,
