@@ -4,20 +4,14 @@ import {
   type ElectronApplication,
 } from "@playwright/test"
 import { resolve } from "node:path"
-import {
-  existsSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { ElectronApiHelper } from "./helpers/electron-api-helper.js"
 import { REQUIRED_E2E_ENV } from "./helpers/live-e2e-setup.js"
 import {
   ApplicantListPage,
   ApplicantPage,
+  FirstStartPage,
   JobSearchPage,
   LayoutPage,
   SettingsPage,
@@ -32,9 +26,9 @@ if (existsSync(environmentFilePath)) {
 
 type Fixtures = {
   electronApp: ElectronApplication
-  api: ElectronApiHelper
   applicantListPage: ApplicantListPage
   applicantPage: ApplicantPage
+  firstStartPage: FirstStartPage
   jobSearchPage: JobSearchPage
   layoutPage: LayoutPage
   settingsPage: SettingsPage
@@ -44,10 +38,6 @@ export const test = base.extend<Fixtures>({
   electronApp: async ({}, use) => {
     assertRequiredE2eEnvironment()
     const dataDir = mkdtempSync(join(tmpdir(), "e2e-data-"))
-    writeFileSync(
-      join(dataDir, "config.json"),
-      JSON.stringify({ setup: { completed: true } }),
-    )
     const isCI = !!process.env.CI
     const electronApp = await electron.launch({
       args: [
@@ -87,15 +77,14 @@ export const test = base.extend<Fixtures>({
     await use(page)
   },
 
-  api: async ({ page }, use) => {
-    await use(new ElectronApiHelper(page))
-  },
-
   applicantListPage: async ({ page }, use) => {
     await use(new ApplicantListPage(page))
   },
   applicantPage: async ({ page }, use) => {
     await use(new ApplicantPage(page))
+  },
+  firstStartPage: async ({ page }, use) => {
+    await use(new FirstStartPage(page))
   },
   jobSearchPage: async ({ page }, use) => {
     await use(new JobSearchPage(page))

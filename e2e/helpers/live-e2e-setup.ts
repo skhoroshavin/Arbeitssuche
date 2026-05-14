@@ -1,6 +1,4 @@
-import { expect, type ConsoleMessage, type Page } from "@playwright/test"
-
-import type { ElectronApiHelper } from "./electron-api-helper.js"
+import { expect } from "@playwright/test"
 
 import type { SettingsPage } from "../pages/index.js"
 
@@ -29,61 +27,6 @@ export async function configureLiveProviders(
 export const OPENROUTER_LABEL = "OpenRouter API-Schlüssel"
 
 export const MAPS_LABEL = "Google Maps API-Schlüssel"
-
-export async function assertLiveProvidersReady(
-  api: ElectronApiHelper,
-): Promise<void> {
-  const config = await api.getConfig()
-  const [llmStatus, mapsStatus] = await Promise.all([
-    api.testLlmProvider(config.provider),
-    api.testCommuteProvider("google-maps"),
-  ])
-
-  if (!llmStatus.ok) {
-    throw new Error(
-      formatProviderError(
-        `Live LLM provider validation failed for ${config.provider}`,
-        llmStatus.error,
-      ),
-    )
-  }
-
-  if (!mapsStatus.ok) {
-    throw new Error(
-      formatProviderError(
-        "Live commute provider validation failed",
-        mapsStatus.error,
-      ),
-    )
-  }
-}
-
-export function collectConsoleErrors(page: Page): string[] {
-  const errors: string[] = []
-  page.on("console", (message: ConsoleMessage) => {
-    if (message.type() === "error") {
-      errors.push(message.text())
-    }
-  })
-  return errors
-}
-
-export async function resolveCoverLetterLength(
-  api: ElectronApiHelper,
-  jobSearchId: string,
-  vacancyHash: string,
-): Promise<number> {
-  const result = await api.getVacancyCoverLetter(jobSearchId, vacancyHash)
-  if (result.status !== 200) {
-    return 0
-  }
-  const body = result.body as { content?: string }
-  return body.content ? body.content.trim().length : 0
-}
-
-function formatProviderError(prefix: string, error?: string): string {
-  return `${prefix}: ${error ?? "unknown error"}`
-}
 
 function readRequiredLiveCredentials(): LiveCredentials {
   return {
