@@ -11,8 +11,7 @@ import {
 describe("extractJsonLd", () => {
   test("extracts object matching the requested @type", () => {
     const $ = html({ "@type": "Person", name: "Alice" })
-    const result = extractJsonLd($, "Person")
-    expect(result?.["name"]).toBe("Alice")
+    expect(extractJsonLd($, "Person")?.["name"]).toBe("Alice")
   })
 
   test("returns undefined when @type does not match", () => {
@@ -30,8 +29,7 @@ describe("extractJsonLd", () => {
       <script type="application/ld+json">{"@type":"Item","id":1}</script>
       <script type="application/ld+json">{"@type":"Item","id":2}</script>
     </head></html>`)
-    const result = extractJsonLd($, "Item")
-    expect(result?.["id"]).toBe(1)
+    expect(extractJsonLd($, "Item")?.["id"]).toBe(1)
   })
 
   test("skips invalid JSON gracefully", () => {
@@ -39,8 +37,7 @@ describe("extractJsonLd", () => {
       <script type="application/ld+json">not valid json</script>
       <script type="application/ld+json">{"@type":"Valid","ok":true}</script>
     </head></html>`)
-    const result = extractJsonLd($, "Valid")
-    expect(result?.["ok"]).toBe(true)
+    expect(extractJsonLd($, "Valid")?.["ok"]).toBe(true)
   })
 })
 

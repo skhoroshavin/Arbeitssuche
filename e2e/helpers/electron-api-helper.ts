@@ -135,7 +135,7 @@ export class ElectronApiHelper {
   private invoke<T>(channel: string, ...arguments_: unknown[]): Promise<T> {
     return this.page.evaluate(
       async ({ channel, arguments_ }) => {
-        return (window as any).electronAPI.invoke(channel, ...arguments_)
+        return (globalThis as any).electronAPI.invoke(channel, ...arguments_)
       },
       { channel, arguments_ },
     ) as Promise<T>

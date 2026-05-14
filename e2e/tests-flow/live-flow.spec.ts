@@ -86,7 +86,7 @@ test.describe("Live major flow", () => {
         },
         {
           timeout: 120_000,
-          intervals: [1_000, 2_000, 5_000],
+          intervals: [1000, 2000, 5000],
         },
       )
       .toBeGreaterThan(0)

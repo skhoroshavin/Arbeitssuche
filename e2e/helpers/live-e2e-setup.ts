@@ -1,9 +1,13 @@
 import { expect } from "@playwright/test"
+
 import type { ElectronApiHelper } from "./electron-api-helper.js"
+
 import type { SettingsPage } from "../pages/index.js"
 
-export const OPENROUTER_LABEL = "OpenRouter API-Schlüssel"
-export const MAPS_LABEL = "Google Maps API-Schlüssel"
+export const REQUIRED_E2E_ENV = {
+  OPENROUTER_API_KEY: "OpenRouter",
+  GOOGLE_MAPS_API_KEY: "Google Maps",
+} as const
 
 export async function configureLiveProviders(
   settingsPage: SettingsPage,
@@ -21,6 +25,10 @@ export async function configureLiveProviders(
   await settingsPage.addAndSave(MAPS_LABEL, credentials.googleMapsApiKey)
   await settingsPage.assertSavedSecret(MAPS_LABEL)
 }
+
+export const OPENROUTER_LABEL = "OpenRouter API-Schlüssel"
+
+export const MAPS_LABEL = "Google Maps API-Schlüssel"
 
 export async function assertLiveProvidersReady(
   api: ElectronApiHelper,
@@ -51,6 +59,11 @@ function readRequiredLiveCredentials(): LiveCredentials {
   }
 }
 
+interface LiveCredentials {
+  openrouterApiKey: string
+  googleMapsApiKey: string
+}
+
 function readRequiredEnvironmentVariable(
   name: keyof typeof REQUIRED_E2E_ENV,
 ): string {
@@ -61,14 +74,4 @@ function readRequiredEnvironmentVariable(
     )
   }
   return value
-}
-
-export const REQUIRED_E2E_ENV = {
-  OPENROUTER_API_KEY: "OpenRouter",
-  GOOGLE_MAPS_API_KEY: "Google Maps",
-} as const
-
-interface LiveCredentials {
-  openrouterApiKey: string
-  googleMapsApiKey: string
 }

@@ -1,12 +1,6 @@
 import type { Locator, Page } from "@playwright/test"
 
 export class LayoutPage {
-  readonly page: Page
-  private readonly sidebar: Locator
-  readonly sidebarTitle: Locator
-  readonly sidebarSettingsLink: Locator
-  readonly headerTitle: Locator
-
   constructor(page: Page) {
     this.page = page
     this.sidebar = page.locator("aside")
@@ -20,11 +14,19 @@ export class LayoutPage {
     this.headerTitle = page.locator("header h2")
   }
 
-  sidebarNavLink(name: string): Locator {
+readonly page: Page
+
+readonly sidebarTitle: Locator
+
+readonly sidebarSettingsLink: Locator
+
+readonly headerTitle: Locator
+
+sidebarNavLink(name: string): Locator {
     return this.sidebar.locator("nav").getByRole("link", { name })
   }
 
-  sidebarNavLinks(): Locator {
+sidebarNavLinks(): Locator {
     return this.sidebar.locator("nav").getByRole("link")
   }
 }

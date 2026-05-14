@@ -23,11 +23,11 @@ import {
   SettingsPage,
 } from "./pages/index.js"
 
-const envFilePath = resolve(".env")
+const environmentFilePath = resolve(".env")
 
-if (existsSync(envFilePath)) {
-  process.loadEnvFile(envFilePath)
-  applyRequiredE2eEnvOverrides(envFilePath)
+if (existsSync(environmentFilePath)) {
+  process.loadEnvFile(environmentFilePath)
+  applyRequiredE2eEnvOverrides(environmentFilePath)
 }
 
 type Fixtures = {
@@ -82,7 +82,7 @@ export const test = base.extend<Fixtures>({
         return originalGoto(`${baseURL}${url}`, options)
       }
       return originalGoto(url, options)
-    }) as typeof page.goto
+    })
 
     await use(page)
   },

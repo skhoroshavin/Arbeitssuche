@@ -1,16 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test"
 
 export class FirstStartPage {
-  readonly page: Page
-  readonly heading: Locator
-  readonly settingsHeading: Locator
-  readonly skipButton: Locator
-  readonly confirmSkipButton: Locator
-  readonly finishButton: Locator
-  readonly resumePromptHeading: Locator
-  readonly resumeButton: Locator
-  readonly skipSetupButton: Locator
-
   constructor(page: Page) {
     this.page = page
     this.heading = page.getByRole("heading", { name: "Ersteinrichtung" })
@@ -31,22 +21,25 @@ export class FirstStartPage {
     })
   }
 
-  async waitForWizard(): Promise<void> {
-    await expect(this.heading).toBeVisible({ timeout: 30_000 })
-  }
+readonly page: Page
 
-  async handleResumePromptIfPresent(): Promise<void> {
-    if (
-      await this.resumePromptHeading
-        .isVisible({ timeout: 5_000 })
-        .catch(() => false)
-    ) {
-      await this.skipSetupButton.click()
-      await expect(this.skipSetupButton).not.toBeVisible()
-    }
-  }
+readonly heading: Locator
 
-  async skipToApplicantCreation(): Promise<void> {
+readonly settingsHeading: Locator
+
+readonly skipButton: Locator
+
+readonly confirmSkipButton: Locator
+
+readonly finishButton: Locator
+
+readonly resumePromptHeading: Locator
+
+readonly resumeButton: Locator
+
+readonly skipSetupButton: Locator
+
+async skipToApplicantCreation(): Promise<void> {
     await this.waitForWizard()
     await this.handleResumePromptIfPresent()
 
@@ -59,14 +52,29 @@ export class FirstStartPage {
     ).toBeVisible({ timeout: 15_000 })
   }
 
-  async configureKeysAndFinish(): Promise<void> {
+async configureKeysAndFinish(): Promise<void> {
     await this.waitForWizard()
     await this.handleResumePromptIfPresent()
 
     await expect(this.settingsHeading).toBeVisible({ timeout: 15_000 })
   }
 
-  async clickKartenStep(): Promise<void> {
+async waitForWizard(): Promise<void> {
+    await expect(this.heading).toBeVisible({ timeout: 30_000 })
+  }
+
+async handleResumePromptIfPresent(): Promise<void> {
+    if (
+      await this.resumePromptHeading
+        .isVisible({ timeout: 5000 })
+        .catch(() => false)
+    ) {
+      await this.skipSetupButton.click()
+      await expect(this.skipSetupButton).not.toBeVisible()
+    }
+  }
+
+async clickKartenStep(): Promise<void> {
     await this.page.getByRole("link", { name: "Karten" }).click()
   }
 }

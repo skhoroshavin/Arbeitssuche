@@ -1,23 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test"
 
 export class ApplicantListPage {
-  readonly page: Page
-  readonly heading: Locator
-  readonly newApplicantButton: Locator
-  readonly wizardTitle: Locator
-  readonly wizardContinueButton: Locator
-  readonly wizardFinishButton: Locator
-  readonly wizardCancelButton: Locator
-  readonly wizardKeepDraftButton: Locator
-  readonly wizardResumeDraftDialogTitle: Locator
-  readonly wizardResumeDraftButton: Locator
-  readonly wizardStepHeadings: readonly string[]
-  readonly experienceAddButton: Locator
-  readonly educationAddButton: Locator
-  readonly certificationAddButton: Locator
-  readonly skillAddButton: Locator
-  readonly languageAddButton: Locator
-
   constructor(page: Page) {
     this.page = page
     this.heading = page.getByRole("heading", { name: "Bewerber" })
@@ -58,12 +41,44 @@ export class ApplicantListPage {
     })
   }
 
-  applicantCard(name: string): Locator {
-    return this.page.locator(".cursor-pointer", { hasText: name }).first()
-  }
+  readonly page: Page
 
-  async goto() {
-    await this.page.goto("/")
+  readonly heading: Locator
+
+  readonly newApplicantButton: Locator
+
+  readonly wizardTitle: Locator
+
+  readonly wizardContinueButton: Locator
+
+  readonly wizardFinishButton: Locator
+
+  readonly wizardCancelButton: Locator
+
+  readonly wizardKeepDraftButton: Locator
+
+  readonly wizardResumeDraftDialogTitle: Locator
+
+  readonly wizardResumeDraftButton: Locator
+
+  readonly wizardStepHeadings: readonly string[]
+
+  readonly experienceAddButton: Locator
+
+  readonly educationAddButton: Locator
+
+  readonly certificationAddButton: Locator
+
+  readonly skillAddButton: Locator
+
+  readonly languageAddButton: Locator
+
+  async createApplicant(name: string) {
+    await this.openCreateForm()
+    await this.page.getByLabel("Name").fill(name)
+    await this.advanceWizardToLastStep()
+    await this.wizardFinishButton.click()
+    await expect(this.wizardFinishButton).not.toBeVisible({ timeout: 15_000 })
   }
 
   async openCreateForm() {
@@ -71,32 +86,19 @@ export class ApplicantListPage {
     await expect(this.wizardCancelButton).toBeVisible()
   }
 
-  async createApplicant(name: string) {
-    await this.openCreateForm()
-    await this.page.getByLabel("Name").fill(name)
-    await this.advanceWizardToLastStep()
-    await this.wizardFinishButton.click()
-    await expect(this.wizardFinishButton).not.toBeVisible({ timeout: 15000 })
-  }
-
   async openWizard() {
     await this.newApplicantButton.click()
     await expect(this.wizardTitle).toBeVisible()
-  }
-
-  async advanceWizardToLastStep() {
-    for (const heading of APPLICANT_WIZARD_STEP_HEADINGS.slice(1)) {
-      await this.wizardContinueButton.click()
-      await expect(
-        this.page.getByRole("heading", { name: heading, level: 1 }),
-      ).toBeVisible()
-    }
   }
 
   async navigateToApplicant(name: string): Promise<string> {
     await this.applicantCard(name).click()
     const url = this.page.url()
     return url.split("/applicants/")[1]?.split("/")[0] ?? ""
+  }
+
+  applicantCard(name: string): Locator {
+    return this.page.locator(".cursor-pointer", { hasText: name }).first()
   }
 
   async createApplicantMinimal(name: string): Promise<string> {
@@ -108,6 +110,15 @@ export class ApplicantListPage {
     await this.wizardFinishButton.click()
     await expect(this.wizardFinishButton).not.toBeVisible({ timeout: 15_000 })
     return readApplicantIdFromUrl(this.page.url())
+  }
+
+  async advanceWizardToLastStep() {
+    for (const heading of APPLICANT_WIZARD_STEP_HEADINGS.slice(1)) {
+      await this.wizardContinueButton.click()
+      await expect(
+        this.page.getByRole("heading", { name: heading, level: 1 }),
+      ).toBeVisible()
+    }
   }
 
   async createApplicantFull(name: string, email: string): Promise<string> {
@@ -160,6 +171,10 @@ export class ApplicantListPage {
     await this.wizardFinishButton.click()
     await expect(this.wizardFinishButton).not.toBeVisible({ timeout: 15_000 })
     return readApplicantIdFromUrl(this.page.url())
+  }
+
+  async goto() {
+    await this.page.goto("/")
   }
 }
 

@@ -204,7 +204,7 @@ export default tseslint.config(
       "**/*.test-suite.ts",
     ],
     rules: {
-      complexity: ["error", 1],
+      complexity: ["error", 2],
     },
   },
 

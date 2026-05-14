@@ -25,7 +25,357 @@
         }
       ],
       "trend": "stable"
+    },
+    "e2e/helpers/assertions.ts": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:20:13.793Z",
+        "mi": 41.1,
+        "cognitive": 2,
+        "nesting": 2,
+        "lines": 60,
+        "maxCyclomatic": 1,
+        "entropy": 5.51
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:20:13.793Z",
+          "mi": 41.1,
+          "cognitive": 2,
+          "nesting": 2,
+          "lines": 60,
+          "maxCyclomatic": 1,
+          "entropy": 5.51
+        }
+      ],
+      "trend": "stable"
+    },
+    "e2e/helpers/first-start-helper.ts": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:20:13.813Z",
+        "mi": 42.4,
+        "cognitive": 4,
+        "nesting": 2,
+        "lines": 54,
+        "maxCyclomatic": 1,
+        "entropy": 5.33
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:20:13.813Z",
+          "mi": 42.4,
+          "cognitive": 4,
+          "nesting": 2,
+          "lines": 54,
+          "maxCyclomatic": 1,
+          "entropy": 5.33
+        }
+      ],
+      "trend": "stable"
+    },
+    "src/utils/json-ld.test.ts": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:24:44.344Z",
+        "mi": 35.6,
+        "cognitive": 0,
+        "nesting": 2,
+        "lines": 91,
+        "maxCyclomatic": 1,
+        "entropy": 4.37
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:24:44.344Z",
+          "mi": 35.6,
+          "cognitive": 0,
+          "nesting": 2,
+          "lines": 91,
+          "maxCyclomatic": 1,
+          "entropy": 4.37
+        }
+      ],
+      "trend": "stable"
+    },
+    "src/ui/layout/draft-wizard-page.test.tsx": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:24:44.377Z",
+        "mi": 47.6,
+        "cognitive": 0,
+        "nesting": 2,
+        "lines": 40,
+        "maxCyclomatic": 1,
+        "entropy": 4.67
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:24:44.377Z",
+          "mi": 47.6,
+          "cognitive": 0,
+          "nesting": 2,
+          "lines": 40,
+          "maxCyclomatic": 1,
+          "entropy": 4.67
+        }
+      ],
+      "trend": "stable"
+    },
+    "src/services/vacancy-enricher/vacancy-enricher.test.ts": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:24:44.411Z",
+        "mi": 28.3,
+        "cognitive": 11,
+        "nesting": 5,
+        "lines": 154,
+        "maxCyclomatic": 7,
+        "entropy": 6.16
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:24:44.411Z",
+          "mi": 28.3,
+          "cognitive": 11,
+          "nesting": 5,
+          "lines": 154,
+          "maxCyclomatic": 7,
+          "entropy": 6.16
+        }
+      ],
+      "trend": "stable"
+    },
+    "src/utils/id.test.ts": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:25:02.674Z",
+        "mi": 37.1,
+        "cognitive": 4,
+        "nesting": 4,
+        "lines": 78,
+        "maxCyclomatic": 3,
+        "entropy": 4.81
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:25:02.674Z",
+          "mi": 37.1,
+          "cognitive": 4,
+          "nesting": 4,
+          "lines": 78,
+          "maxCyclomatic": 3,
+          "entropy": 4.81
+        }
+      ],
+      "trend": "stable"
+    },
+    "src/ui/pages/applicant/components/entity-list.test.tsx": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:25:02.709Z",
+        "mi": 36.1,
+        "cognitive": 0,
+        "nesting": 2,
+        "lines": 90,
+        "maxCyclomatic": 1,
+        "entropy": 5.1
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:25:02.709Z",
+          "mi": 36.1,
+          "cognitive": 0,
+          "nesting": 2,
+          "lines": 90,
+          "maxCyclomatic": 1,
+          "entropy": 5.1
+        }
+      ],
+      "trend": "stable"
+    },
+    "src/plugins/commute/google-maps/index.test.ts": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:34:37.469Z",
+        "mi": 33.2,
+        "cognitive": 8,
+        "nesting": 4,
+        "lines": 107,
+        "maxCyclomatic": 9,
+        "entropy": 5.52
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:34:37.469Z",
+          "mi": 33.2,
+          "cognitive": 8,
+          "nesting": 4,
+          "lines": 107,
+          "maxCyclomatic": 9,
+          "entropy": 5.52
+        }
+      ],
+      "trend": "stable"
+    },
+    "src/plugins/llm/openai-compatible/client.test.ts": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:34:37.503Z",
+        "mi": 27.3,
+        "cognitive": 25,
+        "nesting": 4,
+        "lines": 209,
+        "maxCyclomatic": 16,
+        "entropy": 6.27
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:34:37.503Z",
+          "mi": 27.3,
+          "cognitive": 25,
+          "nesting": 4,
+          "lines": 209,
+          "maxCyclomatic": 16,
+          "entropy": 6.27
+        }
+      ],
+      "trend": "stable"
+    },
+    "src/plugins/job-site/arbeitsagentur/index.test.ts": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:34:53.429Z",
+        "mi": 24.7,
+        "cognitive": 0,
+        "nesting": 3,
+        "lines": 223,
+        "maxCyclomatic": 4,
+        "entropy": 5.56
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:34:53.429Z",
+          "mi": 24.7,
+          "cognitive": 0,
+          "nesting": 3,
+          "lines": 223,
+          "maxCyclomatic": 4,
+          "entropy": 5.56
+        }
+      ],
+      "trend": "stable"
+    },
+    "src/plugins/job-site/dm/index.test.ts": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:34:53.448Z",
+        "mi": 36.1,
+        "cognitive": 7,
+        "nesting": 3,
+        "lines": 98,
+        "maxCyclomatic": 10,
+        "entropy": 5.93
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:34:53.448Z",
+          "mi": 36.1,
+          "cognitive": 7,
+          "nesting": 3,
+          "lines": 98,
+          "maxCyclomatic": 10,
+          "entropy": 5.93
+        }
+      ],
+      "trend": "stable"
+    },
+    "src/plugins/job-site/index.integration-test.ts": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:34:53.473Z",
+        "mi": 36.5,
+        "cognitive": 34,
+        "nesting": 5,
+        "lines": 86,
+        "maxCyclomatic": 14,
+        "entropy": 6.06
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:34:53.473Z",
+          "mi": 36.5,
+          "cognitive": 34,
+          "nesting": 5,
+          "lines": 86,
+          "maxCyclomatic": 14,
+          "entropy": 6.06
+        }
+      ],
+      "trend": "stable"
+    },
+    "src/plugins/job-site/xing/index.test.ts": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:34:53.498Z",
+        "mi": 40.6,
+        "cognitive": 7,
+        "nesting": 3,
+        "lines": 68,
+        "maxCyclomatic": 10,
+        "entropy": 5.35
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:34:53.498Z",
+          "mi": 40.6,
+          "cognitive": 7,
+          "nesting": 3,
+          "lines": 68,
+          "maxCyclomatic": 10,
+          "entropy": 5.35
+        }
+      ],
+      "trend": "stable"
+    },
+    "src/plugins/job-site/zalando/index.test.ts": {
+      "latest": {
+        "commit": "ceff4e0",
+        "timestamp": "2026-05-14T13:34:53.526Z",
+        "mi": 39.5,
+        "cognitive": 7,
+        "nesting": 3,
+        "lines": 72,
+        "maxCyclomatic": 11,
+        "entropy": 5.19
+      },
+      "history": [
+        {
+          "commit": "ceff4e0",
+          "timestamp": "2026-05-14T13:34:53.526Z",
+          "mi": 39.5,
+          "cognitive": 7,
+          "nesting": 3,
+          "lines": 72,
+          "maxCyclomatic": 11,
+          "entropy": 5.19
+        }
+      ],
+      "trend": "stable"
     }
   },
-  "capturedAt": "2026-05-14T13:17:24.587Z"
+  "capturedAt": "2026-05-14T13:34:58.528Z"
 }

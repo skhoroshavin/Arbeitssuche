@@ -39,8 +39,8 @@ async function configureKeysInFirstStart(
   await firstStartPage.configureKeysAndFinish()
 
   const settingsPage = new SettingsPage(page)
-  const openrouterKey = readRequiredEnv("OPENROUTER_API_KEY")
-  const googleMapsKey = readRequiredEnv("GOOGLE_MAPS_API_KEY")
+  const openrouterKey = readRequiredEnvironment("OPENROUTER_API_KEY")
+  const googleMapsKey = readRequiredEnvironment("GOOGLE_MAPS_API_KEY")
 
   await settingsPage.addAndSave(OPENROUTER_LABEL, openrouterKey)
   await settingsPage.assertSavedSecret(OPENROUTER_LABEL)
@@ -55,7 +55,7 @@ async function configureKeysInFirstStart(
   ).toBeVisible({ timeout: 15_000 })
 }
 
-function readRequiredEnv(name: string): string {
+function readRequiredEnvironment(name: string): string {
   const value = process.env[name]?.trim()
   if (!value) {
     throw new Error(`Missing required E2E environment variable: ${name}`)

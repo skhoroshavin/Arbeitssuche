@@ -21,10 +21,10 @@ export async function expectApplicantCardNotVisible(
   await expect(card).toHaveCount(0)
 }
 
-export async function expectResumeDownloaded(
+export function expectResumeDownloaded(
   download: Download,
   template: string,
-): Promise<void> {
+): void {
   const filename = download.suggestedFilename()
   expect(filename).toContain(template)
   expect(filename).toMatch(/\.pdf$/)

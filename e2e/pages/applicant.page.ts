@@ -6,27 +6,6 @@ import {
 } from "@playwright/test"
 
 export class ApplicantPage {
-  readonly page: Page
-  readonly checkboxes: Locator
-  readonly newSearchButton: Locator
-  readonly searchTermInput: Locator
-  readonly createButton: Locator
-  readonly savedStatus: Locator
-  readonly unsavedStatus: Locator
-  readonly jobSearchHeading: Locator
-  readonly wizardStepOneHeading: Locator
-  readonly wizardStepTwoHeading: Locator
-  readonly wizardStepThreeHeading: Locator
-  readonly wizardStepFourHeading: Locator
-  readonly wizardStepFiveHeading: Locator
-  readonly wizardContinueButton: Locator
-  readonly wizardFinishButton: Locator
-  readonly wizardCancelButton: Locator
-  readonly wizardKeepDraftButton: Locator
-  readonly resumeDraftDialogTitle: Locator
-  readonly resumeDraftButton: Locator
-  readonly discardDraftButton: Locator
-
   constructor(page: Page) {
     this.page = page
     this.checkboxes = page.getByRole("checkbox")
@@ -66,21 +45,45 @@ export class ApplicantPage {
     })
   }
 
-  tabLink(name: string): Locator {
-    return this.page.getByRole("link", { name })
-  }
+  readonly page: Page
 
-  heading(name: string): Locator {
-    return this.page.getByRole("heading", { name, exact: true })
-  }
+  readonly checkboxes: Locator
 
-  field(label: string): Locator {
-    return this.page.getByLabel(label)
-  }
+  readonly newSearchButton: Locator
 
-  templateButton(name: string): Locator {
-    return this.page.getByRole("button", { name: new RegExp(name) })
-  }
+  readonly searchTermInput: Locator
+
+  readonly createButton: Locator
+
+  readonly savedStatus: Locator
+
+  readonly unsavedStatus: Locator
+
+  readonly jobSearchHeading: Locator
+
+  readonly wizardStepOneHeading: Locator
+
+  readonly wizardStepTwoHeading: Locator
+
+  readonly wizardStepThreeHeading: Locator
+
+  readonly wizardStepFourHeading: Locator
+
+  readonly wizardStepFiveHeading: Locator
+
+  readonly wizardContinueButton: Locator
+
+  readonly wizardFinishButton: Locator
+
+  readonly wizardCancelButton: Locator
+
+  readonly wizardKeepDraftButton: Locator
+
+  readonly resumeDraftDialogTitle: Locator
+
+  readonly resumeDraftButton: Locator
+
+  readonly discardDraftButton: Locator
 
   async goto(id: string) {
     await this.page.goto(`/applicants/${id}`)
@@ -109,30 +112,14 @@ export class ApplicantPage {
     await expect(this.heading(expectedHeading)).toBeVisible()
   }
 
+  heading(name: string): Locator {
+    return this.page.getByRole("heading", { name, exact: true })
+  }
+
   async createJobSearch(term: string) {
     await this.openWizard()
     if (term.length > 0) {
       await this.field("Suchbegriff").fill(term)
-    }
-  }
-
-  wizardStepHeading(step: 1 | 2 | 3 | 4 | 5): Locator {
-    if (step === 1) return this.wizardStepOneHeading
-    if (step === 2) return this.wizardStepTwoHeading
-    if (step === 3) return this.wizardStepThreeHeading
-    if (step === 4) return this.wizardStepFourHeading
-    return this.wizardStepFiveHeading
-  }
-
-  async openWizard() {
-    await this.newSearchButton.click()
-    await expect(this.wizardStepHeading(1)).toBeVisible()
-  }
-
-  async advanceWizardToCoverLetter() {
-    for (const step of JOB_SEARCH_WIZARD_STEPS.slice(1)) {
-      await this.wizardContinueButton.click()
-      await expect(this.wizardStepHeading(step)).toBeVisible()
     }
   }
 
@@ -143,6 +130,26 @@ export class ApplicantPage {
     }
     await this.advanceWizardToCoverLetter()
     await this.wizardFinishButton.click()
+  }
+
+  async openWizard() {
+    await this.newSearchButton.click()
+    await expect(this.wizardStepHeading(1)).toBeVisible()
+  }
+
+  async advanceWizardToCoverLetter() {
+    for (const step of [2, 3, 4, 5] as const) {
+      await this.wizardContinueButton.click()
+      await expect(this.wizardStepHeading(step)).toBeVisible()
+    }
+  }
+
+  wizardStepHeading(step: 1 | 2 | 3 | 4 | 5): Locator {
+    if (step === 1) return this.wizardStepOneHeading
+    if (step === 2) return this.wizardStepTwoHeading
+    if (step === 3) return this.wizardStepThreeHeading
+    if (step === 4) return this.wizardStepFourHeading
+    return this.wizardStepFiveHeading
   }
 
   async openAndDismissSearchForm(term: string) {
@@ -161,6 +168,10 @@ export class ApplicantPage {
     return downloadPromise
   }
 
+  templateButton(name: string): Locator {
+    return this.page.getByRole("button", { name: new RegExp(name) })
+  }
+
   async expectFieldHasValue(
     label: string,
     expectedValue: string,
@@ -169,11 +180,19 @@ export class ApplicantPage {
     await expect(input).toHaveValue(expectedValue)
   }
 
+  field(label: string): Locator {
+    return this.page.getByLabel(label)
+  }
+
   async navigateToOverviewTab(): Promise<void> {
     await this.tabLink("Übersicht").click()
     await expect(
       this.page.getByRole("heading", { name: "Lebenslauf" }),
     ).toBeVisible()
+  }
+
+  tabLink(name: string): Locator {
+    return this.page.getByRole("link", { name })
   }
 
   async deleteJobSearchFromList(jobSearchTerm: string): Promise<void> {
@@ -184,5 +203,3 @@ export class ApplicantPage {
     await deleteButton.click()
   }
 }
-
-const JOB_SEARCH_WIZARD_STEPS = [1, 2, 3, 4, 5] as const

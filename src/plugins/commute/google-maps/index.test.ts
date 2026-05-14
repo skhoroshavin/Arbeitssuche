@@ -98,23 +98,18 @@ function matrixResponse(distanceText: string, durationSeconds: number): object {
   }
 }
 
-function createStubFetch(response: object) {
-  const requestedUrls: string[] = []
-  const stubFetch: typeof globalThis.fetch = (input) => {
-    requestedUrls.push(resolveRequestUrl(input))
-    return Promise.resolve(Response.json(response, { status: 200 }))
-  }
-  return { fetch: stubFetch, requestedUrls }
-}
-
-function resolveRequestUrl(
-  input: Parameters<typeof globalThis.fetch>[0],
-): string {
+function toUrl(input: RequestInfo | URL): string {
   if (typeof input === "string") {
     return input
   }
-  if (input instanceof URL) {
-    return input.toString()
+  return input instanceof URL ? input.toString() : input.url
+}
+
+function createStubFetch(response: object) {
+  const requestedUrls: string[] = []
+  const stubFetch: typeof globalThis.fetch = (input) => {
+    requestedUrls.push(toUrl(input))
+    return Promise.resolve(Response.json(response, { status: 200 }))
   }
-  return input.url
+  return { fetch: stubFetch, requestedUrls }
 }

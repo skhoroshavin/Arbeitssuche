@@ -1,7 +1,48 @@
 import { test, expect } from "@playwright/test"
+
 import path from "node:path"
+
 import { renderHTML } from "../../src/services/resume-renderer/renderer.js"
+
 import { pdf } from "pdf-to-img"
+
+for (const template of RESUME_TEMPLATES) {
+  test(`${template}`, async ({ page }) => {
+    const html = renderHTML(templatesDir, template, resumeData)
+    const pages = await renderPdfPages(page, html)
+
+    expect(pages.length).toBeGreaterThanOrEqual(2)
+    for (const [index, page_] of pages.entries()) {
+      expect(page_).toMatchSnapshot(`${template}-page${index + 1}.png`)
+    }
+  })
+}
+
+const RESUME_TEMPLATES = [
+  "resume_classic",
+  "resume_modern",
+  "resume_elegant",
+  "resume_minimal",
+] as const
+
+async function renderPdfPages(
+  page: import("@playwright/test").Page,
+  html: string,
+): Promise<Buffer[]> {
+  await page.setContent(html, { waitUntil: "networkidle" })
+
+  const pdfBuffer = await page.pdf({
+    format: "A4",
+    margin: { top: "0", bottom: "0", left: "0", right: "0" },
+    printBackground: true,
+  })
+
+  const pages: Buffer[] = []
+  for await (const image of await pdf(pdfBuffer, { scale: 2 })) {
+    pages.push(Buffer.from(image))
+  }
+  return pages
+}
 
 const templatesDir = path.resolve(
   import.meta.dirname,
@@ -139,42 +180,4 @@ const resumeData = {
     },
   ],
   hobbies: ["Wandern", "Fotografie", "Open Source", "Bouldern"],
-}
-
-async function renderPdfPages(
-  page: import("@playwright/test").Page,
-  html: string,
-): Promise<Buffer[]> {
-  await page.setContent(html, { waitUntil: "networkidle" })
-
-  const pdfBuffer = await page.pdf({
-    format: "A4",
-    margin: { top: "0", bottom: "0", left: "0", right: "0" },
-    printBackground: true,
-  })
-
-  const pages: Buffer[] = []
-  for await (const image of await pdf(pdfBuffer, { scale: 2 })) {
-    pages.push(Buffer.from(image))
-  }
-  return pages
-}
-
-const RESUME_TEMPLATES = [
-  "resume_classic",
-  "resume_modern",
-  "resume_elegant",
-  "resume_minimal",
-] as const
-
-for (const template of RESUME_TEMPLATES) {
-  test(`${template}`, async ({ page }) => {
-    const html = renderHTML(templatesDir, template, resumeData)
-    const pages = await renderPdfPages(page, html)
-
-    expect(pages.length).toBeGreaterThanOrEqual(2)
-    for (let i = 0; i < pages.length; i++) {
-      expect(pages[i]).toMatchSnapshot(`${template}-page${i + 1}.png`)
-    }
-  })
 }
