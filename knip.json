@@ -4,6 +4,7 @@
     "src/app/main.ts",
     "src/app/preload.ts",
     "src/ui/main.tsx",
+    "src/api/index.ts",
     "electron.vite.config.ts"
   ],
   "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts"],

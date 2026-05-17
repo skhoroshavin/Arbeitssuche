@@ -24,6 +24,9 @@ export default tseslint.config(
           utils: {
             shared: true,
           },
+          api: {
+            imports: [],
+          },
           "models/*": {
             imports: ["models/+"],
           },
@@ -31,7 +34,7 @@ export default tseslint.config(
             imports: ["plugins/*", "utils/+"],
           },
           "repositories/*": {
-            imports: ["repositories/+", "models/+", "utils/+"],
+            imports: ["repositories/+", "models/+", "utils/+", "api"],
           },
           "services/*": {
             imports: [
@@ -49,6 +52,7 @@ export default tseslint.config(
               "models/+",
               "plugins/+",
               "services/+",
+              "api",
             ],
           },
           "app/*": {
@@ -58,6 +62,7 @@ export default tseslint.config(
               "models/+",
               "plugins/+",
               "services/+",
+              "api",
             ],
           },
           "app/composition": {
@@ -81,7 +86,7 @@ export default tseslint.config(
             imports: ["ui/hooks", "ui/components", "models/+"],
           },
           "ui/data": {
-            imports: ["models/+"],
+            imports: ["models/+", "api"],
           },
           "ui/views": {
             imports: ["ui/components", "models/+"],
