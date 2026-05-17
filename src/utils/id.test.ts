@@ -1,5 +1,7 @@
 import { describe, it, test, expect } from "vitest"
-import { createUniqueDerivedId, deriveId, createWithUniqueId } from "./id.js"
+import { createUniqueDerivedId } from "."
+// eslint-disable-next-line unslop/no-whitebox-testing
+import { createWithUniqueId, deriveId } from "./id.js"
 
 describe("deriveId", () => {
   test("produces a slug with hex suffix", () => {

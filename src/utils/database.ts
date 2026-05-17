@@ -1,6 +1,9 @@
 import { mkdirSync } from "node:fs"
+
 import typia from "typia"
+
 import path from "node:path"
+
 import { DatabaseSync, StatementSync } from "node:sqlite"
 
 /** SQLite database wrapper with WAL mode, foreign keys, and transaction support. */
@@ -45,30 +48,28 @@ export class Database {
 }
 
 /** Wraps node:sqlite StatementSync, adding getJsonData for the `data` column pattern. */
-type SqlValue = string | number | null | bigint | Buffer
-
-/** Wraps node:sqlite StatementSync, adding getJsonData for the `data` column pattern. */
 export class Statement {
   constructor(private readonly inner: StatementSync) {}
 
-  get(...params: SqlValue[]): Record<string, unknown> | undefined {
-    return this.inner.get(...params)
+  get(...parameters: SqlValue[]): Record<string, unknown> | undefined {
+    return this.inner.get(...parameters)
   }
 
-  all(...params: SqlValue[]): Record<string, unknown>[] {
-    return this.inner.all(...params)
+  all(...parameters: SqlValue[]): Record<string, unknown>[] {
+    return this.inner.all(...parameters)
   }
 
-  run(
-    ...params: SqlValue[]
-  ): { changes: number; lastInsertRowid: bigint } {
-    return this.inner.run(...params)
+  run(...parameters: SqlValue[]): { changes: number; lastInsertRowid: bigint } {
+    return this.inner.run(...parameters)
   }
 
   /** Execute get() and parse the `data` column as JSON. Returns undefined when no row matches. */
-  getJsonData(...params: SqlValue[]): unknown {
-    const row = this.inner.get(...params)
+  getJsonData(...parameters: SqlValue[]): unknown {
+    const row = this.inner.get(...parameters)
     if (row === undefined) return undefined
     return JSON.parse(typia.assert<{ data: string }>(row).data)
   }
 }
+
+/** Wraps node:sqlite StatementSync, adding getJsonData for the `data` column pattern. */
+type SqlValue = string | number | null | bigint | Buffer

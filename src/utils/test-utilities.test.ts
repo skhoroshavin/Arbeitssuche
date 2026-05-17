@@ -1,11 +1,9 @@
 import { test, expect } from "vitest"
 import fs from "node:fs"
 import path from "node:path"
-import { setupTemporaryDatabaseDirectory } from "./node"
+import { setupTemporaryDatabaseDirectory } from "."
 
-const { nextId, pathForId } = setupTemporaryDatabaseDirectory(
-  "test-database-utilities-test",
-)
+const { nextId, pathForId } = setupTemporaryDatabaseDirectory("test-utils-test")
 
 test("nextId returns incrementing string ids", () => {
   expect(nextId()).toBe("0")

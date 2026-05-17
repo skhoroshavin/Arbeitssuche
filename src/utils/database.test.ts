@@ -5,14 +5,11 @@ import path from "node:path"
 import { Database } from "."
 
 const testDirectory = path.join(tmpdir(), `db-test-${Date.now()}`)
-const databasePath = path.join(testDirectory, "test.db")
 let database: Database
 
 beforeAll(() => {
-  database = Database.open(databasePath)
-  database.exec(
-    "CREATE TABLE test (id TEXT PRIMARY KEY, data TEXT NOT NULL)",
-  )
+  database = Database.open(path.join(testDirectory, "test.db"))
+  database.exec("CREATE TABLE test (id TEXT PRIMARY KEY, data TEXT NOT NULL)")
 })
 
 afterAll(() => {
@@ -41,9 +38,7 @@ describe("Database", () => {
   describe("transaction", () => {
     it("commits on success", () => {
       database.transaction(() => {
-        database.exec(
-          "INSERT INTO test (id, data) VALUES ('tx1', 'ok')",
-        )
+        database.exec("INSERT INTO test (id, data) VALUES ('tx1', 'ok')")
       })
       const row = database
         .prepare("SELECT data FROM test WHERE id = ?")
@@ -89,17 +84,13 @@ describe("Statement", () => {
   })
 
   it("run returns changes count", () => {
-    const stmt = database.prepare(
-      "UPDATE test SET data = ? WHERE id = ?",
-    )
+    const stmt = database.prepare("UPDATE test SET data = ? WHERE id = ?")
     const result = stmt.run("updated", "a")
     expect(result.changes).toBe(1)
   })
 
   it("run returns 0 changes on no match", () => {
-    const stmt = database.prepare(
-      "UPDATE test SET data = ? WHERE id = ?",
-    )
+    const stmt = database.prepare("UPDATE test SET data = ? WHERE id = ?")
     const result = stmt.run("nope", "nonexistent")
     expect(result.changes).toBe(0)
   })
@@ -116,17 +107,13 @@ describe("Statement", () => {
     })
 
     it("parses the data column as JSON", () => {
-      const stmt = database.prepare(
-        "SELECT data FROM test WHERE id = ?",
-      )
+      const stmt = database.prepare("SELECT data FROM test WHERE id = ?")
       const result = stmt.getJsonData("json1")
       expect(result).toEqual({ name: "Alice", age: 30 })
     })
 
     it("returns undefined when no row matches", () => {
-      const stmt = database.prepare(
-        "SELECT data FROM test WHERE id = ?",
-      )
+      const stmt = database.prepare("SELECT data FROM test WHERE id = ?")
       expect(stmt.getJsonData("missing")).toBe(undefined)
     })
   })
