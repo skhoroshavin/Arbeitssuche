@@ -1,4 +1,4 @@
-import { Database, parseRow } from "@/utils/node/index.js"
+import { Database } from "@/utils/index.js"
 import { Vacancy } from "@/models/vacancy/index.js"
 import type { Activity, VacancyDTO } from "@/models/vacancy"
 import { resolveVacancy } from "@/models/vacancy/index.js"
@@ -94,13 +94,13 @@ class SqliteVacancyRepository implements VacancyRepository {
   }
 
   findByHash(jobSearchId: string, hash: string): Vacancy | undefined {
-    const row = parseRow(this.findByHashStmt.get(jobSearchId, hash))
+    const row = this.findByHashStmt.getJsonData(jobSearchId, hash)
     if (row === undefined) return undefined
     return hydrateVacancy(row)
   }
 
   addActivity(jobSearchId: string, hash: string, activity: Activity): void {
-    const row = parseRow(this.findByHashStmt.get(jobSearchId, hash))
+    const row = this.findByHashStmt.getJsonData(jobSearchId, hash)
     if (row === undefined) throw new Error(`Vacancy "${hash}" not found`)
 
     const vacancy = hydrateVacancy(row)
@@ -120,8 +120,9 @@ class SqliteVacancyRepository implements VacancyRepository {
   private readonly updateVacancyStmt
 }
 
-function hydrateVacancyRow(row: unknown): Vacancy {
-  return hydrateVacancy(parseRow(row))
+function hydrateVacancyRow(row: Record<string, unknown>): Vacancy {
+  if (typeof row.data !== "string") throw new Error("Invalid vacancy row")
+  return hydrateVacancy(JSON.parse(row.data))
 }
 
 function hydrateVacancy(data: unknown): Vacancy {

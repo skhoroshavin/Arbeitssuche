@@ -4,10 +4,7 @@ import { createStubApplicantRepository } from "./stub"
 import { createSqliteApplicantRepository } from "./sqlite"
 import { createDefaultApplicantDraftSnapshot } from "@/models/applicant"
 import type { Applicant } from "@/models/applicant"
-import {
-  Database,
-  setupTemporaryDatabaseDirectory,
-} from "@/utils/node/index.js"
+import { Database, setupTemporaryDatabaseDirectory } from "@/utils/index.js"
 
 applicantRepositoryTests("StubApplicantRepository", () => ({
   repo: createStubApplicantRepository(),

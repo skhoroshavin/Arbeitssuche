@@ -18,7 +18,7 @@ import {
 } from "./secrets"
 import { createElectronStoreConfigRepository } from "./config"
 import { createElectronStoreSetupRepository } from "./setup"
-import { Database } from "@/utils/node/index.js"
+import { Database } from "@/utils/index.js"
 import { getDataDirectory, getSecretsPath } from "./data-paths.js"
 import type { AppServices } from "."
 

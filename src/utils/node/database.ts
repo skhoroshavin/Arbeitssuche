@@ -19,8 +19,8 @@ export class Database {
     return new Database(database)
   }
 
-  prepare(sql: string): StatementSync {
-    return this.inner.prepare(sql)
+  prepare(sql: string): Statement {
+    return new Statement(this.inner.prepare(sql))
   }
 
   exec(sql: string): void {
@@ -44,8 +44,31 @@ export class Database {
   }
 }
 
-/** Parse a row which may be undefined; returns undefined when row is missing. */
-export function parseRow(row: unknown): unknown {
-  if (row === undefined) return undefined
-  return JSON.parse(typia.assert<{ data: string }>(row).data)
+/** Wraps node:sqlite StatementSync, adding getJsonData for the `data` column pattern. */
+type SqlValue = string | number | null | bigint | Buffer
+
+/** Wraps node:sqlite StatementSync, adding getJsonData for the `data` column pattern. */
+export class Statement {
+  constructor(private readonly inner: StatementSync) {}
+
+  get(...params: SqlValue[]): Record<string, unknown> | undefined {
+    return this.inner.get(...params)
+  }
+
+  all(...params: SqlValue[]): Record<string, unknown>[] {
+    return this.inner.all(...params)
+  }
+
+  run(
+    ...params: SqlValue[]
+  ): { changes: number; lastInsertRowid: bigint } {
+    return this.inner.run(...params)
+  }
+
+  /** Execute get() and parse the `data` column as JSON. Returns undefined when no row matches. */
+  getJsonData(...params: SqlValue[]): unknown {
+    const row = this.inner.get(...params)
+    if (row === undefined) return undefined
+    return JSON.parse(typia.assert<{ data: string }>(row).data)
+  }
 }

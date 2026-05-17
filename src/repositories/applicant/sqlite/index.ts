@@ -1,4 +1,3 @@
-import type { StatementSync } from "node:sqlite"
 import {
   type Applicant,
   type ApplicantDraft,
@@ -18,8 +17,8 @@ import {
 import {
   Database,
   createUniqueDerivedId,
-  parseRow,
-} from "@/utils/node/index.js"
+  type Statement,
+} from "@/utils/index.js"
 import typia from "typia"
 
 export function createSqliteApplicantRepository(
@@ -70,7 +69,7 @@ class SqliteApplicantRepository implements ApplicantRepository {
   }
 
   load(id: string): Applicant {
-    const applicant = parseRow(this.loadStmt.get(id))
+    const applicant = this.loadStmt.getJsonData(id)
     if (applicant === undefined) throw new Error(`Applicant "${id}" not found`)
     return resolveApplicant(typia.assert<Applicant>(applicant))
   }
@@ -144,15 +143,15 @@ class SqliteApplicantRepository implements ApplicantRepository {
   }
 
   private readonly database: Database
-  private readonly listStmt: StatementSync
-  private readonly existsStmt: StatementSync
-  private readonly loadStmt: StatementSync
-  private readonly updateStmt: StatementSync
-  private readonly insertStmt: StatementSync
-  private readonly deleteStmt: StatementSync
-  private readonly loadDraftStmt: StatementSync
-  private readonly saveDraftStmt: StatementSync
-  private readonly deleteDraftStmt: StatementSync
+  private readonly listStmt: Statement
+  private readonly existsStmt: Statement
+  private readonly loadStmt: Statement
+  private readonly updateStmt: Statement
+  private readonly insertStmt: Statement
+  private readonly deleteStmt: Statement
+  private readonly loadDraftStmt: Statement
+  private readonly saveDraftStmt: Statement
+  private readonly deleteDraftStmt: Statement
 }
 
 function parseApplicantRow(raw: unknown): ApplicantInfo {

@@ -4,10 +4,7 @@ import { createStubJobSearchRepository } from "./stub"
 import { createSqliteJobSearchRepository } from "./sqlite"
 import { createDefaultJobSearchEditorSnapshot } from "@/models/job-search"
 import type { JobSearch } from "@/models/job-search"
-import {
-  Database,
-  setupTemporaryDatabaseDirectory,
-} from "@/utils/node/index.js"
+import { Database, setupTemporaryDatabaseDirectory } from "@/utils/index.js"
 
 jobSearchRepositoryTests("StubJobSearchRepository", () => ({
   repo: createStubJobSearchRepository(),
