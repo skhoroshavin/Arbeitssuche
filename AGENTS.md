@@ -156,6 +156,6 @@ Architecture is enforced by `eslint-plugin-unslop` configured in `eslint.config.
 - Before committing any changes, run: `npm run fix`
 - Before finishing, run at least:
   - `npm run verify`
-  - `npm test`
+  - `npm run test:all` (or individually: `npm test`, `npm run test:crawler`, `npm run test:e2e`)
 - If crawler/integration logic changed, also run: `npm run test:crawler`
 - If UI flow, Electron boot, preload, or IPC changed, also run: `npm run test:e2e`
