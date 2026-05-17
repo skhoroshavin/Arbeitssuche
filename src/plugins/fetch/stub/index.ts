@@ -13,7 +13,7 @@ export class FetchStub extends HttpStub<StubRoute> {
   }
 }
 
-export interface StubRoute {
+interface StubRoute {
   body: unknown
   status?: number
 }
