@@ -19,17 +19,18 @@ export class BrowserStub extends HttpStub<string> implements Browser {
     return stub
   }
 
-  async openPage(url: string, _options?: OpenPageOptions): Promise<Page> {
+  openPage(url: string, _options?: OpenPageOptions): Promise<Page> {
     let html = this.get(url) ?? ""
-    return {
+    return Promise.resolve({
       get html() {
         return html
       },
-      navigate: async (nextUrl: string): Promise<void> => {
+      navigate: (nextUrl: string): Promise<void> => {
         html = this.get(nextUrl) ?? ""
+        return Promise.resolve()
       },
-      close: async () => {},
-    }
+      close: () => Promise.resolve(),
+    })
   }
 
   async close(): Promise<void> {}

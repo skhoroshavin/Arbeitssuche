@@ -21,7 +21,9 @@ describe("HttpStub", () => {
         .set("api/search", "search-hit")
         .set("api/detail", "detail-hit")
 
-      expect(stub.get("https://example.com/api/search?q=foo")).toBe("search-hit")
+      expect(stub.get("https://example.com/api/search?q=foo")).toBe(
+        "search-hit",
+      )
     })
 
     test("prefers exact match over substring match", () => {
