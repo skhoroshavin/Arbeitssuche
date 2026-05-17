@@ -1,12 +1,15 @@
 import { test, describe, expect } from "vitest"
 import { createGoogleMapsCommuteClient } from "."
+import { FetchStub } from "@/plugins/fetch"
+
+const API_PATTERN = "maps.googleapis.com/maps/api/distancematrix"
 
 describe("GoogleMapsCommuteClient", () => {
   test("returns durations as rounded minutes", async () => {
     const response = matrixResponse("15.3 km", 1890)
-    const { fetch: stubFetch } = createStubFetch(response)
+    const stub = new FetchStub().set(API_PATTERN, { body: response })
     const originalFetch = globalThis.fetch
-    globalThis.fetch = stubFetch
+    globalThis.fetch = stub.fetch.bind(stub)
 
     try {
       const client = createGoogleMapsCommuteClient("test-api-key")
@@ -24,16 +27,16 @@ describe("GoogleMapsCommuteClient", () => {
 
   test("makes three API calls with different departure times", async () => {
     const response = matrixResponse("10 km", 600)
-    const { fetch: stubFetch, requestedUrls } = createStubFetch(response)
+    const stub = new FetchStub().set(API_PATTERN, { body: response })
     const originalFetch = globalThis.fetch
-    globalThis.fetch = stubFetch
+    globalThis.fetch = stub.fetch.bind(stub)
 
     try {
       const client = createGoogleMapsCommuteClient("test-key")
       await client.getCommute("A", "B")
 
-      expect(requestedUrls.length).toBe(3)
-      for (const url of requestedUrls) {
+      expect(stub.requestedUrls.length).toBe(3)
+      for (const url of stub.requestedUrls) {
         expect(url).toMatch(
           new RegExp(String.raw`maps\.googleapis\.com/maps/api/distancematrix`),
         )
@@ -47,9 +50,9 @@ describe("GoogleMapsCommuteClient", () => {
 
   test("throws on API error status", async () => {
     const response = { status: "REQUEST_DENIED", rows: [] }
-    const { fetch: stubFetch } = createStubFetch(response)
+    const stub = new FetchStub().set(API_PATTERN, { body: response })
     const originalFetch = globalThis.fetch
-    globalThis.fetch = stubFetch
+    globalThis.fetch = stub.fetch.bind(stub)
 
     try {
       const client = createGoogleMapsCommuteClient("bad-key")
@@ -66,9 +69,9 @@ describe("GoogleMapsCommuteClient", () => {
       status: "OK",
       rows: [{ elements: [{ status: "ZERO_RESULTS" }] }],
     }
-    const { fetch: stubFetch } = createStubFetch(response)
+    const stub = new FetchStub().set(API_PATTERN, { body: response })
     const originalFetch = globalThis.fetch
-    globalThis.fetch = stubFetch
+    globalThis.fetch = stub.fetch.bind(stub)
 
     try {
       const client = createGoogleMapsCommuteClient("test-key")
@@ -96,25 +99,4 @@ function matrixResponse(distanceText: string, durationSeconds: number): object {
       },
     ],
   }
-}
-
-function createStubFetch(response: object) {
-  const requestedUrls: string[] = []
-  const stubFetch: typeof globalThis.fetch = (input) => {
-    requestedUrls.push(resolveRequestUrl(input))
-    return Promise.resolve(Response.json(response, { status: 200 }))
-  }
-  return { fetch: stubFetch, requestedUrls }
-}
-
-function resolveRequestUrl(
-  input: Parameters<typeof globalThis.fetch>[0],
-): string {
-  if (typeof input === "string") {
-    return input
-  }
-  if (input instanceof URL) {
-    return input.toString()
-  }
-  return input.url
 }
