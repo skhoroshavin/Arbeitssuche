@@ -1,6 +1,5 @@
 import { describe, it, test, expect } from "vitest"
-import { createUniqueDerivedId } from "./node"
-import { deriveId, createWithUniqueId } from "./node/id.js"
+import { createUniqueDerivedId, deriveId, createWithUniqueId } from "./id.js"
 
 describe("deriveId", () => {
   test("produces a slug with hex suffix", () => {
