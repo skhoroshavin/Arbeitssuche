@@ -7,3 +7,4 @@ export {
 } from "./test-utilities.js"
 export { createUniqueDerivedId } from "./id.js"
 export { Database, Statement } from "./database.js"
+export { HttpStub } from "./http-stub.js"
