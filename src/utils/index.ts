@@ -1,9 +1,5 @@
-// Browser-safe utilities
-export { extractAddressFromJsonLd, extractJsonLd } from "./json-ld.js"
-export {
-  joinNormalizedText,
-  normalizeContact,
-  normalizeMailtoHref,
-  normalizeOptionalText,
-} from "./text.js"
-export { findStubMatch } from "./stub-utilities.js"
+export { extractJsonLd } from "./json-ld.js"
+export { joinNormalizedText, normalizeOptionalText } from "./normalize.js"
+export { findStubMatch, setupTemporaryDatabaseDirectory } from "./test-utils.js"
+export { createUniqueDerivedId, createWithUniqueId, deriveId } from "./id.js"
+export { Database } from "./node/database.js"
