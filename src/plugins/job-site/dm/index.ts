@@ -9,9 +9,11 @@ import type {
 } from "@/plugins/job-site"
 import { withOpenedPage } from "@/plugins/job-site/utils/index.js"
 import {
-  extractAddressFromJsonLd,
   extractJsonLd,
+  joinNormalizedText,
   normalizeOptionalText,
+  isRecord,
+  stringField,
 } from "@/utils/index.js"
 
 export function createDmSite(browser: Browser): JobSite {
@@ -93,8 +95,25 @@ function extractFromPosting(jsonLd: object | undefined) {
     company: posting?.hiringOrganization?.name,
     description: posting?.description,
     publishedAt: posting?.datePosted,
-    address: extractAddressFromJsonLd(posting),
+    address: formatJobPostingAddress(posting),
   }
+}
+
+function formatJobPostingAddress(
+  posting: { jobLocation?: unknown } | undefined,
+): string | undefined {
+  if (!posting) return undefined
+  const location = posting.jobLocation
+  const loc: unknown = Array.isArray(location) ? location[0] : location
+  if (!isRecord(loc) || !isRecord(loc.address)) return undefined
+  return joinNormalizedText(
+    [
+      stringField(loc.address, "streetAddress"),
+      stringField(loc.address, "postalCode"),
+      stringField(loc.address, "addressLocality"),
+    ],
+    ", ",
+  )
 }
 
 function extractAddressFallback($: cheerio.CheerioAPI): string | undefined {

@@ -12,10 +12,11 @@ import {
   withOpenedPage,
 } from "@/plugins/job-site/utils/index.js"
 import {
-  extractAddressFromJsonLd,
   extractJsonLd,
-  normalizeMailtoHref,
+  joinNormalizedText,
   normalizeOptionalText,
+  isRecord,
+  stringField,
 } from "@/utils/index.js"
 
 export function createXingSite(browser: Browser): JobSite {
@@ -94,13 +95,30 @@ function extractFromPosting(jsonLd: object | undefined) {
     company: posting?.hiringOrganization?.name,
     descriptionHtml: posting?.description,
     publishedAt: posting?.datePosted,
-    address: extractAddressFromJsonLd(posting),
+    address: formatJobPostingAddress(posting),
   }
+}
+
+function formatJobPostingAddress(
+  posting: { jobLocation?: unknown } | undefined,
+): string | undefined {
+  if (!posting) return undefined
+  const location = posting.jobLocation
+  const loc: unknown = Array.isArray(location) ? location[0] : location
+  if (!isRecord(loc) || !isRecord(loc.address)) return undefined
+  return joinNormalizedText(
+    [
+      stringField(loc.address, "streetAddress"),
+      stringField(loc.address, "postalCode"),
+      stringField(loc.address, "addressLocality"),
+    ],
+    ", ",
+  )
 }
 
 function extractContact($: cheerio.CheerioAPI): { email: string } | undefined {
   const emailHref = $(SELECTORS.contactEmail).first().attr("href")
-  const contactEmail = normalizeMailtoHref(emailHref)
+  const contactEmail = normalizeOptionalText(emailHref?.replace(/^mailto:/, ""))
   return contactEmail ? { email: contactEmail } : undefined
 }
 

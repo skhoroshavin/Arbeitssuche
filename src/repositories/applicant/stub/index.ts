@@ -14,7 +14,7 @@ import {
   loadFinalizedApplicantDraft,
   type ApplicantRepository,
 } from "../types.js"
-import { createUniqueDerivedId } from "@/utils/node/index.js"
+import { createUniqueDerivedId } from "@/utils/index.js"
 
 export function createStubApplicantRepository(
   initial?: Record<string, Applicant>,

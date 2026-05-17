@@ -16,7 +16,7 @@ import {
 import type { CommuteClient } from "@/plugins/commute"
 import type { LlmModelRegistry } from "@/plugins/llm"
 import type { PdfRenderer } from "@/plugins/pdf-renderer"
-import type { Database } from "@/utils/node/index.js"
+import type { Database } from "@/utils/index.js"
 import type { LlmClientFactory } from "./llm-factory.js"
 
 export function createSqliteServiceContext(

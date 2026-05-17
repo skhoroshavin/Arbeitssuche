@@ -14,7 +14,7 @@ import type {
 } from "@/models/job-search"
 import { resolveJobSearch } from "@/models/job-search/index.js"
 import type { JobSearchRepository } from "../types.js"
-import { createUniqueDerivedId } from "@/utils/node/index.js"
+import { createUniqueDerivedId } from "@/utils/index.js"
 
 export function createStubJobSearchRepository(
   initial?: Record<string, Partial<StubData>>,

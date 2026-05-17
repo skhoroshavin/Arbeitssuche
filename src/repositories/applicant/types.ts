@@ -7,7 +7,7 @@ import type {
 
 import { resolveApplicant } from "@/models/applicant/index.js"
 
-import { createUniqueDerivedId } from "@/utils/node/index.js"
+import { createUniqueDerivedId } from "@/utils/index.js"
 
 export interface ApplicantRepository {
   list(): ApplicantInfo[]

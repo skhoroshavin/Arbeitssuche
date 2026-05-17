@@ -1,6 +1,5 @@
 import typia from "typia"
 import type { CheerioAPI } from "cheerio/slim"
-import { joinNormalizedText } from "./text.js"
 
 /** Extract the first JSON-LD object matching the given `@type` from a parsed HTML document. */
 export function extractJsonLd(
@@ -24,48 +23,4 @@ export function extractJsonLd(
   })
 
   return result
-}
-
-export function extractAddressFromJsonLd(
-  posting: JsonLdJobPosting | undefined,
-): string | undefined {
-  return formatAddress(resolveJobLocation(posting)?.address)
-}
-
-function resolveJobLocation(
-  posting: JsonLdJobPosting | undefined,
-): JsonLdJobLocation | undefined {
-  if (!posting) return undefined
-  if (Array.isArray(posting.jobLocation)) {
-    return posting.jobLocation[0]
-  }
-  return posting.jobLocation
-}
-
-function formatAddress(
-  addr:
-    | { streetAddress?: string; postalCode?: string; addressLocality?: string }
-    | undefined,
-): string | undefined {
-  if (!addr) return undefined
-  return joinNormalizedText(
-    [addr.streetAddress, addr.postalCode, addr.addressLocality],
-    ", ",
-  )
-}
-
-interface JsonLdJobPosting {
-  title?: string
-  description?: string
-  datePosted?: string
-  hiringOrganization?: { name?: string }
-  jobLocation?: JsonLdJobLocation | JsonLdJobLocation[]
-}
-
-interface JsonLdJobLocation {
-  address?: {
-    streetAddress?: string
-    postalCode?: string
-    addressLocality?: string
-  }
 }

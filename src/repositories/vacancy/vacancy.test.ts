@@ -3,10 +3,7 @@ import type { VacancyRepository } from "."
 import { createStubVacancyRepository } from "./stub"
 import { createSqliteVacancyRepository } from "./sqlite"
 import { createSqliteJobSearchRepository } from "@/repositories/job-search"
-import {
-  Database,
-  setupTemporaryDatabaseDirectory,
-} from "@/utils/node/index.js"
+import { Database, setupTemporaryDatabaseDirectory } from "@/utils/index.js"
 import type { VacancyDTO, Activity } from "@/models/vacancy"
 import { Vacancy } from "@/models/vacancy/index.js"
 

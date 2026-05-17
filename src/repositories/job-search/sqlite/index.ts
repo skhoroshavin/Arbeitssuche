@@ -17,8 +17,8 @@ import type { JobSearchRepository } from "../types.js"
 import {
   Database,
   createUniqueDerivedId,
-  parseRow,
-} from "@/utils/node/index.js"
+  type Statement,
+} from "@/utils/index.js"
 import typia from "typia"
 
 export function createSqliteJobSearchRepository(
@@ -118,7 +118,7 @@ class SqliteJobSearchRepository implements JobSearchRepository {
   }
 
   load(id: string): JobSearch {
-    const jobSearch = parseRow(this.loadStmt.get(id))
+    const jobSearch = this.loadStmt.getJsonData(id)
     if (jobSearch === undefined) throw new Error(`Job search "${id}" not found`)
     return resolveJobSearch(typia.assert<JobSearch>(jobSearch))
   }
@@ -213,18 +213,18 @@ class SqliteJobSearchRepository implements JobSearchRepository {
   }
 
   private readonly database: Database
-  private readonly listStmt: ReturnType<Database["prepare"]>
-  private readonly listByApplicantStmt: ReturnType<Database["prepare"]>
-  private readonly existsStmt: ReturnType<Database["prepare"]>
-  private readonly loadStmt: ReturnType<Database["prepare"]>
-  private readonly updateStmt: ReturnType<Database["prepare"]>
-  private readonly insertStmt: ReturnType<Database["prepare"]>
-  private readonly deleteStmt: ReturnType<Database["prepare"]>
-  private readonly loadDraftStmt: ReturnType<Database["prepare"]>
-  private readonly saveDraftStmt: ReturnType<Database["prepare"]>
-  private readonly deleteDraftStmt: ReturnType<Database["prepare"]>
-  private readonly loadCoverLetterStmt: ReturnType<Database["prepare"]>
-  private readonly saveCoverLetterStmt: ReturnType<Database["prepare"]>
+  private readonly listStmt: Statement
+  private readonly listByApplicantStmt: Statement
+  private readonly existsStmt: Statement
+  private readonly loadStmt: Statement
+  private readonly updateStmt: Statement
+  private readonly insertStmt: Statement
+  private readonly deleteStmt: Statement
+  private readonly loadDraftStmt: Statement
+  private readonly saveDraftStmt: Statement
+  private readonly deleteDraftStmt: Statement
+  private readonly loadCoverLetterStmt: Statement
+  private readonly saveCoverLetterStmt: Statement
 }
 
 function parseJobSearchRow(raw: unknown): JobSearchInfo {
