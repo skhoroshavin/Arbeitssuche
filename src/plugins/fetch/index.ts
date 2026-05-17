@@ -1,3 +1,3 @@
 export type { Fetch } from "./types.js"
-
-export { createStubFetch } from "./stub"
+export { FetchStub } from "./stub"
+export type { StubRoute } from "./stub"
