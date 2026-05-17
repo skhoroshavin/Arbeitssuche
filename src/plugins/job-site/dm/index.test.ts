@@ -1,11 +1,11 @@
 import { test, describe, expect } from "vitest"
 import path from "node:path"
 import { createDmSite } from "."
-import { createStubBrowser } from "@/plugins/browser"
+import { BrowserStub } from "@/plugins/browser"
 
 describe("dm", () => {
   test("getVacancyList returns absolute URLs from search page", async () => {
-    const browser = createStubBrowser(SAMPLES_DIR)
+    const browser = BrowserStub.fromDirectory(SAMPLES_DIR)
     const site = createDmSite(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
@@ -20,7 +20,7 @@ describe("dm", () => {
   })
 
   test("getVacancyDetails returns title and company", async () => {
-    const browser = createStubBrowser(SAMPLES_DIR)
+    const browser = BrowserStub.fromDirectory(SAMPLES_DIR)
     const site = createDmSite(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
@@ -53,7 +53,7 @@ describe("dm", () => {
       </body></html>
     `
     const vacancyUrl = "https://www.dm-jobs.de/job/test/123"
-    const browser = createStubBrowser({ [vacancyUrl]: html })
+    const browser = new BrowserStub().set(vacancyUrl, html)
     const site = createDmSite(browser)
     const vacancy = await site.getVacancyDetails(vacancyUrl)
     const descriptionHtml = expectDescriptionHtml(vacancy.descriptionHtml)
@@ -72,7 +72,7 @@ describe("dm", () => {
       </body></html>
     `
     const vacancyUrl = "https://www.dm-jobs.de/job/test/456"
-    const browser = createStubBrowser({ [vacancyUrl]: html })
+    const browser = new BrowserStub().set(vacancyUrl, html)
     const site = createDmSite(browser)
     const vacancy = await site.getVacancyDetails(vacancyUrl)
     const descriptionHtml = expectDescriptionHtml(vacancy.descriptionHtml)
@@ -82,7 +82,7 @@ describe("dm", () => {
 
   test("getVacancyList returns no pagination (single page)", async () => {
     const html = "<html><body></body></html>"
-    const browser = createStubBrowser({ "dm-jobs.de/job-listing": html })
+    const browser = new BrowserStub().set("dm-jobs.de/job-listing", html)
     const site = createDmSite(browser)
     const result = await site.getVacancyList({
       location: "Berlin",

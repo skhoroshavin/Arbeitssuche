@@ -1,7 +1,7 @@
 import { test, describe, expect } from "vitest"
 import { createArbeitsagenturSite } from "."
-import { createStubBrowser } from "@/plugins/browser"
-import { createStubFetch } from "@/plugins/fetch"
+import { BrowserStub } from "@/plugins/browser"
+import { FetchStub } from "@/plugins/fetch"
 import type { SearchCriteria } from "@/plugins/job-site"
 
 describe("arbeitsagentur", () => {
@@ -246,9 +246,22 @@ function searchResponse(
 function createSite(
   routes: Record<string, { body: unknown; status?: number }>,
 ) {
-  const stubFetch = createStubFetch(routes)
-  const site = createArbeitsagenturSite(createStubBrowser({}), stubFetch)
+  const stubFetch = buildStub(routes)
+  const site = createArbeitsagenturSite(
+    new BrowserStub(),
+    stubFetch.fetch.bind(stubFetch),
+  )
   return { site, stubFetch }
+}
+
+function buildStub(
+  routes: Record<string, { body: unknown; status?: number }>,
+): FetchStub {
+  const stub = new FetchStub()
+  for (const [urlPattern, route] of Object.entries(routes)) {
+    stub.set(urlPattern, route)
+  }
+  return stub
 }
 
 const baseCriteria: SearchCriteria = {

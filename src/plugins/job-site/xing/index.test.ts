@@ -1,11 +1,11 @@
 import { test, describe, expect } from "vitest"
 import path from "node:path"
 import { createXingSite } from "."
-import { createStubBrowser } from "@/plugins/browser"
+import { BrowserStub } from "@/plugins/browser"
 
 describe("xing", () => {
   test("getVacancyList returns absolute URLs from search page", async () => {
-    const browser = createStubBrowser(SAMPLES_DIR)
+    const browser = BrowserStub.fromDirectory(SAMPLES_DIR)
     const site = createXingSite(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
@@ -20,7 +20,7 @@ describe("xing", () => {
   })
 
   test("getVacancyDetails returns title and company", async () => {
-    const browser = createStubBrowser(SAMPLES_DIR)
+    const browser = BrowserStub.fromDirectory(SAMPLES_DIR)
     const site = createXingSite(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
@@ -53,7 +53,7 @@ describe("xing", () => {
       </body></html>
     `
     const vacancyUrl = "https://www.xing.com/jobs/test-job-123"
-    const browser = createStubBrowser({ [vacancyUrl]: html })
+    const browser = new BrowserStub().set(vacancyUrl, html)
     const site = createXingSite(browser)
     const vacancy = await site.getVacancyDetails(vacancyUrl)
     const descriptionHtml = expectDescriptionHtml(vacancy.descriptionHtml)
