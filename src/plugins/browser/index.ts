@@ -1,7 +1,7 @@
 export type { Browser, OpenPageOptions, Page } from "./types.js"
 
 export { createElectronBrowser } from "./electron"
-export { createStubBrowser } from "./stub"
+export { BrowserStub } from "./stub"
 
 export async function createPlaywrightBrowser(options?: {
   headless?: boolean
