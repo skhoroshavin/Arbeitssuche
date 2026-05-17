@@ -14,7 +14,7 @@ export function createUniqueDerivedId(
  * Throws if all 5 attempts collide.
  * @internal Exported for testing only.
  */
-export function createWithUniqueId(
+function createWithUniqueId(
   derive: () => string,
   exists: (id: string) => boolean,
 ): string {
@@ -29,7 +29,7 @@ export function createWithUniqueId(
  * Derive a URL-safe ID from text: slugified prefix (max 30 chars) + 4-char random hex suffix.
  * @internal Exported for testing only.
  */
-export function deriveId(text: string): string {
+function deriveId(text: string): string {
   const slug = text
     .toLowerCase()
     .normalize("NFD")

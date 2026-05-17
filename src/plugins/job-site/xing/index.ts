@@ -15,6 +15,8 @@ import {
   extractJsonLd,
   joinNormalizedText,
   normalizeOptionalText,
+  isRecord,
+  stringField,
 } from "@/utils/index.js"
 
 export function createXingSite(browser: Browser): JobSite {
@@ -102,7 +104,7 @@ function formatJobPostingAddress(
 ): string | undefined {
   if (!posting) return undefined
   const location = posting.jobLocation
-  const loc = Array.isArray(location) ? location[0] : location
+  const loc: unknown = Array.isArray(location) ? location[0] : location
   if (!isRecord(loc) || !isRecord(loc.address)) return undefined
   return joinNormalizedText(
     [
@@ -114,23 +116,9 @@ function formatJobPostingAddress(
   )
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null
-}
-
-function stringField(
-  record: Record<string, unknown>,
-  key: string,
-): string | undefined {
-  const value = record[key]
-  return typeof value === "string" ? value : undefined
-}
-
 function extractContact($: cheerio.CheerioAPI): { email: string } | undefined {
   const emailHref = $(SELECTORS.contactEmail).first().attr("href")
-  const contactEmail = normalizeOptionalText(
-    emailHref?.replace(/^mailto:/, ""),
-  )
+  const contactEmail = normalizeOptionalText(emailHref?.replace(/^mailto:/, ""))
   return contactEmail ? { email: contactEmail } : undefined
 }
 

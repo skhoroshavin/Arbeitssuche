@@ -112,9 +112,7 @@ function createContact(contact: VacancyContact): VacancyContact | undefined {
     email: normalizeOptionalText(contact.email),
     phone: normalizeOptionalText(contact.phone),
   }
-  if (
-    Object.values(normalizedContact).every((value) => value === undefined)
-  ) {
+  if (Object.values(normalizedContact).every((value) => value === undefined)) {
     return undefined
   }
   return normalizedContact
