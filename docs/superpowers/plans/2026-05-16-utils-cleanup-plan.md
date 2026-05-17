@@ -43,7 +43,7 @@ export function normalizeOptionalText(
 
 ```typescript
 import { describe, test, expect } from "vitest"
-import { joinNormalizedText, normalizeOptionalText } from "./normalize.js"
+import { joinNormalizedText, normalizeOptionalText } from "."
 
 describe("normalizeOptionalText", () => {
   test("trims non-empty values", () => {
@@ -106,7 +106,7 @@ export { setupTemporaryDatabaseDirectory } from "./node/test-database-utilities.
 import { test, expect } from "vitest"
 import fs from "node:fs"
 import path from "node:path"
-import { setupTemporaryDatabaseDirectory } from "./test-utils.js"
+import { setupTemporaryDatabaseDirectory } from "."
 
 const { nextId, pathForId } = setupTemporaryDatabaseDirectory(
   "test-utils-test",
@@ -197,13 +197,12 @@ export function deriveId(text: string): string {
 - [ ] **Step 2: Create `src/utils/id.test.ts`** — copy of `src/utils/node/id.test.ts` with updated imports
 
 Read `src/utils/node/id.test.ts` first to ensure the copy is exact, then update:
-- `import { createUniqueDerivedId } from "./node"` → `import { createUniqueDerivedId } from "./id.js"`
-- `import { deriveId, createWithUniqueId } from "./node/id.js"` → `import { deriveId, createWithUniqueId } from "./id.js"`
+- `import { createUniqueDerivedId } from "./node"` → `import { createUniqueDerivedId } from "."`
+- `import { deriveId, createWithUniqueId } from "./node/id.js"` → `import { deriveId, createWithUniqueId } from "."`
 
 ```typescript
 import { describe, it, test, expect } from "vitest"
-import { createUniqueDerivedId } from "./id.js"
-import { deriveId, createWithUniqueId } from "./id.js"
+import { createUniqueDerivedId, deriveId, createWithUniqueId } from "."
 
 describe("deriveId", () => {
   test("produces a slug with hex suffix", () => {
@@ -360,14 +359,11 @@ function formatJobPostingAddress(
   const location = posting.jobLocation
   const loc = Array.isArray(location) ? location[0] : location
   if (!isRecord(loc) || !isRecord(loc.address)) return undefined
-  const addr = loc.address as Record<string, unknown>
-  return joinNormalizedText(
+    return joinNormalizedText(
     [
-      typeof addr.streetAddress === "string" ? addr.streetAddress : undefined,
-      typeof addr.postalCode === "string" ? addr.postalCode : undefined,
-      typeof addr.addressLocality === "string"
-        ? addr.addressLocality
-        : undefined,
+      stringField(loc.address, "streetAddress"),
+      stringField(loc.address, "postalCode"),
+      stringField(loc.address, "addressLocality"),
     ],
     ", ",
   )
@@ -375,6 +371,14 @@ function formatJobPostingAddress(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
+}
+
+function stringField(
+  record: Record<string, unknown>,
+  key: string,
+): string | undefined {
+  const value = record[key]
+  return typeof value === "string" ? value : undefined
 }
 ```
 
@@ -432,14 +436,11 @@ function formatJobPostingAddress(
   const location = posting.jobLocation
   const loc = Array.isArray(location) ? location[0] : location
   if (!isRecord(loc) || !isRecord(loc.address)) return undefined
-  const addr = loc.address as Record<string, unknown>
   return joinNormalizedText(
     [
-      typeof addr.streetAddress === "string" ? addr.streetAddress : undefined,
-      typeof addr.postalCode === "string" ? addr.postalCode : undefined,
-      typeof addr.addressLocality === "string"
-        ? addr.addressLocality
-        : undefined,
+      stringField(loc.address, "streetAddress"),
+      stringField(loc.address, "postalCode"),
+      stringField(loc.address, "addressLocality"),
     ],
     ", ",
   )
@@ -447,6 +448,14 @@ function formatJobPostingAddress(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
+}
+
+function stringField(
+  record: Record<string, unknown>,
+  key: string,
+): string | undefined {
+  const value = record[key]
+  return typeof value === "string" ? value : undefined
 }
 ```
 
@@ -718,40 +727,29 @@ export class Database {
 }
 
 /** Wraps node:sqlite StatementSync, adding getJsonData for the `data` column pattern. */
+type SqlValue = string | number | null | bigint | Buffer
+
+/** Wraps node:sqlite StatementSync, adding getJsonData for the `data` column pattern. */
 export class Statement {
   constructor(private readonly inner: StatementSync) {}
 
-  get(...params: unknown[]): Record<string, unknown> | undefined {
-    return (
-      this.inner.get as (
-        ...args: unknown[]
-      ) => Record<string, unknown> | undefined
-    )(...params)
+  get(...params: SqlValue[]): Record<string, unknown> | undefined {
+    return this.inner.get(...params)
   }
 
-  all(...params: unknown[]): Record<string, unknown>[] {
-    return (
-      this.inner.all as (...args: unknown[]) => Record<string, unknown>[]
-    )(...params)
+  all(...params: SqlValue[]): Record<string, unknown>[] {
+    return this.inner.all(...params)
   }
 
   run(
-    ...params: unknown[]
+    ...params: SqlValue[]
   ): { changes: number; lastInsertRowid: bigint } {
-    return (
-      this.inner.run as (
-        ...args: unknown[]
-      ) => { changes: number; lastInsertRowid: bigint }
-    )(...params)
+    return this.inner.run(...params)
   }
 
   /** Execute get() and parse the `data` column as JSON. Returns undefined when no row matches. */
-  getJsonData(...params: unknown[]): unknown {
-    const row = (
-      this.inner.get as (
-        ...args: unknown[]
-      ) => Record<string, unknown> | undefined
-    )(...params)
+  getJsonData(...params: SqlValue[]): unknown {
+    const row = this.inner.get(...params)
     if (row === undefined) return undefined
     return JSON.parse(typia.assert<{ data: string }>(row).data)
   }
@@ -794,7 +792,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { Database } from "./node/database.js"
+import { Database } from "."
 
 const testDirectory = path.join(tmpdir(), `db-test-${Date.now()}`)
 const databasePath = path.join(testDirectory, "test.db")
@@ -911,12 +909,8 @@ describe("Statement", () => {
       const stmt = database.prepare(
         "SELECT data FROM test WHERE id = ?",
       )
-      const result = stmt.getJsonData("json1") as {
-        name: string
-        age: number
-      }
-      expect(result.name).toBe("Alice")
-      expect(result.age).toBe(30)
+      const result = stmt.getJsonData("json1")
+      expect(result).toEqual({ name: "Alice", age: 30 })
     })
 
     it("returns undefined when no row matches", () => {
@@ -1250,7 +1244,7 @@ import { Database } from "./node/database.js"
 ```
 New:
 ```typescript
-import { Database } from "./database.js"
+import { Database } from "."
 ```
 
 - [ ] **Step 4: Update `src/utils/index.ts`** — change `node/database.js` → `database.js`
@@ -1295,8 +1289,7 @@ After all 7 tasks complete:
 
 ```bash
 npm run verify
-npm test
-npm run test:crawler
+npm run test:all
 ```
 
 All must pass. Final file tree:
