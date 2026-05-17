@@ -2,6 +2,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-05-17-http-stub-design.md`
 **Date:** 2026-05-17
+**Revision:** 2 — subclass approach
 
 ---
 
@@ -10,13 +11,14 @@
 **Files:**
 - Create: `src/utils/http-stub.ts`
 - Create: `src/utils/http-stub.test.ts`
+- Modify: `src/utils/index.ts`
 
 - [ ] **Step 1: Write the failing test**
 
 ```ts
 // src/utils/http-stub.test.ts
 import { test, describe, expect } from "vitest"
-import { HttpStub } from "./http-stub.js"
+import { HttpStub } from "."
 
 describe("HttpStub", () => {
   describe("get()", () => {
@@ -54,15 +56,13 @@ describe("HttpStub", () => {
         .set("search", "first")
         .set("api/search", "second")
 
-      // "search" is substring of the URL (inserted first), so it wins
       expect(stub.get("https://example.com/api/search")).toBe("first")
     })
   })
 
   describe("requestedUrls", () => {
     test("tracks URLs in call order", () => {
-      const stub = new HttpStub<string>()
-        .set("search", "hit")
+      const stub = new HttpStub<string>().set("search", "hit")
 
       stub.get("https://a.com/search")
       stub.get("https://b.com/search")
@@ -100,7 +100,7 @@ npx vitest run src/utils/http-stub.test.ts
 ```
 Expected: FAIL — `HttpStub` not defined.
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 3: Write minimal implementation and barrel-export it**
 
 ```ts
 // src/utils/http-stub.ts
@@ -128,6 +128,11 @@ export class HttpStub<T> {
 }
 ```
 
+```ts
+// src/utils/index.ts — add at end:
+export { HttpStub } from "./http-stub.js"
+```
+
 - [ ] **Step 4: Run test to verify it passes**
 
 ```bash
@@ -135,81 +140,33 @@ npx vitest run src/utils/http-stub.test.ts
 ```
 Expected: PASS — all 7 tests pass.
 
-- [ ] **Step 5: Run full test suite to check nothing is broken yet**
+- [ ] **Step 5: Verify type check and no regressions**
 
 ```bash
+npx tsc --noEmit
 npm test:all
 ```
-Expected: PASS (HttpStub is added but not yet consumed — no breakage).
+Expected: both PASS (HttpStub added but not consumed yet).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/utils/http-stub.ts src/utils/http-stub.test.ts
+git add src/utils/http-stub.ts src/utils/http-stub.test.ts src/utils/index.ts
 git commit -m "feat: add HttpStub<T> URL router class with tests"
 ```
 
 ---
 
-### Task 2: Export HttpStub from utils/index.ts
-
-**Files:**
-- Modify: `src/utils/index.ts`
-
-- [ ] **Step 1: Add HttpStub export**
-
-```ts
-// src/utils/index.ts — full file after edit
-export { extractJsonLd } from "./json-ld.js"
-export { joinNormalizedText, normalizeOptionalText } from "./normalize.js"
-export { isRecord, stringField } from "./reflection.js"
-export {
-  findStubMatch,
-  setupTemporaryDatabaseDirectory,
-} from "./test-utilities.js"
-export { createUniqueDerivedId } from "./id.js"
-export { Database, Statement } from "./database.js"
-export { HttpStub } from "./http-stub.js"
-```
-
-Old text (replace line):
-```
-export { createUniqueDerivedId } from "./id.js"
-```
-New text:
-```
-export { createUniqueDerivedId } from "./id.js"
-export { HttpStub } from "./http-stub.js"
-```
-
-- [ ] **Step 2: Verify import resolves**
-
-```bash
-npx tsc --noEmit
-```
-Expected: PASS — no errors.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add src/utils/index.ts
-git commit -m "feat: export HttpStub from utils index"
-```
-
----
-
-### Task 3: Remove findStubMatch from test-utilities and index
+### Task 2: Remove findStubMatch
 
 **Files:**
 - Modify: `src/utils/test-utilities.ts`
 - Modify: `src/utils/index.ts`
 
-- [ ] **Step 1: Remove findStubMatch function from test-utilities.ts**
-
-Replace the entire file content:
+- [ ] **Step 1: Remove findStubMatch from test-utilities.ts**
 
 ```ts
-// src/utils/test-utilities.ts
+// src/utils/test-utilities.ts — full file after edit
 import { beforeAll, afterAll } from "vitest"
 import fs from "node:fs"
 import os from "node:os"
@@ -234,7 +191,7 @@ export function setupTemporaryDatabaseDirectory(prefix: string) {
 }
 ```
 
-- [ ] **Step 2: Remove findStubMatch from utils/index.ts exports**
+- [ ] **Step 2: Remove findStubMatch from index.ts exports**
 
 Replace:
 ```ts
@@ -248,12 +205,12 @@ With:
 export { setupTemporaryDatabaseDirectory } from "./test-utilities.js"
 ```
 
-- [ ] **Step 3: Verify no remaining references to findStubMatch**
+- [ ] **Step 3: Verify findStubMatch is fully removed**
 
 ```bash
-npx tsc --noEmit
+git grep "findStubMatch"
 ```
-Expected: FAIL — `findStubMatch` still imported in `StubBrowser` and `StubFetch` (those will be fixed in Tasks 4–5).
+Expected: no results (StubBrowser and StubFetch imports will break — that's expected, fixed in Tasks 3–4).
 
 - [ ] **Step 4: Commit**
 
@@ -264,36 +221,30 @@ git commit -m "refactor: remove findStubMatch from utils"
 
 ---
 
-### Task 4: Update StubFetch to use HttpStub
+### Task 3: Create FetchStub subclass
 
 **Files:**
-- Modify: `src/plugins/fetch/stub/index.ts`
-- Existing tests use `createStubFetch` and should continue to pass after edits.
+- Rewrite: `src/plugins/fetch/stub/index.ts`
+- Modify: `src/plugins/fetch/index.ts`
 
-- [ ] **Step 1: Rewrite createStubFetch to accept HttpStub<StubRoute>**
+- [ ] **Step 1: Rewrite fetch stub as FetchStub subclass**
 
 ```ts
 // src/plugins/fetch/stub/index.ts — full file after edit
 import type { Fetch } from "@/plugins/fetch"
 import { HttpStub } from "@/utils/index.js"
 
-export function createStubFetch(routes: HttpStub<StubRoute>): StubFetch {
-  const stubFetch: StubFetch = Object.assign(
-    (url: string, _init?: RequestInit): Promise<Response> => {
-      const route = routes.get(url)
-      if (route) {
-        return Promise.resolve(
-          Response.json(route.body, {
-            status: route.status ?? 200,
-          }),
-        )
-      }
-      return Promise.resolve(new Response("Not Found", { status: 404 }))
-    },
-    { requestedUrls: routes.requestedUrls },
-  )
-
-  return stubFetch
+export class FetchStub extends HttpStub<StubRoute> {
+  fetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+    const url = resolveUrl(input)
+    const route = this.get(url)
+    if (route) {
+      return Promise.resolve(
+        Response.json(route.body, { status: route.status ?? 200 }),
+      )
+    }
+    return Promise.resolve(new Response("Not Found", { status: 404 }))
+  }
 }
 
 export interface StubRoute {
@@ -301,50 +252,50 @@ export interface StubRoute {
   status?: number
 }
 
-export interface StubFetch extends Fetch {
-  requestedUrls: string[]
+function resolveUrl(
+  input: string | URL | Request,
+): string {
+  if (typeof input === "string") {
+    return input
+  }
+  if (input instanceof URL) {
+    return input.toString()
+  }
+  return input.url
 }
 ```
 
-Note: `StubRoute` and `StubFetch` change from `interface` (file-local) to `export interface` — consumers (tests) may reference them via `@/plugins/fetch`.
+- [ ] **Step 2: Update fetch plugin index.ts exports**
 
-- [ ] **Step 2: Verify StubRoute/StubFetch are exported from fetch plugin index**
-
-Check `src/plugins/fetch/index.ts`:
-```
+```ts
+// src/plugins/fetch/index.ts — full file after edit
 export type { Fetch } from "./types.js"
-export { createStubFetch } from "./stub"
+export { FetchStub } from "./stub"
+export type { StubRoute } from "./stub"
 ```
 
-Add type exports:
-```
-export type { Fetch } from "./types.js"
-export { createStubFetch } from "./stub"
-export type { StubRoute, StubFetch } from "./stub"
-```
-
-- [ ] **Step 3: Run existing tests that use createStubFetch to see compilation errors**
+- [ ] **Step 3: Verify type check (will fail on consumer tests)**
 
 ```bash
-npx vitest run src/plugins/job-site/arbeitsagentur/index.test.ts
+npx tsc --noEmit 2>&1 | head -20
 ```
-Expected: FAIL — type errors because `createStubFetch` now expects `HttpStub<StubRoute>` instead of `Record<string, StubRoute>`.
+Expected: errors in tests that call `createStubFetch(...)` (which no longer exists). Consumer test fixes in Task 6.
 
-- [ ] **Step 4: Commit the stub implementation**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add src/plugins/fetch/stub/index.ts src/plugins/fetch/index.ts
-git commit -m "refactor: update StubFetch to use HttpStub<StubRoute>"
+git commit -m "refactor: replace createStubFetch with FetchStub subclass"
 ```
 
 ---
 
-### Task 5: Update StubBrowser to use HttpStub
+### Task 4: Create BrowserStub subclass
 
 **Files:**
-- Modify: `src/plugins/browser/stub/index.ts`
+- Rewrite: `src/plugins/browser/stub/index.ts`
 
-- [ ] **Step 1: Rewrite StubBrowser to accept HttpStub<string>**
+- [ ] **Step 1: Rewrite browser stub as BrowserStub subclass**
 
 ```ts
 // src/plugins/browser/stub/index.ts — full file after edit
@@ -355,101 +306,85 @@ import typia from "typia"
 import { HttpStub } from "@/utils/index.js"
 import type { Browser, Page, OpenPageOptions } from "@/plugins/browser"
 
-export function createStubBrowser(pages: HttpStub<string>): StubBrowser {
-  return new StubBrowserImpl(pages)
-}
+export class BrowserStub extends HttpStub<string> implements Browser {
+  static fromDirectory(directory: string): BrowserStub {
+    const data = typia.json.assertParse<Record<string, string>>(
+      gunzipSync(readFileSync(path.join(directory, "data.json.gz"))).toString(
+        "utf8",
+      ),
+    )
+    const stub = new BrowserStub()
+    for (const [urlPattern, html] of Object.entries(data)) {
+      stub.set(urlPattern, html)
+    }
+    return stub
+  }
 
-export function createStubBrowserFromDirectory(
-  directory: string,
-): StubBrowser {
-  return new StubBrowserImpl(loadData(directory))
-}
-
-class StubBrowserImpl implements StubBrowser {
-  constructor(private readonly pages: HttpStub<string>) {}
-
-  openPage(url: string, _options?: OpenPageOptions): Promise<Page> {
-    const pages = this.pages
-    let html = pages.get(url) ?? ""
-    return Promise.resolve({
+  async openPage(url: string, _options?: OpenPageOptions): Promise<Page> {
+    let html = this.get(url) ?? ""
+    return {
       get html() {
         return html
       },
-      navigate(nextUrl: string): Promise<void> {
-        html = pages.get(nextUrl) ?? ""
-        return Promise.resolve()
+      navigate: async (nextUrl: string): Promise<void> => {
+        html = this.get(nextUrl) ?? ""
       },
-      async close() {},
-    })
+      close: async () => {},
+    }
   }
 
-  async close() {}
-
-  get visitedUrls(): string[] {
-    return this.pages.requestedUrls
-  }
-}
-
-interface StubBrowser extends Browser {
-  visitedUrls: string[]
-}
-
-function loadData(directory: string): HttpStub<string> {
-  const data = typia.json.assertParse<Record<string, string>>(
-    gunzipSync(readFileSync(path.join(directory, "data.json.gz"))).toString(
-      "utf8",
-    ),
-  )
-  const stub = new HttpStub<string>()
-  for (const [urlPattern, html] of Object.entries(data)) {
-    stub.set(urlPattern, html)
-  }
-  return stub
+  async close(): Promise<void> {}
 }
 ```
 
-- [ ] **Step 2: Run type check**
+- [ ] **Step 2: Update browser plugin index.ts exports**
 
-```bash
-npx tsc --noEmit -p tsconfig.json 2>&1 | head -30
+```ts
+// src/plugins/browser/index.ts — replace relevant line
+export { createStubBrowser } from "./stub"
+// becomes:
+export { BrowserStub } from "./stub"
 ```
-Expected: remaining errors only in test files that still pass `Record<string, string>` or `string` to `createStubBrowser`.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 3: Verify type check (will fail on consumer tests)**
 
 ```bash
-git add src/plugins/browser/stub/index.ts
-git commit -m "refactor: update StubBrowser to use HttpStub<string>"
+npx tsc --noEmit 2>&1 | head -20
+```
+Expected: errors in tests that call `createStubBrowser(...)` (which no longer exists). Consumer test fixes in Task 6.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/plugins/browser/stub/index.ts src/plugins/browser/index.ts
+git commit -m "refactor: replace createStubBrowser with BrowserStub subclass"
 ```
 
 ---
 
-### Task 6: Update google-maps test to use shared createStubFetch
+### Task 5: Update google-maps test
 
 **Files:**
 - Modify: `src/plugins/commute/google-maps/index.test.ts`
 
 - [ ] **Step 1: Rewrite the test file**
 
-Replace the inline `createStubFetch`, `resolveRequestUrl`, and `matrixResponse` with imports from shared `createStubFetch` and `HttpStub`. Add a wrapper for `globalThis.fetch` type compatibility.
+Replace the inline `createStubFetch`, `resolveRequestUrl`, and `matrixResponse` with `FetchStub`.
 
 ```ts
 // src/plugins/commute/google-maps/index.test.ts — full file after edit
 import { test, describe, expect } from "vitest"
 import { createGoogleMapsCommuteClient } from "."
-import { createStubFetch, type StubFetch, type StubRoute } from "@/plugins/fetch"
-import { HttpStub } from "@/utils"
+import { FetchStub } from "@/plugins/fetch"
 
 const API_PATTERN = "maps.googleapis.com/maps/api/distancematrix"
 
 describe("GoogleMapsCommuteClient", () => {
   test("returns durations as rounded minutes", async () => {
     const response = matrixResponse("15.3 km", 1890)
-    const stubFetch = createStubFetch(
-      new HttpStub<StubRoute>().set(API_PATTERN, { body: response }),
-    )
+    const stub = new FetchStub().set(API_PATTERN, { body: response })
     const originalFetch = globalThis.fetch
-    globalThis.fetch = asGlobalFetch(stubFetch)
+    globalThis.fetch = stub.fetch.bind(stub)
 
     try {
       const client = createGoogleMapsCommuteClient("test-api-key")
@@ -467,10 +402,9 @@ describe("GoogleMapsCommuteClient", () => {
 
   test("makes three API calls with different departure times", async () => {
     const response = matrixResponse("10 km", 600)
-    const stub = new HttpStub<StubRoute>().set(API_PATTERN, { body: response })
-    const stubFetch = createStubFetch(stub)
+    const stub = new FetchStub().set(API_PATTERN, { body: response })
     const originalFetch = globalThis.fetch
-    globalThis.fetch = asGlobalFetch(stubFetch)
+    globalThis.fetch = stub.fetch.bind(stub)
 
     try {
       const client = createGoogleMapsCommuteClient("test-key")
@@ -491,11 +425,9 @@ describe("GoogleMapsCommuteClient", () => {
 
   test("throws on API error status", async () => {
     const response = { status: "REQUEST_DENIED", rows: [] }
-    const stubFetch = createStubFetch(
-      new HttpStub<StubRoute>().set(API_PATTERN, { body: response }),
-    )
+    const stub = new FetchStub().set(API_PATTERN, { body: response })
     const originalFetch = globalThis.fetch
-    globalThis.fetch = asGlobalFetch(stubFetch)
+    globalThis.fetch = stub.fetch.bind(stub)
 
     try {
       const client = createGoogleMapsCommuteClient("bad-key")
@@ -512,11 +444,9 @@ describe("GoogleMapsCommuteClient", () => {
       status: "OK",
       rows: [{ elements: [{ status: "ZERO_RESULTS" }] }],
     }
-    const stubFetch = createStubFetch(
-      new HttpStub<StubRoute>().set(API_PATTERN, { body: response }),
-    )
+    const stub = new FetchStub().set(API_PATTERN, { body: response })
     const originalFetch = globalThis.fetch
-    globalThis.fetch = asGlobalFetch(stubFetch)
+    globalThis.fetch = stub.fetch.bind(stub)
 
     try {
       const client = createGoogleMapsCommuteClient("test-key")
@@ -545,23 +475,9 @@ function matrixResponse(distanceText: string, durationSeconds: number): object {
     ],
   }
 }
-
-function asGlobalFetch(
-  stubFetch: StubFetch,
-): typeof globalThis.fetch {
-  return (input, init?) => {
-    if (typeof input === "string") {
-      return stubFetch(input, init)
-    }
-    if (input instanceof URL) {
-      return stubFetch(input.toString(), init)
-    }
-    return stubFetch(input.url, init)
-  }
-}
 ```
 
-- [ ] **Step 2: Run the google-maps test suite**
+- [ ] **Step 2: Run google-maps tests**
 
 ```bash
 npm test -- src/plugins/commute/google-maps/index.test.ts
@@ -572,12 +488,12 @@ Expected: PASS — all 4 tests pass.
 
 ```bash
 git add src/plugins/commute/google-maps/index.test.ts
-git commit -m "refactor: replace inline createStubFetch in google-maps test with shared stub"
+git commit -m "refactor: replace inline createStubFetch with FetchStub in google-maps test"
 ```
 
 ---
 
-### Task 7: Update consumer tests to use new builder API
+### Task 6: Update consumer tests
 
 **Files:**
 - Modify: `src/plugins/job-site/arbeitsagentur/index.test.ts`
@@ -587,78 +503,93 @@ git commit -m "refactor: replace inline createStubFetch in google-maps test with
 
 - [ ] **Step 1: Update arbeitsagentur test**
 
-The `createSite` helper passes `Record<string, StubRoute>` to `createStubFetch` and `Record<string, string>` to `createStubBrowser`. Both need to become `HttpStub`.
+Replace `createStubFetch(...)` with `FetchStub` builder, and `createStubBrowser({})` with `new BrowserStub()`.
+
+Full test file changes:
 
 ```ts
-// In src/plugins/job-site/arbeitsagentur/index.test.ts
-// Add imports:
-import { HttpStub } from "@/utils"
-import { createStubFetch, type StubRoute } from "@/plugins/fetch"
+// src/plugins/job-site/arbeitsagentur/index.test.ts
+// Replace imports:
+//   import { createStubBrowser } from "@/plugins/browser"
+//   import { createStubFetch } from "@/plugins/fetch"
+// With:
+import { BrowserStub } from "@/plugins/browser"
+import { FetchStub } from "@/plugins/fetch"
 
-// Replace the existing import of createStubFetch (remove old import line).
+// Replace createSite and buildStub functions:
 
-// Replace the createSite function:
-
-function createSite(routes: Record<string, StubRoute>) {
-  const stubFetch = createStubFetch(buildStub(routes))
+function createSite(
+  routes: Record<string, { body: unknown; status?: number }>,
+) {
+  const stubFetch = buildStub(routes)
   const site = createArbeitsagenturSite(
-    createStubBrowser(new HttpStub()),
-    stubFetch,
+    new BrowserStub(),
+    stubFetch.fetch.bind(stubFetch),
   )
   return { site, stubFetch }
 }
 
-function buildStub(routes: Record<string, StubRoute>): HttpStub<StubRoute> {
-  const stub = new HttpStub<StubRoute>()
+function buildStub(
+  routes: Record<string, { body: unknown; status?: number }>,
+): FetchStub {
+  const stub = new FetchStub()
   for (const [urlPattern, route] of Object.entries(routes)) {
     stub.set(urlPattern, route)
   }
   return stub
 }
+
+// All references to stubFetch.requestedUrls keep working (inherited from HttpStub)
 ```
 
 - [ ] **Step 2: Update xing test**
 
-The xing test uses `createStubBrowser(SAMPLES_DIR)`. Replace with `createStubBrowserFromDirectory(SAMPLES_DIR)`.
+Replace `createStubBrowser(SAMPLES_DIR)` → `BrowserStub.fromDirectory(SAMPLES_DIR)`.
+Replace `createStubBrowser({ [vacancyUrl]: html })` → `new BrowserStub().set(vacancyUrl, html)`.
 
 ```ts
-// In src/plugins/job-site/xing/index.test.ts
-// Change all occurrences of:
-//   const browser = createStubBrowser(SAMPLES_DIR)
-// To:
-//   const browser = createStubBrowserFromDirectory(SAMPLES_DIR)
-```
+// src/plugins/job-site/xing/index.test.ts
+// Replace import:
+//   import { createStubBrowser } from "@/plugins/browser"
+// With:
+import { BrowserStub } from "@/plugins/browser"
 
-Also update the inline Record usage:
-```ts
-// Change:
-//   const browser = createStubBrowser({ [vacancyUrl]: html })
-// To:
-//   const browser = createStubBrowser(new HttpStub<string>().set(vacancyUrl, html))
+// Replace:
+//   createStubBrowser(SAMPLES_DIR)
+// With:
+//   BrowserStub.fromDirectory(SAMPLES_DIR)
+// (occurs 2 times)
+
+// Replace:
+//   createStubBrowser({ [vacancyUrl]: html })
+// With:
+//   new BrowserStub().set(vacancyUrl, html)
+// (occurs 1 time)
 ```
-And add `import { HttpStub } from "@/utils"`.
 
 - [ ] **Step 3: Update dm test**
 
-Same two patterns as xing: directory loading and inline Record.
+Same patterns as xing.
 
 ```ts
-// In src/plugins/job-site/dm/index.test.ts
-// 1. Replace createStubBrowser(SAMPLES_DIR) → createStubBrowserFromDirectory(SAMPLES_DIR)
-// 2. Replace createStubBrowser({ [vacancyUrl]: html }) → createStubBrowser(new HttpStub<string>().set(vacancyUrl, html))
-// 3. Replace createStubBrowser({ "dm-jobs.de/job-listing": html }) → createStubBrowser(new HttpStub<string>().set("dm-jobs.de/job-listing", html))
-// 4. Add import { HttpStub } from "@/utils"
+// src/plugins/job-site/dm/index.test.ts
+// Replace import: createStubBrowser → BrowserStub
+
+// createStubBrowser(SAMPLES_DIR) → BrowserStub.fromDirectory(SAMPLES_DIR)  (2 times)
+// createStubBrowser({ [vacancyUrl]: html }) → new BrowserStub().set(vacancyUrl, html)  (2 times)
+// createStubBrowser({ "dm-jobs.de/job-listing": html }) → new BrowserStub().set("dm-jobs.de/job-listing", html)  (1 time)
 ```
 
 - [ ] **Step 4: Update zalando test**
 
-Same pattern as dm/xing: directory + inline Record.
+Same pattern.
 
 ```ts
-// In src/plugins/job-site/zalando/index.test.ts
-// 1. Replace createStubBrowser(SAMPLES_DIR) → createStubBrowserFromDirectory(SAMPLES_DIR)
-// 2. Replace createStubBrowser({ [vacancyUrl]: html }) → createStubBrowser(new HttpStub<string>().set(vacancyUrl, html))
-// 3. Add import { HttpStub } from "@/utils"
+// src/plugins/job-site/zalando/index.test.ts
+// Replace import: createStubBrowser → BrowserStub
+
+// createStubBrowser(SAMPLES_DIR) → BrowserStub.fromDirectory(SAMPLES_DIR)  (2 times)
+// createStubBrowser({ [vacancyUrl]: html }) → new BrowserStub().set(vacancyUrl, html)  (1 time)
 ```
 
 - [ ] **Step 5: Run all affected tests**
@@ -678,12 +609,12 @@ git add src/plugins/job-site/arbeitsagentur/index.test.ts \
         src/plugins/job-site/xing/index.test.ts \
         src/plugins/job-site/dm/index.test.ts \
         src/plugins/job-site/zalando/index.test.ts
-git commit -m "refactor: update consumer tests to use HttpStub builder API"
+git commit -m "refactor: update consumer tests to use BrowserStub and FetchStub"
 ```
 
 ---
 
-### Task 8: Final verification
+### Task 7: Final verification
 
 - [ ] **Step 1: Run full type check**
 
@@ -697,25 +628,24 @@ Expected: PASS — zero errors.
 ```bash
 npm test:all
 ```
-Expected: PASS — all tests pass, no regressions.
+Expected: PASS — all tests pass.
 
 - [ ] **Step 3: Run lint fix**
 
 ```bash
 npm run fix
 ```
-Expected: PASS — auto-fixable issues resolved, no unfixable issues remain.
+Expected: PASS — auto-fixable issues resolved, no unfixable issues.
 
-- [ ] **Step 4: Verify findStubMatch is gone**
+- [ ] **Step 4: Verify findStubMatch and createStub* factories are gone**
 
 ```bash
-git grep "findStubMatch"
+git grep "findStubMatch\|createStubBrowser\|createStubFetch"
 ```
 Expected: no results.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add -A
-git commit -m "chore: final verification — all tests pass, findStubMatch removed"
+git commit -am "chore: final verification — all tests pass, old factories removed"
 ```
