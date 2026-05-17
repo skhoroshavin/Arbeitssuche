@@ -9,8 +9,8 @@ import type {
 } from "@/plugins/job-site"
 import { withOpenedPage } from "@/plugins/job-site/utils/index.js"
 import {
-  extractAddressFromJsonLd,
   extractJsonLd,
+  joinNormalizedText,
   normalizeOptionalText,
 } from "@/utils/index.js"
 
@@ -93,8 +93,37 @@ function extractFromPosting(jsonLd: object | undefined) {
     company: posting?.hiringOrganization?.name,
     description: posting?.description,
     publishedAt: posting?.datePosted,
-    address: extractAddressFromJsonLd(posting),
+    address: formatJobPostingAddress(posting),
   }
+}
+
+function formatJobPostingAddress(
+  posting: { jobLocation?: unknown } | undefined,
+): string | undefined {
+  if (!posting) return undefined
+  const location = posting.jobLocation
+  const loc = Array.isArray(location) ? location[0] : location
+  if (!isRecord(loc) || !isRecord(loc.address)) return undefined
+  return joinNormalizedText(
+    [
+      stringField(loc.address, "streetAddress"),
+      stringField(loc.address, "postalCode"),
+      stringField(loc.address, "addressLocality"),
+    ],
+    ", ",
+  )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function stringField(
+  record: Record<string, unknown>,
+  key: string,
+): string | undefined {
+  const value = record[key]
+  return typeof value === "string" ? value : undefined
 }
 
 function extractAddressFallback($: cheerio.CheerioAPI): string | undefined {
