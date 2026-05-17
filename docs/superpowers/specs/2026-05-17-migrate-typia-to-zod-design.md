@@ -45,10 +45,15 @@ BEFORE (type-first, typia):        AFTER (schema-first, Zod):
 
 | Boundary | Examples | Schema location |
 |---|---|---|
-| IPC (main ↔ renderer) | `Config`, `Applicant`, `JobSearch`, `LlmModel[]` | `src/api/` |
-| External API JSON | `ApiSearchResponse`, `DistanceMatrixResponse` | Plugin file (local) |
-| Storage/DB rows | `VacancyDTO`, `ApplicantRow`, `JobSearchRow` | Repository file (local) |
-| LLM structured output | `AssessResult`, `ConsultationSuggestion[]` | Service file (local) |
+| IPC (main ↔ renderer) | `Config`, `Applicant`, `JobSearch`, `LlmModel[]` | `src/api/` — shared contract layer |
+| External API JSON | `ApiSearchResponse`, `DistanceMatrixResponse` | Local to the plugin (`src/plugins/*/`) |
+| Storage/DB rows | `VacancyDTO`, `ApplicantRow`, `JobSearchRow` | Local to the repository (`src/repositories/*/`) |
+| LLM structured output | `AssessResult`, `ConsultationSuggestion[]` | Local to the service (`src/services/*/`) |
+
+Only IPC contract schemas go in `src/api/` — they are shared between main and
+renderer processes. All other boundary schemas live alongside the code that
+owns that boundary (plugin, repository, service), following the existing
+architecture where each layer owns its external interfaces.
 
 ### What stays pure TypeScript
 
