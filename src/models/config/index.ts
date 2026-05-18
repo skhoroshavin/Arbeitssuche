@@ -33,3 +33,5 @@ export {
   DEFAULT_COVER_LETTER_MODEL,
   DEFAULT_CONSULTATION_MODEL,
 } from "./constants.js"
+
+export * from "./schemas.js"
