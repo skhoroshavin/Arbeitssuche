@@ -1,30 +1,19 @@
 import type {
-  JobSearchDraft,
   JobSearch,
+  JobSearchID,
   JobSearchInfo,
+  ApplicantID,
   SearchMode,
 } from "@/models/job-search"
 
 export interface JobSearchRepository {
-  list(): JobSearchInfo[]
-  listByApplicant(applicantId: string): JobSearchInfo[]
-  exists(id: string): boolean
-  load(id: string): JobSearch
-  save(id: string, data: JobSearch): void
-  create(
-    searchTerm: string,
-    applicantId: string,
-    searchMode?: SearchMode,
-  ): string
-  delete(id: string): void
-  loadDraft(applicantId: string): JobSearchDraft | undefined
-  saveDraft(applicantId: string, draft: JobSearchDraft["snapshot"]): void
-  deleteDraft(applicantId: string): void
-  finalizeDraft(applicantId: string): string
-  loadApplicationCoverLetter(jobSearchId: string, vacancyHash: string): string
-  saveApplicationCoverLetter(
-    jobSearchId: string,
-    vacancyHash: string,
-    content: string,
-  ): void
+  listByApplicant(applicantId: ApplicantID): JobSearchInfo[]
+  load(id: JobSearchID): { jobSearch: JobSearch; applicantId: ApplicantID }
+  save(id: JobSearchID, jobSearch: JobSearch): void
+  delete(id: JobSearchID): void
+  create(searchTerm: string, applicantId: ApplicantID, searchMode?: SearchMode): JobSearchID
+  loadDraft(applicantId: ApplicantID): JobSearch | undefined
+  saveDraft(applicantId: ApplicantID, draft: JobSearch): void
+  deleteDraft(applicantId: ApplicantID): void
+  finalizeDraft(applicantId: ApplicantID): JobSearchID
 }

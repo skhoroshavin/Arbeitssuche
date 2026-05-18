@@ -1,12 +1,15 @@
 import { Vacancy } from "@/models/vacancy/index.js"
+import type { JobSearchID } from "@/models/job-search"
 
 import type { Activity } from "@/models/vacancy"
 
 export interface VacancyRepository {
-  loadAll(jobSearchId: string): VacancyListOutput
-  save(jobSearchId: string, vacancies: Vacancy[], latestCrawl: string): void
-  findByHash(jobSearchId: string, hash: string): Vacancy | undefined
-  addActivity(jobSearchId: string, hash: string, activity: Activity): void
+  loadAll(jobSearchId: JobSearchID): VacancyListOutput
+  save(jobSearchId: JobSearchID, vacancies: Vacancy[], latestCrawl: string): void
+  findByHash(jobSearchId: JobSearchID, hash: string): Vacancy | undefined
+  addActivity(jobSearchId: JobSearchID, hash: string, activity: Activity): void
+  loadCoverLetter(jobSearchId: JobSearchID, vacancyHash: string): string
+  saveCoverLetter(jobSearchId: JobSearchID, vacancyHash: string, content: string): void
 }
 
 export interface VacancyListOutput {
