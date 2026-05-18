@@ -18,7 +18,7 @@ export function registerApplicantsHandlers(
   handle("applicants:save", (id: string, data: unknown) => {
     const validated = ApplicantSchema.parse(data)
     services.applicantRepo.save(id, validated)
-    return { ok: true as const }
+    return { ok: true }
   })
   handle("applicants:delete", (id: string) => {
     services.applicantRepo.delete(id)
@@ -29,11 +29,11 @@ export function registerApplicantsHandlers(
   }))
   handle("applicants:draft:save", (draft: ApplicantDraftSnapshot) => {
     services.applicantRepo.saveDraft(draft)
-    return { ok: true as const }
+    return { ok: true }
   })
   handle("applicants:draft:delete", () => {
     services.applicantRepo.deleteDraft()
-    return { ok: true as const }
+    return { ok: true }
   })
   handle("applicants:draft:finalize", () => {
     const id = services.applicantRepo.finalizeDraft()

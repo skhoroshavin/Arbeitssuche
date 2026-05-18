@@ -48,7 +48,7 @@ export function registerVacanciesHandlers(
     "job-searches:vacancies:add-activity",
     (id: string, hash: string, activity: Activity) => {
       services.vacancyRepo.addActivity(id, hash, activity)
-      return { ok: true as const }
+      return { ok: true }
     },
   )
 
@@ -62,7 +62,7 @@ export function registerVacanciesHandlers(
     "job-searches:vacancies:cover-letter:save",
     (id: string, hash: string, content: string) => {
       services.jobSearchRepo.saveApplicationCoverLetter(id, hash, content)
-      return { ok: true as const }
+      return { ok: true }
     },
   )
   handle(
@@ -95,7 +95,7 @@ export function registerVacanciesHandlers(
       )
     }
 
-    return { ok: true as const }
+    return { ok: true }
   })
 
   handle("vacancies:enrich-unenriched", async (jobSearchId: string) => {

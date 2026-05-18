@@ -17,7 +17,7 @@ export function registerSetupHandlers(
   handle("setup:clear-data", async () => clearAppData({ services, controls }))
   handle("app:close", () => {
     controls.closeApp()
-    return { ok: true as const }
+    return { ok: true }
   })
 }
 

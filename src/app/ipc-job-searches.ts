@@ -31,7 +31,7 @@ export function registerJobSearchesHandlers(
   handle("job-searches:save", (id: string, data: unknown) => {
     const validated = JobSearchSchema.parse(data)
     services.jobSearchRepo.save(id, validated)
-    return { ok: true as const }
+    return { ok: true }
   })
   handle("job-searches:delete", (id: string) => {
     services.jobSearchRepo.delete(id)
@@ -44,7 +44,7 @@ export function registerJobSearchesHandlers(
   handle("job-searches:draft:save", (applicantId: string, draft: unknown) => {
     const validated = JobSearchEditorSnapshotSchema.parse(draft)
     services.jobSearchRepo.saveDraft(applicantId, validated)
-    return { ok: true as const }
+    return { ok: true }
   })
   handle("job-searches:draft:delete", (applicantId: string) => {
     services.jobSearchRepo.deleteDraft(applicantId)
@@ -60,7 +60,7 @@ export function registerJobSearchesHandlers(
   }))
   handle("job-searches:cover-letter:save", (id: string, content: string) => {
     services.jobSearchRepo.saveApplicationCoverLetter(id, "", content)
-    return { ok: true as const }
+    return { ok: true }
   })
   handle("job-searches:cover-letter:generate", async (id: string) =>
     services.coverLetterWriter.generate(id),

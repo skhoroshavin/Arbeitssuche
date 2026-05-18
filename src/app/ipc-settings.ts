@@ -67,7 +67,7 @@ export function registerSettingsHandlers(
     }
     await services.configRepo.save(config)
     services.rebuild()
-    return { ok: true as const }
+    return { ok: true }
   })
 }
 
