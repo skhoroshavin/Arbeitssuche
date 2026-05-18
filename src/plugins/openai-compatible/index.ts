@@ -44,6 +44,19 @@ export function createModelRegistry(
 }
 
 type ModelNormalizer = (raw: Record<string, unknown>) => LlmModelInfo
+ const CompletionResponseSchema = z.object({
+  choices: z
+    .array(
+      z.object({
+        message: z.object({ content: z.string().optional() }).optional(),
+      }),
+    )
+    .optional(),
+})
+
+const ModelListResponseSchema = z.object({
+  data: z.array(z.record(z.unknown())),
+})
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -140,17 +153,9 @@ class OpenAICompatibleClient implements LlmClient {
       )
     }
 
-    const json = z
-      .object({
-        choices: z
-          .array(
-            z.object({
-              message: z.object({ content: z.string().optional() }).optional(),
-            }),
-          )
-          .optional(),
-      })
-      .parse(JSON.parse(await response.text()))
+    const json = CompletionResponseSchema.parse(
+      JSON.parse(await response.text()),
+    )
     const content = json.choices?.[0]?.message?.content
     if (!content) {
       throw new Error(`${this.providerName} returned empty response`)
@@ -171,9 +176,9 @@ class OpenAICompatibleModelRegistry implements LlmModelRegistry {
         signal: AbortSignal.timeout(10_000),
       })
       if (!response.ok) return []
-      const data = z
-        .object({ data: z.array(z.record(z.unknown())) })
-        .parse(JSON.parse(await response.text()))
+      const data = ModelListResponseSchema.parse(
+        JSON.parse(await response.text()),
+      )
       return data.data.map((raw) => this.normalize(raw))
     } catch {
       return []

@@ -99,39 +99,39 @@ function extractFromPosting(jsonLd: object | undefined) {
   }
 }
 
+const JobPostingJsonLdSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  datePosted: z.string().optional(),
+  hiringOrganization: z.object({ name: z.string().optional() }).optional(),
+  jobLocation: z
+    .union([
+      z.object({
+        address: z
+          .object({
+            streetAddress: z.string().optional(),
+            postalCode: z.string().optional(),
+            addressLocality: z.string().optional(),
+          })
+          .optional(),
+      }),
+      z.array(
+        z.object({
+          address: z
+            .object({
+              streetAddress: z.string().optional(),
+              postalCode: z.string().optional(),
+              addressLocality: z.string().optional(),
+            })
+            .optional(),
+        }),
+      ),
+    ])
+    .optional(),
+})
+
 function asJobPosting(value: unknown): JobPostingJsonLd | undefined {
-  const result = z
-    .object({
-      title: z.string().optional(),
-      description: z.string().optional(),
-      datePosted: z.string().optional(),
-      hiringOrganization: z.object({ name: z.string().optional() }).optional(),
-      jobLocation: z
-        .union([
-          z.object({
-            address: z
-              .object({
-                streetAddress: z.string().optional(),
-                postalCode: z.string().optional(),
-                addressLocality: z.string().optional(),
-              })
-              .optional(),
-          }),
-          z.array(
-            z.object({
-              address: z
-                .object({
-                  streetAddress: z.string().optional(),
-                  postalCode: z.string().optional(),
-                  addressLocality: z.string().optional(),
-                })
-                .optional(),
-            }),
-          ),
-        ])
-        .optional(),
-    })
-    .safeParse(value)
+  const result = JobPostingJsonLdSchema.safeParse(value)
   return result.success ? result.data : undefined
 }
 

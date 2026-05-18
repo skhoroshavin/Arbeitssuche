@@ -69,9 +69,9 @@ class GoogleMapsCommuteClient implements CommuteClient {
       await response.text()
       return false
     }
-    const data = z
-      .object({ status: z.string() })
-      .parse(JSON.parse(await response.text()))
+    const data = DirectionsResponseSchema.parse(
+      JSON.parse(await response.text()),
+    )
     return GOOGLE_MAPS_OK_STATUSES.has(data.status)
   }
 }
@@ -145,6 +145,8 @@ function departureTimestamp(baseDate: Date, hour: number): number {
   d.setHours(hour, 0, 0, 0)
   return Math.floor(d.getTime() / 1000)
 }
+
+const DirectionsResponseSchema = z.object({ status: z.string() })
 
 const DistanceMatrixResponseSchema = z.object({
   rows: z.array(
