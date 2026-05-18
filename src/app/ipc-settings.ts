@@ -1,14 +1,3 @@
-import { z } from "zod"
-import {
-  ResolvedConfigSchema,
-  MaskedSecretsRecordSchema,
-  LlmProviderInfoSchema,
-  CommuteProviderInfoSchema,
-  LlmModelSchema,
-  SecretTestResultSchema,
-  OkSchema,
-  SitesListResponseSchema,
-} from "@/api"
 import type { AppServices } from "."
 import type { ConfigKey } from "@/models/config"
 import { resolveConfig } from "@/models/config/index.js"
@@ -27,16 +16,10 @@ export function registerSettingsHandlers(
   handle: IpcHandle,
   services: AppServices,
 ): void {
-  // Sites
-  handle("sites:list", () =>
-    SitesListResponseSchema.parse({ sites: getJobSiteInfos() }),
-  )
+  handle("sites:list", () => ({ sites: getJobSiteInfos() }))
 
-  // Settings: LLM secrets
   handle("settings:llm:secrets", () =>
-    MaskedSecretsRecordSchema.parse(
-      maskedSecretsFor(LLM_SECRET_KEYS, services.secretsRepo.load()),
-    ),
+    maskedSecretsFor(LLM_SECRET_KEYS, services.secretsRepo.load()),
   )
   handle(
     "settings:llm:secret:save",
@@ -50,11 +33,8 @@ export function registerSettingsHandlers(
     testProviderSecret(services, providerId, LLM_SECRET_KEYS),
   )
 
-  // Settings: Commute secrets
   handle("settings:commute:secrets", () =>
-    MaskedSecretsRecordSchema.parse(
-      maskedSecretsFor(COMMUTE_SECRET_KEYS, services.secretsRepo.load()),
-    ),
+    maskedSecretsFor(COMMUTE_SECRET_KEYS, services.secretsRepo.load()),
   )
   handle(
     "settings:commute:secret:save",
@@ -68,22 +48,15 @@ export function registerSettingsHandlers(
     testProviderSecret(services, providerId, COMMUTE_SECRET_KEYS),
   )
 
-  // Provider info
-  handle("settings:llm-providers", () =>
-    z.array(LlmProviderInfoSchema).parse(getLlmProviders()),
-  )
-  handle("settings:commute-providers", () =>
-    z.array(CommuteProviderInfoSchema).parse(getCommuteProviders()),
-  )
+  handle("settings:llm-providers", () => getLlmProviders())
+  handle("settings:commute-providers", () => getCommuteProviders())
 
-  // LLM models
   handle("settings:llm-models", async () =>
-    z.array(LlmModelSchema).parse(await services.modelRegistry.fetchModels()),
+    services.modelRegistry.fetchModels(),
   )
 
-  // Config (non-secret settings)
   handle("settings:config:load", () =>
-    ResolvedConfigSchema.parse(resolveConfig(services.configRepo.load())),
+    resolveConfig(services.configRepo.load()),
   )
   handle("settings:config:save", async (key: ConfigKey, value: string) => {
     const config = services.configRepo.load()
@@ -94,7 +67,7 @@ export function registerSettingsHandlers(
     }
     await services.configRepo.save(config)
     services.rebuild()
-    return OkSchema.parse({ ok: true })
+    return { ok: true as const }
   })
 }
 
@@ -109,7 +82,7 @@ async function saveProviderSecret(
   secrets[key] = value
   await services.secretsRepo.save(secrets)
   services.rebuild()
-  return OkSchema.parse({ ok: true })
+  return { ok: true }
 }
 
 async function clearProviderSecret(
@@ -122,7 +95,7 @@ async function clearProviderSecret(
   delete secrets[key]
   await services.secretsRepo.save(secrets)
   services.rebuild()
-  return OkSchema.parse({ ok: true })
+  return { ok: true }
 }
 
 async function testProviderSecret(
@@ -134,14 +107,14 @@ async function testProviderSecret(
   const secrets = services.secretsRepo.load()
   const value = secrets[key]
   if (!value) {
-    return SecretTestResultSchema.parse({
+    return {
       ok: false,
       error: "Kein Schlüssel gesetzt",
-    })
+    }
   }
   const ok =
     mapping === LLM_SECRET_KEYS
       ? await createLlmClientForPing(providerId, value).ping()
       : await createCommuteClient(providerId, value).ping()
-  return SecretTestResultSchema.parse({ ok })
+  return { ok }
 }
