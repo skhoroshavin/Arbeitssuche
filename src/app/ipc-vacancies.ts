@@ -67,9 +67,8 @@ export function registerVacanciesHandlers(
   )
   handle(
     "job-searches:vacancies:cover-letter:generate",
-    async (id: string, hash: string) => ({
-      content: await services.coverLetterWriter.generateForVacancy(id, hash),
-    }),
+    async (id: string, hash: string) =>
+      services.coverLetterWriter.generateForVacancy(id, hash),
   )
 
   handle("vacancies:re-enrich", async (jobSearchId: string, hash: string) => {

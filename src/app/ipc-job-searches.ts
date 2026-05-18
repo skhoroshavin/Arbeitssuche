@@ -62,13 +62,12 @@ export function registerJobSearchesHandlers(
     services.jobSearchRepo.saveApplicationCoverLetter(id, "", content)
     return { ok: true as const }
   })
-  handle("job-searches:cover-letter:generate", async (id: string) => ({
-    content: await services.coverLetterWriter.generate(id),
-  }))
+  handle("job-searches:cover-letter:generate", async (id: string) =>
+    services.coverLetterWriter.generate(id),
+  )
   handle(
     "job-searches:draft:cover-letter:generate",
-    async (applicantId: string) => ({
-      content: await services.coverLetterWriter.generateFromDraft(applicantId),
-    }),
+    async (applicantId: string) =>
+      services.coverLetterWriter.generateFromDraft(applicantId),
   )
 }
