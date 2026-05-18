@@ -1,17 +1,21 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { gunzipSync } from "node:zlib"
-import typia from "typia"
+import { z } from "zod"
 import { HttpStub } from "@/utils/index.js"
 import type { Browser, Page, OpenPageOptions } from "@/plugins/browser"
 
 export class BrowserStub extends HttpStub<string> implements Browser {
   static fromDirectory(directory: string): BrowserStub {
-    const data = typia.json.assertParse<Record<string, string>>(
-      gunzipSync(readFileSync(path.join(directory, "data.json.gz"))).toString(
-        "utf8",
-      ),
-    )
+    const data = z
+      .record(z.string())
+      .parse(
+        JSON.parse(
+          gunzipSync(
+            readFileSync(path.join(directory, "data.json.gz")),
+          ).toString("utf8"),
+        ),
+      )
     const stub = new BrowserStub()
     for (const [urlPattern, html] of Object.entries(data)) {
       stub.set(urlPattern, html)

@@ -74,13 +74,13 @@ export type MaskedSecretDTO = z.infer<typeof MaskedSecretSchema>
 
 export const MaskedSecretsRecordSchema = z.record(MaskedSecretSchema)
 
-export const ConfigSchema = z.object({
-  provider: z.enum(["openrouter", "requesty"]).optional(),
-  assessmentModel: z.string().optional(),
-  coverLetterModel: z.string().optional(),
-  consultationModel: z.string().optional(),
+export const ResolvedConfigSchema = z.object({
+  provider: z.enum(["openrouter", "requesty"]),
+  assessmentModel: z.string(),
+  coverLetterModel: z.string(),
+  consultationModel: z.string(),
 })
-export type ConfigDTO = z.infer<typeof ConfigSchema>
+export type ResolvedConfigDTO = z.infer<typeof ResolvedConfigSchema>
 
 export const SecretTestResultSchema = z.object({
   ok: z.boolean(),
@@ -122,36 +122,38 @@ export const ApplicantExperienceSchema = z.object({
   highlights: z.array(z.string()).optional(),
 })
 
-export const ApplicantEducationSchema = z.object({
+const ApplicantEducationSchema = z.object({
   institution: z.string(),
   course: z.string(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   location: z.string().optional(),
   discloseDates: z.boolean().optional(),
+  highlights: z.array(z.string()).optional(),
 })
 
-export const ApplicantSkillSchema = z.object({
+const ApplicantSkillSchema = z.object({
   name: z.string(),
-  level: z.enum(["beginner", "intermediate", "advanced", "expert"]).optional(),
 })
 
-export const ApplicantLanguageSchema = z.object({
+const ApplicantLanguageSchema = z.object({
   language: z.string(),
-  level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2", "native"]).optional(),
+  level: z.string(),
 })
 
-export const ApplicantCertificationSchema = z.object({
+const ApplicantCertificationSchema = z.object({
   name: z.string(),
+  issuer: z.string().optional(),
   date: z.string().optional(),
+  discloseDates: z.boolean().optional(),
+  description: z.string().optional(),
 })
 
-export const ApplicantDiscloseSchema = z.object({
-  email: z.boolean().optional(),
-  phone: z.boolean().optional(),
-  birthdate: z.boolean().optional(),
-  gender: z.boolean().optional(),
-  address: z.boolean().optional(),
+const ApplicantDiscloseSchema = z.object({
+  birthdate: z.boolean(),
+  gender: z.boolean(),
+  address: z.boolean(),
+  hobbies: z.boolean(),
 })
 
 export const ApplicantSchema = z.object({
@@ -536,20 +538,20 @@ Replace all `typia.assert<T>(...)` with the corresponding schema `.parse(...)`.
 At line 17, replace `import typia from "typia"` with:
 
 ```ts
+import { z } from "zod"
 import {
   LlmProviderInfoSchema,
   CommuteProviderInfoSchema,
   MaskedSecretsRecordSchema,
   SecretTestResultSchema,
-  ConfigSchema,
+  ResolvedConfigSchema,
   LlmModelSchema,
 } from "@/api"
 ```
 
 Replace each `typia.assert<...>(await api().invoke(...))` call:
 
-- Line 109: `typia.assert<LlmProviderInfo[]>(await api().invoke("settings:llm-providers"))` → `z.array(LlmProviderInfoSchema).parse(await api().invoke("settings:llm-providers"))`  
-  (add `import { z } from "zod"` at top)
+- Line 109: `typia.assert<LlmProviderInfo[]>(await api().invoke("settings:llm-providers"))` → `z.array(LlmProviderInfoSchema).parse(await api().invoke("settings:llm-providers"))`
 
 - Line 125: `typia.assert<CommuteProviderInfo[]>(...)` → `z.array(CommuteProviderInfoSchema).parse(...)`
 
@@ -557,7 +559,7 @@ Replace each `typia.assert<...>(await api().invoke(...))` call:
 
 - Line 202: `typia.assert<{ ok: boolean; error?: string }>(...)` → `SecretTestResultSchema.parse(...)`
 
-- Line 220: `typia.assert<ResolvedConfig>(...)` → `ConfigSchema.parse(...)`
+- Line 220: `typia.assert<ResolvedConfig>(...)` → `ResolvedConfigSchema.parse(...)`
 
 - Line 228: `typia.assert<LlmModel[]>(...)` → `z.array(LlmModelSchema).parse(...)`
 
@@ -673,31 +675,31 @@ git commit -m "refactor: replace typia assertions with Zod schemas in ui/data la
 
 ---
 
-## Task 3: Migrate backend IPC handlers (src/app/ipc-*.ts)
+## Task 3: Add Zod validation to backend IPC handlers (src/app/ipc-*.ts)
 
 **Files:**
 - Modify: `src/app/ipc-settings.ts`
 - Modify: `src/app/ipc-applicants.ts`
 - Modify: `src/app/ipc-job-searches.ts`
+- Modify: `src/app/ipc-vacancies.ts`
 - Modify: `src/app/ipc-setup.ts`
-- Modify: `src/app/ipc-crawl.ts`
+
+Note: `src/app/ipc-crawl.ts` does not return IPC responses (it sends events via `safeSend`), so it needs no schema validation changes.
 
 - [ ] **Step 1: Migrate src/app/ipc-settings.ts — validate outgoing responses**
 
-Add imports:
+Add imports after existing imports:
 
 ```ts
 import { z } from "zod"
 import {
-  ConfigSchema,
+  ResolvedConfigSchema,
   MaskedSecretsRecordSchema,
   LlmProviderInfoSchema,
   CommuteProviderInfoSchema,
   LlmModelSchema,
   SecretTestResultSchema,
   OkSchema,
-} from "@/api"
-import {
   SitesListResponseSchema,
 } from "@/api"
 ```
@@ -723,7 +725,7 @@ Wrap handler returns with `Schema.parse(...)`:
   `handle("settings:llm-models", async () => z.array(LlmModelSchema).parse(await services.modelRegistry.fetchModels()))`
 
 - `handle("settings:config:load", () => resolveConfig(services.configRepo.load()))` →  
-  `handle("settings:config:load", () => ConfigSchema.parse(resolveConfig(services.configRepo.load())))`
+  `handle("settings:config:load", () => ResolvedConfigSchema.parse(resolveConfig(services.configRepo.load())))`
 
 - `handle("settings:config:save", ...)` → wrap the `return { ok: true }` with:  
   `return OkSchema.parse({ ok: true })`
@@ -777,29 +779,64 @@ Validate outgoing:
 
 - `handle("applicants:consult-searches", (id: string) => ...)` → `SuggestionsResponseSchema.parse({ suggestions: await services.jobConsultant.consult(id) })`
 
-- [ ] **Step 3: Migrate src/app/ipc-job-searches.ts**
+- [ ] **Step 3: Add validation to src/app/ipc-job-searches.ts**
 
-Add imports for all schemas used. Same pattern: wrap outgoing responses with `.parse()` and validate incoming `unknown` params where appropriate.
+Add imports after existing imports:
 
-Key validations:
+```ts
+import {
+  JobSearchSchema,
+  JobSearchEditorSnapshotSchema,
+  JobSearchListResponseSchema,
+  CreatedJobSearchIdSchema,
+  SavedOkSchema,
+  DeletedIdSchema,
+  JobSearchDraftResponseSchema,
+  ContentSchema,
+} from "@/api"
+```
+
+Wrap handler returns with `.parse()` and validate incoming `unknown` params where appropriate:
+
 - `handle("job-searches:list", ...)` → `JobSearchListResponseSchema.parse(...)`
 - `handle("job-searches:load", ...)` → `JobSearchSchema.parse(...)`
 - `handle("job-searches:create", ...)` → `CreatedJobSearchIdSchema.parse(...)`
-- `handle("job-searches:save", (id, data: unknown) => ...)` → validate `data` with `JobSearchSchema.parse(data)`, return `SavedOkSchema`
-- `handle("job-searches:delete", ...)` → `DeletedTrueSchema.parse(...)`
+- `handle("job-searches:save", (id, data: unknown) => ...)` → validate `data` with `JobSearchSchema.parse(data)`, return `SavedOkSchema.parse(...)`
+- `handle("job-searches:delete", ...)` → `DeletedIdSchema.parse(...)`  _(returns `{ deleted: id }` with string id, not boolean true)_
 - `handle("job-searches:draft:load", ...)` → `JobSearchDraftResponseSchema.parse(...)`
-- `handle("job-searches:draft:save", (applicantId, draft: unknown) => ...)` → validate with `JobSearchEditorSnapshotSchema.parse(draft)`
-- `handle("job-searches:draft:delete", ...)` → `DeletedTrueSchema.parse(...)`
+- `handle("job-searches:draft:save", (applicantId, draft: unknown) => ...)` → validate with `JobSearchEditorSnapshotSchema.parse(draft)`, return `SavedOkSchema.parse(...)`
+- `handle("job-searches:draft:delete", ...)` → `DeletedIdSchema.parse(...)`
 - `handle("job-searches:draft:finalize", ...)` → `CreatedJobSearchIdSchema.parse(...)`
 - `handle("job-searches:cover-letter:load", ...)` → `ContentSchema.parse(...)`
 - `handle("job-searches:cover-letter:save", ...)` → `SavedOkSchema.parse(...)`
 - `handle("job-searches:cover-letter:generate", ...)` → `ContentSchema.parse(...)`
-- `handle("job-searches:cover-letter:generate-draft", ...)` → `ContentSchema.parse(...)`
+- `handle("job-searches:draft:cover-letter:generate", ...)` → `ContentSchema.parse(...)`
+
+- [ ] **Step 4: Add validation to src/app/ipc-vacancies.ts**
+
+Add imports after existing imports:
+
+```ts
+import {
+  VacancyListResponseSchema,
+  VacancyWithStatusSchema,
+  ContentSchema,
+  SavedOkSchema,
+} from "@/api"
+```
+
+Wrap handler returns:
+
 - `handle("job-searches:vacancies:list", ...)` → `VacancyListResponseSchema.parse(...)`
 - `handle("job-searches:vacancies:load", ...)` → `VacancyWithStatusSchema.parse(...)`
 - `handle("job-searches:vacancies:add-activity", ...)` → `SavedOkSchema.parse(...)`
+- `handle("job-searches:vacancies:cover-letter:load", ...)` → `ContentSchema.parse(...)`
+- `handle("job-searches:vacancies:cover-letter:save", ...)` → `SavedOkSchema.parse(...)`
+- `handle("job-searches:vacancies:cover-letter:generate", ...)` → `ContentSchema.parse(...)`
 
-- [ ] **Step 4: Migrate src/app/ipc-setup.ts**
+Note: `vacancies:seed` is an internal handler called during crawl and does not need schema validation. `vacancies:re-enrich` and `vacancies:enrich-unenriched` handlers return `{ ok: true }` and `{ count: number }` respectively — use `SavedOkSchema` or inline parse as appropriate.
+
+- [ ] **Step 5: Add validation to src/app/ipc-setup.ts**
 
 Add imports:
 
@@ -813,11 +850,7 @@ Wrap returns:
 - `handle("setup:state:complete", ...)` → `AppSetupStateSchema.parse(...)`
 - `handle("setup:clear-data", ...)` → `ClearDataOkSchema.parse(...)`
 
-- [ ] **Step 5: Migrate src/app/ipc-crawl.ts**
-
-Add imports and wrap returns for crawl/vacancy enrichment/vacancy cover letter handlers.
-
-- [ ] **Step 6: Run tests for the migrated IPC handlers**
+- [ ] **Step 6: Run tests**
 
 ```bash
 npm test -- src/app/ipc-setup.test.ts
@@ -826,11 +859,19 @@ npm test
 
 Expected: all existing tests pass.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 7: Run fix**
+
+```bash
+npm run fix
+```
+
+Expected: no errors.
+
+- [ ] **Step 8: Commit**
 
 ```bash
 git add src/app/
-git commit -m "refactor: add Zod validation to IPC handlers on both send and receive sides"
+git commit -m "refactor: add Zod validation to IPC handlers on send and receive sides"
 ```
 
 ---
@@ -1228,42 +1269,378 @@ const CONSULT_SEARCHES_SCHEMA: TypedSchema<z.infer<typeof ConsultationSuggestion
 }
 ```
 
-- [ ] **Step 4: Adapt toStrictSchema**
+- [ ] **Step 4: Adapt toStrictSchema for Zod's JSON Schema format**
 
-The `toStrictSchema` function currently handles typia's `$ref`-based JSON Schema format. With `zod-to-json-schema`, the output is more inline with fewer `$ref`s. The function must handle Zod's format.
+**Context:** `zod-to-json-schema` produces a different JSON Schema structure than typia's `json.schema()`. Key differences:
+- No `$ref` / `components/schemas` — everything is inlined
+- `z.enum()` → `{ type: "string", enum: [...] }` (not `oneOf([{ const: "x" }])`)
+- Optional properties are omitted from `required` array
+- `z.string().nullable().optional()` → `anyOf: [{ type: "string" }, { type: "null" }]` (already uses `anyOf`, not `oneOf`)
+- `additionalProperties: false` is already set
 
-First, run the existing tests to see which ones break:
+The existing `toStrictSchema` function needs to be simplified:
+- Remove `$ref` resolution and `components` handling (defensive code can stay but is unnecessary)
+- Keep optional → nullable + required transformation (this is the main feature still needed)
+- Keep `additionalProperties: false` enforcement (already set by zod, but keep defensively)
+- Keep `oneOf(const)` → `enum` as defensive code
+- Keep `oneOf` → `anyOf` transformation as defensive code
+- Remove the `Definitions` type and `resolveReference` function (no `$ref`s to resolve)
 
-```bash
-npm test -- src/plugins/llm/openai-compatible/strict-schema.test.ts
+Replace `src/plugins/openai-compatible/strict-schema.ts` with the adapted implementation:
+
+```ts
+/**
+ * Transforms a JSON Schema into OpenAI strict-mode-compatible format:
+ * - Adds additionalProperties: false to all objects
+ * - Makes optional properties nullable and required
+ * - Converts oneOf with const values to enum (defensive)
+ * - Converts remaining oneOf to anyOf (OpenAI strict mode uses anyOf)
+ */
+export function toStrictSchema(input: object): Record<string, unknown> {
+  if (!isRecord(input)) throw new Error("Invalid schema input")
+  return resolve(input)
+}
+
+function resolve(node: Record<string, unknown>): Record<string, unknown> {
+  const result = resolveChildren(node)
+  makeStrictObject(result)
+  return result
+}
+
+function resolveChildren(
+  node: Record<string, unknown>,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(node)) {
+    const handler = CHILD_HANDLERS[key]
+    const handled = handler ? handler(value, result) : false
+    if (!handled) result[key] = value
+  }
+  return result
+}
+
+const CHILD_HANDLERS: Record<string, ChildHandler> = {
+  oneOf: (value, result) => {
+    if (!isRecordArray(value)) return false
+    resolveOneOf(value, result)
+    return true
+  },
+  anyOf: (value, result) => {
+    if (!isRecordArray(value)) return false
+    result.anyOf = value.map((v) => (isRecord(v) ? resolve(v) : v))
+    return true
+  },
+  items: (value, result) => {
+    if (!isRecord(value)) return false
+    result.items = resolve(value)
+    return true
+  },
+  properties: (value, result) => {
+    if (!isRecord(value)) return false
+    result.properties = resolveProperties(value)
+    return true
+  },
+}
+
+function makeStrictObject(result: Record<string, unknown>): void {
+  if (result.type !== "object" || !isRecord(result.properties)) return
+
+  const required = isStringArray(result.required)
+    ? [...result.required]
+    : []
+  const allProperties = Object.keys(result.properties)
+  const optional = allProperties.filter(
+    (property) => !required.includes(property),
+  )
+
+  if (optional.length > 0) {
+    const properties = result.properties
+    for (const property of optional) {
+      properties[property] = {
+        anyOf: [properties[property], { type: "null" }],
+      }
+    }
+    result.required = allProperties
+  }
+
+  result.additionalProperties = false
+}
+
+function resolveOneOf(
+  value: Record<string, unknown>[],
+  result: Record<string, unknown>,
+): void {
+  if (isConstEnum(value)) {
+    result.type = "string"
+    result.enum = value.map((entry) => entry.const)
+  } else {
+    result.anyOf = value.map((entry) => resolve(entry))
+  }
+}
+
+function resolveProperties(
+  value: Record<string, unknown>,
+): Record<string, unknown> {
+  const properties: Record<string, unknown> = {}
+  for (const [propertyName, propertySchema] of Object.entries(value)) {
+    properties[propertyName] = isRecord(propertySchema)
+      ? resolve(propertySchema)
+      : propertySchema
+  }
+  return properties
+}
+
+type ChildHandler = (
+  value: unknown,
+  result: Record<string, unknown>,
+) => boolean
+
+function isRecordArray(value: unknown): value is Record<string, unknown>[] {
+  return Array.isArray(value) && value.every(isRecord)
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((entry) => typeof entry === "string")
+  )
+}
+
+function isConstEnum(
+  items: Record<string, unknown>[],
+): items is Array<{ const: unknown }> {
+  return items.every((entry) => "const" in entry)
+}
 ```
 
-Expected: some tests FAIL because the test inputs are in typia format, not Zod format.
+- [ ] **Step 5: Update strict-schema tests for Zod-style inputs**
 
-Update the test inputs in `strict-schema.test.ts` to use Zod-style JSON Schema format from `zodToJsonSchema()`. For each test:
+Replace `src/plugins/llm/openai-compatible/strict-schema.test.ts` with tests using Zod-style JSON Schema inputs (inlined, no `$ref`/`components`):
 
-- Test "inlines $ref and adds additionalProperties: false" — zod-to-json-schema doesn't emit `$ref` for simple cases. Change input to be a simple inline schema (no `$ref`, no `components`), and assert the output is the same strict-formatted result.
+```ts
+import { describe, it, expect } from "vitest"
+import { toStrictSchema } from "@/plugins/openai-compatible"
 
-- Test "converts oneOf with const values to enum" — zod-to-json-schema emits `enum` directly for `z.enum()`. This test's handling might become a no-op pass-through. Keep the logic but verify it works with zod's format.
+describe("toStrictSchema", () => {
+  it("adds additionalProperties: false to object", () => {
+    const input = {
+      type: "object",
+      properties: { name: { type: "string" } },
+      required: ["name"],
+    }
 
-- Test "converts optional properties to nullable" — this is the main feature still needed. Zod outputs `"required": ["name"]` for non-optional, omits optional from required. The function must add optional properties to `required` and wrap them in `anyOf: [{ type: "X" }, { type: "null" }]`. Update test input to match zod format.
+    expect(toStrictSchema(input)).toEqual({
+      type: "object",
+      properties: { name: { type: "string" } },
+      required: ["name"],
+      additionalProperties: false,
+    })
+  })
 
-- Test "converts oneOf to anyOf" — zod uses `anyOf` for nullable types. This transformation may still be needed for `oneOf` if zod emits it in some cases.
+  it("converts oneOf with const values to enum (defensive)", () => {
+    const input = {
+      type: "object",
+      properties: {
+        score: {
+          oneOf: [{ const: "low" }, { const: "high" }],
+        },
+      },
+      required: ["score"],
+    }
 
-- Test "handles array with $ref items" — zod inlines items. Update input to inline format.
+    expect(toStrictSchema(input)).toEqual({
+      type: "object",
+      properties: {
+        score: { type: "string", enum: ["low", "high"] },
+      },
+      required: ["score"],
+      additionalProperties: false,
+    })
+  })
 
-- Tests for "typia AssessResult schema" and "typia ContactExtractionResult schema" — rewrite these with actual `zodToJsonSchema()` output from the schemas defined in Task 6 Steps 1-2.
+  it("converts optional properties to nullable and adds to required", () => {
+    const input = {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        email: { type: "string" },
+      },
+      required: [],
+    }
 
-Adapt the `toStrictSchema` implementation as needed:
-- Simplify or remove `$ref` resolution if zod doesn't emit `$ref`s (or keep as defensive code)
-- Keep optional → nullable + required transformation
-- Keep `additionalProperties: false` transformation
-- Keep `oneOf(const)` → `enum` transformation (defensive)
-- Keep `oneOf` → `anyOf` transformation (defensive)
+    expect(toStrictSchema(input)).toEqual({
+      type: "object",
+      properties: {
+        name: { anyOf: [{ type: "string" }, { type: "null" }] },
+        email: { anyOf: [{ type: "string" }, { type: "null" }] },
+      },
+      required: ["name", "email"],
+      additionalProperties: false,
+    })
+  })
 
-The function after adaptation should be simpler and shorter.
+  it("converts oneOf type alternatives to anyOf", () => {
+    const input = {
+      type: "object",
+      properties: {
+        contact: {
+          oneOf: [
+            { type: "null" },
+            {
+              type: "object",
+              properties: { name: { type: "string" } },
+              required: ["name"],
+            },
+          ],
+        },
+      },
+      required: ["contact"],
+    }
 
-- [ ] **Step 5: Run strict-schema tests**
+    expect(toStrictSchema(input)).toEqual({
+      type: "object",
+      properties: {
+        contact: {
+          anyOf: [
+            { type: "null" },
+            {
+              type: "object",
+              properties: { name: { type: "string" } },
+              required: ["name"],
+              additionalProperties: false,
+            },
+          ],
+        },
+      },
+      required: ["contact"],
+      additionalProperties: false,
+    })
+  })
+
+  it("handles array with inline items", () => {
+    const input = {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { value: { type: "number" } },
+        required: ["value"],
+      },
+    }
+
+    expect(toStrictSchema(input)).toEqual({
+      type: "array",
+      items: {
+        type: "object",
+        properties: { value: { type: "number" } },
+        required: ["value"],
+        additionalProperties: false,
+      },
+    })
+  })
+
+  it("transforms Zod AssessResult schema (enum, no optional)", () => {
+    const input = {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+        matchScore: {
+          type: "string",
+          enum: ["very-bad", "bad", "ok", "good", "excellent"],
+        },
+      },
+      required: ["summary", "matchScore"],
+      additionalProperties: false,
+    }
+
+    expect(toStrictSchema(input)).toEqual({
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+        matchScore: {
+          type: "string",
+          enum: ["very-bad", "bad", "ok", "good", "excellent"],
+        },
+      },
+      required: ["summary", "matchScore"],
+      additionalProperties: false,
+    })
+  })
+
+  it("transforms Zod ContactExtractionResult schema with optional nullable contact", () => {
+    const input = {
+      type: "object",
+      properties: {
+        addresses: { type: "array", items: { type: "string" } },
+        contact: {
+          anyOf: [
+            { type: "null" },
+            {
+              type: "object",
+              properties: {
+                name: {
+                  anyOf: [{ type: "string" }, { type: "null" }],
+                },
+                email: {
+                  anyOf: [{ type: "string" }, { type: "null" }],
+                },
+                phone: {
+                  anyOf: [{ type: "string" }, { type: "null" }],
+                },
+              },
+              additionalProperties: false,
+            },
+          ],
+        },
+      },
+      required: ["addresses"],
+      additionalProperties: false,
+    }
+
+    expect(toStrictSchema(input)).toEqual({
+      type: "object",
+      properties: {
+        addresses: { type: "array", items: { type: "string" } },
+        contact: {
+          anyOf: [
+            { type: "null" },
+            {
+              type: "object",
+              properties: {
+                name: {
+                  anyOf: [{ type: "string" }, { type: "null" }],
+                },
+                email: {
+                  anyOf: [{ type: "string" }, { type: "null" }],
+                },
+                phone: {
+                  anyOf: [{ type: "string" }, { type: "null" }],
+                },
+              },
+              required: ["name", "email", "phone"],
+              additionalProperties: false,
+            },
+          ],
+        },
+      },
+      required: ["addresses", "contact"],
+      additionalProperties: false,
+    })
+  })
+
+  it("throws on invalid input", () => {
+    expect(() => toStrictSchema("not an object")).toThrow(
+      "Invalid schema input",
+    )
+  })
+})
+```
+
+Note: The test file import path changed from `"."` to `"@/plugins/openai-compatible"` since the test file is at `src/plugins/llm/openai-compatible/` and the source is at `src/plugins/openai-compatible/`. Verify the import resolves correctly. If the test module re-exports `toStrictSchema` (the LLM module likely re-exports from the openai-compatible module), the import path should be `"../.."` or whatever the actual relative path is. Check the existing import in the test and adjust if needed.
+
+- [ ] **Step 6: Run strict-schema tests**
 
 ```bash
 npm test -- src/plugins/llm/openai-compatible/strict-schema.test.ts
@@ -1271,7 +1648,7 @@ npm test -- src/plugins/llm/openai-compatible/strict-schema.test.ts
 
 Expected: ALL tests PASS.
 
-- [ ] **Step 6: Run all tests**
+- [ ] **Step 7: Run all tests**
 
 ```bash
 npm test
@@ -1279,7 +1656,7 @@ npm test
 
 Expected: all tests pass, including the openai-compatible client test (which uses `TypedSchema` and `completeJSON`).
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add src/services/ src/plugins/openai-compatible/ src/plugins/llm/
@@ -1288,7 +1665,115 @@ git commit -m "refactor: replace typia JSON schema with zod-to-json-schema, adap
 
 ---
 
-## Task 7: Migrate utils/database.ts
+## Task 7: Migrate src/app/secrets/encrypted.ts
+
+**Files:**
+- Modify: `src/app/secrets/encrypted.ts:3,21`
+
+- [ ] **Step 1: Replace typia validation in load()**
+
+Replace `import typia from "typia"` at line 3 with `import { z } from "zod"`.
+
+Define a local schema for the Secrets DTO (matches `src/models/secrets/index.ts`):
+
+```ts
+const SecretsSchema = z.object({
+  openrouterApiKey: z.string().optional(),
+  requestyApiKey: z.string().optional(),
+  googleMapsApiKey: z.string().optional(),
+})
+```
+
+Replace line 21:
+```ts
+// BEFORE
+return resolveSecrets(typia.json.assertParse<Secrets>(decrypted))
+// AFTER
+return resolveSecrets(SecretsSchema.parse(JSON.parse(decrypted)))
+```
+
+- [ ] **Step 2: Run tests**
+
+```bash
+npm test -- src/app/secrets/secrets.test.ts
+```
+
+Expected: tests pass.
+
+- [ ] **Step 3: Run fix**
+
+```bash
+npm run fix
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/app/secrets/encrypted.ts
+git commit -m "refactor: replace typia with Zod in encrypted secrets repository"
+```
+
+---
+
+## Task 8: Migrate src/utils/json-ld.ts
+
+**Files:**
+- Modify: `src/utils/json-ld.ts:1,14`
+
+- [ ] **Step 1: Replace typia.json.isParse with Zod**
+
+Replace `import typia from "typia"` at line 1 with `import { z } from "zod"`.
+
+Replace lines 13-17:
+```ts
+// BEFORE
+try {
+  const data = typia.json.isParse<Record<string, unknown>>(
+    $(element).html() || "",
+  )
+  if (data && data["@type"] === type) {
+    result = data
+  }
+} catch {
+  // invalid JSON — skip
+}
+// AFTER
+const raw = $(element).html() || ""
+let data: Record<string, unknown> | undefined
+try {
+  data = z.record(z.unknown()).parse(JSON.parse(raw))
+} catch {
+  data = undefined
+}
+if (data?.["@type"] === type) {
+  result = data
+}
+```
+
+- [ ] **Step 2: Run tests**
+
+```bash
+npm test -- src/utils/json-ld.test.ts
+```
+
+Expected: PASS.
+
+- [ ] **Step 3: Run fix**
+
+```bash
+npm run fix
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/utils/json-ld.ts
+git commit -m "refactor: replace typia with Zod in utils/json-ld.ts"
+```
+
+---
+
+## Task 9: Migrate utils/database.ts
 
 **Files:**
 - Modify: `src/utils/database.ts:3,70`
@@ -1323,7 +1808,7 @@ git commit -m "refactor: replace typia with Zod in utils/database.ts"
 
 ---
 
-## Task 8: Migrate progress type guard (src/ui/hooks/job-progress.ts)
+## Task 10: Migrate progress type guard (src/ui/hooks/job-progress.ts)
 
 **Files:**
 - Modify: `src/ui/hooks/job-progress.ts:3,47`
@@ -1371,7 +1856,7 @@ git commit -m "refactor: replace typia.is with Zod safeParse in job-progress hoo
 
 ---
 
-## Task 9: Cleanup — remove typia and compiler plugin
+## Task 11: Cleanup — remove typia and compiler plugin
 
 **Files:**
 - Modify: `package.json`
@@ -1443,7 +1928,7 @@ git commit -m "chore: remove typia and @typia/unplugin"
 
 ---
 
-## Task 10: Final verification
+## Task 12: Final verification
 
 - [ ] **Step 1: Run full test suite**
 

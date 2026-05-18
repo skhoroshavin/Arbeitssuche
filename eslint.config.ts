@@ -194,9 +194,9 @@ export default tseslint.config(
     },
   },
 
-  // Disable read-friendly-order for config files and scripts
+  // Disable read-friendly-order for config files, scripts, and API schemas
   {
-    files: ["*.config.ts", "scripts/**/*.ts"],
+    files: ["*.config.ts", "scripts/**/*.ts", "src/api/*.ts"],
     rules: {
       "unslop/read-friendly-order": "off",
     },

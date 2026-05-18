@@ -1,5 +1,3 @@
-/* eslint-disable unslop/no-single-use-constants */
-
 import { z } from "zod"
 
 export type LlmProviderInfoDTO = z.infer<typeof LlmProviderInfoSchema>

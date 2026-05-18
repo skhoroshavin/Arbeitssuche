@@ -1,9 +1,14 @@
-import typia from "typia"
+import { z } from "zod"
+
 import type {
   CommuteResult,
   CommuteClient,
   CommuteProviderInfo,
 } from "@/plugins/commute"
+
+export function createGoogleMapsCommuteClient(apiKey: string): CommuteClient {
+  return new GoogleMapsCommuteClient(apiKey)
+}
 
 export const googleMapsProviderInfo: CommuteProviderInfo = {
   id: "google-maps",
@@ -19,10 +24,6 @@ export const googleMapsProviderInfo: CommuteProviderInfo = {
     "8. Kopiere den Schlüssel - er beginnt mit `AIza...`",
     "9. Füge ihn oben ein",
   ].join("\n"),
-}
-
-export function createGoogleMapsCommuteClient(apiKey: string): CommuteClient {
-  return new GoogleMapsCommuteClient(apiKey)
 }
 
 class GoogleMapsCommuteClient implements CommuteClient {
@@ -68,9 +69,9 @@ class GoogleMapsCommuteClient implements CommuteClient {
       await response.text()
       return false
     }
-    const data = typia.json.assertParse<{ status: string }>(
-      await response.text(),
-    )
+    const data = z
+      .object({ status: z.string() })
+      .parse(JSON.parse(await response.text()))
     return GOOGLE_MAPS_OK_STATUSES.has(data.status)
   }
 }
@@ -102,8 +103,8 @@ async function fetchDuration(
     )
   }
 
-  const data = typia.json.assertParse<DistanceMatrixResponse>(
-    await response.text(),
+  const data = DistanceMatrixResponseSchema.parse(
+    JSON.parse(await response.text()),
   )
 
   if (data.status !== "OK") {
@@ -114,7 +115,7 @@ async function fetchDuration(
 }
 
 function parseRouteElement(
-  data: DistanceMatrixResponse,
+  data: z.infer<typeof DistanceMatrixResponseSchema>,
   destination: string,
 ): { distance: string; durationMinutes: number } {
   const element = data.rows[0].elements[0]
@@ -145,13 +146,17 @@ function departureTimestamp(baseDate: Date, hour: number): number {
   return Math.floor(d.getTime() / 1000)
 }
 
-interface DistanceMatrixResponse {
-  rows: { elements: DistanceMatrixElement[] }[]
-  status: string
-}
-
-interface DistanceMatrixElement {
-  status: string
-  distance?: { text: string }
-  duration?: { value: number }
-}
+const DistanceMatrixResponseSchema = z.object({
+  rows: z.array(
+    z.object({
+      elements: z.array(
+        z.object({
+          status: z.string(),
+          distance: z.object({ text: z.string() }).optional(),
+          duration: z.object({ value: z.number() }).optional(),
+        }),
+      ),
+    }),
+  ),
+  status: z.string(),
+})

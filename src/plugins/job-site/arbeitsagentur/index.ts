@@ -1,12 +1,22 @@
-import typia from "typia"
+import { z } from "zod"
+
 import type { Browser } from "@/plugins/browser"
+
 import type { Fetch } from "@/plugins/fetch"
+
 import type {
   VacancyDetails,
   JobSite,
   SearchCriteria,
 } from "@/plugins/job-site"
+
 import { joinNormalizedText } from "@/utils/index.js"
+
+export const SUPPORTED_MODES = [
+  "employment",
+  "entry-level",
+  "apprenticeship",
+] as const
 
 export function createArbeitsagenturSite(
   browser: Browser,
@@ -14,6 +24,8 @@ export function createArbeitsagenturSite(
 ): JobSite {
   return new ArbeitsagenturSite(browser, fetch)
 }
+
+const API_BASE = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service"
 
 class ArbeitsagenturSite implements JobSite {
   constructor(_browser: Browser, fetch?: Fetch) {
@@ -27,8 +39,8 @@ class ArbeitsagenturSite implements JobSite {
     const url = buildSearchApiUrl(criteria, pageId)
     const response = await this.fetch(url, { headers: API_HEADERS })
     assertOk(response, url)
-    const data = typia.json.assertParse<ApiSearchResponse>(
-      await response.text(),
+    const data = ApiSearchResponseSchema.parse(
+      JSON.parse(await response.text()),
     )
     return mapSearchResponse(data)
   }
@@ -40,12 +52,14 @@ class ArbeitsagenturSite implements JobSite {
     const apiUrl = `${API_BASE}/pc/v3/jobdetails/${encodedRefnr}`
     const response = await this.fetch(apiUrl, { headers: API_HEADERS })
     assertOk(response, apiUrl)
-    const data = typia.json.assertParse<ApiJobDetails>(await response.text())
+    const data = ApiJobDetailsSchema.parse(JSON.parse(await response.text()))
     return mapDetailsResponse(data, url)
   }
 
   private readonly fetch: Fetch
 }
+
+const API_HEADERS = { "X-API-Key": "jobboerse-jobsuche" }
 
 function assertOk(response: Response, url: string): void {
   if (!response.ok) {
@@ -55,7 +69,7 @@ function assertOk(response: Response, url: string): void {
   }
 }
 
-function mapSearchResponse(data: ApiSearchResponse): {
+function mapSearchResponse(data: z.infer<typeof ApiSearchResponseSchema>): {
   urls: string[]
   nextPageId?: string
 } {
@@ -69,7 +83,10 @@ function mapSearchResponse(data: ApiSearchResponse): {
   return { urls, nextPageId }
 }
 
-function mapDetailsResponse(data: ApiJobDetails, url: string): VacancyDetails {
+function mapDetailsResponse(
+  data: z.infer<typeof ApiJobDetailsSchema>,
+  url: string,
+): VacancyDetails {
   return {
     url,
     title: data.stellenangebotsTitel ?? "",
@@ -100,7 +117,7 @@ function refnrToUrl(refnr: string): string {
 }
 
 function buildAddressFromLocations(
-  locations?: ApiJobDetails["stellenlokationen"],
+  locations: z.infer<typeof ApiJobDetailsSchema>["stellenlokationen"],
 ): string | undefined {
   if (!locations?.length) return undefined
   const addr = locations[0].adresse
@@ -114,38 +131,33 @@ function modeToAngebotsart(mode: string): string {
   return "1"
 }
 
-export const SUPPORTED_MODES = [
-  "employment",
-  "entry-level",
-  "apprenticeship",
-] as const
+const ApiSearchResponseSchema = z.object({
+  stellenangebote: z.array(z.object({ refnr: z.string() })).optional(),
+  maxErgebnisse: z.number(),
+  page: z.number(),
+  size: z.number(),
+})
 
-const API_BASE = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service"
-const API_HEADERS = { "X-API-Key": "jobboerse-jobsuche" }
-
-interface ApiSearchResponse {
-  stellenangebote?: ApiSearchResult[]
-  maxErgebnisse: number
-  page: number
-  size: number
-}
-
-interface ApiJobDetails {
-  stellenangebotsTitel?: string
-  stellenangebotsBeschreibung?: string
-  firma?: string
-  stellenlokationen?: Array<{
-    adresse?: {
-      strasse?: string
-      plz?: string
-      ort?: string
-    }
-  }>
-  eintrittszeitraum?: { von?: string }
-  veroeffentlichungszeitraum?: { von?: string }
-  referenznummer?: string
-}
-
-interface ApiSearchResult {
-  refnr: string
-}
+const ApiJobDetailsSchema = z.object({
+  stellenangebotsTitel: z.string().optional(),
+  stellenangebotsBeschreibung: z.string().optional(),
+  firma: z.string().optional(),
+  stellenlokationen: z
+    .array(
+      z.object({
+        adresse: z
+          .object({
+            strasse: z.string().optional(),
+            plz: z.string().optional(),
+            ort: z.string().optional(),
+          })
+          .optional(),
+      }),
+    )
+    .optional(),
+  eintrittszeitraum: z.object({ von: z.string().optional() }).optional(),
+  veroeffentlichungszeitraum: z
+    .object({ von: z.string().optional() })
+    .optional(),
+  referenznummer: z.string().optional(),
+})
