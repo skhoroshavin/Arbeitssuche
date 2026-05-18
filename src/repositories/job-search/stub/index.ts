@@ -1,169 +1,126 @@
 import {
   isMeaningfulJobSearchEditorSnapshot,
-  DEFAULT_SEARCH_PARAMS,
-  DEFAULT_PREFERENCES,
-  mapSnapshotToPersistedJobSearch,
-  resolveDraftJobSearchEditorSnapshot,
+  resolveDraftJobSearch,
+  DEFAULT_JOB_SEARCH,
 } from "@/models/job-search/index.js"
 import type {
-  JobSearchDraft,
   JobSearch,
-  JobSearchEditorSnapshot,
+  JobSearchID,
   JobSearchInfo,
+  ApplicantID,
   SearchMode,
 } from "@/models/job-search"
+import { JobSearchID as makeJobSearchID } from "@/models/job-search/index.js"
 import { resolveJobSearch } from "@/models/job-search/index.js"
 import type { JobSearchRepository } from "../types.js"
-import { createUniqueDerivedId } from "@/utils/index.js"
+
+function draftSentinel(applicantId: ApplicantID): string {
+  return `$draft_${applicantId.value}`
+}
 
 export function createStubJobSearchRepository(
-  initial?: Record<string, Partial<StubData>>,
+  initial?: Record<string, { jobSearch: JobSearch; applicantId: string }>,
 ): JobSearchRepository {
   return new StubJobSearchRepository(initial)
 }
 
 class StubJobSearchRepository implements JobSearchRepository {
-  constructor(initial?: Record<string, Partial<StubData>>) {
+  constructor(
+    initial?: Record<string, { jobSearch: JobSearch; applicantId: string }>,
+  ) {
     this.store = new Map(
       initial
         ? Object.entries(initial).map(([id, data]) => [
             id,
             {
-              jobSearch: data.jobSearch ?? {
-                id,
-                applicantId: "",
-                params: { ...DEFAULT_SEARCH_PARAMS },
-                preferences: { ...DEFAULT_PREFERENCES },
-              },
-              coverLetter: data.coverLetter,
-              applicationCoverLetters: data.applicationCoverLetters,
+              jobSearch: data.jobSearch,
+              applicantId: data.applicantId,
             },
           ])
         : [],
     )
     this.drafts = new Map()
+    this.nextId = this.store.size
   }
 
-  listByApplicant(applicantId: string): JobSearchInfo[] {
-    return this.list().filter((js) => js.applicantId === applicantId)
+  listByApplicant(applicantId: ApplicantID): JobSearchInfo[] {
+    const prefix = `$draft_${applicantId.value}`
+    return [...this.store.entries()]
+      .filter(([id, data]) => id !== prefix && data.applicantId === applicantId.value)
+      .map(([id, data]) => ({
+        id: makeJobSearchID(id),
+        displayName: data.jobSearch.searchTerm,
+      }))
   }
 
-  list(): JobSearchInfo[] {
-    return [...this.store.values()].map((data) => ({
-      id: data.jobSearch.id,
-      applicantId: data.jobSearch.applicantId,
-      searchTerm: data.jobSearch.params.searchTerm,
-    }))
+  load(id: JobSearchID): { jobSearch: JobSearch; applicantId: ApplicantID } {
+    const entry = this.getOrThrow(id)
+    return {
+      jobSearch: resolveJobSearch(structuredClone(entry.jobSearch)),
+      applicantId: { value: entry.applicantId },
+    }
   }
 
-  exists(id: string): boolean {
-    return this.store.has(id)
-  }
-
-  load(id: string): JobSearch {
-    return resolveJobSearch(structuredClone(this.getOrThrow(id).jobSearch))
-  }
-
-  save(id: string, data: JobSearch): void {
+  save(id: JobSearchID, data: JobSearch): void {
     const entry = this.getOrThrow(id)
     entry.jobSearch = resolveJobSearch(structuredClone(data))
   }
 
-  create(
-    searchTerm: string,
-    applicantId: string,
-    searchMode?: SearchMode,
-  ): string {
-    const id = createUniqueDerivedId(searchTerm, (id) => this.store.has(id))
-    const parameters = { ...DEFAULT_SEARCH_PARAMS, searchTerm }
-    if (searchMode) parameters.searchMode = searchMode
+  create(searchTerm: string, applicantId: ApplicantID, searchMode?: SearchMode): JobSearchID {
+    const id = makeJobSearchID(String(++this.nextId))
     const jobSearch = resolveJobSearch({
-      id,
-      applicantId,
-      params: parameters,
-      preferences: { ...DEFAULT_PREFERENCES },
+      searchTerm,
+      mode: searchMode ?? "employment",
     })
-    this.store.set(id, {
-      jobSearch,
-    })
+    this.store.set(id.value, { jobSearch, applicantId: applicantId.value })
     return id
   }
 
-  delete(id: string): void {
-    this.store.delete(id)
+  delete(id: JobSearchID): void {
+    this.store.delete(id.value)
   }
 
-  loadDraft(applicantId: string): JobSearchDraft | undefined {
-    const snapshot = this.drafts.get(applicantId)
+  loadDraft(applicantId: ApplicantID): JobSearch | undefined {
+    const snapshot = this.drafts.get(applicantId.value)
     if (!snapshot) return undefined
-    return {
-      applicantId,
-      snapshot: structuredClone(snapshot),
-      meaningful: isMeaningfulJobSearchEditorSnapshot(snapshot),
-    }
+    const resolved = resolveJobSearch(structuredClone(snapshot))
+    return isMeaningfulJobSearchEditorSnapshot(resolved) ? resolved : undefined
   }
 
-  saveDraft(applicantId: string, draft: JobSearchEditorSnapshot): void {
-    this.drafts.set(applicantId, structuredClone(draft))
+  saveDraft(applicantId: ApplicantID, draft: JobSearch): void {
+    this.drafts.set(applicantId.value, resolveJobSearch(structuredClone(draft)))
   }
 
-  finalizeDraft(applicantId: string): string {
-    const draft = this.drafts.get(applicantId)
+  finalizeDraft(applicantId: ApplicantID): JobSearchID {
+    const draft = this.drafts.get(applicantId.value)
     if (!draft)
-      throw new Error(`Draft for applicant "${applicantId}" not found`)
-    const resolvedSnapshot = resolveDraftJobSearchEditorSnapshot(draft)
-    const resolvedSearchTerm = resolvedSnapshot.params.searchTerm
-    const id = createUniqueDerivedId(resolvedSearchTerm, (searchId) =>
-      this.store.has(searchId),
-    )
-    const jobSearch = mapSnapshotToPersistedJobSearch(
-      id,
-      applicantId,
-      resolvedSnapshot,
-    )
-    this.store.set(id, {
-      jobSearch,
-      applicationCoverLetters: new Map([["", draft.coverLetterContent]]),
+      throw new Error(`Draft for applicant "${applicantId.value}" not found`)
+    const resolved = resolveDraftJobSearch(structuredClone(draft))
+    const id = makeJobSearchID(String(++this.nextId))
+    this.store.set(id.value, {
+      jobSearch: resolved,
+      applicantId: applicantId.value,
     })
     this.deleteDraft(applicantId)
     return id
   }
 
-  deleteDraft(applicantId: string): void {
-    this.drafts.delete(applicantId)
+  deleteDraft(applicantId: ApplicantID): void {
+    this.drafts.delete(applicantId.value)
   }
 
-  loadApplicationCoverLetter(jobSearchId: string, vacancyHash: string): string {
-    return (
-      this.store.get(jobSearchId)?.applicationCoverLetters?.get(vacancyHash) ??
-      ""
-    )
-  }
-
-  saveApplicationCoverLetter(
-    jobSearchId: string,
-    vacancyHash: string,
-    content: string,
-  ): void {
-    const data = this.getOrThrow(jobSearchId)
-    if (!data.applicationCoverLetters) {
-      data.applicationCoverLetters = new Map()
-    }
-    data.applicationCoverLetters.set(vacancyHash, content)
-  }
-
-  private getOrThrow(id: string): StubData {
-    const data = this.store.get(id)
-    if (!data) throw new Error(`Job search "${id}" not found`)
+  private getOrThrow(id: JobSearchID): StubData {
+    const data = this.store.get(id.value)
+    if (!data) throw new Error(`Job search "${id.value}" not found`)
     return data
   }
 
   private readonly store: Map<string, StubData>
-  private readonly drafts: Map<string, JobSearchEditorSnapshot>
+  private readonly drafts: Map<string, JobSearch>
+  private nextId: number
 }
 
 interface StubData {
   jobSearch: JobSearch
-  coverLetter?: string
-  applicationCoverLetters?: Map<string, string>
+  applicantId: string
 }
