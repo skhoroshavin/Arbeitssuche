@@ -1,5 +1,6 @@
 import { Vacancy } from "@/models/vacancy/index.js"
 import type { Activity } from "@/models/vacancy"
+import type { JobSearchID } from "@/models/job-search"
 import {
   EMPTY_VACANCY_LIST_OUTPUT,
   createVacancyListOutput,
@@ -29,10 +30,11 @@ class StubVacancyRepository implements VacancyRepository {
           ])
         : [],
     )
+    this.coverLetters = new Map()
   }
 
-  loadAll(jobSearchId: string): VacancyListOutput {
-    const data = this.store.get(jobSearchId)
+  loadAll(jobSearchId: JobSearchID): VacancyListOutput {
+    const data = this.store.get(jobSearchId.value)
     if (!data) return EMPTY_VACANCY_LIST_OUTPUT
     const cloned = structuredClone(data.output)
     return {
@@ -41,8 +43,8 @@ class StubVacancyRepository implements VacancyRepository {
     }
   }
 
-  save(jobSearchId: string, vacancies: Vacancy[], latestCrawl: string): void {
-    this.store.set(jobSearchId, {
+  save(jobSearchId: JobSearchID, vacancies: Vacancy[], latestCrawl: string): void {
+    this.store.set(jobSearchId.value, {
       output: createVacancyListOutput(
         vacancies.map((v) => new Vacancy(structuredClone(v))),
         latestCrawl,
@@ -50,15 +52,15 @@ class StubVacancyRepository implements VacancyRepository {
     })
   }
 
-  findByHash(jobSearchId: string, hash: string): Vacancy | undefined {
-    const data = this.store.get(jobSearchId)
+  findByHash(jobSearchId: JobSearchID, hash: string): Vacancy | undefined {
+    const data = this.store.get(jobSearchId.value)
     const found = data?.output.vacancies.find((v) => v.hash === hash)
     return found ? new Vacancy(structuredClone(found)) : undefined
   }
 
-  addActivity(jobSearchId: string, hash: string, activity: Activity): void {
-    const data = this.store.get(jobSearchId)
-    if (!data) throw new Error(`No vacancies for job search "${jobSearchId}"`)
+  addActivity(jobSearchId: JobSearchID, hash: string, activity: Activity): void {
+    const data = this.store.get(jobSearchId.value)
+    if (!data) throw new Error(`No vacancies for job search "${jobSearchId.value}"`)
 
     const vacancy = data.output.vacancies.find((v) => v.hash === hash)
     if (!vacancy) throw new Error(`Vacancy "${hash}" not found`)
@@ -70,7 +72,16 @@ class StubVacancyRepository implements VacancyRepository {
     })
   }
 
+  loadCoverLetter(jobSearchId: JobSearchID, vacancyHash: string): string {
+    return this.coverLetters.get(`${jobSearchId.value}:${vacancyHash}`) ?? ""
+  }
+
+  saveCoverLetter(jobSearchId: JobSearchID, vacancyHash: string, content: string): void {
+    this.coverLetters.set(`${jobSearchId.value}:${vacancyHash}`, content)
+  }
+
   private readonly store: Map<string, StubData>
+  private readonly coverLetters: Map<string, string>
 }
 
 interface StubData {
