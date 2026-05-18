@@ -92,9 +92,9 @@ describe("JobSearchWizardPage in first-start flow", () => {
 
   it("skips the draft resume prompt when first-start already resumed", async () => {
     const snapshot = createDefaultJobSearchEditorSnapshot()
-    snapshot.params.searchTerm = "Engineer"
+    snapshot.searchTerm = "Engineer"
     refetchDraft.mockResolvedValue({
-      data: { draft: { meaningful: true, snapshot } },
+      data: { draft: snapshot },
     })
 
     render(

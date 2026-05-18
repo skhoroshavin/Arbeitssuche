@@ -6,7 +6,6 @@ export interface JobSearchEditorConfigValue {
   searchMode: SearchMode
   sources: string[]
   maxResults?: number
-  maxDistanceKm?: number
   maxCommuteMinutes?: number
   freeText: string[]
 }
