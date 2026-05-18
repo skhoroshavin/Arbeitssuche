@@ -103,10 +103,16 @@ export interface JobSearch {
 ### SearchSource
 
 ```ts
-export type SearchSource = string
+export interface SearchSource {
+  value: string
+}
+
+export function SearchSource(value: string): SearchSource {
+  return { value }
+}
 ```
 
-Type alias for job board source identifiers (e.g. `"arbeitsagentur"`, `"xing"`). Used in `JobSearch.sources`.
+Simple wrapper for job board source identifiers (e.g. `"arbeitsagentur"`, `"xing"`). Used in `JobSearch.sources`.
 
 ### Deleted Model Types
 
@@ -366,17 +372,17 @@ handle("applicants:create", (name: string) => ({
 }))
 
 handle("applicants:load", (id: string) =>
-  services.applicantRepo.load(id),
+  services.applicantRepo.load(ApplicantID(id)),
 )
 
 handle("applicants:save", (id: string, data: unknown) => {
   const applicant = ApplicantSchema.parse(data)
-  services.applicantRepo.save(id, applicant)
+  services.applicantRepo.save(ApplicantID(id), applicant)
   return { ok: true }
 })
 
 handle("applicants:delete", (id: string) => {
-  services.applicantRepo.delete(id)
+  services.applicantRepo.delete(ApplicantID(id))
   return { deleted: id }
 })
 
@@ -400,9 +406,9 @@ handle("applicants:draft:finalize", () => ({
 ```ts
 handle("job-searches:list", (applicantId: string) => ({
   jobSearches: services.jobSearchRepo
-    .listByApplicant(applicantId)
+    .listByApplicant(ApplicantID(applicantId))
     .map((info) => ({
-      id: info.id,
+      id: info.id.value,
       displayName: info.displayName,
     })),
 }))
@@ -412,49 +418,49 @@ handle(
   (searchTerm: string, applicantId: string, mode?: SearchMode) => ({
     id: services.jobSearchRepo.create(
       searchTerm,
-      applicantId,
+      ApplicantID(applicantId),
       mode,
-    ),
+    ).value,
   }),
 )
 
 handle("job-searches:load", (id: string) => {
-  const { jobSearch, applicantId } = services.jobSearchRepo.load(id)
-  return { jobSearch, applicantId }
+  const { jobSearch, applicantId } = services.jobSearchRepo.load(JobSearchID(id))
+  return { jobSearch, applicantId: applicantId.value }
 })
 
 handle("job-searches:save", (id: string, data: unknown) => {
   const jobSearch = JobSearchSchema.parse(data)
-  services.jobSearchRepo.save(id, jobSearch)
+  services.jobSearchRepo.save(JobSearchID(id), jobSearch)
   return { ok: true }
 })
 
 handle("job-searches:delete", (id: string) => {
-  services.jobSearchRepo.delete(id)
+  services.jobSearchRepo.delete(JobSearchID(id))
   return { deleted: id }
 })
 
 handle("job-searches:draft:load", (applicantId: string) => ({
-  draft: services.jobSearchRepo.loadDraft(applicantId),
+  draft: services.jobSearchRepo.loadDraft(ApplicantID(applicantId)),
 }))
 
 handle("job-searches:draft:save", (applicantId: string, draft: unknown) => {
   const jobSearch = JobSearchSchema.parse(draft)
-  services.jobSearchRepo.saveDraft(applicantId, jobSearch)
+  services.jobSearchRepo.saveDraft(ApplicantID(applicantId), jobSearch)
   return { ok: true }
 })
 
 handle("job-searches:draft:finalize", (applicantId: string) => ({
-  id: services.jobSearchRepo.finalizeDraft(applicantId),
+  id: services.jobSearchRepo.finalizeDraft(ApplicantID(applicantId)).value,
 }))
 
 handle("job-searches:cover-letter:load", (id: string) => ({
-  content: services.jobSearchRepo.load(id).coverLetter,
+  content: services.jobSearchRepo.load(JobSearchID(id)).coverLetter,
 }))
 
 handle("job-searches:cover-letter:save", (id: string, content: string) => {
-  const jobSearch = services.jobSearchRepo.load(id)
-  services.jobSearchRepo.save(id, { ...jobSearch, coverLetter: content })
+  const jobSearch = services.jobSearchRepo.load(JobSearchID(id))
+  services.jobSearchRepo.save(JobSearchID(id), { ...jobSearch, coverLetter: content })
   return { ok: true }
 })
 ```
@@ -468,14 +474,14 @@ Per-vacancy cover letter handlers move to a new `ipc-vacancies.ts` or added to e
 ```ts
 handle("vacancies:cover-letter:load", (jobSearchId: string, vacancyHash: string) => ({
   content: services.vacancyRepo.loadCoverLetter(
-    jobSearchId,
+    JobSearchID(jobSearchId),
     vacancyHash,
   ),
 }))
 
 handle("vacancies:cover-letter:save", (jobSearchId: string, vacancyHash: string, content: string) => {
   services.vacancyRepo.saveCoverLetter(
-    jobSearchId,
+    JobSearchID(jobSearchId),
     vacancyHash,
     content,
   )
@@ -851,7 +857,7 @@ function migrateJobSearchData(database: Database): void {
 ## 14. Risks
 
 1. **Migration complexity** — The JSON blob rewriting is unusual but safe for small local databases. Must run in a transaction.
-2. **ID type clarity** — `ApplicantID` / `JobSearchID` are type aliases for `string`, so they pass through IPC without ceremony. The types serve as documentation and intent markers.
+2. **ID type clarity** — `ApplicantID` / `JobSearchID` are simple `{ value: string }` objects. IPC handlers wrap incoming strings with `ApplicantID(id)` / `JobSearchID(id)` before passing to repositories. Over the wire they serialize as `{ value: string }` objects.
 3. **Test churn** — Many test files need mock data updates. The change is mechanical but widespread.
 4. **Stub repository cover letter migration** — Moving cover letters from `StubJobSearchRepository` to `StubVacancyRepository` requires updating all tests that construct stub repos with initial cover letter data.
 
