@@ -1,11 +1,13 @@
+import { z } from "zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import {
-  SetupStateLoadResultSchema,
-  AppSetupStateSchema,
-  ClearDataOkSchema,
-} from "@/api"
+import { AppSetupStateSchema } from "@/models/setup"
+import { OkSchema } from "@/utils/schemas"
 import type { AppSetupState } from "@/models/setup"
 import { api } from "./internal/api"
+
+const SetupStateLoadResultSchema = z.object({
+  state: AppSetupStateSchema.optional(),
+})
 
 export function useSetupState() {
   return useQuery({
@@ -45,7 +47,7 @@ export function useClearAllData() {
 
   return useMutation({
     mutationFn: async () =>
-      ClearDataOkSchema.parse(await api().invoke("setup:clear-data")),
+      OkSchema.parse(await api().invoke("setup:clear-data")),
     onSuccess: () => {
       queryClient.clear()
     },
@@ -55,5 +57,5 @@ export function useClearAllData() {
 export function closeApp(): Promise<{ ok: true }> {
   return api()
     .invoke("app:close")
-    .then((result) => ClearDataOkSchema.parse(result))
+    .then((result) => OkSchema.parse(result))
 }
