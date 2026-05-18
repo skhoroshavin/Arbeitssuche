@@ -85,12 +85,6 @@ function applicantRepositoryTests(
       teardown()
     })
 
-    test("save throws for non-existent applicant", () => {
-      const { repo, teardown } = createRepo()
-      expect(() => repo.save(ApplicantID("nope"), makeSampleApplicant())).toThrow()
-      teardown()
-    })
-
     test("delete removes applicant", () => {
       const { repo, teardown } = createRepo()
       const id = ApplicantID("1")

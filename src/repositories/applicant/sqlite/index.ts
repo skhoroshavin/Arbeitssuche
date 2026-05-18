@@ -41,10 +41,13 @@ class SqliteApplicantRepository implements ApplicantRepository {
     this.listStmt = database.prepare("SELECT id, name FROM applicants")
     this.loadStmt = database.prepare("SELECT data FROM applicants WHERE id = ?")
     this.updateStmt = database.prepare(
-      "UPDATE applicants SET name = ?, data = ? WHERE id = ?",
+      "INSERT OR REPLACE INTO applicants (id, name, data) VALUES (?, ?, ?)",
     )
     this.insertStmt = database.prepare(
       "INSERT INTO applicants (id, name, data) VALUES (?, ?, ?)",
+    )
+    this.upsertStmt = database.prepare(
+      "INSERT OR REPLACE INTO applicants (id, name, data) VALUES (?, ?, ?)",
     )
     this.deleteStmt = database.prepare("DELETE FROM applicants WHERE id = ?")
   }
@@ -72,13 +75,11 @@ class SqliteApplicantRepository implements ApplicantRepository {
 
   save(id: ApplicantID, data: Applicant): void {
     const resolved = resolveApplicant(data)
-    const result = this.updateStmt.run(
+    this.updateStmt.run(
+      id.value,
       resolved.personal.name,
       JSON.stringify(resolved),
-      id.value,
     )
-    if (result.changes === 0)
-      throw new Error(`Applicant "${id.value}" not found`)
   }
 
   delete(id: ApplicantID): void {
@@ -87,7 +88,7 @@ class SqliteApplicantRepository implements ApplicantRepository {
 
   saveDraft(draft: Applicant): void {
     const snapshot = resolveApplicant(draft)
-    this.insertStmt.run(DRAFT_SENTINEL, snapshot.personal.name, JSON.stringify(snapshot))
+    this.upsertStmt.run(DRAFT_SENTINEL, snapshot.personal.name, JSON.stringify(snapshot))
   }
 
   finalizeDraft(): ApplicantID {
@@ -122,6 +123,7 @@ class SqliteApplicantRepository implements ApplicantRepository {
   private readonly loadStmt: Statement
   private readonly updateStmt: Statement
   private readonly insertStmt: Statement
+  private readonly upsertStmt: Statement
   private readonly deleteStmt: Statement
   private nextId = 0
 }

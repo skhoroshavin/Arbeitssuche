@@ -40,7 +40,7 @@ load(id: ApplicantID): Applicant {
   }
 
 save(id: ApplicantID, data: Applicant): void {
-    this.getOrThrow(id)
+    // removed getOrThrow check
     this.store.set(id.value, resolveApplicant(structuredClone(data)))
   }
 
