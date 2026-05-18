@@ -6,11 +6,9 @@ export const AppSetupStateSchema = z.object({
   lastStep: z.string().optional(),
   applicantId: z.string().optional(),
 })
-export type AppSetupStateDTO = z.infer<typeof AppSetupStateSchema>
 
 export const SetupStateLoadResultSchema = z.object({
   state: AppSetupStateSchema.optional(),
 })
-export type SetupStateLoadResultDTO = z.infer<typeof SetupStateLoadResultSchema>
 
 export { OkResponseSchema as ClearDataOkSchema } from "./ok-response.js"

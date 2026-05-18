@@ -1,5 +1,3 @@
-/* eslint-disable unslop/no-single-use-constants */
-
 import { z } from "zod"
 
 export const ApplicantPersonalSchema = z.object({
@@ -71,13 +69,11 @@ export const ApplicantSchema = z.object({
   ),
   personalNotes: z.array(z.string()).optional(),
 })
-export type ApplicantDTO = z.infer<typeof ApplicantSchema>
 
 export const ApplicantInfoSchema = z.object({
   id: z.string(),
   name: z.string().optional(),
 })
-export type ApplicantInfoDTO = z.infer<typeof ApplicantInfoSchema>
 
 export const ApplicantDraftResponseSchema = z.object({
   draft: z

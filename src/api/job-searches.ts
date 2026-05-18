@@ -1,5 +1,3 @@
-/* eslint-disable unslop/no-single-use-constants */
-
 import { z } from "zod"
 
 export const SearchParametersSchema = z.object({
@@ -9,14 +7,12 @@ export const SearchParametersSchema = z.object({
   sources: z.array(z.string()),
   maxResults: z.number().optional(),
 })
-export type SearchParametersDTO = z.infer<typeof SearchParametersSchema>
 
 export const SearchPreferencesSchema = z.object({
   maxDistanceKm: z.number().optional(),
   maxCommuteMinutes: z.number().optional(),
   freeText: z.array(z.string()),
 })
-export type SearchPreferencesDTO = z.infer<typeof SearchPreferencesSchema>
 
 export const JobSearchSchema = z.object({
   id: z.string(),
@@ -24,7 +20,6 @@ export const JobSearchSchema = z.object({
   params: SearchParametersSchema,
   preferences: SearchPreferencesSchema,
 })
-export type JobSearchDTO = z.infer<typeof JobSearchSchema>
 
 export const JobSearchEditorSnapshotSchema = z.object({
   params: SearchParametersSchema,
@@ -47,7 +42,6 @@ export const JobSearchInfoSchema = z.object({
   applicantId: z.string(),
   searchTerm: z.string(),
 })
-export type JobSearchInfoDTO = z.infer<typeof JobSearchInfoSchema>
 
 export const JobSearchListResponseSchema = z.object({
   jobSearches: z.array(JobSearchInfoSchema),

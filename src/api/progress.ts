@@ -1,8 +1,4 @@
-/* eslint-disable unslop/no-single-use-constants */
-
 import { z } from "zod"
-
-export type ProgressPayloadDTO = z.infer<typeof ProgressPayloadSchema>
 
 export const ProgressPayloadSchema = z.object({
   message: z.string(),

@@ -1,5 +1,3 @@
-/* eslint-disable unslop/no-single-use-constants */
-
 import { z } from "zod"
 
 export const VacancyContactSchema = z.object({
@@ -92,7 +90,6 @@ export const VacancyDTOSchema = z.object({
   activityHistory: z.array(ActivitySchema),
   active: z.boolean(),
 })
-export type VacancyDTODTO = z.infer<typeof VacancyDTOSchema>
 
 export const VacancyWithStatusSchema = VacancyDTOSchema.extend({
   status: z.enum([

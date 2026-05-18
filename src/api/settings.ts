@@ -1,17 +1,5 @@
 import { z } from "zod"
 
-export type LlmProviderInfoDTO = z.infer<typeof LlmProviderInfoSchema>
-
-export type CommuteProviderInfoDTO = z.infer<typeof CommuteProviderInfoSchema>
-
-export type LlmModelDTO = z.infer<typeof LlmModelSchema>
-
-export type MaskedSecretDTO = z.infer<typeof MaskedSecretSchema>
-
-export type ResolvedConfigDTO = z.infer<typeof ResolvedConfigSchema>
-
-export type SecretTestResultDTO = z.infer<typeof SecretTestResultSchema>
-
 export const LlmProviderInfoSchema = z.object({
   id: z.string(),
   name: z.string(),

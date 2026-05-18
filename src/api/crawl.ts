@@ -1,5 +1,3 @@
-/* eslint-disable unslop/no-single-use-constants */
-
 import { z } from "zod"
 
 export const SiteInfoSchema = z.object({
