@@ -72,7 +72,8 @@
     "handlebars": "^4.7.9",
     "turndown": "^7.2.4",
     "typescript": "^5.9.3",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zod-to-json-schema": "^3.25.2"
   },
   "description": "> [English version below](#english)",
   "repository": {

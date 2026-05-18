@@ -1,4 +1,5 @@
-import typia from "typia"
+import { z } from "zod"
+import { zodToJsonSchema } from "zod-to-json-schema"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { VacancyContact } from "@/models/vacancy"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
@@ -60,14 +61,21 @@ interface ContactExtractionResult {
   contact?: VacancyContact
 }
 
-const EXTRACT_CONTACT_SCHEMA: TypedSchema<RawContactResult> = {
-  schema: typia.json.schema<RawContactResult>(),
-  parse: typia.json.createAssertParse<RawContactResult>(),
-}
+const RawContactSchema = z.object({
+  name: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+})
 
-interface RawContactResult {
-  addresses: string[]
-  contact: RawContact | null
+const RawContactResultSchema = z.object({
+  addresses: z.array(z.string()),
+  contact: RawContactSchema.nullable(),
+})
+type RawContactResult = z.infer<typeof RawContactResultSchema>
+
+const EXTRACT_CONTACT_SCHEMA: TypedSchema<RawContactResult> = {
+  schema: zodToJsonSchema(RawContactResultSchema),
+  parse: (input: string) => RawContactResultSchema.parse(JSON.parse(input)),
 }
 
 function buildContactExtractionPrompt(vacancy: Vacancy): string {
@@ -110,7 +118,9 @@ Regeln:
 - Einzelne Felder in contact dürfen weggelassen werden, wenn nicht vorhanden`
 }
 
-function cleanContact(contact: RawContact | null): VacancyContact | undefined {
+function cleanContact(
+  contact: z.infer<typeof RawContactSchema> | null,
+): VacancyContact | undefined {
   if (!contact) return undefined
   const cleaned = pickDefined({
     name: trimOrUndefined(contact.name),
@@ -132,11 +142,4 @@ function pickDefined(
     if (value) result[key] = value
   }
   return result
-}
-
-// Raw contact fields are nullable since LLM may return null instead of omitting fields
-interface RawContact {
-  name?: string | null
-  email?: string | null
-  phone?: string | null
 }

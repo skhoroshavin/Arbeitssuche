@@ -1,4 +1,5 @@
-import typia from "typia"
+import { z } from "zod"
+import { zodToJsonSchema } from "zod-to-json-schema"
 import type { Applicant } from "@/models/applicant"
 import type { ConsultationSuggestion } from "@/models/job-search"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
@@ -12,9 +13,18 @@ export async function consultSearches(
   return llmClient.completeJSON(prompt, 4096, CONSULT_SEARCHES_SCHEMA)
 }
 
+const ConsultationSuggestionsSchema = z.array(
+  z.object({
+    searchTerm: z.string(),
+    searchMode: z.enum(["employment", "entry-level", "apprenticeship"]),
+    reason: z.string(),
+  }),
+)
+
 const CONSULT_SEARCHES_SCHEMA: TypedSchema<ConsultationSuggestion[]> = {
-  schema: typia.json.schema<ConsultationSuggestion[]>(),
-  parse: typia.json.createAssertParse<ConsultationSuggestion[]>(),
+  schema: zodToJsonSchema(ConsultationSuggestionsSchema),
+  parse: (input: string) =>
+    ConsultationSuggestionsSchema.parse(JSON.parse(input)),
 }
 
 function buildConsultSearchesPrompt(applicant: Applicant): string {

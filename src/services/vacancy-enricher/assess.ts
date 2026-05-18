@@ -1,8 +1,8 @@
-import typia from "typia"
+import { z } from "zod"
+import { zodToJsonSchema } from "zod-to-json-schema"
 import type { Applicant } from "@/models/applicant"
 import type { SearchPreferences } from "@/models/job-search"
 import type { Vacancy } from "@/models/vacancy/index.js"
-import type { MatchScore } from "@/models/vacancy"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
 import { formatApplicantSections } from "@/models/applicant/index.js"
 
@@ -21,14 +21,15 @@ export async function assessVacancy(
   return await llmClient.completeJSON(prompt, 2048, ASSESS_SCHEMA, signal)
 }
 
-const ASSESS_SCHEMA: TypedSchema<AssessResult> = {
-  schema: typia.json.schema<AssessResult>(),
-  parse: typia.json.createAssertParse<AssessResult>(),
-}
+const AssessResultSchema = z.object({
+  summary: z.string(),
+  matchScore: z.enum(["very-bad", "bad", "ok", "good", "excellent"]),
+})
+type AssessResult = z.infer<typeof AssessResultSchema>
 
-interface AssessResult {
-  summary: string
-  matchScore: MatchScore
+const ASSESS_SCHEMA: TypedSchema<AssessResult> = {
+  schema: zodToJsonSchema(AssessResultSchema),
+  parse: (input: string) => AssessResultSchema.parse(JSON.parse(input)),
 }
 
 function buildAssessPrompt(
