@@ -1,3 +1,9 @@
+import {
+  VacancyListResponseSchema,
+  VacancyWithStatusSchema,
+  ContentSchema,
+  SavedOkSchema,
+} from "@/api"
 import type { Activity } from "@/models/vacancy"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { Applicant } from "@/models/applicant"
@@ -18,12 +24,12 @@ export function registerVacanciesHandlers(
       status: v.deriveStatus(),
       sources: v.deriveSources(),
     }))
-    return {
+    return VacancyListResponseSchema.parse({
       vacancies,
       totalCount: vacancies.length,
       generatedAt: output.generatedAt,
       latestCrawl: output.latestCrawl,
-    }
+    })
   })
   handle(
     "job-searches:vacancies:seed",
@@ -37,40 +43,41 @@ export function registerVacanciesHandlers(
     if (!vacancy) {
       throw new Error(`Vacancy "${hash}" not found`)
     }
-    return {
+    return VacancyWithStatusSchema.parse({
       ...vacancy,
       status: vacancy.deriveStatus(),
       sources: vacancy.deriveSources(),
-    }
+    })
   })
   handle(
     "job-searches:vacancies:add-activity",
     (id: string, hash: string, activity: Activity) => {
       services.vacancyRepo.addActivity(id, hash, activity)
-      return { ok: true }
+      return SavedOkSchema.parse({ ok: true })
     },
   )
 
   // Vacancy cover letter
   handle(
     "job-searches:vacancies:cover-letter:load",
-    (id: string, hash: string) => {
-      return {
+    (id: string, hash: string) =>
+      ContentSchema.parse({
         content: services.jobSearchRepo.loadApplicationCoverLetter(id, hash),
-      }
-    },
+      }),
   )
   handle(
     "job-searches:vacancies:cover-letter:save",
     (id: string, hash: string, content: string) => {
       services.jobSearchRepo.saveApplicationCoverLetter(id, hash, content)
-      return { ok: true }
+      return SavedOkSchema.parse({ ok: true })
     },
   )
   handle(
     "job-searches:vacancies:cover-letter:generate",
-    (id: string, hash: string) =>
-      services.coverLetterWriter.generateForVacancy(id, hash),
+    async (id: string, hash: string) =>
+      ContentSchema.parse(
+        await services.coverLetterWriter.generateForVacancy(id, hash),
+      ),
   )
 
   // Re-enrichment handlers
@@ -99,7 +106,7 @@ export function registerVacanciesHandlers(
       )
     }
 
-    return { ok: true }
+    return SavedOkSchema.parse({ ok: true })
   })
 
   handle("vacancies:enrich-unenriched", async (jobSearchId: string) => {

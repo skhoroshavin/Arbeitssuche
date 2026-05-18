@@ -1,3 +1,8 @@
+import {
+  AppSetupStateSchema,
+  SetupStateLoadResultSchema,
+  ClearDataOkSchema,
+} from "@/api"
 import type { AppSetupState } from "@/models/setup"
 import type { ConfigRepository } from "@/app/config"
 import type { SecretsRepository } from "@/app/secrets"
@@ -9,15 +14,19 @@ export function registerSetupHandlers(
   services: SetupHandlerServices,
   controls: SetupHandlerControls,
 ): void {
-  handle("setup:state:load", () => ({ state: services.setupRepo.load() }))
-  handle("setup:state:save", (update: Partial<AppSetupState>) =>
-    services.setupRepo.save(update),
+  handle("setup:state:load", () =>
+    SetupStateLoadResultSchema.parse({ state: services.setupRepo.load() }),
   )
-  handle("setup:state:complete", () => services.setupRepo.complete())
+  handle("setup:state:save", async (update: Partial<AppSetupState>) =>
+    AppSetupStateSchema.parse(await services.setupRepo.save(update)),
+  )
+  handle("setup:state:complete", async () =>
+    AppSetupStateSchema.parse(await services.setupRepo.complete()),
+  )
   handle("setup:clear-data", async () => clearAppData({ services, controls }))
   handle("app:close", () => {
     controls.closeApp()
-    return { ok: true }
+    return ClearDataOkSchema.parse({ ok: true })
   })
 }
 
@@ -48,7 +57,7 @@ export async function clearAppData({
     throw toError(failure)
   }
 
-  return { ok: true }
+  return ClearDataOkSchema.parse({ ok: true })
 }
 
 interface SetupHandlerControls {
