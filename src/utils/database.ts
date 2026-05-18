@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs"
 
-import typia from "typia"
+import { z } from "zod"
 
 import path from "node:path"
 
@@ -67,7 +67,7 @@ export class Statement {
   getJsonData(...parameters: SqlValue[]): unknown {
     const row = this.inner.get(...parameters)
     if (row === undefined) return undefined
-    return JSON.parse(typia.assert<{ data: string }>(row).data)
+    return JSON.parse(z.object({ data: z.string() }).parse(row).data)
   }
 }
 

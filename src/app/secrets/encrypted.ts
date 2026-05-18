@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
-import typia from "typia"
+import { z } from "zod"
 import type { Secrets } from "@/models/secrets"
 import { resolveSecrets } from "@/models/secrets/index.js"
 import type { Cipher, SecretsRepository } from "./types.js"
@@ -18,7 +18,15 @@ export function createEncryptedSecretsRepository(
       try {
         const encrypted = readFileSync(filePath)
         const decrypted = cipher.decryptString(encrypted)
-        return resolveSecrets(typia.json.assertParse<Secrets>(decrypted))
+        return resolveSecrets(
+          z
+            .object({
+              openrouterApiKey: z.string().optional(),
+              requestyApiKey: z.string().optional(),
+              googleMapsApiKey: z.string().optional(),
+            })
+            .parse(JSON.parse(decrypted)),
+        )
       } catch {
         return resolveSecrets()
       }

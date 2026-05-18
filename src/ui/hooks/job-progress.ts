@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react"
 
-import typia from "typia"
+import { z } from "zod"
 
 export function useJobProgress(jobSearchId?: string) {
   const state = useGlobalJobProgress()
@@ -44,17 +44,19 @@ function ensureListening() {
   if (cleanupListener || !electronAPI) return
 
   cleanupListener = electronAPI.on("job:progress", (data: unknown) => {
-    if (!typia.is<ProgressPayload>(data)) return
-    if (!data.jobSearchId) return
+    const parsed = ProgressPayloadSchema.safeParse(data)
+    if (!parsed.success) return
+    const payload = parsed.data
+    if (!payload.jobSearchId) return
 
     const current =
-      globalState.byJobSearchId[data.jobSearchId] ?? EMPTY_JOB_PROGRESS
-    const next = reduceProgress(current, data)
+      globalState.byJobSearchId[payload.jobSearchId] ?? EMPTY_JOB_PROGRESS
+    const next = reduceProgress(current, payload)
 
     globalState = {
       byJobSearchId: {
         ...globalState.byJobSearchId,
-        [data.jobSearchId]: next,
+        [payload.jobSearchId]: next,
       },
     }
 
@@ -133,15 +135,20 @@ interface EnrichProgressEntry {
   enrichProgress?: { completed: number; total: number }
 }
 
-interface ProgressPayload {
-  message: string
-  phase?: "search" | "scan" | "enrich" | "complete" | "done"
-  source?: "crawl" | "enrich"
-  owner?: "crawl" | "batch"
-  vacanciesUpdated?: boolean
-  enrichProgress?: { completed: number; total: number }
-  jobSearchId?: string
-}
+const ProgressPayloadSchema = z.object({
+  message: z.string(),
+  phase: z
+    .enum(["search", "scan", "enrich", "complete", "done"])
+    .optional(),
+  source: z.enum(["crawl", "enrich"]).optional(),
+  owner: z.enum(["crawl", "batch"]).optional(),
+  vacanciesUpdated: z.boolean().optional(),
+  enrichProgress: z
+    .object({ completed: z.number(), total: z.number() })
+    .optional(),
+  jobSearchId: z.string().optional(),
+})
+type ProgressPayload = z.infer<typeof ProgressPayloadSchema>
 
 let globalState: GlobalJobProgressState = {
   byJobSearchId: {},

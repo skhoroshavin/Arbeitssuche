@@ -1,4 +1,4 @@
-import typia from "typia"
+import { z } from "zod"
 import type { CheerioAPI } from "cheerio/slim"
 
 /** Extract the first JSON-LD object matching the given `@type` from a parsed HTML document. */
@@ -11,11 +11,10 @@ export function extractJsonLd(
   $('script[type="application/ld+json"]').each((_index, element) => {
     if (result) return
     try {
-      const data = typia.json.isParse<Record<string, unknown>>(
-        $(element).html() || "",
-      )
-      if (data && data["@type"] === type) {
-        result = data
+      const raw = $(element).html() || ""
+      const data = z.record(z.unknown()).safeParse(JSON.parse(raw))
+      if (data.success && data.data["@type"] === type) {
+        result = data.data
       }
     } catch {
       // invalid JSON — skip
