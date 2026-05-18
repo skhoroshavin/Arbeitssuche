@@ -73,7 +73,7 @@ export interface Applicant {
 - `id` removed
 - `resolveApplicant` no longer accepts or produces `id`
 - `ApplicantSchema` drops `id` field
-- `ApplicantInfo` deleted (no longer needed — lists return full `Applicant`)
+- `ApplicantInfo` redefined as `{ id: ApplicantID; displayName: string }` (derived from `personal.name`)
 
 ### JobSearch
 
@@ -90,10 +90,8 @@ export interface JobSearch {
 - `coverLetter` added (default/template cover letter content)
 - `resolveJobSearch` no longer accepts or produces `id` or `applicantId`
 - `JobSearchSchema` updated accordingly
-- `JobSearchInfo` deleted
-- `SearchParameters` gains `searchMode: SearchMode` (currently in `JobSearchEditorSnapshot`, should be in the persisted model)
-
-Wait — `searchMode` is already in `SearchParameters`. Let me verify... Yes, it is. Good.
+- `JobSearchInfo` redefined as `{ id: JobSearchID; displayName: string }` (derived from `params.searchTerm`)
+- `SearchParameters` unchanged (`searchMode` is already present)
 
 ### Deleted Model Types
 
@@ -121,7 +119,7 @@ The following functions from `models/job-search/editor-snapshot.ts` move into `r
 
 ```ts
 export interface ApplicantRepository {
-  all(): Array<{ id: ApplicantID; applicant: Applicant }>
+  list(): ApplicantInfo[]
   load(id: ApplicantID): Applicant
   create(name: string): ApplicantID
   save(id: ApplicantID, applicant: Applicant): void
@@ -135,7 +133,7 @@ export interface ApplicantRepository {
 }
 ```
 
-- `all()` replaces `list()`, returns full applicants with IDs
+- `list()` returns `ApplicantInfo[]` — lightweight entries with id and display name
 - `create(name)` generates sequential ID internally, fills defaults, persists
 - `finalizeDraft()` generates ID, persists applicant, clears draft, returns ID
 - `loadDraft()` returns `undefined` when no draft exists or draft is not meaningful
@@ -145,10 +143,9 @@ export interface ApplicantRepository {
 
 ```ts
 export interface JobSearchRepository {
-  all(): Array<{ id: JobSearchID; jobSearch: JobSearch }>
-  allForApplicant(applicantId: ApplicantID): Array<{ id: JobSearchID; jobSearch: JobSearch }>
-  load(id: JobSearchID): JobSearch
-  getApplicantId(id: JobSearchID): ApplicantID
+  list(): JobSearchInfo[]
+  listForApplicant(applicantId: ApplicantID): JobSearchInfo[]
+  load(id: JobSearchID): { jobSearch: JobSearch; applicantId: ApplicantID }
   create(searchTerm: string, applicantId: ApplicantID, searchMode?: SearchMode): JobSearchID
   save(id: JobSearchID, jobSearch: JobSearch): void
   delete(id: JobSearchID): void
@@ -161,9 +158,8 @@ export interface JobSearchRepository {
 }
 ```
 
-- `all()` returns all job searches with IDs (replaces `list()`)
-- `allForApplicant()` replaces `listByApplicant()`
-- `getApplicantId()` added for breadcrumb / services that need the applicant from a job search ID
+- `list()` returns `JobSearchInfo[]` — lightweight entries with id and display name
+- `listForApplicant()` replaces `listByApplicant()`
 - Cover letter methods removed (moved to `VacancyRepository`)
 
 ### VacancyRepository
@@ -343,9 +339,9 @@ No schema changes. `job_search_id` column stays as `TEXT` referencing `job_searc
 
 ```ts
 handle("applicants:list", () => ({
-  applicants: services.applicantRepo.all().map((entry) => ({
-    id: entry.id.value,
-    applicant: entry.applicant,
+  applicants: services.applicantRepo.list().map((info) => ({
+    id: info.id.value,
+    displayName: info.displayName,
   })),
 }))
 
@@ -388,12 +384,12 @@ handle("applicants:draft:finalize", () => ({
 ```ts
 handle("job-searches:list", (applicantId?: string) => {
   const entries = applicantId
-    ? services.jobSearchRepo.allForApplicant(ApplicantID.of(applicantId))
-    : services.jobSearchRepo.all()
+    ? services.jobSearchRepo.listForApplicant(ApplicantID.of(applicantId))
+    : services.jobSearchRepo.list()
   return {
-    jobSearches: entries.map((entry) => ({
-      id: entry.id.value,
-      jobSearch: entry.jobSearch,
+    jobSearches: entries.map((info) => ({
+      id: info.id.value,
+      displayName: info.displayName,
     })),
   }
 })
@@ -536,7 +532,7 @@ const ApplicantDraftResponseSchema = z.object({
 })
 
 const ApplicantListResponseSchema = z.object({
-  applicants: z.array(z.object({ id: z.string(), applicant: ApplicantSchema })),
+  applicants: z.array(z.object({ id: z.string(), displayName: z.string() })),
 })
 ```
 
@@ -586,7 +582,7 @@ const JobSearchDraftResponseSchema = z.object({
 })
 
 const JobSearchListResponseSchema = z.object({
-  jobSearches: z.array(z.object({ id: z.string(), jobSearch: JobSearchSchema })),
+  jobSearches: z.array(z.object({ id: z.string(), displayName: z.string() })),
 })
 ```
 
@@ -611,9 +607,9 @@ function useOverviewData(id: string) {
   const { data, isLoading } = useApplicant(id)
   const { displayName } = useApplicantHeaderName(id)
   const jobSearches = useJobSearchListView(id)
-  const jobSearchItems = jobSearches.data.jobSearches.map((entry) => ({
-    id: entry.id,
-    label: entry.jobSearch.params.searchTerm || entry.id,
+  const jobSearchItems = jobSearches.data.jobSearches.map((info) => ({
+    id: info.id,
+    label: info.displayName || info.id,
   }))
   return {
     data,
@@ -704,7 +700,7 @@ All test files with hardcoded `Applicant` or `JobSearch` mock data need updates:
 2. Remove `id` and `applicantId` from `JobSearch` mock objects
 3. Add `coverLetter: ""` to `JobSearch` mock objects
 4. Update `ApplicantRepository` and `JobSearchRepository` mocks:
-   - `all()` returns `Array<{ id: ApplicantID/JobSearchID; applicant/jobSearch: Xxx }>`
+   - `list()` returns `ApplicantInfo[]` / `JobSearchInfo[]`
    - `create()` returns `ApplicantID` / `JobSearchID`
    - `loadDraft()` returns `Applicant | undefined` / `JobSearch | undefined`
    - `finalizeDraft()` returns `ApplicantID` / `JobSearchID`
@@ -737,11 +733,11 @@ Remove `createUniqueDerivedId` from `src/utils/index.ts`.
 | File | Changes |
 |------|---------|
 | `src/models/applicant/index.ts` | Remove `id` from `Applicant`, delete `ApplicantDraft`/`ApplicantDraftSnapshot`, add `ApplicantID` class |
-| `src/models/applicant/schemas.ts` | Drop `id` from `ApplicantSchema`, delete `ApplicantInfoSchema` |
+| `src/models/applicant/schemas.ts` | Drop `id` from `ApplicantSchema`, update `ApplicantInfoSchema` |
 | `src/models/applicant/resolve.ts` | Remove `id` handling |
 | `src/models/applicant/draft-snapshot.ts` | Move helpers to repo, rename exports |
 | `src/models/job-search/index.ts` | Remove `id`/`applicantId` from `JobSearch`, add `coverLetter`, delete `JobSearchDraft`/`JobSearchEditorSnapshot`, add `JobSearchID` class |
-| `src/models/job-search/schemas.ts` | Update `JobSearchSchema`, delete `JobSearchInfoSchema`/`JobSearchDraftSchema` |
+| `src/models/job-search/schemas.ts` | Update `JobSearchSchema`, update `JobSearchInfoSchema`, delete `JobSearchDraftSchema` |
 | `src/models/job-search/resolve.ts` | Remove `id`/`applicantId` handling |
 | `src/models/job-search/editor-snapshot.ts` | Move helpers to repo, delete unused exports |
 | `src/repositories/applicant/types.ts` | Redesign interface, delete `loadFinalizedApplicantDraft` |
