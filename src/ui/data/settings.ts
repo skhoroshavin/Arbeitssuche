@@ -11,11 +11,13 @@ import {
 import {
   LlmProviderInfoSchema,
   CommuteProviderInfoSchema,
+  LlmModelSchema,
+  ResolvedConfigSchema,
+} from "@/models/config"
+import {
   MaskedSecretsRecordSchema,
   SecretTestResultSchema,
-  ResolvedConfigSchema,
-  LlmModelSchema,
-} from "@/api"
+} from "@/models/secrets"
 import { api } from "./internal/api"
 
 // --- Provider secrets (factory) ---
