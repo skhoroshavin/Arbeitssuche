@@ -67,7 +67,7 @@ export function registerVacanciesHandlers(
   )
   handle(
     "job-searches:vacancies:cover-letter:generate",
-    async (id: string, hash: string) =>
+    (id: string, hash: string) =>
       services.coverLetterWriter.generateForVacancy(id, hash),
   )
 

@@ -51,9 +51,7 @@ export function registerSettingsHandlers(
   handle("settings:llm-providers", () => getLlmProviders())
   handle("settings:commute-providers", () => getCommuteProviders())
 
-  handle("settings:llm-models", async () =>
-    services.modelRegistry.fetchModels(),
-  )
+  handle("settings:llm-models", () => services.modelRegistry.fetchModels())
 
   handle("settings:config:load", () =>
     resolveConfig(services.configRepo.load()),

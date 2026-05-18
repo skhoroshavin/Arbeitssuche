@@ -10,10 +10,10 @@ export function registerSetupHandlers(
   controls: SetupHandlerControls,
 ): void {
   handle("setup:state:load", () => ({ state: services.setupRepo.load() }))
-  handle("setup:state:save", async (update: Partial<AppSetupState>) =>
+  handle("setup:state:save", (update: Partial<AppSetupState>) =>
     services.setupRepo.save(update),
   )
-  handle("setup:state:complete", async () => services.setupRepo.complete())
+  handle("setup:state:complete", () => services.setupRepo.complete())
   handle("setup:clear-data", async () => clearAppData({ services, controls }))
   handle("app:close", () => {
     controls.closeApp()
