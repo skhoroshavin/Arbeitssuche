@@ -67,9 +67,11 @@ export class Statement {
   getJsonData(...parameters: SqlValue[]): unknown {
     const row = this.inner.get(...parameters)
     if (row === undefined) return undefined
-    return JSON.parse(z.object({ data: z.string() }).parse(row).data)
+    return JSON.parse(DataColumnSchema.parse(row).data)
   }
 }
+
+const DataColumnSchema = z.object({ data: z.string() })
 
 /** Wraps node:sqlite StatementSync, adding getJsonData for the `data` column pattern. */
 type SqlValue = string | number | null | bigint | Buffer
