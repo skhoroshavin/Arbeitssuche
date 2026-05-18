@@ -18,11 +18,10 @@ function buildCoverLetterPrompt(
 ): string {
   const sections = formatApplicantSections(applicant)
 
-  // Job search context
-  const searchLines = [`Suchbegriff: ${jobSearch.params.searchTerm}`]
-  if (jobSearch.preferences.freeText.length > 0) {
+  const searchLines = [`Suchbegriff: ${jobSearch.searchTerm}`]
+  if (jobSearch.notes.length > 0) {
     searchLines.push(
-      `Präferenzen:\n${jobSearch.preferences.freeText.map((t) => `- ${t}`).join("\n")}`,
+      `Präferenzen:\n${jobSearch.notes.split("\n").map((t) => `- ${t.trim()}`).filter(Boolean).join("\n")}`,
     )
   }
   sections.push(`## Stellensuche\n${searchLines.join("\n")}`)

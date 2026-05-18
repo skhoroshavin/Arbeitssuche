@@ -4,7 +4,7 @@ import type { CommuteClient } from "@/plugins/commute"
 
 import type { Applicant } from "@/models/applicant"
 
-import type { SearchPreferences } from "@/models/job-search"
+import type { JobSearch } from "@/models/job-search"
 
 import type { Vacancy } from "@/models/vacancy/index.js"
 
@@ -84,7 +84,7 @@ export class VacancyEnricher {
     const [assessmentResult, contactResult] = await runLlmEnrichment(
       vacancy,
       context.applicant,
-      context.preferences,
+      context.jobSearch,
       this.deps.llmClient,
       signal,
     )
@@ -109,7 +109,7 @@ export class VacancyEnricher {
 
 export interface EnrichContext {
   applicant: Applicant
-  preferences: SearchPreferences
+  jobSearch: JobSearch
 }
 
 interface EnricherDeps {
@@ -126,13 +126,13 @@ function resolveCommuteOrigin(applicant: Applicant): string | undefined {
 function runLlmEnrichment(
   vacancy: Vacancy,
   applicant: Applicant,
-  preferences: SearchPreferences,
+  jobSearch: JobSearch,
   llmClient: LlmClient,
   signal?: AbortSignal,
 ) {
   return Promise.all([
     needsAssessment(vacancy)
-      ? assessVacancy(vacancy, applicant, preferences, llmClient, signal).catch(
+      ? assessVacancy(vacancy, applicant, jobSearch, llmClient, signal).catch(
           (error) => {
             if (error instanceof DOMException && error.name === "AbortError")
               throw error

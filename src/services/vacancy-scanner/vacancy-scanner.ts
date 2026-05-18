@@ -32,12 +32,12 @@ export class VacancyScanner {
   ): Promise<void> {
     const jobSearch = this.jobSearchRepo.load(id)
     const sitesToRun =
-      jobSearch.params.sources.length > 0
-        ? jobSearch.params.sources
+      jobSearch.jobSearch.sources.length > 0
+        ? jobSearch.jobSearch.sources.map((s) => s.value)
         : this.listJobSiteNames()
 
     const applicant = this.applicantRepo.load(jobSearch.applicantId)
-    const criteria = resolveSearchParameters(jobSearch, applicant)
+    const criteria = resolveSearchParameters(jobSearch.jobSearch, applicant)
     const crawlDate = new Date().toISOString().slice(0, 10)
 
     const existing = this.vacancyRepo.loadAll(id)
@@ -55,7 +55,7 @@ export class VacancyScanner {
 
     const queue = new EnrichQueue({
       enricher: this.enricher,
-      context: { applicant, preferences: jobSearch.preferences },
+      context: { applicant, jobSearch: jobSearch.jobSearch },
       onEnriched: (enriched, hash) => {
         existingByHash.set(hash, enriched)
         this.vacancyRepo.save(id, [...existingByHash.values()], crawlDate)

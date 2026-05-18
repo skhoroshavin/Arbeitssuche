@@ -1,6 +1,6 @@
 import { z } from "zod"
 import type { Applicant } from "@/models/applicant"
-import type { SearchPreferences } from "@/models/job-search"
+import type { JobSearch } from "@/models/job-search"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
 import { formatApplicantSections } from "@/models/applicant/index.js"
@@ -12,11 +12,11 @@ export function needsAssessment(vacancy: Vacancy): boolean {
 export async function assessVacancy(
   vacancy: Vacancy,
   applicant: Applicant,
-  preferences: SearchPreferences,
+  jobSearch: JobSearch,
   llmClient: LlmClient,
   signal?: AbortSignal,
 ): Promise<AssessResult> {
-  const prompt = buildAssessPrompt(vacancy, applicant, preferences)
+  const prompt = buildAssessPrompt(vacancy, applicant, jobSearch)
   return await llmClient.completeJSON(prompt, 2048, ASSESS_SCHEMA, signal)
 }
 
@@ -34,7 +34,7 @@ const ASSESS_SCHEMA: TypedSchema<AssessResult> = {
 function buildAssessPrompt(
   vacancy: Vacancy,
   applicant: Applicant,
-  preferences: SearchPreferences,
+  jobSearch: JobSearch,
 ): string {
   const sections = [
     `## Stellenausschreibung
@@ -45,9 +45,9 @@ ${vacancy.description ? `Beschreibung:\n${vacancy.description}` : "Keine Beschre
     ...formatApplicantSections(applicant),
   ]
 
-  if (preferences.freeText.length > 0) {
+  if (jobSearch.notes.length > 0) {
     sections.push(
-      `## Suchpräferenzen\n${preferences.freeText.map((t) => `- ${t}`).join("\n")}`,
+      `## Suchpräferenzen\n${jobSearch.notes.split("\n").map((t) => `- ${t.trim()}`).filter(Boolean).join("\n")}`,
     )
   }
 

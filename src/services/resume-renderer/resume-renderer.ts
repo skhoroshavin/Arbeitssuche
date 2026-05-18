@@ -21,7 +21,7 @@ export class ResumeRenderer {
       )
     }
 
-    const applicant = this.applicantRepo.load(applicantId)
+    const applicant = this.applicantRepo.load({ value: applicantId })
     const resumeData = prepareResumeData(applicant)
     const html = renderHTML(
       path.resolve(import.meta.dirname, "./templates"),
