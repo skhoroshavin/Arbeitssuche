@@ -133,7 +133,7 @@ function hydrateVacancyRow(row: Record<string, unknown>): Vacancy {
 
 function hydrateVacancy(data: unknown): Vacancy {
   const parsed = VacancyDTOSchema.partial()
-    .passthrough()
+    .loose()
     .parse(stripLegacyCommute(data))
   return new Vacancy(resolveVacancy(parsed))
 }

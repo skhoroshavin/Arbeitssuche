@@ -1,5 +1,4 @@
 import { z } from "zod"
-import { zodToJsonSchema } from "zod-to-json-schema"
 import type { Applicant } from "@/models/applicant"
 import type { ConsultationSuggestion } from "@/models/job-search"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
@@ -22,7 +21,7 @@ const ConsultationSuggestionsSchema = z.array(
 )
 
 const CONSULT_SEARCHES_SCHEMA: TypedSchema<ConsultationSuggestion[]> = {
-  schema: zodToJsonSchema(ConsultationSuggestionsSchema),
+  schema: z.toJSONSchema(ConsultationSuggestionsSchema),
   parse: (input: string) =>
     ConsultationSuggestionsSchema.parse(JSON.parse(input)),
 }

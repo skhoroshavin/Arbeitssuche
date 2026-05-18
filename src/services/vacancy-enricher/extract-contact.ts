@@ -1,5 +1,4 @@
 import { z } from "zod"
-import { zodToJsonSchema } from "zod-to-json-schema"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { VacancyContact } from "@/models/vacancy"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
@@ -74,7 +73,7 @@ const RawContactResultSchema = z.object({
 type RawContactResult = z.infer<typeof RawContactResultSchema>
 
 const EXTRACT_CONTACT_SCHEMA: TypedSchema<RawContactResult> = {
-  schema: zodToJsonSchema(RawContactResultSchema),
+  schema: z.toJSONSchema(RawContactResultSchema),
   parse: (input: string) => RawContactResultSchema.parse(JSON.parse(input)),
 }
 

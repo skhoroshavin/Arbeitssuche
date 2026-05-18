@@ -157,7 +157,7 @@ export class LiveFlowHelper {
   }
 
   async openVacancy(jobSearchId: string, vacancy: E2eVacancy): Promise<void> {
-    await this.jobSearchPage.vacancyCard(vacancy.title).click()
+    await this.jobSearchPage.vacancyCard(vacancy.hash).click()
     await expect(this.jobSearchPage.page).toHaveURL(
       new RegExp(`/job-searches/${jobSearchId}/vacancies/${vacancy.hash}$`),
     )

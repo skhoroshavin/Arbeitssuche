@@ -1,5 +1,4 @@
 import { z } from "zod"
-import { zodToJsonSchema } from "zod-to-json-schema"
 import type { Applicant } from "@/models/applicant"
 import type { SearchPreferences } from "@/models/job-search"
 import type { Vacancy } from "@/models/vacancy/index.js"
@@ -28,7 +27,7 @@ const AssessResultSchema = z.object({
 type AssessResult = z.infer<typeof AssessResultSchema>
 
 const ASSESS_SCHEMA: TypedSchema<AssessResult> = {
-  schema: zodToJsonSchema(AssessResultSchema),
+  schema: z.toJSONSchema(AssessResultSchema),
   parse: (input: string) => AssessResultSchema.parse(JSON.parse(input)),
 }
 
