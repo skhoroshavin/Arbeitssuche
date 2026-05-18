@@ -34,4 +34,9 @@ export {
   DEFAULT_CONSULTATION_MODEL,
 } from "./constants.js"
 
-export * from "./schemas.js"
+export {
+  LlmProviderInfoSchema,
+  CommuteProviderInfoSchema,
+  LlmModelSchema,
+  ResolvedConfigSchema,
+} from "./schemas.js"

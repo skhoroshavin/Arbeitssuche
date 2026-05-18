@@ -16,4 +16,4 @@ export type SecretKey =
 
 export { resolveSecrets } from "./resolve.js"
 
-export * from "./schemas.js"
+export { MaskedSecretsRecordSchema, SecretTestResultSchema } from "./schemas.js"

@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const SearchParametersSchema = z.object({
+const SearchParametersSchema = z.object({
   searchTerm: z.string(),
   radiusKm: z.number(),
   searchMode: z.enum(["employment", "entry-level", "apprenticeship"]),
@@ -8,7 +8,7 @@ export const SearchParametersSchema = z.object({
   maxResults: z.number().optional(),
 })
 
-export const SearchPreferencesSchema = z.object({
+const SearchPreferencesSchema = z.object({
   maxDistanceKm: z.number().optional(),
   maxCommuteMinutes: z.number().optional(),
   freeText: z.array(z.string()),

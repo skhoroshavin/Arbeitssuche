@@ -1,4 +1,5 @@
 import { z } from "zod"
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
 import type {
@@ -9,7 +10,6 @@ import type {
 
 import {
   JobSearchSchema,
-  JobSearchEditorSnapshotSchema,
   JobSearchInfoSchema,
   JobSearchDraftSchema,
 } from "@/models/job-search"
@@ -27,27 +27,10 @@ import { api } from "./internal/api"
 
 import { jobSearchQueryKeys, invalidateQuery } from "./job-search-query-keys"
 
-const JobSearchListResponseSchema = z.object({
-  jobSearches: z.array(JobSearchInfoSchema),
-})
-
-const JobSearchDraftResponseSchema = z.object({
-  draft: JobSearchDraftSchema.optional(),
-})
-
-const CreatedJobSearchIdSchema = z.object({
-  id: z.string(),
-  applicantId: z.string(),
-})
-
-const ContentSchema = z.object({ content: z.string() })
-
-const VacancyListResponseSchema = z.object({
-  vacancies: z.array(VacancyWithStatusSchema),
-  totalCount: z.number(),
-  generatedAt: z.string(),
-  latestCrawl: z.string(),
-})
+export type VacancyWithStatus = VacancyDTO & {
+  status: VacancyStatus
+  sources: VacancySource[]
+}
 
 export function useJobSearchListView(applicantId?: string) {
   const query = useJobSearches(applicantId)
@@ -264,11 +247,6 @@ export function useJobSearchVacancy(id: string, hash: string) {
   })
 }
 
-export type VacancyWithStatus = VacancyDTO & {
-  status: VacancyStatus
-  sources: VacancySource[]
-}
-
 export function useReEnrichVacancy(jobSearchId: string) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -355,3 +333,25 @@ function useJobSearchVacancies(id: string) {
     enabled: !!id,
   })
 }
+
+const JobSearchListResponseSchema = z.object({
+  jobSearches: z.array(JobSearchInfoSchema),
+})
+
+const JobSearchDraftResponseSchema = z.object({
+  draft: JobSearchDraftSchema.optional(),
+})
+
+const CreatedJobSearchIdSchema = z.object({
+  id: z.string(),
+  applicantId: z.string(),
+})
+
+const ContentSchema = z.object({ content: z.string() })
+
+const VacancyListResponseSchema = z.object({
+  vacancies: z.array(VacancyWithStatusSchema),
+  totalCount: z.number(),
+  generatedAt: z.string(),
+  latestCrawl: z.string(),
+})

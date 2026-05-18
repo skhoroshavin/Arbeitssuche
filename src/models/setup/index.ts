@@ -14,4 +14,4 @@ export {
   resolveSetupState,
 } from "./resolve.js"
 
-export * from "./schemas.js"
+export { AppSetupStateSchema } from "./schemas.js"

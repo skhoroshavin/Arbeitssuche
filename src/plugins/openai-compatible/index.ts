@@ -44,19 +44,6 @@ export function createModelRegistry(
 }
 
 type ModelNormalizer = (raw: Record<string, unknown>) => LlmModelInfo
- const CompletionResponseSchema = z.object({
-  choices: z
-    .array(
-      z.object({
-        message: z.object({ content: z.string().optional() }).optional(),
-      }),
-    )
-    .optional(),
-})
-
-const ModelListResponseSchema = z.object({
-  data: z.array(z.record(z.unknown())),
-})
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -164,6 +151,16 @@ class OpenAICompatibleClient implements LlmClient {
   }
 }
 
+const CompletionResponseSchema = z.object({
+  choices: z
+    .array(
+      z.object({
+        message: z.object({ content: z.string().optional() }).optional(),
+      }),
+    )
+    .optional(),
+})
+
 class OpenAICompatibleModelRegistry implements LlmModelRegistry {
   constructor(
     private readonly url: string,
@@ -185,3 +182,7 @@ class OpenAICompatibleModelRegistry implements LlmModelRegistry {
     }
   }
 }
+
+const ModelListResponseSchema = z.object({
+  data: z.array(z.record(z.unknown())),
+})

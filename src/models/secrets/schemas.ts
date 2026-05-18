@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const MaskedSecretSchema = z.object({
+const MaskedSecretSchema = z.object({
   masked: z.string(),
   isSet: z.boolean(),
 })

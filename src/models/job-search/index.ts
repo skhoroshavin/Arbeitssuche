@@ -68,4 +68,9 @@ export {
   isMeaningfulJobSearchEditorSnapshot,
 } from "./editor-snapshot.js"
 
-export * from "./schemas.js"
+export {
+  JobSearchSchema,
+  JobSearchEditorSnapshotSchema,
+  JobSearchDraftSchema,
+  JobSearchInfoSchema,
+} from "./schemas.js"

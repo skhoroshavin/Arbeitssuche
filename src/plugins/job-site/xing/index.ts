@@ -1,16 +1,21 @@
 import { z } from "zod"
+
 import * as cheerio from "cheerio/slim"
+
 import type { Browser } from "@/plugins/browser"
+
 import type {
   VacancyDetails,
   JobSite,
   JobPostingJsonLd,
   SearchCriteria,
 } from "@/plugins/job-site"
+
 import {
   extractAbsoluteLinks,
   withOpenedPage,
 } from "@/plugins/job-site/utils/index.js"
+
 import {
   extractJsonLd,
   joinNormalizedText,
@@ -18,6 +23,12 @@ import {
   isRecord,
   stringField,
 } from "@/utils/index.js"
+
+export const SUPPORTED_MODES = [
+  "employment",
+  "entry-level",
+  "apprenticeship",
+] as const
 
 export function createXingSite(browser: Browser): JobSite {
   return new XingSite(browser)
@@ -76,6 +87,8 @@ function extractLinks(html: string): string[] {
   })
 }
 
+const BASE_URL = "https://www.xing.com"
+
 function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
   const qs = new URLSearchParams()
   if (criteria.query) qs.set("keywords", criteria.query)
@@ -97,6 +110,48 @@ function extractFromPosting(jsonLd: object | undefined) {
     publishedAt: posting?.datePosted,
     address: formatJobPostingAddress(posting),
   }
+}
+
+function asJobPosting(value: unknown): JobPostingJsonLd | undefined {
+  const result = JobPostingJsonLdSchema.safeParse(value)
+  return result.success ? result.data : undefined
+}
+
+function formatJobPostingAddress(
+  posting: { jobLocation?: unknown } | undefined,
+): string | undefined {
+  if (!posting) return undefined
+  const location = posting.jobLocation
+  const loc: unknown = Array.isArray(location) ? location[0] : location
+  if (!isRecord(loc) || !isRecord(loc.address)) return undefined
+  return joinNormalizedText(
+    [
+      stringField(loc.address, "streetAddress"),
+      stringField(loc.address, "postalCode"),
+      stringField(loc.address, "addressLocality"),
+    ],
+    ", ",
+  )
+}
+
+function extractContact($: cheerio.CheerioAPI): { email: string } | undefined {
+  const emailHref = $(SELECTORS.contactEmail).first().attr("href")
+  const contactEmail = normalizeOptionalText(emailHref?.replace(/^mailto:/, ""))
+  return contactEmail ? { email: contactEmail } : undefined
+}
+
+const SELECTORS = {
+  company:
+    "[data-testid='company-name'], [class*='company-name'], [class*='Company']",
+  address:
+    "[data-testid='job-location'], [class*='location'], [class*='Location']",
+  contactEmail: "a[href^='mailto:']",
+}
+
+function modeToCareerLevel(mode: string): string {
+  if (mode === "apprenticeship") return "APPRENTICESHIP"
+  if (mode === "entry-level") return "ENTRY_LEVEL"
+  return ""
 }
 
 const JobPostingJsonLdSchema = z.object({
@@ -129,53 +184,3 @@ const JobPostingJsonLdSchema = z.object({
     ])
     .optional(),
 })
-
-function asJobPosting(value: unknown): JobPostingJsonLd | undefined {
-  const result = JobPostingJsonLdSchema.safeParse(value)
-  return result.success ? result.data : undefined
-}
-
-function formatJobPostingAddress(
-  posting: { jobLocation?: unknown } | undefined,
-): string | undefined {
-  if (!posting) return undefined
-  const location = posting.jobLocation
-  const loc: unknown = Array.isArray(location) ? location[0] : location
-  if (!isRecord(loc) || !isRecord(loc.address)) return undefined
-  return joinNormalizedText(
-    [
-      stringField(loc.address, "streetAddress"),
-      stringField(loc.address, "postalCode"),
-      stringField(loc.address, "addressLocality"),
-    ],
-    ", ",
-  )
-}
-
-function extractContact($: cheerio.CheerioAPI): { email: string } | undefined {
-  const emailHref = $(SELECTORS.contactEmail).first().attr("href")
-  const contactEmail = normalizeOptionalText(emailHref?.replace(/^mailto:/, ""))
-  return contactEmail ? { email: contactEmail } : undefined
-}
-
-function modeToCareerLevel(mode: string): string {
-  if (mode === "apprenticeship") return "APPRENTICESHIP"
-  if (mode === "entry-level") return "ENTRY_LEVEL"
-  return ""
-}
-
-export const SUPPORTED_MODES = [
-  "employment",
-  "entry-level",
-  "apprenticeship",
-] as const
-
-const BASE_URL = "https://www.xing.com"
-
-const SELECTORS = {
-  company:
-    "[data-testid='company-name'], [class*='company-name'], [class*='Company']",
-  address:
-    "[data-testid='job-location'], [class*='location'], [class*='Location']",
-  contactEmail: "a[href^='mailto:']",
-}

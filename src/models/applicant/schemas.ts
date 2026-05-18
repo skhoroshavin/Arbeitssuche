@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const ApplicantPersonalSchema = z.object({
+const ApplicantPersonalSchema = z.object({
   name: z.string(),
   email: z.string().optional(),
   phone: z.string().optional(),
@@ -16,7 +16,7 @@ export const ApplicantPersonalSchema = z.object({
   hobbies: z.array(z.string()),
 })
 
-export const ApplicantExperienceSchema = z.object({
+const ApplicantExperienceSchema = z.object({
   role: z.string(),
   company: z.string(),
   startDate: z.string(),
@@ -26,7 +26,7 @@ export const ApplicantExperienceSchema = z.object({
   highlights: z.array(z.string()).optional(),
 })
 
-export const ApplicantEducationSchema = z.object({
+const ApplicantEducationSchema = z.object({
   institution: z.string(),
   course: z.string(),
   startDate: z.string().optional(),
@@ -36,16 +36,16 @@ export const ApplicantEducationSchema = z.object({
   highlights: z.array(z.string()).optional(),
 })
 
-export const ApplicantSkillSchema = z.object({
+const ApplicantSkillSchema = z.object({
   name: z.string(),
 })
 
-export const ApplicantLanguageSchema = z.object({
+const ApplicantLanguageSchema = z.object({
   language: z.string(),
   level: z.string(),
 })
 
-export const ApplicantCertificationSchema = z.object({
+const ApplicantCertificationSchema = z.object({
   name: z.string(),
   issuer: z.string().optional(),
   date: z.string().optional(),
@@ -53,7 +53,7 @@ export const ApplicantCertificationSchema = z.object({
   description: z.string().optional(),
 })
 
-export const ApplicantDiscloseSchema = z.object({
+const ApplicantDiscloseSchema = z.object({
   birthdate: z.boolean(),
   gender: z.boolean(),
   address: z.boolean(),

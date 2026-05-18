@@ -5,6 +5,7 @@ import {
   mapSnapshotToPersistedJobSearch,
   resolveDraftJobSearchEditorSnapshot,
 } from "@/models/job-search/index.js"
+
 import type {
   JobSearchDraft,
   JobSearch,
@@ -12,20 +13,23 @@ import type {
   JobSearchEditorSnapshot,
   SearchMode,
 } from "@/models/job-search"
+
 import { resolveJobSearch } from "@/models/job-search/index.js"
+
 import type { JobSearchRepository } from "../types.js"
+
 import {
   Database,
   createUniqueDerivedId,
   type Statement,
 } from "@/utils/index.js"
+
 import { z } from "zod"
+
 import {
   JobSearchSchema,
   JobSearchEditorSnapshotSchema,
 } from "@/models/job-search"
-
-const CoverLetterRowSchema = z.object({ content: z.string() })
 
 export function createSqliteJobSearchRepository(
   database: Database,
@@ -245,3 +249,5 @@ function parseJobSearchRow(raw: unknown): JobSearchInfo {
     .parse(raw)
   return { id: r.id, applicantId: r.applicant_id, searchTerm: r.search_term }
 }
+
+const CoverLetterRowSchema = z.object({ content: z.string() })

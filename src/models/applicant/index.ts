@@ -94,4 +94,4 @@ export {
   isMeaningfulApplicantDraftSnapshot,
 } from "./draft-snapshot.js"
 
-export * from "./schemas.js"
+export { ApplicantSchema, ApplicantInfoSchema } from "./schemas.js"

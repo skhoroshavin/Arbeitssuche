@@ -1,13 +1,12 @@
 import { z } from "zod"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AppSetupStateSchema } from "@/models/setup"
-import { OkSchema } from "@/utils/schemas"
-import type { AppSetupState } from "@/models/setup"
-import { api } from "./internal/api"
 
-const SetupStateLoadResultSchema = z.object({
-  state: AppSetupStateSchema.optional(),
-})
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+
+import { AppSetupStateSchema } from "@/models/setup"
+
+import type { AppSetupState } from "@/models/setup"
+
+import { api } from "./internal/api"
 
 export function useSetupState() {
   return useQuery({
@@ -59,3 +58,9 @@ export function closeApp(): Promise<{ ok: true }> {
     .invoke("app:close")
     .then((result) => OkSchema.parse(result))
 }
+
+const OkSchema = z.object({ ok: z.literal(true) })
+
+const SetupStateLoadResultSchema = z.object({
+  state: AppSetupStateSchema.optional(),
+})

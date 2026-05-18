@@ -1,13 +1,18 @@
 import { z } from "zod"
+
 import * as cheerio from "cheerio/slim"
+
 import type { Browser } from "@/plugins/browser"
+
 import type {
   VacancyDetails,
   JobSite,
   JobPostingJsonLd,
   SearchCriteria,
 } from "@/plugins/job-site"
+
 import { withOpenedPage } from "@/plugins/job-site/utils/index.js"
+
 import {
   extractJsonLd,
   joinNormalizedText,
@@ -16,9 +21,13 @@ import {
   stringField,
 } from "@/utils/index.js"
 
+export const SUPPORTED_MODES = ["employment", "apprenticeship"] as const
+
 export function createDmSite(browser: Browser): JobSite {
   return new DmSite(browser)
 }
+
+const BASE_URL = "https://www.dm-jobs.de"
 
 class DmSite implements JobSite {
   constructor(private readonly browser: Browser) {}
@@ -51,6 +60,10 @@ class DmSite implements JobSite {
     )
   }
 }
+
+const BLOCK_PATTERNS = [/usercentrics\.eu/]
+
+const SEARCH_READY_SELECTOR = "a[href*='/job/']"
 
 function extractVacancy(html: string, url: string): VacancyDetails {
   const $ = cheerio.load(html)
@@ -99,37 +112,6 @@ function extractFromPosting(jsonLd: object | undefined) {
   }
 }
 
-const JobPostingJsonLdSchema = z.object({
-  title: z.string().optional(),
-  description: z.string().optional(),
-  datePosted: z.string().optional(),
-  hiringOrganization: z.object({ name: z.string().optional() }).optional(),
-  jobLocation: z
-    .union([
-      z.object({
-        address: z
-          .object({
-            streetAddress: z.string().optional(),
-            postalCode: z.string().optional(),
-            addressLocality: z.string().optional(),
-          })
-          .optional(),
-      }),
-      z.array(
-        z.object({
-          address: z
-            .object({
-              streetAddress: z.string().optional(),
-              postalCode: z.string().optional(),
-              addressLocality: z.string().optional(),
-            })
-            .optional(),
-        }),
-      ),
-    ])
-    .optional(),
-})
-
 function asJobPosting(value: unknown): JobPostingJsonLd | undefined {
   const result = JobPostingJsonLdSchema.safeParse(value)
   return result.success ? result.data : undefined
@@ -174,8 +156,33 @@ function extractDescriptionFallback($: cheerio.CheerioAPI): string | undefined {
   return parts.length > 0 ? parts.join("") : undefined
 }
 
-export const SUPPORTED_MODES = ["employment", "apprenticeship"] as const
-
-const BASE_URL = "https://www.dm-jobs.de"
-const BLOCK_PATTERNS = [/usercentrics\.eu/]
-const SEARCH_READY_SELECTOR = "a[href*='/job/']"
+const JobPostingJsonLdSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  datePosted: z.string().optional(),
+  hiringOrganization: z.object({ name: z.string().optional() }).optional(),
+  jobLocation: z
+    .union([
+      z.object({
+        address: z
+          .object({
+            streetAddress: z.string().optional(),
+            postalCode: z.string().optional(),
+            addressLocality: z.string().optional(),
+          })
+          .optional(),
+      }),
+      z.array(
+        z.object({
+          address: z
+            .object({
+              streetAddress: z.string().optional(),
+              postalCode: z.string().optional(),
+              addressLocality: z.string().optional(),
+            })
+            .optional(),
+        }),
+      ),
+    ])
+    .optional(),
+})

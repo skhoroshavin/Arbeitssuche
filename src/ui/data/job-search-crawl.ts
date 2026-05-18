@@ -1,16 +1,10 @@
 import { z } from "zod"
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+
 import { api } from "./internal/api"
+
 import { invalidateQuery, jobSearchQueryKeys } from "./job-search-query-keys"
-
-const SiteInfoSchema = z.object({
-  name: z.string(),
-  supportedModes: z.array(z.string()),
-})
-
-const SitesListResponseSchema = z.object({
-  sites: z.array(SiteInfoSchema),
-})
 
 export function useStartJobSearchCrawl(id: string) {
   const queryClient = useQueryClient()
@@ -35,6 +29,10 @@ export function useSiteListView() {
   }
 }
 
+const EMPTY_SITE_LIST: { sites: SiteInfo[] } = { sites: [] }
+
+type SiteInfo = { name: string; supportedModes: string[] }
+
 function useSites() {
   return useQuery({
     queryKey: ["sites"],
@@ -43,6 +41,11 @@ function useSites() {
   })
 }
 
-const EMPTY_SITE_LIST: { sites: SiteInfo[] } = { sites: [] }
+const SiteInfoSchema = z.object({
+  name: z.string(),
+  supportedModes: z.array(z.string()),
+})
 
-type SiteInfo = { name: string; supportedModes: string[] }
+const SitesListResponseSchema = z.object({
+  sites: z.array(SiteInfoSchema),
+})
