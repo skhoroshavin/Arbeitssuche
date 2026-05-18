@@ -20,7 +20,11 @@ import {
   type Statement,
 } from "@/utils/index.js"
 import { z } from "zod"
-import { JobSearchSchema, JobSearchEditorSnapshotSchema } from "@/api"
+import {
+  ContentSchema,
+  JobSearchSchema,
+  JobSearchEditorSnapshotSchema,
+} from "@/api"
 
 export function createSqliteJobSearchRepository(
   database: Database,
@@ -204,7 +208,7 @@ class SqliteJobSearchRepository implements JobSearchRepository {
   loadApplicationCoverLetter(jobSearchId: string, vacancyHash: string): string {
     const raw = this.loadCoverLetterStmt.get(jobSearchId, vacancyHash)
     if (raw === undefined) return ""
-    return z.object({ content: z.string() }).parse(raw).content
+    return ContentSchema.parse(raw).content
   }
 
   saveApplicationCoverLetter(

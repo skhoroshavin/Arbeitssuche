@@ -13,4 +13,4 @@ export const SetupStateLoadResultSchema = z.object({
 })
 export type SetupStateLoadResultDTO = z.infer<typeof SetupStateLoadResultSchema>
 
-export const ClearDataOkSchema = z.object({ ok: z.literal(true) })
+export { OkResponseSchema as ClearDataOkSchema } from "./ok-response.js"

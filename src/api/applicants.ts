@@ -96,7 +96,7 @@ export const CreatedIdSchema = z.object({ id: z.string() })
 
 export const DeletedIdSchema = z.object({ deleted: z.string() })
 
-export const SavedOkSchema = z.object({ ok: z.literal(true) })
+export { OkResponseSchema as SavedOkSchema } from "./ok-response.js"
 
 export const SuggestionsResponseSchema = z.object({
   suggestions: z.array(

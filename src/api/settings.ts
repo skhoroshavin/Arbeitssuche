@@ -53,4 +53,4 @@ export const SecretTestResultSchema = z.object({
   error: z.string().optional(),
 })
 
-export const OkSchema = z.object({ ok: z.literal(true) })
+export { OkResponseSchema as OkSchema } from "./ok-response.js"
