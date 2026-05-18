@@ -21,10 +21,11 @@ import {
 } from "@/utils/index.js"
 import { z } from "zod"
 import {
-  ContentSchema,
   JobSearchSchema,
   JobSearchEditorSnapshotSchema,
-} from "@/api"
+} from "@/models/job-search"
+
+const CoverLetterRowSchema = z.object({ content: z.string() })
 
 export function createSqliteJobSearchRepository(
   database: Database,
@@ -208,7 +209,7 @@ class SqliteJobSearchRepository implements JobSearchRepository {
   loadApplicationCoverLetter(jobSearchId: string, vacancyHash: string): string {
     const raw = this.loadCoverLetterStmt.get(jobSearchId, vacancyHash)
     if (raw === undefined) return ""
-    return ContentSchema.parse(raw).content
+    return CoverLetterRowSchema.parse(raw).content
   }
 
   saveApplicationCoverLetter(
