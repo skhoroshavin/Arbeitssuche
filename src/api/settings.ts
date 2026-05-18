@@ -13,7 +13,7 @@ export const CommuteProviderInfoSchema = z.object({
   instructions: z.string(),
 })
 
-export const MaskedSecretSchema = z.object({
+const MaskedSecretSchema = z.object({
   masked: z.string(),
   isSet: z.boolean(),
 })

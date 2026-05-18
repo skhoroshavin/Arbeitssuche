@@ -25,7 +25,7 @@ export default tseslint.config(
             shared: true,
           },
           api: {
-            imports: [],
+            shared: true,
           },
           "models/*": {
             imports: ["models/+"],

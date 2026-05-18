@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const SearchParametersSchema = z.object({
+const SearchParametersSchema = z.object({
   searchTerm: z.string(),
   radiusKm: z.number(),
   searchMode: z.enum(["employment", "entry-level", "apprenticeship"]),
@@ -8,7 +8,7 @@ export const SearchParametersSchema = z.object({
   maxResults: z.number().optional(),
 })
 
-export const SearchPreferencesSchema = z.object({
+const SearchPreferencesSchema = z.object({
   maxDistanceKm: z.number().optional(),
   maxCommuteMinutes: z.number().optional(),
   freeText: z.array(z.string()),
@@ -27,7 +27,7 @@ export const JobSearchEditorSnapshotSchema = z.object({
   coverLetterContent: z.string(),
 })
 
-export const JobSearchDraftSchema = z.object({
+const JobSearchDraftSchema = z.object({
   applicantId: z.string(),
   snapshot: JobSearchEditorSnapshotSchema,
   meaningful: z.boolean(),
@@ -37,7 +37,7 @@ export const JobSearchDraftResponseSchema = z.object({
   draft: JobSearchDraftSchema.optional(),
 })
 
-export const JobSearchInfoSchema = z.object({
+const JobSearchInfoSchema = z.object({
   id: z.string(),
   applicantId: z.string(),
   searchTerm: z.string(),
@@ -53,5 +53,3 @@ export const CreatedJobSearchIdSchema = z.object({
 })
 
 export const ContentSchema = z.object({ content: z.string() })
-
-export const DeletedTrueSchema = z.object({ deleted: z.literal(true) })

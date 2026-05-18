@@ -3,13 +3,13 @@ import {
   ApplicantListResponseSchema,
   CreatedIdSchema,
   SavedOkSchema,
-  DeletedIdSchema,
   ApplicantDraftResponseSchema,
   SuggestionsResponseSchema,
 } from "@/api"
 import type { ApplicantDraftSnapshot } from "@/models/applicant"
 import type { AppServices } from "."
 import type { IpcHandle } from "./ipc-handlers.js"
+import { DeletedIdSchema } from "./schemas.js"
 
 export function registerApplicantsHandlers(
   handle: IpcHandle,

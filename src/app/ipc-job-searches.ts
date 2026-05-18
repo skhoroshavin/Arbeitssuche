@@ -4,13 +4,13 @@ import {
   JobSearchListResponseSchema,
   CreatedJobSearchIdSchema,
   SavedOkSchema,
-  DeletedIdSchema,
   JobSearchDraftResponseSchema,
   ContentSchema,
 } from "@/api"
 import type { SearchMode } from "@/models/job-search"
 import type { AppServices } from "."
 import type { IpcHandle } from "./ipc-handlers.js"
+import { DeletedIdSchema } from "./schemas.js"
 
 export function registerJobSearchesHandlers(
   handle: IpcHandle,

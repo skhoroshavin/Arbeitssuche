@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const ApplicantPersonalSchema = z.object({
+const ApplicantPersonalSchema = z.object({
   name: z.string(),
   email: z.string().optional(),
   phone: z.string().optional(),
@@ -16,7 +16,7 @@ export const ApplicantPersonalSchema = z.object({
   hobbies: z.array(z.string()),
 })
 
-export const ApplicantExperienceSchema = z.object({
+const ApplicantExperienceSchema = z.object({
   role: z.string(),
   company: z.string(),
   startDate: z.string(),
@@ -70,7 +70,7 @@ export const ApplicantSchema = z.object({
   personalNotes: z.array(z.string()).optional(),
 })
 
-export const ApplicantInfoSchema = z.object({
+const ApplicantInfoSchema = z.object({
   id: z.string(),
   name: z.string().optional(),
 })
@@ -89,8 +89,6 @@ export const ApplicantListResponseSchema = z.object({
 })
 
 export const CreatedIdSchema = z.object({ id: z.string() })
-
-export const DeletedIdSchema = z.object({ deleted: z.string() })
 
 export { OkResponseSchema as SavedOkSchema } from "./ok-response.js"
 

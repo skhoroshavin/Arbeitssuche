@@ -1,17 +1,17 @@
 import { z } from "zod"
 
-export const VacancyContactSchema = z.object({
+const VacancyContactSchema = z.object({
   name: z.string().optional(),
   email: z.string().optional(),
   phone: z.string().optional(),
 })
 
-export const VacancySourceSchema = z.object({
+const VacancySourceSchema = z.object({
   site: z.string(),
   url: z.string(),
 })
 
-export const CommuteInfoSchema = z.object({
+const CommuteInfoSchema = z.object({
   distance: z.string(),
   durations: z.object({
     morning: z.number(),
@@ -21,7 +21,7 @@ export const CommuteInfoSchema = z.object({
   fetchedAt: z.string(),
 })
 
-export const ActivitySchema = z.discriminatedUnion("type", [
+const ActivitySchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("found"),
     date: z.string(),
@@ -73,7 +73,7 @@ export const ActivitySchema = z.discriminatedUnion("type", [
   }),
 ])
 
-export const VacancyDTOSchema = z.object({
+const VacancyDTOSchema = z.object({
   hash: z.string(),
   title: z.string(),
   company: z.string(),
@@ -86,7 +86,7 @@ export const VacancyDTOSchema = z.object({
   enrichmentDirty: z.boolean(),
   summary: z.string(),
   matchScore: z.enum(["very-bad", "bad", "ok", "good", "excellent"]),
-  commute: z.record(CommuteInfoSchema),
+  commute: z.record(z.string(), CommuteInfoSchema),
   activityHistory: z.array(ActivitySchema),
   active: z.boolean(),
 })
