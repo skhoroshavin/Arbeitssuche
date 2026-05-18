@@ -1,17 +1,36 @@
+import { z } from "zod"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import type {
   Applicant,
   ApplicantDraftSnapshot,
   ResumeTemplate,
 } from "@/models/applicant"
-import {
-  ApplicantSchema,
-  ApplicantDraftResponseSchema,
-  CreatedIdSchema,
-  SuggestionsResponseSchema,
-  ApplicantListResponseSchema,
-} from "@/api"
+import { ApplicantSchema, ApplicantInfoSchema } from "@/models/applicant"
+import { CreatedIdSchema } from "@/utils/schemas"
 import { api } from "./internal/api"
+
+const ApplicantDraftResponseSchema = z.object({
+  draft: z
+    .object({
+      snapshot: ApplicantSchema,
+      meaningful: z.boolean(),
+    })
+    .optional(),
+})
+
+const ApplicantListResponseSchema = z.object({
+  applicants: z.array(ApplicantInfoSchema),
+})
+
+const SuggestionsResponseSchema = z.object({
+  suggestions: z.array(
+    z.object({
+      searchTerm: z.string(),
+      searchMode: z.enum(["employment", "entry-level", "apprenticeship"]),
+      reason: z.string(),
+    }),
+  ),
+})
 
 export function useApplicantListView() {
   const query = useApplicants()
