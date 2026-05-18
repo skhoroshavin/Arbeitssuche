@@ -4,8 +4,9 @@
 
 Replace `typia` (compiler-plugin-based runtime validation) with `zod` (schema-first
 runtime validation) for all trust-boundary crossings. Remove the compiler plugin,
-add standard npm dependencies, and introduce a shared `src/api/` layer for IPC
-contract schemas used by both main and renderer processes.
+add standard npm dependencies, and move schemas directly into `src/models/` (domain
+schemas), `src/utils/` (shared utility schemas), and local files (plugin/repository/
+service schemas). No `src/api/` layer.
 
 ## Motivation
 
@@ -17,8 +18,8 @@ contract schemas used by both main and renderer processes.
   internals — upgrades frequently break it. Zod is a standard npm package.
 - **LLM comprehension**: Zod has 431× more npm downloads than typia (143M vs 331K
   weekly), meaning AI coding assistants have vastly more training examples.
-- **Simplicity**: remove one category of build tooling (compiler plugins) from the
-  project.
+- **Simplicity**: remove one category of build tooling (compiler plugins) from
+  the project.
 
 Runtime performance is explicitly non-critical for this project — the difference
 between typia's generated native checks and Zod's schema interpreter is
@@ -45,14 +46,14 @@ BEFORE (type-first, typia):        AFTER (schema-first, Zod):
 
 | Boundary | Examples | Schema location |
 |---|---|---|
-| IPC (main ↔ renderer) | `Config`, `Applicant`, `JobSearch`, `LlmModel[]` | `src/api/` — shared contract layer |
-| External API JSON | `ApiSearchResponse`, `DistanceMatrixResponse` | Local to the plugin (`src/plugins/*/`) |
-| Storage/DB rows | `VacancyDTO`, `ApplicantRow`, `JobSearchRow` | Local to the repository (`src/repositories/*/`) |
+| IPC (main ↔ renderer) | `Config`, `Applicant`, `JobSearch`, `LlmModel[]` | Domain schemas in `src/models/<domain>/schemas.ts`; UI response wrappers local to each `src/ui/data/*.ts` |
+| External API JSON | `ApiSearchResponse`, `DistanceMatrixResponse` | Local to the plugin (`src/plugins/*/`) as private named `const` |
+| Storage/DB rows | `VacancyDTO`, `ApplicantRow`, `JobSearchRow` | `src/models/<domain>/schemas.ts` — imported by repositories (no duplication) |
 | LLM structured output | `AssessResult`, `ConsultationSuggestion[]` | Local to the service (`src/services/*/`) |
 
-Only IPC contract schemas go in `src/api/` — they are shared between main and
-renderer processes. All other boundary schemas live alongside the code that
-owns that boundary (plugin, repository, service), following the existing
+Only domain schemas live in `src/models/` — they are the shared contract between
+main and renderer processes. All other boundary schemas live alongside the code
+that owns that boundary (plugin, repository, service), following the existing
 architecture where each layer owns its external interfaces.
 
 ### What stays pure TypeScript
@@ -61,93 +62,35 @@ Rich domain models (`Vacancy` class), discriminated unions (`Activity`,
 `VacancyStatus`, `MatchScore`), internal helpers (`BaseActivity`,
 `CommuteDurations`), constants, and resolve functions. No schemas for these.
 
-## Architecture: `src/api/` Shared Layer
+## Architecture: Schema Placement Rules
 
-### Purpose
+| Category | Destination | Rationale |
+|---|---|---|
+| Domain schemas (Applicant, VacancyDTO, JobSearch, Activity, CommuteInfo, AppSetupState, AppConfig, etc.) | `src/models/<domain>/schemas.ts` | Both `app/` (incoming validation) and `repositories/` (hydration) may legally import `models/*`. Eliminates repo↔api duplication. |
+| UI response wrappers (`ApplicantListResponseSchema`, `VacancyListResponseSchema`, `ContentSchema`, etc.) | Local to each `src/ui/data/*.ts` file | The UI owns the IPC response contract. Composed from `models/*` schemas. |
+| Generic utility schemas (`OkSchema`, `CreatedIdSchema`, `DeletedIdSchema`) | `src/utils/schemas.ts` | Shared between `app/` (where outgoing `.parse()` is removed) and `ui/data/` (where response parsing is kept). Kept minimal. |
+| Plugin API schemas (Arbeitsagentur response, Google Maps distance matrix, OpenAI completion response) | Stay in plugin files as private named `const` | Plugin interfaces are already type-safe. These are internal parsing guards, not exported. |
+| JobPosting JSON-LD schemas | Stay as private named `const` in `xing/` and `dm/` | Site-specific parsing; similarity is coincidental. |
 
-A new shared layer containing Zod schemas for IPC contracts. Both the main
-process (`app/`) and renderer (`ui/data`) import from it to validate data
-crossing the Electron process boundary.
+### Key behavior change in `app/`
 
-### Structure
-
-```
-src/api/
-  index.ts               // barrel: re-exports all schemas
-  settings.ts            // ConfigSchema, LlmModelSchema, MaskedSecretSchema...
-  applicants.ts          // ApplicantSchema, ApplicantInfoSchema, ApplicantDraftSchema...
-  job-searches.ts        // JobSearchSchema, JobSearchInfoSchema, JobSearchDraftSchema...
-  setup.ts               // AppSetupStateSchema, SetupStateLoadResultSchema...
-  vacancy.ts             // VacancyDTOSchema, VacancyWithStatusSchema...
-  crawl.ts               // CrawlSitesSchema...
-  progress.ts            // ProgressPayloadSchema...
-```
-
-### Schema file example
-
-```ts
-// src/api/settings.ts
-import { z } from "zod"
-
-export const ConfigSchema = z.object({
-  provider: z.enum(["openrouter", "requesty"]).optional(),
-  assessmentModel: z.string().optional(),
-  coverLetterModel: z.string().optional(),
-  consultationModel: z.string().optional(),
-})
-export type ConfigDTO = z.infer<typeof ConfigSchema>
-
-export const LlmModelSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  pricing: z.object({ prompt: z.string(), completion: z.string() }),
-})
-export type LlmModelDTO = z.infer<typeof LlmModelSchema>
-```
-
-### Architecture enforcement
-
-```ts
-// eslint.config.ts addition
-"api": { shared: true },
-"app": { imports: [..., "api"] },
-"app/*": { imports: [..., "api"] },
-"ui/data": { imports: ["models/+", "api"] },
-```
-
-`shared: true` means any layer may import from `api/` — it's a pure contract
-module with no internal dependencies, similar to `utils/`.
+- **Remove outgoing `.parse()` calls** from IPC handlers. TypeScript already
+  enforces return types on both sides of the IPC boundary.
+- **Keep incoming `.parse()` calls** for IPC arguments (e.g.
+  `ApplicantSchema.parse(data)`), because arguments arrive as `unknown`.
+- Delete `src/app/schemas.ts`.
 
 ## Usage Patterns
 
-### Backend: validate outgoing responses
-
-```ts
-// src/app/ipc-settings.ts
-import { ConfigSchema } from "@/api"
-
-handle("settings:config:load", () => {
-  const raw = services.configRepo.load()
-  const resolved = resolveConfig(raw)
-  return ConfigSchema.parse(resolved)
-})
-```
-
-### Backend: validate incoming parameters
+### Backend: validate incoming parameters only
 
 ```ts
 // src/app/ipc-applicants.ts
-import { ApplicantSchema, ApplicantDraftSchema } from "@/api"
+import { ApplicantSchema } from "@/models/applicant"
 
 handle("applicants:save", (id: string, data: unknown) => {
   const validated = ApplicantSchema.parse(data)
   services.applicantRepo.save(id, validated)
-  return { ok: true }
-})
-
-handle("applicants:draft:save", (draft: unknown) => {
-  const validated = ApplicantDraftSchema.parse(draft)
-  services.applicantRepo.saveDraft(validated)
   return { ok: true }
 })
 ```
@@ -156,14 +99,28 @@ handle("applicants:draft:save", (draft: unknown) => {
 
 ```ts
 // src/ui/data/settings.ts
-import { ConfigSchema, LlmModelSchema } from "@/api"
+import { ResolvedConfigSchema } from "@/models/config"
+import { z } from "zod"
+
+const ConfigResponseSchema = ResolvedConfigSchema
 
 function useConfig() {
   return useQuery({
     queryKey: ["config"],
     queryFn: async () =>
-      ConfigSchema.parse(await api().invoke("settings:config:load")),
+      ConfigResponseSchema.parse(await api().invoke("settings:config:load")),
   })
+}
+```
+
+### Repository: import domain schemas from models
+
+```ts
+// src/repositories/vacancy/sqlite/index.ts
+import { VacancyDTOSchema } from "@/models/vacancy"
+
+function hydrate(row: unknown) {
+  return VacancyDTOSchema.parse(row)
 }
 ```
 
@@ -233,47 +190,170 @@ Key differences to handle:
 The existing `toStrictSchema` test suite serves as the acceptance criteria:
 all existing tests must pass against the Zod-generated schemas.
 
-## Files to Change
+## Files to Create
 
-### Remove
-- `typia` from `package.json` (dependency)
-- `@typia/unplugin` from `package.json` (devDependency)
-- `UnpluginTypia()` from `electron.vite.config.ts`
+### `src/models/applicant/schemas.ts`
 
-### Add
-- `zod` to `package.json` (dependency)
-- `zod-to-json-schema` to `package.json` (dependency)
-- `src/api/` directory with schemas for each IPC domain
+- `ApplicantSchema`
+- `ApplicantPersonalSchema`
+- `ApplicantExperienceSchema`
+- `ApplicantEducationSchema`
+- `ApplicantSkillSchema`
+- `ApplicantLanguageSchema`
+- `ApplicantCertificationSchema`
+- `ApplicantDiscloseSchema`
+- `ApplicantInfoSchema`
 
-### Modify (~15 source files)
-- `src/ui/data/*.ts` (5 files): replace `typia.assert<T>()` with schema `.parse()`
-- `src/ui/hooks/job-progress.ts`: replace `typia.is<T>()` with `.safeParse()`
-- `src/app/ipc-*.ts` (5 files): add validation on incoming params and outgoing responses
-- `src/app/secrets/encrypted.ts`: replace `typia.json.assertParse<T>()`
-- `src/plugins/job-site/*/index.ts` (3 files): replace `typia.json.assertParse<T>()` / `typia.is<T>()`
-- `src/plugins/openai-compatible/index.ts`: replace `typia.json.assertParse<T>()`
-- `src/plugins/openai-compatible/strict-schema.ts`: adapt to Zod's JSON Schema format
-- `src/plugins/browser/stub/index.ts`: replace `typia.json.assertParse<T>()`
-- `src/plugins/commute/google-maps/index.ts`: replace `typia.json.assertParse<T>()`
-- `src/repositories/**/*.ts` (3 files): replace `typia.assert<T>()`
-- `src/services/vacancy-enricher/assess.ts`: replace `typia.json.schema<T>()` + `typia.json.createAssertParse<T>()`
-- `src/services/vacancy-enricher/extract-contact.ts`: same
-- `src/services/job-consultant/consult-searches.ts`: same
-- `src/utils/database.ts`: replace `typia.assert<T>()`
-- `eslint.config.ts`: add `api` shared layer
+### `src/models/vacancy/schemas.ts`
+
+- `VacancyDTOSchema`
+- `VacancyContactSchema`
+- `CommuteInfoSchema`
+- `ActivitySchema`
+- `VacancySourceSchema`
+
+### `src/models/job-search/schemas.ts`
+
+- `JobSearchSchema`
+- `SearchParametersSchema`
+- `SearchPreferencesSchema`
+- `JobSearchEditorSnapshotSchema`
+- `JobSearchDraftSchema`
+- `JobSearchInfoSchema`
+
+### `src/models/setup/schemas.ts`
+
+- `AppSetupStateSchema`
+
+### `src/models/config/schemas.ts`
+
+- `ResolvedConfigSchema`
+- `LlmModelSchema`
+- `LlmProviderInfoSchema`
+- `CommuteProviderInfoSchema`
+
+### `src/models/secrets/schemas.ts`
+
+- `MaskedSecretsRecordSchema`
+- `SecretTestResultSchema`
+- `MaskedSecretSchema`
+
+### `src/utils/schemas.ts`
+
+- `OkSchema`
+- `CreatedIdSchema`
+- `DeletedIdSchema`
+
+## Files to Modify
+
+### `src/models/*/index.ts`
+
+Add `export * from "./schemas.js"` to:
+- `src/models/applicant/index.ts`
+- `src/models/vacancy/index.ts`
+- `src/models/job-search/index.ts`
+- `src/models/setup/index.ts`
+- `src/models/config/index.ts`
+- `src/models/secrets/index.ts`
+
+### `src/repositories/vacancy/sqlite/index.ts`
+
+- Delete local copies of `VacancyContactSchema`, `CommuteInfoSchema`, `ActivitySchema`, `VacancyDTOSchema`.
+- Import from `@/models/vacancy` instead.
+
+### `src/repositories/job-search/sqlite/index.ts`
+
+- Import `JobSearchSchema` and `JobSearchEditorSnapshotSchema` from `@/models/job-search` instead of `@/api`.
+
+### `src/repositories/applicant/sqlite/index.ts`
+
+- Import `ApplicantSchema` from `@/models/applicant` instead of `@/api`.
+
+### `src/app/ipc-*.ts` (5 files)
+
+- Import domain schemas from `models/*` or define wrappers locally.
+- Remove outgoing `.parse()` calls on plain objects (`{ ok: true }`, `{ id }`).
+- Keep incoming `.parse()` for arguments arriving as `unknown`.
+
+### `src/ui/data/*.ts` (5 files)
+
+- Define local response wrapper schemas composed from `models/*` schemas.
+- Remove `@/api` imports.
+
+### `src/plugins/job-site/xing/index.ts`
+
+- Extract inline `asJobPosting` schema to module-level `JobPostingJsonLdSchema` (private).
+
+### `src/plugins/job-site/dm/index.ts`
+
+- Extract inline `asJobPosting` schema to module-level `JobPostingJsonLdSchema` (private).
+
+### `src/plugins/openai-compatible/index.ts`
+
+- Extract inline completion response schema to module-level `CompletionResponseSchema` (private).
+
+### `src/plugins/commute/google-maps/index.ts`
+
+- Extract inline `DistanceMatrixResponseSchema` to module-level (already named; keep private).
+
+### `src/app/secrets/encrypted.ts`
+
+- Extract inline secrets shape to module-level `SecretsFileSchema` (private).
+
+### `src/utils/database.ts`
+
+- Extract inline `z.object({ data: z.string() })` to module-level `DataColumnSchema` (private).
+
+## Files to Delete
+
+- `src/api/applicants.ts`
+- `src/api/vacancy.ts`
+- `src/api/job-searches.ts`
+- `src/api/settings.ts`
+- `src/api/setup.ts`
+- `src/api/crawl.ts`
+- `src/api/ok-response.ts`
+- `src/api/index.ts`
+- `src/app/schemas.ts`
+
+## Data Flow
+
+### Before
+
+```
+models/ → defines TypeScript interfaces
+api/    → defines Zod schemas for IPC (mix of domain + wrappers)
+app/    → imports from api/, .parse() outgoing responses
+ui/data → imports from api/, .parse() incoming responses
+repositories/ → imports from api/ OR duplicates schemas inline
+```
+
+### After
+
+```
+models/    → defines TypeScript interfaces + Zod schemas
+app/       → imports domain schemas from models/, .parse() incoming only
+ui/data    → composes local wrapper schemas from models/, .parse() responses
+repositories/ → imports domain schemas from models/ (no duplication)
+plugins/   → private named schemas for internal API parsing
+utils/     → minimal shared utility schemas
+```
 
 ## Migration Strategy
 
 Incremental, file-by-file. Each file can be migrated independently:
 
 1. **Setup phase**: add `zod` + `zod-to-json-schema` to `package.json`, create
-   `src/api/` scaffolding, add `api` to eslint config
-2. **IPC contracts**: create schemas in `src/api/`, migrate `ui/data/*` consumers
-   and `app/ipc-*.ts` handlers in pairs
-3. **Plugin schemas**: migrate `src/plugins/**/*.ts` local schemas
-4. **Repository schemas**: migrate `src/repositories/**/*.ts`
+   `src/models/*/schemas.ts` files, add utility schemas
+2. **IPC contracts**: migrate `ui/data/*` consumers and `app/ipc-*.ts` handlers
+   to import from `models/*` instead of `@/api`
+3. **Repositories**: migrate `src/repositories/**/*.ts` to import from `models/*`,
+   delete duplicate local schemas
+4. **Plugin schemas**: migrate `src/plugins/**/*.ts` local schemas, extract
+   inline schemas to named `const`
 5. **LLM schemas**: migrate `src/services/*` schemas + adapt `toStrictSchema`
-6. **Cleanup**: remove `typia`, `@typia/unplugin`, `UnpluginTypia` from config
+6. **Cleanup**: remove `typia`, `@typia/unplugin`, `UnpluginTypia` from config;
+   delete `src/api/` and `src/app/schemas.ts`
 7. **Verify**: full test suite passes
 
 ## Risks
@@ -286,3 +366,19 @@ Incremental, file-by-file. Each file can be migrated independently:
 3. **`resolve*` functions**: Currently work at type level merging defaults with
    partials. These stay pure TypeScript — Zod schemas validate the wire format
    (after resolve) separately.
+
+## Error Handling
+
+No behavioral changes to error handling. Zod parse failures on IPC arguments will
+still throw, caught by the existing IPC handler wrapper.
+
+## Testing
+
+- Run `npm run fix` to catch lint/import issues.
+- Run `npm test:all` to verify no runtime regressions from schema moves.
+- Verify `npm run build` passes (no broken type references).
+
+## Dependencies
+
+- Remove: `typia`, `@typia/unplugin`
+- Add: `zod`, `zod-to-json-schema` (already present if prior work done)
