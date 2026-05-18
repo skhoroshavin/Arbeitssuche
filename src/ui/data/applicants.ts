@@ -2,11 +2,7 @@ import { z } from "zod"
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
-import type {
-  Applicant,
-  ApplicantDraftSnapshot,
-  ResumeTemplate,
-} from "@/models/applicant"
+import type { Applicant, ResumeTemplate } from "@/models/applicant"
 
 import { ApplicantSchema, ApplicantInfoSchema } from "@/models/applicant"
 
@@ -50,8 +46,8 @@ export function useApplicantDraft() {
 export function useSaveApplicantDraft() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (snapshot: ApplicantDraftSnapshot) =>
-      api().invoke("applicants:draft:save", snapshot),
+    mutationFn: (draft: Applicant) =>
+      api().invoke("applicants:draft:save", draft),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["applicant-draft"] }),
   })
@@ -146,12 +142,7 @@ function useApplicants() {
 const CreatedIdSchema = z.object({ id: z.string() })
 
 const ApplicantDraftResponseSchema = z.object({
-  draft: z
-    .object({
-      snapshot: ApplicantSchema,
-      meaningful: z.boolean(),
-    })
-    .optional(),
+  draft: ApplicantSchema.optional(),
 })
 
 const ApplicantListResponseSchema = z.object({
