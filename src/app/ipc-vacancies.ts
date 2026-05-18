@@ -1,9 +1,4 @@
-import {
-  VacancyListResponseSchema,
-  VacancyWithStatusSchema,
-  ContentSchema,
-  SavedOkSchema,
-} from "@/api"
+import { VacancyWithStatusSchema } from "@/models/vacancy"
 import type { Activity } from "@/models/vacancy"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { Applicant } from "@/models/applicant"
@@ -24,12 +19,12 @@ export function registerVacanciesHandlers(
       status: v.deriveStatus(),
       sources: v.deriveSources(),
     }))
-    return VacancyListResponseSchema.parse({
+    return {
       vacancies,
       totalCount: vacancies.length,
       generatedAt: output.generatedAt,
       latestCrawl: output.latestCrawl,
-    })
+    }
   })
   handle(
     "job-searches:vacancies:seed",
@@ -53,34 +48,29 @@ export function registerVacanciesHandlers(
     "job-searches:vacancies:add-activity",
     (id: string, hash: string, activity: Activity) => {
       services.vacancyRepo.addActivity(id, hash, activity)
-      return SavedOkSchema.parse({ ok: true })
+      return { ok: true as const }
     },
   )
 
-  // Vacancy cover letter
   handle(
     "job-searches:vacancies:cover-letter:load",
-    (id: string, hash: string) =>
-      ContentSchema.parse({
-        content: services.jobSearchRepo.loadApplicationCoverLetter(id, hash),
-      }),
+    (id: string, hash: string) => ({
+      content: services.jobSearchRepo.loadApplicationCoverLetter(id, hash),
+    }),
   )
   handle(
     "job-searches:vacancies:cover-letter:save",
     (id: string, hash: string, content: string) => {
       services.jobSearchRepo.saveApplicationCoverLetter(id, hash, content)
-      return SavedOkSchema.parse({ ok: true })
+      return { ok: true as const }
     },
   )
   handle(
     "job-searches:vacancies:cover-letter:generate",
-    async (id: string, hash: string) =>
-      ContentSchema.parse(
-        await services.coverLetterWriter.generateForVacancy(id, hash),
-      ),
+    async (id: string, hash: string) => ({
+      content: await services.coverLetterWriter.generateForVacancy(id, hash),
+    }),
   )
-
-  // Re-enrichment handlers
 
   handle("vacancies:re-enrich", async (jobSearchId: string, hash: string) => {
     const vacancy = services.vacancyRepo.findByHash(jobSearchId, hash)
@@ -106,7 +96,7 @@ export function registerVacanciesHandlers(
       )
     }
 
-    return SavedOkSchema.parse({ ok: true })
+    return { ok: true as const }
   })
 
   handle("vacancies:enrich-unenriched", async (jobSearchId: string) => {
