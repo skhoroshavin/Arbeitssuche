@@ -20,7 +20,7 @@ import {
   type Statement,
 } from "@/utils/index.js"
 import { z } from "zod"
-import { ApplicantSchema } from "@/api"
+import { ApplicantSchema } from "@/models/applicant"
 
 export function createSqliteApplicantRepository(
   database: Database,
