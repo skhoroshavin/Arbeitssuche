@@ -62,12 +62,11 @@ export interface Applicant {
 export interface JobSearch {
   searchTerm: string
   radiusKm: number
-  searchMode: SearchMode
-  sources: string[]
-  maxResults?: number
-  maxDistanceKm?: number
-  maxCommuteMinutes?: number
-  freeText: string[]
+  mode: SearchMode
+  sources: SearchSource[]
+  maxResultsPerSource: number
+  maxCommuteMinutes: number
+  notes: string
   coverLetter: string
 }
 ```
@@ -75,10 +74,24 @@ export interface JobSearch {
 - `id` removed
 - `applicantId` removed
 - `SearchParameters` and `SearchPreferences` deleted — fields inlined directly into `JobSearch`
+- `searchMode` → `mode`
+- `sources` → `SearchSource[]` (nominal type for job board source names)
+- `maxResults?: number` → `maxResultsPerSource: number` (`0` = unlimited)
+- `maxDistanceKm` removed
+- `maxCommuteMinutes?: number` → `maxCommuteMinutes: number` (`0` = unlimited)
+- `freeText: string[]` → `notes: string`
 - `coverLetter` added (default/template cover letter content)
 - `resolveJobSearch` resolves flat fields directly, no nested `params`/`preferences`
 - `JobSearchSchema` updated with flat fields
 - `JobSearchInfo` redefined as `{ id: JobSearchID; displayName: string }` (derived from `searchTerm`)
+
+### SearchSource
+
+```ts
+export type SearchSource = string
+```
+
+Type alias for job board source identifiers (e.g. `"arbeitsagentur"`, `"xing"`). Used in `JobSearch.sources`.
 
 ### Deleted Model Types
 
@@ -134,7 +147,7 @@ export interface ApplicantRepository {
 export interface JobSearchRepository {
   listByApplicant(applicantId: ApplicantID): JobSearchInfo[]
   load(id: JobSearchID): { jobSearch: JobSearch; applicantId: ApplicantID }
-  create(searchTerm: string, applicantId: ApplicantID, searchMode?: SearchMode): JobSearchID
+  create(searchTerm: string, applicantId: ApplicantID, mode?: SearchMode): JobSearchID
   save(id: JobSearchID, jobSearch: JobSearch): void
   delete(id: JobSearchID): void
   exists(id: JobSearchID): boolean
@@ -381,11 +394,11 @@ handle("job-searches:list", (applicantId: string) => ({
 
 handle(
   "job-searches:create",
-  (searchTerm: string, applicantId: string, searchMode?: SearchMode) => ({
+  (searchTerm: string, applicantId: string, mode?: SearchMode) => ({
     id: services.jobSearchRepo.create(
       searchTerm,
       applicantId,
-      searchMode,
+      mode,
     ),
   }),
 )
@@ -669,7 +682,7 @@ export class CoverLetterWriter {
 
 ### `VacancyScanner` / `VacancyEnricher`
 
-These services receive `jobSearchId: JobSearchID` and load the `JobSearch` directly. `EnrichContext` replaces `preferences: SearchPreferences` with `jobSearch: JobSearch` (the enricher reads `freeText`, `maxDistanceKm`, `maxCommuteMinutes` directly from the flattened model).
+These services receive `jobSearchId: JobSearchID` and load the `JobSearch` directly. `EnrichContext` replaces `preferences: SearchPreferences` with `jobSearch: JobSearch` (the enricher reads `notes`, `maxCommuteMinutes` directly from the flattened model).
 
 ## 10. Test Updates
 
@@ -682,7 +695,7 @@ These services receive `jobSearchId: JobSearchID` and load the `JobSearch` direc
 All test files with hardcoded `Applicant` or `JobSearch` mock data need updates:
 
 1. Remove `id` from `Applicant` mock objects
-2. Remove `id` and `applicantId` from `JobSearch` mock objects; replace `params: { ... }` and `preferences: { ... }` with flat fields (`searchTerm`, `radiusKm`, `searchMode`, `sources`, `freeText`, etc.)
+2. Remove `id` and `applicantId` from `JobSearch` mock objects; replace `params: { ... }` and `preferences: { ... }` with flat fields (`searchTerm`, `radiusKm`, `mode`, `sources`, `maxResultsPerSource`, `maxCommuteMinutes`, `notes`, etc.)
 3. Add `coverLetter: ""` to `JobSearch` mock objects
 4. Update `ApplicantRepository` and `JobSearchRepository` mocks:
    - `list()` returns `ApplicantInfo[]` (excludes `"$draft"`); `listByApplicant()` returns `JobSearchInfo[]` (excludes sentinels)
