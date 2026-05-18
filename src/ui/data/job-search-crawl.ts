@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import typia from "typia"
+import { SitesListResponseSchema } from "@/api"
 import { api } from "./internal/api"
 import { invalidateQuery, jobSearchQueryKeys } from "./job-search-query-keys"
 
@@ -30,9 +30,7 @@ function useSites() {
   return useQuery({
     queryKey: ["sites"],
     queryFn: async () =>
-      typia.assert<{ sites: { name: string; supportedModes: string[] }[] }>(
-        await api().invoke("sites:list"),
-      ),
+      SitesListResponseSchema.parse(await api().invoke("sites:list")),
   })
 }
 

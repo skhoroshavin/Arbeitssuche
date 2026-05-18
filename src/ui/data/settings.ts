@@ -1,20 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { z } from "zod"
 import type { MaskedSecret } from "@/models/secrets"
-import type {
-  ConfigKey,
-  LlmModel,
-  LlmProvider,
-  LlmProviderInfo,
-  CommuteProviderInfo,
-} from "@/models/config"
+import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config"
 import {
   DEFAULT_ASSESSMENT_MODEL,
   DEFAULT_CONSULTATION_MODEL,
   DEFAULT_COVER_LETTER_MODEL,
   DEFAULT_PROVIDER,
 } from "@/models/config/index"
-import type { ResolvedConfig } from "@/models/config/index.js"
-import typia from "typia"
+import {
+  LlmProviderInfoSchema,
+  CommuteProviderInfoSchema,
+  MaskedSecretsRecordSchema,
+  SecretTestResultSchema,
+  ResolvedConfigSchema,
+  LlmModelSchema,
+} from "@/api"
 import { api } from "./internal/api"
 
 // --- Provider secrets (factory) ---
@@ -106,9 +107,9 @@ export function useLlmProviders() {
   return useQuery({
     queryKey: ["llm-providers"],
     queryFn: async () =>
-      typia.assert<LlmProviderInfo[]>(
-        await api().invoke("settings:llm-providers"),
-      ),
+      z
+        .array(LlmProviderInfoSchema)
+        .parse(await api().invoke("settings:llm-providers")),
   })
 }
 
@@ -122,9 +123,9 @@ function useCommuteProviders() {
   return useQuery({
     queryKey: ["commute-providers"],
     queryFn: async () =>
-      typia.assert<CommuteProviderInfo[]>(
-        await api().invoke("settings:commute-providers"),
-      ),
+      z
+        .array(CommuteProviderInfoSchema)
+        .parse(await api().invoke("settings:commute-providers")),
   })
 }
 
@@ -167,7 +168,7 @@ function createProviderSecretHooks(type: "llm" | "commute") {
     return useQuery({
       queryKey,
       queryFn: async () =>
-        typia.assert<Record<string, MaskedSecret>>(
+        MaskedSecretsRecordSchema.parse(
           await api().invoke(`settings:${type}:secrets`),
         ),
     })
@@ -199,7 +200,7 @@ function createProviderSecretHooks(type: "llm" | "commute") {
   function useTest() {
     return useMutation({
       mutationFn: async (providerId: string) =>
-        typia.assert<{ ok: boolean; error?: string }>(
+        SecretTestResultSchema.parse(
           await api().invoke(`settings:${type}:secret:test`, providerId),
         ),
     })
@@ -217,7 +218,7 @@ function useConfig() {
   return useQuery({
     queryKey: ["config"],
     queryFn: async () =>
-      typia.assert<ResolvedConfig>(await api().invoke("settings:config:load")),
+      ResolvedConfigSchema.parse(await api().invoke("settings:config:load")),
   })
 }
 
@@ -225,6 +226,6 @@ function useLlmModels() {
   return useQuery({
     queryKey: ["llm-models"],
     queryFn: async () =>
-      typia.assert<LlmModel[]>(await api().invoke("settings:llm-models")),
+      z.array(LlmModelSchema).parse(await api().invoke("settings:llm-models")),
   })
 }

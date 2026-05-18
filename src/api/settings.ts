@@ -27,6 +27,13 @@ export const CommuteProviderInfoSchema = z.object({
   instructions: z.string(),
 })
 
+export const MaskedSecretSchema = z.object({
+  masked: z.string(),
+  isSet: z.boolean(),
+})
+
+export const MaskedSecretsRecordSchema = z.record(MaskedSecretSchema)
+
 export const LlmModelSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -34,13 +41,6 @@ export const LlmModelSchema = z.object({
     prompt: z.string(),
     completion: z.string(),
   }),
-})
-
-export const MaskedSecretsRecordSchema = z.record(MaskedSecretSchema)
-
-export const MaskedSecretSchema = z.object({
-  masked: z.string(),
-  isSet: z.boolean(),
 })
 
 export const ResolvedConfigSchema = z.object({
