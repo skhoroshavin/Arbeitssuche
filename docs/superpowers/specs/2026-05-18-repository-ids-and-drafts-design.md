@@ -12,15 +12,15 @@ Eliminate `src/utils/id.ts` by moving ID generation into repositories. Remove `i
 4. Introduce `ApplicantID` and `JobSearchID` nominal types
 5. Redesign repository interfaces: models without embedded IDs, repos return `(id, data)` tuples
 6. Move `loadApplicationCoverLetter` / `saveApplicationCoverLetter` from `JobSearchRepository` to `VacancyRepository`
-7. Simplify draft tables: drop `meaningful` column, store only `data TEXT`
+7. Delete separate draft tables; store drafts in main tables under sentinel IDs (`"$draft"` for applicant, `"$draft_<applicantId>"` for job search)
 8. Delete `ApplicantDraft`, `ApplicantDraftSnapshot`, `JobSearchDraft`, `JobSearchEditorSnapshot` from models
-9. Zero data loss for existing user databases
+9. Zero data loss for existing non-draft user data; old drafts are discarded during migration
 
 ## Non-Goals
 
 - Changing `Vacancy` model (it already uses `hash`, not `id`)
 - Introducing a generic migration framework
-- Moving drafts out of SQLite (they stay in SQLite, just simplified)
+- Moving drafts out of SQLite (they stay in SQLite, stored in main tables)
 - Changing the Electron app architecture or IPC transport
 
 ## 1. ID Types
@@ -222,52 +222,61 @@ Same `String(++this.nextId)` logic.
 
 ## 5. Draft Persistence
 
+Drafts are stored directly in the main tables using sentinel IDs, eliminating separate draft tables.
+
 ### Applicant Draft
 
-Keep `applicant_draft` table, simplify schema:
+Stored in the `applicants` table with a sentinel ID:
 
-```sql
-CREATE TABLE IF NOT EXISTS applicant_draft (
-  id INTEGER PRIMARY KEY CHECK (id = 1),
-  data TEXT NOT NULL
-);
+```ts
+const APPLICANT_DRAFT_ID = ApplicantID.of("$draft")
 ```
 
-- Drop `meaningful INTEGER` column
-- Store full `Applicant` JSON (no `id` field)
-- `loadDraft()` parses JSON, runs `isMeaningfulApplicantDraft()`, returns `Applicant | undefined`
+- `loadDraft()` calls `load(APPLICANT_DRAFT_ID)`, runs `isMeaningfulApplicantDraft()`, returns `Applicant | undefined`
+- `saveDraft(draft)` calls `save(APPLICANT_DRAFT_ID, draft)`
+- `deleteDraft()` calls `delete(APPLICANT_DRAFT_ID)`
+- `finalizeDraft()` loads draft, generates real ID, `save(realId, draft)`, `delete(APPLICANT_DRAFT_ID)`, returns real ID
+- `all()` excludes the `"$draft"` entry
 
 ### Job Search Draft
 
-Keep `job_search_drafts` table, simplify schema:
+Stored in the `job_searches` table with a per-applicant sentinel ID:
 
-```sql
-CREATE TABLE IF NOT EXISTS job_search_drafts (
-  applicant_id TEXT PRIMARY KEY,
-  data TEXT NOT NULL
-);
+```ts
+function draftIdForApplicant(applicantId: ApplicantID): JobSearchID {
+  return JobSearchID.of(`$draft_${applicantId.value}`)
+}
 ```
 
-- Drop `meaningful INTEGER` column
-- Store full `JobSearch` JSON (no `id`, no `applicantId`)
-- `loadDraft(applicantId)` parses JSON, runs `isMeaningfulJobSearchDraft()`, returns `JobSearch | undefined`
-- The returned `JobSearch` has `coverLetter` populated from draft data
+- `loadDraft(applicantId)` loads the sentinel ID, runs `isMeaningfulJobSearchDraft()`, returns `JobSearch | undefined`
+- `saveDraft(applicantId, draft)` saves to sentinel ID with `applicant_id` column set
+- `deleteDraft(applicantId)` deletes the sentinel row
+- `finalizeDraft(applicantId)` loads draft, generates real ID, inserts with real ID and `applicant_id`, deletes sentinel, returns real ID
+- `all()` and `allForApplicant()` exclude sentinel IDs (those starting with `"$draft_"`)
 
-### Migration (Old → New Schema)
+### Why Sentinels in Main Tables?
 
-For existing databases:
-1. `ALTER TABLE applicant_draft DROP COLUMN meaningful` — SQLite supports DROP COLUMN (v3.35.0+). Node.js 22 bundles SQLite 3.44+, so this is safe.
-2. `ALTER TABLE job_search_drafts DROP COLUMN meaningful`
+- One table per entity instead of two
+- No schema migration for draft tables (they're just dropped)
+- Drafts naturally participate in the same storage, serialization, and loading logic as real entities
+- SQLite `TEXT PRIMARY KEY` already supports arbitrary string keys
 
-If `DROP COLUMN` fails (unlikely), recreate tables and copy data.
+### Old Draft Table Migration
+
+During database migration, drop old draft tables entirely. Old draft data is **not preserved** — the user will see empty drafts after the app update. This is acceptable because drafts are transient working state, not user data.
 
 ## 6. SQLite Schema Changes
 
 ### `applicants` table
 
-No schema changes. `id TEXT PRIMARY KEY` already supports both old slug IDs and new numeric-string IDs.
+No schema changes. `id TEXT PRIMARY KEY` already supports old slug IDs, new numeric-string IDs, and the `"$draft"` sentinel.
 
 The `data` JSON blob no longer contains `id`. On `save()`, the repo serializes `Applicant` (without `id`). On `load()`, it parses and returns `Applicant`.
+
+**Migration:** Drop old `applicant_draft` table.
+```sql
+DROP TABLE IF EXISTS applicant_draft;
+```
 
 ### `job_searches` table
 
@@ -284,7 +293,8 @@ CREATE TABLE IF NOT EXISTS job_searches (
 Changes:
 - Add `cover_letter TEXT NOT NULL DEFAULT ''`
 - `data` JSON blob no longer contains `id` or `applicantId`
-- `applicant_id` stays as a relational column (foreign key to `applicants`)
+- `applicant_id` stays as a relational column
+- Drafts stored with sentinel IDs like `"$draft_1"`, `"$draft_2"`
 
 **Migration:**
 ```sql
@@ -309,6 +319,14 @@ WHERE EXISTS (
 After migration, delete the migrated rows from `cover_letters`:
 ```sql
 DELETE FROM cover_letters WHERE vacancy_hash = '';
+```
+
+### Draft tables
+
+**Dropped:**
+```sql
+DROP TABLE IF EXISTS applicant_draft;
+DROP TABLE IF EXISTS job_search_drafts;
 ```
 
 ### `cover_letters` table
@@ -753,9 +771,9 @@ function migrateDatabase(database: Database): void {
   if (version >= 1) return
 
   database.transaction(() => {
-    // 1. Drop meaningful columns from draft tables
-    database.exec(`ALTER TABLE applicant_draft DROP COLUMN meaningful`)
-    database.exec(`ALTER TABLE job_search_drafts DROP COLUMN meaningful`)
+    // 1. Drop old draft tables (draft data is not migrated)
+    database.exec(`DROP TABLE IF EXISTS applicant_draft`)
+    database.exec(`DROP TABLE IF EXISTS job_search_drafts`)
 
     // 2. Add cover_letter to job_searches
     database.exec(`ALTER TABLE job_searches ADD COLUMN cover_letter TEXT NOT NULL DEFAULT ''`)
@@ -827,8 +845,11 @@ function migrateJobSearchData(database: Database): void {
 1. ~~Should `job-searches:load` return `{ jobSearch: JobSearch, applicantId: string }` to avoid a separate `getApplicantId` query?~~
    - **Resolved:** `JobSearchRepository.load()` returns `{ jobSearch: JobSearch; applicantId: ApplicantID }`. IPC handler unwraps to `{ jobSearch, applicantId: string }`.
 
-2. Should `allForApplicant` return just `JobSearch[]` (without IDs) since the caller already knows the applicant ID?
-   - **No.** The UI needs job search IDs for navigation and queries. Return full tuples.
+2. ~~Should `allForApplicant` return just `JobSearch[]` (without IDs) since the caller already knows the applicant ID?~~
+   - **Resolved:** Return full tuples — the UI needs job search IDs for navigation and queries.
 
 3. What happens if `finalizeDraft` is called when no draft exists?
    - Current behavior: throw. Keep this behavior.
+
+4. Should `exists()` include sentinel draft IDs?
+   - **No.** `exists()` should return `false` for sentinel IDs. Drafts are accessed only through draft-specific methods.
