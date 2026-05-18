@@ -1,9 +1,8 @@
 import { defineConfig } from "vitest/config"
-import UnpluginTypia from "@typia/unplugin/vite"
 import path from "node:path"
 
 export default defineConfig({
-  plugins: [UnpluginTypia()],
+  plugins: [],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

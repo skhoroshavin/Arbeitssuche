@@ -1,7 +1,6 @@
 import { defineConfig } from "electron-vite"
 import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
-import UnpluginTypia from "@typia/unplugin/vite"
 import path from "node:path"
 import { cpSync, readdirSync } from "node:fs"
 import type { Plugin } from "vite"
@@ -27,7 +26,7 @@ function copyTemplatesPlugin(): Plugin {
 
 export default defineConfig({
   main: {
-    plugins: [copyTemplatesPlugin(), UnpluginTypia()],
+    plugins: [copyTemplatesPlugin()],
     build: {
       outDir: "out/main",
       lib: {
@@ -69,7 +68,7 @@ export default defineConfig({
   },
   renderer: {
     root: "src/ui",
-    plugins: [react(), tailwindcss(), UnpluginTypia()],
+    plugins: [react(), tailwindcss()],
     build: {
       outDir: path.resolve(__dirname, "out/renderer"),
       rollupOptions: {
