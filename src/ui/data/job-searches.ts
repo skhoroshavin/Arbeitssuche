@@ -1,9 +1,17 @@
+import { z } from "zod"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
 import type {
   JobSearch,
   JobSearchEditorSnapshot,
   JobSearchInfo,
+} from "@/models/job-search"
+
+import {
+  JobSearchSchema,
+  JobSearchEditorSnapshotSchema,
+  JobSearchInfoSchema,
+  JobSearchDraftSchema,
 } from "@/models/job-search"
 
 import type {
@@ -13,19 +21,33 @@ import type {
   VacancyStatus,
 } from "@/models/vacancy"
 
-import {
-  JobSearchSchema,
-  JobSearchDraftResponseSchema,
-  CreatedJobSearchIdSchema,
-  ContentSchema,
-  VacancyWithStatusSchema,
-  JobSearchListResponseSchema,
-  VacancyListResponseSchema,
-} from "@/api"
+import { VacancyWithStatusSchema } from "@/models/vacancy"
 
 import { api } from "./internal/api"
 
 import { jobSearchQueryKeys, invalidateQuery } from "./job-search-query-keys"
+
+const JobSearchListResponseSchema = z.object({
+  jobSearches: z.array(JobSearchInfoSchema),
+})
+
+const JobSearchDraftResponseSchema = z.object({
+  draft: JobSearchDraftSchema.optional(),
+})
+
+const CreatedJobSearchIdSchema = z.object({
+  id: z.string(),
+  applicantId: z.string(),
+})
+
+const ContentSchema = z.object({ content: z.string() })
+
+const VacancyListResponseSchema = z.object({
+  vacancies: z.array(VacancyWithStatusSchema),
+  totalCount: z.number(),
+  generatedAt: z.string(),
+  latestCrawl: z.string(),
+})
 
 export function useJobSearchListView(applicantId?: string) {
   const query = useJobSearches(applicantId)
