@@ -1,7 +1,16 @@
+import { z } from "zod"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { SitesListResponseSchema } from "@/api"
 import { api } from "./internal/api"
 import { invalidateQuery, jobSearchQueryKeys } from "./job-search-query-keys"
+
+const SiteInfoSchema = z.object({
+  name: z.string(),
+  supportedModes: z.array(z.string()),
+})
+
+const SitesListResponseSchema = z.object({
+  sites: z.array(SiteInfoSchema),
+})
 
 export function useStartJobSearchCrawl(id: string) {
   const queryClient = useQueryClient()
