@@ -25,33 +25,14 @@ Eliminate `src/utils/id.ts` by moving ID generation into repositories. Remove `i
 
 ## 1. ID Types
 
-Use lightweight class wrappers for nominal typing. No `as` assertions needed.
+Plain type aliases for documentation and intent. Structurally just `string`, so no wrapping/unwrapping ceremony.
 
 ```ts
-export class ApplicantID {
-  private constructor(readonly value: string) {}
-  static of(value: string): ApplicantID {
-    return new ApplicantID(value)
-  }
-  toString(): string {
-    return this.value
-  }
-}
-
-export class JobSearchID {
-  private constructor(readonly value: string) {}
-  static of(value: string): JobSearchID {
-    return new JobSearchID(value)
-  }
-  toString(): string {
-    return this.value
-  }
-}
+export type ApplicantID = string
+export type JobSearchID = string
 ```
 
 These types live in `src/models/applicant/index.ts` and `src/models/job-search/index.ts` respectively, exported from the public surface.
-
-Over IPC they serialize to strings (`.toString()` / `.value`). Zod schemas on the renderer side validate them as `z.string()` and the UI data hooks wrap them via `.of()` when passing to repositories.
 
 ## 2. Model Changes
 
@@ -79,19 +60,25 @@ export interface Applicant {
 
 ```ts
 export interface JobSearch {
-  params: SearchParameters
-  preferences: SearchPreferences
+  searchTerm: string
+  radiusKm: number
+  searchMode: SearchMode
+  sources: string[]
+  maxResults?: number
+  maxDistanceKm?: number
+  maxCommuteMinutes?: number
+  freeText: string[]
   coverLetter: string
 }
 ```
 
 - `id` removed
 - `applicantId` removed
+- `SearchParameters` and `SearchPreferences` deleted — fields inlined directly into `JobSearch`
 - `coverLetter` added (default/template cover letter content)
-- `resolveJobSearch` no longer accepts or produces `id` or `applicantId`
-- `JobSearchSchema` updated accordingly
-- `JobSearchInfo` redefined as `{ id: JobSearchID; displayName: string }` (derived from `params.searchTerm`)
-- `SearchParameters` unchanged (`searchMode` is already present)
+- `resolveJobSearch` resolves flat fields directly, no nested `params`/`preferences`
+- `JobSearchSchema` updated with flat fields
+- `JobSearchInfo` redefined as `{ id: JobSearchID; displayName: string }` (derived from `searchTerm`)
 
 ### Deleted Model Types
 
@@ -99,6 +86,8 @@ export interface JobSearch {
 - `ApplicantDraftSnapshot` — deleted (was alias for `Applicant`)
 - `JobSearchDraft` — deleted
 - `JobSearchEditorSnapshot` — deleted
+- `SearchParameters` — deleted (fields inlined into `JobSearch`)
+- `SearchPreferences` — deleted (fields inlined into `JobSearch`)
 
 ### Draft-related helpers
 
@@ -200,7 +189,7 @@ private generateId(): string {
 }
 ```
 
-`create()` and `finalizeDraft()` call `generateId()` and wrap with `ApplicantID.of()` / `JobSearchID.of()`.
+`create()` and `finalizeDraft()` call `generateId()` which returns a string typed as `ApplicantID` / `JobSearchID`.
 
 No `exists` callback needed — sequential counter guarantees uniqueness.
 
@@ -223,7 +212,7 @@ Drafts are stored directly in the main tables using sentinel IDs, eliminating se
 Stored in the `applicants` table with a sentinel ID:
 
 ```ts
-const APPLICANT_DRAFT_ID = ApplicantID.of("$draft")
+const APPLICANT_DRAFT_ID = "$draft"
 ```
 
 - `loadDraft()` calls `load(APPLICANT_DRAFT_ID)`, runs `isMeaningfulApplicantDraft()`, returns `Applicant | undefined`
@@ -238,7 +227,7 @@ Stored in the `job_searches` table with a per-applicant sentinel ID:
 
 ```ts
 function draftIdForApplicant(applicantId: ApplicantID): JobSearchID {
-  return JobSearchID.of(`$draft_${applicantId.value}`)
+  return `$draft_${applicantId}`
 }
 ```
 
@@ -339,27 +328,27 @@ No schema changes. `job_search_id` column stays as `TEXT` referencing `job_searc
 ```ts
 handle("applicants:list", () => ({
   applicants: services.applicantRepo.list().map((info) => ({
-    id: info.id.value,
+    id: info.id,
     displayName: info.displayName,
   })),
 }))
 
 handle("applicants:create", (name: string) => ({
-  id: services.applicantRepo.create(name).value,
+  id: services.applicantRepo.create(name),
 }))
 
 handle("applicants:load", (id: string) =>
-  services.applicantRepo.load(ApplicantID.of(id)),
+  services.applicantRepo.load(id),
 )
 
 handle("applicants:save", (id: string, data: unknown) => {
   const applicant = ApplicantSchema.parse(data)
-  services.applicantRepo.save(ApplicantID.of(id), applicant)
+  services.applicantRepo.save(id, applicant)
   return { ok: true }
 })
 
 handle("applicants:delete", (id: string) => {
-  services.applicantRepo.delete(ApplicantID.of(id))
+  services.applicantRepo.delete(id)
   return { deleted: id }
 })
 
@@ -374,7 +363,7 @@ handle("applicants:draft:save", (draft: unknown) => {
 })
 
 handle("applicants:draft:finalize", () => ({
-  id: services.applicantRepo.finalizeDraft().value,
+  id: services.applicantRepo.finalizeDraft(),
 }))
 ```
 
@@ -383,9 +372,9 @@ handle("applicants:draft:finalize", () => ({
 ```ts
 handle("job-searches:list", (applicantId: string) => ({
   jobSearches: services.jobSearchRepo
-    .listByApplicant(ApplicantID.of(applicantId))
+    .listByApplicant(applicantId)
     .map((info) => ({
-      id: info.id.value,
+      id: info.id,
       displayName: info.displayName,
     })),
 }))
@@ -395,49 +384,49 @@ handle(
   (searchTerm: string, applicantId: string, searchMode?: SearchMode) => ({
     id: services.jobSearchRepo.create(
       searchTerm,
-      ApplicantID.of(applicantId),
+      applicantId,
       searchMode,
-    ).value,
+    ),
   }),
 )
 
 handle("job-searches:load", (id: string) => {
-  const { jobSearch, applicantId } = services.jobSearchRepo.load(JobSearchID.of(id))
-  return { jobSearch, applicantId: applicantId.value }
+  const { jobSearch, applicantId } = services.jobSearchRepo.load(id)
+  return { jobSearch, applicantId }
 })
 
 handle("job-searches:save", (id: string, data: unknown) => {
   const jobSearch = JobSearchSchema.parse(data)
-  services.jobSearchRepo.save(JobSearchID.of(id), jobSearch)
+  services.jobSearchRepo.save(id, jobSearch)
   return { ok: true }
 })
 
 handle("job-searches:delete", (id: string) => {
-  services.jobSearchRepo.delete(JobSearchID.of(id))
+  services.jobSearchRepo.delete(id)
   return { deleted: id }
 })
 
 handle("job-searches:draft:load", (applicantId: string) => ({
-  draft: services.jobSearchRepo.loadDraft(ApplicantID.of(applicantId)),
+  draft: services.jobSearchRepo.loadDraft(applicantId),
 }))
 
 handle("job-searches:draft:save", (applicantId: string, draft: unknown) => {
   const jobSearch = JobSearchSchema.parse(draft)
-  services.jobSearchRepo.saveDraft(ApplicantID.of(applicantId), jobSearch)
+  services.jobSearchRepo.saveDraft(applicantId, jobSearch)
   return { ok: true }
 })
 
 handle("job-searches:draft:finalize", (applicantId: string) => ({
-  id: services.jobSearchRepo.finalizeDraft(ApplicantID.of(applicantId)).value,
+  id: services.jobSearchRepo.finalizeDraft(applicantId),
 }))
 
 handle("job-searches:cover-letter:load", (id: string) => ({
-  content: services.jobSearchRepo.load(JobSearchID.of(id)).coverLetter,
+  content: services.jobSearchRepo.load(id).coverLetter,
 }))
 
 handle("job-searches:cover-letter:save", (id: string, content: string) => {
-  const jobSearch = services.jobSearchRepo.load(JobSearchID.of(id))
-  services.jobSearchRepo.save(JobSearchID.of(id), { ...jobSearch, coverLetter: content })
+  const jobSearch = services.jobSearchRepo.load(id)
+  services.jobSearchRepo.save(id, { ...jobSearch, coverLetter: content })
   return { ok: true }
 })
 ```
@@ -451,14 +440,14 @@ Per-vacancy cover letter handlers move to a new `ipc-vacancies.ts` or added to e
 ```ts
 handle("vacancies:cover-letter:load", (jobSearchId: string, vacancyHash: string) => ({
   content: services.vacancyRepo.loadCoverLetter(
-    JobSearchID.of(jobSearchId),
+    jobSearchId,
     vacancyHash,
   ),
 }))
 
 handle("vacancies:cover-letter:save", (jobSearchId: string, vacancyHash: string, content: string) => {
   services.vacancyRepo.saveCoverLetter(
-    JobSearchID.of(jobSearchId),
+    jobSearchId,
     vacancyHash,
     content,
   )
@@ -590,7 +579,7 @@ function useJobSearchLayoutData(id: string) {
   const applicantId = data?.applicantId
   const { displayName } = useApplicantHeaderName(applicantId)
   return {
-    searchTitle: data?.jobSearch.params.searchTerm || id,
+    searchTitle: data?.jobSearch.searchTerm || id,
     applicantName: displayName,
     applicantId,
   }
@@ -642,7 +631,7 @@ export class CoverLetterWriter {
 
   async generateFromDraft(applicantId: ApplicantID): Promise<{ content: string }> {
     const draft = this.jobSearchRepo.loadDraft(applicantId)
-    if (!draft) throw new Error(`Draft for applicant "${applicantId.value}" not found`)
+    if (!draft) throw new Error(`Draft for applicant "${applicantId}" not found`)
     const applicant = this.applicantRepo.load(applicantId)
     const resolved = resolveJobSearchDraft(draft)
 
@@ -680,7 +669,7 @@ export class CoverLetterWriter {
 
 ### `VacancyScanner` / `VacancyEnricher`
 
-These services receive `jobSearchId: JobSearchID` and load the `JobSearch` directly. No changes to their core logic except parameter types.
+These services receive `jobSearchId: JobSearchID` and load the `JobSearch` directly. `EnrichContext` replaces `preferences: SearchPreferences` with `jobSearch: JobSearch` (the enricher reads `freeText`, `maxDistanceKm`, `maxCommuteMinutes` directly from the flattened model).
 
 ## 10. Test Updates
 
@@ -693,7 +682,7 @@ These services receive `jobSearchId: JobSearchID` and load the `JobSearch` direc
 All test files with hardcoded `Applicant` or `JobSearch` mock data need updates:
 
 1. Remove `id` from `Applicant` mock objects
-2. Remove `id` and `applicantId` from `JobSearch` mock objects
+2. Remove `id` and `applicantId` from `JobSearch` mock objects; replace `params: { ... }` and `preferences: { ... }` with flat fields (`searchTerm`, `radiusKm`, `searchMode`, `sources`, `freeText`, etc.)
 3. Add `coverLetter: ""` to `JobSearch` mock objects
 4. Update `ApplicantRepository` and `JobSearchRepository` mocks:
    - `list()` returns `ApplicantInfo[]` (excludes `"$draft"`); `listByApplicant()` returns `JobSearchInfo[]` (excludes sentinels)
@@ -734,13 +723,13 @@ Remove `createUniqueDerivedId` from `src/utils/index.ts`.
 
 | File | Changes |
 |------|---------|
-| `src/models/applicant/index.ts` | Remove `id` from `Applicant`, delete `ApplicantDraft`/`ApplicantDraftSnapshot`, add `ApplicantID` class |
+| `src/models/applicant/index.ts` | Remove `id` from `Applicant`, delete `ApplicantDraft`/`ApplicantDraftSnapshot`, add `ApplicantID` type alias |
 | `src/models/applicant/schemas.ts` | Drop `id` from `ApplicantSchema`, update `ApplicantInfoSchema` |
 | `src/models/applicant/resolve.ts` | Remove `id` handling |
 | `src/models/applicant/draft-snapshot.ts` | Move helpers to repo, rename exports |
-| `src/models/job-search/index.ts` | Remove `id`/`applicantId` from `JobSearch`, add `coverLetter`, delete `JobSearchDraft`/`JobSearchEditorSnapshot`, add `JobSearchID` class |
-| `src/models/job-search/schemas.ts` | Update `JobSearchSchema`, update `JobSearchInfoSchema`, delete `JobSearchDraftSchema` |
-| `src/models/job-search/resolve.ts` | Remove `id`/`applicantId` handling |
+| `src/models/job-search/index.ts` | Remove `id`/`applicantId` from `JobSearch`, add `coverLetter`, delete `JobSearchDraft`/`JobSearchEditorSnapshot`, add `JobSearchID` type alias |
+| `src/models/job-search/schemas.ts` | Inline flat fields into `JobSearchSchema`, update `JobSearchInfoSchema`, delete `JobSearchDraftSchema` |
+| `src/models/job-search/resolve.ts` | Remove `id`/`applicantId` handling, flatten `params`/`preferences` into direct fields |
 | `src/models/job-search/editor-snapshot.ts` | Move helpers to repo, delete unused exports |
 | `src/repositories/applicant/types.ts` | Redesign interface, delete `loadFinalizedApplicantDraft` |
 | `src/repositories/applicant/stub/index.ts` | Inline `finalizeDraft`, add ID counter, update all methods |
@@ -834,7 +823,7 @@ function migrateJobSearchData(database: Database): void {
 ## 14. Risks
 
 1. **Migration complexity** — The JSON blob rewriting is unusual but safe for small local databases. Must run in a transaction.
-2. **ID type serialization** — `ApplicantID` / `JobSearchID` class instances serialize to plain strings over IPC. The renderer-side Zod schemas use `z.string()` and the UI wraps with `.of()` when calling repos. This boundary needs careful handling.
+2. **ID type clarity** — `ApplicantID` / `JobSearchID` are type aliases for `string`, so they pass through IPC without ceremony. The types serve as documentation and intent markers.
 3. **Test churn** — Many test files need mock data updates. The change is mechanical but widespread.
 4. **Stub repository cover letter migration** — Moving cover letters from `StubJobSearchRepository` to `StubVacancyRepository` requires updating all tests that construct stub repos with initial cover letter data.
 
