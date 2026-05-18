@@ -25,12 +25,27 @@ Eliminate `src/utils/id.ts` by moving ID generation into repositories. Remove `i
 
 ## 1. ID Types
 
-Plain type aliases for documentation and intent. Structurally just `string`, so no wrapping/unwrapping ceremony.
+Simple object wrappers. No class ceremony — just a function that returns a branded object.
 
 ```ts
-export type ApplicantID = string
-export type JobSearchID = string
+export interface ApplicantID {
+  value: string
+}
+
+export function ApplicantID(value: string): ApplicantID {
+  return { value }
+}
+
+export interface JobSearchID {
+  value: string
+}
+
+export function JobSearchID(value: string): JobSearchID {
+  return { value }
+}
 ```
+
+Construction: `ApplicantID("1")`. Extraction: `id.value`.
 
 These types live in `src/models/applicant/index.ts` and `src/models/job-search/index.ts` respectively, exported from the public surface.
 
@@ -47,7 +62,7 @@ export interface Applicant {
   skills: ApplicantSkill[]
   languages: ApplicantLanguage[]
   certifications: ApplicantCertification[]
-  personalNotes?: string[]
+  personalNotes: string
 }
 ```
 
