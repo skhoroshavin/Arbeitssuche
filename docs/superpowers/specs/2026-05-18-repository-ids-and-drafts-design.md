@@ -133,7 +133,7 @@ export interface ApplicantRepository {
 }
 ```
 
-- `list()` returns `ApplicantInfo[]` — lightweight entries with id and display name
+- `list()` returns `ApplicantInfo[]` — lightweight entries with id and display name; **excludes the `"$draft"` sentinel**
 - `create(name)` generates sequential ID internally, fills defaults, persists
 - `finalizeDraft()` generates ID, persists applicant, clears draft, returns ID
 - `loadDraft()` returns `undefined` when no draft exists or draft is not meaningful
@@ -143,8 +143,7 @@ export interface ApplicantRepository {
 
 ```ts
 export interface JobSearchRepository {
-  list(): JobSearchInfo[]
-  listForApplicant(applicantId: ApplicantID): JobSearchInfo[]
+  listByApplicant(applicantId: ApplicantID): JobSearchInfo[]
   load(id: JobSearchID): { jobSearch: JobSearch; applicantId: ApplicantID }
   create(searchTerm: string, applicantId: ApplicantID, searchMode?: SearchMode): JobSearchID
   save(id: JobSearchID, jobSearch: JobSearch): void
@@ -158,8 +157,7 @@ export interface JobSearchRepository {
 }
 ```
 
-- `list()` returns `JobSearchInfo[]` — lightweight entries with id and display name
-- `listForApplicant()` replaces `listByApplicant()`
+- `listByApplicant()` returns `JobSearchInfo[]` — lightweight entries with id and display name; **excludes sentinel IDs** (those starting with `"$draft_"`)
 - Cover letter methods removed (moved to `VacancyRepository`)
 
 ### VacancyRepository
@@ -232,7 +230,7 @@ const APPLICANT_DRAFT_ID = ApplicantID.of("$draft")
 - `saveDraft(draft)` calls `save(APPLICANT_DRAFT_ID, draft)`
 - `deleteDraft()` calls `delete(APPLICANT_DRAFT_ID)`
 - `finalizeDraft()` loads draft, generates real ID, `save(realId, draft)`, `delete(APPLICANT_DRAFT_ID)`, returns real ID
-- `all()` excludes the `"$draft"` entry
+- `list()` excludes the `"$draft"` sentinel entry
 
 ### Job Search Draft
 
@@ -248,7 +246,8 @@ function draftIdForApplicant(applicantId: ApplicantID): JobSearchID {
 - `saveDraft(applicantId, draft)` saves to sentinel ID with `applicant_id` column set
 - `deleteDraft(applicantId)` deletes the sentinel row
 - `finalizeDraft(applicantId)` loads draft, generates real ID, inserts with real ID and `applicant_id`, deletes sentinel, returns real ID
-- `all()` and `allForApplicant()` exclude sentinel IDs (those starting with `"$draft_"`)
+- `listByApplicant()` excludes sentinel IDs (those starting with `"$draft_"`)
+- `load()` and `exists()` throw or return `false` for sentinel IDs — drafts are accessed only through draft methods
 
 ### Why Sentinels in Main Tables?
 
@@ -382,17 +381,14 @@ handle("applicants:draft:finalize", () => ({
 ### `ipc-job-searches.ts`
 
 ```ts
-handle("job-searches:list", (applicantId?: string) => {
-  const entries = applicantId
-    ? services.jobSearchRepo.listForApplicant(ApplicantID.of(applicantId))
-    : services.jobSearchRepo.list()
-  return {
-    jobSearches: entries.map((info) => ({
+handle("job-searches:list", (applicantId: string) => ({
+  jobSearches: services.jobSearchRepo
+    .listByApplicant(ApplicantID.of(applicantId))
+    .map((info) => ({
       id: info.id.value,
       displayName: info.displayName,
     })),
-  }
-})
+}))
 
 handle(
   "job-searches:create",
@@ -569,7 +565,7 @@ export function useSaveJobSearchDraft(applicantId: string) {
   })
 }
 
-export function useJobSearchListView(applicantId?: string) {
+export function useJobSearchListView(applicantId: string) {
   const query = useJobSearches(applicantId)
   return {
     ...query,
@@ -700,11 +696,17 @@ All test files with hardcoded `Applicant` or `JobSearch` mock data need updates:
 2. Remove `id` and `applicantId` from `JobSearch` mock objects
 3. Add `coverLetter: ""` to `JobSearch` mock objects
 4. Update `ApplicantRepository` and `JobSearchRepository` mocks:
-   - `list()` returns `ApplicantInfo[]` / `JobSearchInfo[]`
+   - `list()` returns `ApplicantInfo[]` (excludes `"$draft"`); `listByApplicant()` returns `JobSearchInfo[]` (excludes sentinels)
    - `create()` returns `ApplicantID` / `JobSearchID`
    - `loadDraft()` returns `Applicant | undefined` / `JobSearch | undefined`
    - `finalizeDraft()` returns `ApplicantID` / `JobSearchID`
 5. Update `VacancyRepository` mocks: add `loadCoverLetter` / `saveCoverLetter`
+
+### New test cases
+
+- `list()` does not include `"$draft"` sentinel (applicant repo)
+- `listByApplicant()` does not include `"$draft_*"` sentinels (job search repo)
+- `load()` and `exists()` throw / return `false` for sentinel IDs
 
 ### Key test files to update
 
@@ -841,8 +843,8 @@ function migrateJobSearchData(database: Database): void {
 1. ~~Should `job-searches:load` return `{ jobSearch: JobSearch, applicantId: string }` to avoid a separate `getApplicantId` query?~~
    - **Resolved:** `JobSearchRepository.load()` returns `{ jobSearch: JobSearch; applicantId: ApplicantID }`. IPC handler unwraps to `{ jobSearch, applicantId: string }`.
 
-2. ~~Should `allForApplicant` return just `JobSearch[]` (without IDs) since the caller already knows the applicant ID?~~
-   - **Resolved:** Return full tuples — the UI needs job search IDs for navigation and queries.
+2. ~~Should `listForApplicant` return just `JobSearch[]` (without IDs) since the caller already knows the applicant ID?~~
+   - **Resolved:** Return `JobSearchInfo[]` — the UI needs job search IDs for navigation and queries.
 
 3. What happens if `finalizeDraft` is called when no draft exists?
    - Current behavior: throw. Keep this behavior.
