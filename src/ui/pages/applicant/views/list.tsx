@@ -20,7 +20,7 @@ export default function ApplicantList() {
 
   const items = data.map((applicant) => ({
     id: applicant.id,
-    label: applicant.name || applicant.id,
+    label: applicant.displayName,
   }))
 
   return (

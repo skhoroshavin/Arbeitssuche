@@ -7,9 +7,9 @@ import type {
   JobSearch,
   JobSearchID,
   JobSearchInfo,
-  ApplicantID,
   SearchMode,
 } from "@/models/job-search"
+import type { ApplicantID } from "@/models/applicant"
 import { JobSearchID as makeJobSearchID } from "@/models/job-search/index.js"
 import { resolveJobSearch } from "@/models/job-search/index.js"
 import type { JobSearchRepository } from "../types.js"

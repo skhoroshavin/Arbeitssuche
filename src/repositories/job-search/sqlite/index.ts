@@ -8,9 +8,9 @@ import type {
   JobSearch,
   JobSearchID,
   JobSearchInfo,
-  ApplicantID,
   SearchMode,
 } from "@/models/job-search"
+import type { ApplicantID } from "@/models/applicant"
 
 import { JobSearchID as makeJobSearchID } from "@/models/job-search/index.js"
 import { resolveJobSearch } from "@/models/job-search/index.js"
@@ -200,7 +200,7 @@ class SqliteJobSearchRepository implements JobSearchRepository {
   private readonly loadDraftStmt: Statement
   private readonly saveDraftStmt: Statement
   private readonly deleteDraftStmt: Statement
-  private nextId: number
+  private nextId = 0
 }
 
 function draftSentinel(applicantId: ApplicantID): string {

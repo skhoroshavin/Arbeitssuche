@@ -2,7 +2,8 @@ import { JobSearchSchema } from "@/models/job-search"
 import type { SearchMode } from "@/models/job-search"
 import type { AppServices } from "."
 import type { IpcHandle } from "./ipc-handlers.js"
-import { JobSearchID, ApplicantID } from "@/models/job-search"
+import { JobSearchID } from "@/models/job-search"
+import { ApplicantID } from "@/models/applicant"
 
 export function registerJobSearchesHandlers(
   handle: IpcHandle,

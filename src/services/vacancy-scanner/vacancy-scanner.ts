@@ -3,6 +3,7 @@ import type { JobSearchRepository } from "@/repositories/job-search"
 import type { ApplicantRepository } from "@/repositories/applicant"
 import type { JobSite } from "@/plugins/job-site"
 import type { Vacancy } from "@/models/vacancy/index.js"
+import { JobSearchID } from "@/models/job-search"
 import type { ProgressEvent } from "@/models/progress/index.js"
 import { SiteCrawler } from "@/services/site-crawler/index.js"
 import { resolveSearchParameters } from "@/services/site-crawler/index.js"
@@ -30,17 +31,18 @@ export class VacancyScanner {
     onProgress: OnProgress,
     siteFactory: JobSiteFactory,
   ): Promise<void> {
-    const jobSearch = this.jobSearchRepo.load(id)
+    const searchId = JobSearchID(id)
+    const loaded = this.jobSearchRepo.load(searchId)
     const sitesToRun =
-      jobSearch.jobSearch.sources.length > 0
-        ? jobSearch.jobSearch.sources.map((s) => s.value)
+      loaded.jobSearch.sources.length > 0
+        ? loaded.jobSearch.sources.map((s: { value: string }) => s.value)
         : this.listJobSiteNames()
 
-    const applicant = this.applicantRepo.load(jobSearch.applicantId)
-    const criteria = resolveSearchParameters(jobSearch.jobSearch, applicant)
+    const applicant = this.applicantRepo.load(loaded.applicantId)
+    const criteria = resolveSearchParameters(loaded.jobSearch, applicant)
     const crawlDate = new Date().toISOString().slice(0, 10)
 
-    const existing = this.vacancyRepo.loadAll(id)
+    const existing = this.vacancyRepo.loadAll(searchId)
     const existingByHash = new Map<string, Vacancy>()
     for (const v of existing.vacancies) {
       existingByHash.set(v.hash, v)
@@ -55,10 +57,10 @@ export class VacancyScanner {
 
     const queue = new EnrichQueue({
       enricher: this.enricher,
-      context: { applicant, jobSearch: jobSearch.jobSearch },
+      context: { applicant, jobSearch: loaded.jobSearch },
       onEnriched: (enriched, hash) => {
         existingByHash.set(hash, enriched)
-        this.vacancyRepo.save(id, [...existingByHash.values()], crawlDate)
+        this.vacancyRepo.save(searchId, [...existingByHash.values()], crawlDate)
         onProgress({ message: "", phase: "enrich", vacanciesUpdated: true })
       },
       onError: (hash, error) => {
@@ -105,7 +107,7 @@ export class VacancyScanner {
 
         const now = Date.now()
         if (now - lastSaveTime >= 1000) {
-          this.vacancyRepo.save(id, [...existingByHash.values()], crawlDate)
+          this.vacancyRepo.save(searchId, [...existingByHash.values()], crawlDate)
           lastSaveTime = now
           onProgress({ message: "", phase: "scan", vacanciesUpdated: true })
         }
@@ -138,7 +140,7 @@ export class VacancyScanner {
       crawlDate,
     )
 
-    this.vacancyRepo.save(id, finalVacancies, crawlDate)
+    this.vacancyRepo.save(searchId, finalVacancies, crawlDate)
     onProgress({ message: "", phase: "scan", vacanciesUpdated: true })
 
     onProgress({

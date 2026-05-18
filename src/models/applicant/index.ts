@@ -2,8 +2,8 @@ import type { Address } from "@/models/config"
 
 export type { Address } from "@/models/config"
 
-export type { ApplicantID } from "./id.js"
-export { ApplicantID } from "./id.js"
+import { ApplicantID } from "./id.js"
+export { ApplicantID }
 
 export interface Applicant {
   personal: ApplicantPersonal

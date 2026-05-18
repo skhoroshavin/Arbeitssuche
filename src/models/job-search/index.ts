@@ -1,5 +1,5 @@
-export type { JobSearchID, SearchSource } from "./id.js"
-export { JobSearchID, SearchSource } from "./id.js"
+import { JobSearchID, SearchSource } from "./id.js"
+export { JobSearchID, SearchSource }
 
 export interface JobSearch {
   searchTerm: string
@@ -17,6 +17,14 @@ export interface JobSearchInfo {
   displayName: string
 }
 
+export interface JobSearchCriteria {
+  location: string
+  query: string
+  radiusKm: number
+  mode: SearchMode
+  limit?: number
+}
+
 export interface ConsultationSuggestion {
   searchTerm: string
   searchMode: SearchMode
@@ -25,8 +33,7 @@ export interface ConsultationSuggestion {
 
 export type SearchMode = "employment" | "entry-level" | "apprenticeship"
 
-export { SEARCH_MODE_LABELS } from "./constants.js"
-export { DEFAULT_JOB_SEARCH } from "./constants.js"
+export { SEARCH_MODES, SEARCH_MODE_LABELS, DEFAULT_JOB_SEARCH } from "./constants.js"
 export { resolveJobSearch } from "./resolve.js"
 export {
   createDefaultJobSearchEditorSnapshot,

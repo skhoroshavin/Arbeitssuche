@@ -45,7 +45,7 @@ export function fromApplicantFormValues(form: ApplicantFormValues): Applicant {
       ...entry,
       highlights: splitLines(entry.highlights),
     })),
-    personalNotes: form.personalNotes ?? "",
+    personalNotes: form.personalNotes,
   }
 }
 

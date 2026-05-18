@@ -5,17 +5,20 @@ import {
   type ApplicantPersonal,
   ApplicantID as makeApplicantID,
 } from "@/models/applicant"
+
 import {
   DEFAULT_APPLICANT,
   isMeaningfulApplicantDraftSnapshot,
   resolveApplicant,
 } from "@/models/applicant/index.js"
-import type { ApplicantRepository } from "../types.js"
-import { Database, type Statement } from "@/utils/index.js"
-import { z } from "zod"
-import { ApplicantSchema } from "@/models/applicant"
 
-const DRAFT_SENTINEL = "$draft"
+import type { ApplicantRepository } from "../types.js"
+
+import { Database, type Statement } from "@/utils/index.js"
+
+import { z } from "zod"
+
+import { ApplicantSchema } from "@/models/applicant"
 
 export function createSqliteApplicantRepository(
   database: Database,
@@ -120,8 +123,10 @@ class SqliteApplicantRepository implements ApplicantRepository {
   private readonly updateStmt: Statement
   private readonly insertStmt: Statement
   private readonly deleteStmt: Statement
-  private nextId: number
+  private nextId = 0
 }
+
+const DRAFT_SENTINEL = "$draft"
 
 function parseApplicantRow(raw: unknown): ApplicantInfo {
   const row = z

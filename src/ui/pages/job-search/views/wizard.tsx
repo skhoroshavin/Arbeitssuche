@@ -195,7 +195,7 @@ function mapJobSearchToFormValues(jobSearch: JobSearch): WizardFormValues {
     searchTerm: jobSearch.searchTerm,
     radiusKm: jobSearch.radiusKm,
     searchMode: jobSearch.mode,
-    sources: jobSearch.sources.map((s) => s.value),
+    sources: jobSearch.sources.map((s: { value: string }) => s.value),
     maxResults:
       jobSearch.maxResultsPerSource === 0
         ? undefined
@@ -214,7 +214,7 @@ function mapFormValuesToJobSearch(values: WizardFormValues): JobSearch {
     searchTerm: values.searchTerm,
     radiusKm: values.radiusKm,
     mode: values.searchMode,
-    sources: values.sources.map(SearchSource),
+    sources: values.sources.map((s) => SearchSource(s)),
     maxResultsPerSource: values.maxResults ?? 0,
     maxCommuteMinutes: values.maxCommuteMinutes ?? 0,
     notes: values.freeText.join("\n"),
@@ -336,20 +336,6 @@ function mapConfigValueToFormValues(
     sources: value.sources,
     maxResults: stringifyOptionalNumber(value.maxResults),
     maxCommuteMinutes: stringifyOptionalNumber(value.maxCommuteMinutes),
-    freeText: value.freeText,
-  }
-}
-
-function mapFormValuesToConfigValue(
-  value: WizardFormValues,
-): JobSearchEditorConfigValue {
-  return {
-    searchTerm: value.searchTerm,
-    radiusKm: value.radiusKm,
-    searchMode: value.searchMode,
-    sources: value.sources,
-    maxResults: value.maxResults,
-    maxCommuteMinutes: value.maxCommuteMinutes,
     freeText: value.freeText,
   }
 }

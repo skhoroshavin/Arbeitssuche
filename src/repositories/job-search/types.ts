@@ -2,9 +2,9 @@ import type {
   JobSearch,
   JobSearchID,
   JobSearchInfo,
-  ApplicantID,
   SearchMode,
 } from "@/models/job-search"
+import type { ApplicantID } from "@/models/applicant"
 
 export interface JobSearchRepository {
   listByApplicant(applicantId: ApplicantID): JobSearchInfo[]

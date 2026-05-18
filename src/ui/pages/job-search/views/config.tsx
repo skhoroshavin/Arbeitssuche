@@ -20,7 +20,7 @@ export default function JobSearchConfig() {
   const update = useUpdateJobSearch(id)
   const sitesQuery = useSiteListView()
 
-  const { setValue, watch, saveStatus } = useAutoSaveForm({
+  const { setValue, watch, saveStatus } = useAutoSaveForm<ConfigFormValues, { jobSearch: JobSearch; applicantId: string }>({
     queryResult: { data, isLoading },
     formOptions: { defaultValues: DEFAULT_FORM_VALUES },
     toFormValues: toConfigFormValues,
@@ -72,21 +72,22 @@ interface ConfigFormValues {
   freeText: string
 }
 
-function toConfigFormValues(jobSearch: JobSearch): ConfigFormValues {
+function toConfigFormValues(data: { jobSearch: JobSearch; applicantId: string }): ConfigFormValues {
+  const search: JobSearch = data.jobSearch
   return {
-    searchTerm: jobSearch.searchTerm,
-    radiusKm: jobSearch.radiusKm,
-    searchMode: jobSearch.mode,
-    sources: jobSearch.sources.map((s) => s.value),
+    searchTerm: search.searchTerm,
+    radiusKm: search.radiusKm,
+    searchMode: search.mode,
+    sources: search.sources.map((s: { value: string }) => s.value),
     maxResults:
-      jobSearch.maxResultsPerSource === 0
+      search.maxResultsPerSource === 0
         ? ""
-        : String(jobSearch.maxResultsPerSource),
+        : String(search.maxResultsPerSource),
     maxCommuteMinutes:
-      jobSearch.maxCommuteMinutes === 0
+      search.maxCommuteMinutes === 0
         ? ""
-        : String(jobSearch.maxCommuteMinutes),
-    freeText: jobSearch.notes,
+        : String(search.maxCommuteMinutes),
+    freeText: search.notes,
   }
 }
 
@@ -99,7 +100,7 @@ function fromConfigFormValues(
     searchTerm: form.searchTerm,
     radiusKm: Number(form.radiusKm),
     mode: form.searchMode,
-    sources: form.sources.map(SearchSource),
+    sources: form.sources.map((s) => SearchSource(s)),
     maxResultsPerSource: parseOptionalNumber(form.maxResults) ?? 0,
     maxCommuteMinutes: parseOptionalNumber(form.maxCommuteMinutes) ?? 0,
     notes: form.freeText,
