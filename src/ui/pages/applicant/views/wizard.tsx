@@ -7,7 +7,7 @@ import {
   isMeaningfulApplicantDraftSnapshot,
 } from "@/models/applicant"
 
-import type { ApplicantDraftSnapshot } from "@/models/applicant"
+import type { Applicant } from "@/models/applicant"
 
 import {
   useApplicantDraft,
@@ -54,7 +54,7 @@ export default function ApplicantWizardPage({
     initialStep ?? "personal",
   )
   const [resolvedSnapshot, setResolvedSnapshot] = useState<
-    ApplicantDraftSnapshot | undefined
+    Applicant | undefined
   >()
 
   const draftQuery = useApplicantDraft()
@@ -78,7 +78,7 @@ export default function ApplicantWizardPage({
 
   const isEditing = phase === "editing"
 
-  const form = useAutoSaveForm<ApplicantFormValues, ApplicantDraftSnapshot>({
+  const form = useAutoSaveForm<ApplicantFormValues, Applicant>({
     queryResult: {
       data: isEditing ? resolvedSnapshot : undefined,
       isLoading: !isEditing,
@@ -171,11 +171,11 @@ interface ApplicantWizardPageProperties {
   initialStep?: ApplicantWizardStep
   onStepChange?: (
     step: ApplicantWizardStep,
-    snapshot: ApplicantDraftSnapshot,
+    snapshot: Applicant,
   ) => void
 }
 
-function canFinalizeApplicantWizard(snapshot: ApplicantDraftSnapshot): boolean {
+function canFinalizeApplicantWizard(snapshot: Applicant): boolean {
   return snapshot.personal.name.trim().length > 0
 }
 
@@ -207,14 +207,14 @@ function ApplicantWizardStepView({
 
 interface ApplicantWizardStepViewProperties {
   form: ReturnType<
-    typeof useAutoSaveForm<ApplicantFormValues, ApplicantDraftSnapshot>
+    typeof useAutoSaveForm<ApplicantFormValues, Applicant>
   >
   step: ApplicantWizardStep
 }
 
 interface ApplicantWizardStepViewSharedProperties {
   form: ReturnType<
-    typeof useAutoSaveForm<ApplicantFormValues, ApplicantDraftSnapshot>
+    typeof useAutoSaveForm<ApplicantFormValues, Applicant>
   >
   isLoading: boolean
   saveStatus: AutoSaveStatus
