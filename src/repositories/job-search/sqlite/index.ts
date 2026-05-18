@@ -19,7 +19,8 @@ import {
   createUniqueDerivedId,
   type Statement,
 } from "@/utils/index.js"
-import typia from "typia"
+import { z } from "zod"
+import { JobSearchSchema, JobSearchEditorSnapshotSchema } from "@/api"
 
 export function createSqliteJobSearchRepository(
   database: Database,
@@ -120,7 +121,7 @@ class SqliteJobSearchRepository implements JobSearchRepository {
   load(id: string): JobSearch {
     const jobSearch = this.loadStmt.getJsonData(id)
     if (jobSearch === undefined) throw new Error(`Job search "${id}" not found`)
-    return resolveJobSearch(typia.assert<JobSearch>(jobSearch))
+    return resolveJobSearch(JobSearchSchema.parse(jobSearch))
   }
 
   save(id: string, data: JobSearch): void {
@@ -183,8 +184,10 @@ class SqliteJobSearchRepository implements JobSearchRepository {
   loadDraft(applicantId: string): JobSearchDraft | undefined {
     const raw = this.loadDraftStmt.get(applicantId)
     if (raw === undefined) return undefined
-    const parsed = typia.assert<JobSearchDraftRow>(raw)
-    const snapshot = typia.assert<JobSearchEditorSnapshot>(
+    const parsed = z
+      .object({ data: z.string(), meaningful: z.number() })
+      .parse(raw)
+    const snapshot = JobSearchEditorSnapshotSchema.parse(
       JSON.parse(parsed.data),
     )
     return {
@@ -201,7 +204,7 @@ class SqliteJobSearchRepository implements JobSearchRepository {
   loadApplicationCoverLetter(jobSearchId: string, vacancyHash: string): string {
     const raw = this.loadCoverLetterStmt.get(jobSearchId, vacancyHash)
     if (raw === undefined) return ""
-    return typia.assert<{ content: string }>(raw).content
+    return z.object({ content: z.string() }).parse(raw).content
   }
 
   saveApplicationCoverLetter(
@@ -228,16 +231,12 @@ class SqliteJobSearchRepository implements JobSearchRepository {
 }
 
 function parseJobSearchRow(raw: unknown): JobSearchInfo {
-  return mapRow(typia.assert<JobSearchRow>(raw))
-}
-
-function mapRow(r: JobSearchRow): JobSearchInfo {
+  const r = z
+    .object({
+      id: z.string(),
+      applicant_id: z.string(),
+      search_term: z.string(),
+    })
+    .parse(raw)
   return { id: r.id, applicantId: r.applicant_id, searchTerm: r.search_term }
-}
-
-type JobSearchRow = { id: string; applicant_id: string; search_term: string }
-
-interface JobSearchDraftRow {
-  data: string
-  meaningful: number
 }
