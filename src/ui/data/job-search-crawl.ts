@@ -1,6 +1,9 @@
+import { z } from "zod"
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import typia from "typia"
+
 import { api } from "./internal/api"
+
 import { invalidateQuery, jobSearchQueryKeys } from "./job-search-query-keys"
 
 export function useStartJobSearchCrawl(id: string) {
@@ -26,16 +29,23 @@ export function useSiteListView() {
   }
 }
 
+const EMPTY_SITE_LIST: { sites: SiteInfo[] } = { sites: [] }
+
+type SiteInfo = { name: string; supportedModes: string[] }
+
 function useSites() {
   return useQuery({
     queryKey: ["sites"],
     queryFn: async () =>
-      typia.assert<{ sites: { name: string; supportedModes: string[] }[] }>(
-        await api().invoke("sites:list"),
-      ),
+      SitesListResponseSchema.parse(await api().invoke("sites:list")),
   })
 }
 
-const EMPTY_SITE_LIST: { sites: SiteInfo[] } = { sites: [] }
+const SiteInfoSchema = z.object({
+  name: z.string(),
+  supportedModes: z.array(z.string()),
+})
 
-type SiteInfo = { name: string; supportedModes: string[] }
+const SitesListResponseSchema = z.object({
+  sites: z.array(SiteInfoSchema),
+})

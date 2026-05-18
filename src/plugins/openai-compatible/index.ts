@@ -1,4 +1,5 @@
-import typia from "typia"
+import { z } from "zod"
+
 import type {
   LlmClient,
   LlmModelInfo,
@@ -6,7 +7,10 @@ import type {
   LlmPricing,
   TypedSchema,
 } from "@/plugins/llm"
+
 import { toStrictSchema } from "./strict-schema.js"
+
+export { toStrictSchema } from "./strict-schema.js"
 
 export function normalizeNestedPricing(raw: unknown): LlmPricing {
   if (!isRecord(raw)) return { prompt: "0", completion: "0" }
@@ -39,7 +43,17 @@ export function createModelRegistry(
   return new OpenAICompatibleModelRegistry(url, normalize)
 }
 
-export { toStrictSchema } from "./strict-schema.js"
+type ModelNormalizer = (raw: Record<string, unknown>) => LlmModelInfo
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function normalizePrice(value: unknown): string {
+  return typeof value === "string" || typeof value === "number"
+    ? String(value)
+    : "0"
+}
 
 class OpenAICompatibleClient implements LlmClient {
   constructor(
@@ -126,9 +140,9 @@ class OpenAICompatibleClient implements LlmClient {
       )
     }
 
-    const json = typia.json.assertParse<{
-      choices?: Array<{ message?: { content?: string } }>
-    }>(await response.text())
+    const json = CompletionResponseSchema.parse(
+      JSON.parse(await response.text()),
+    )
     const content = json.choices?.[0]?.message?.content
     if (!content) {
       throw new Error(`${this.providerName} returned empty response`)
@@ -136,6 +150,16 @@ class OpenAICompatibleClient implements LlmClient {
     return content
   }
 }
+
+const CompletionResponseSchema = z.object({
+  choices: z
+    .array(
+      z.object({
+        message: z.object({ content: z.string().optional() }).optional(),
+      }),
+    )
+    .optional(),
+})
 
 class OpenAICompatibleModelRegistry implements LlmModelRegistry {
   constructor(
@@ -149,9 +173,9 @@ class OpenAICompatibleModelRegistry implements LlmModelRegistry {
         signal: AbortSignal.timeout(10_000),
       })
       if (!response.ok) return []
-      const data = typia.json.assertParse<{
-        data: Record<string, unknown>[]
-      }>(await response.text())
+      const data = ModelListResponseSchema.parse(
+        JSON.parse(await response.text()),
+      )
       return data.data.map((raw) => this.normalize(raw))
     } catch {
       return []
@@ -159,14 +183,6 @@ class OpenAICompatibleModelRegistry implements LlmModelRegistry {
   }
 }
 
-type ModelNormalizer = (raw: Record<string, unknown>) => LlmModelInfo
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null
-}
-
-function normalizePrice(value: unknown): string {
-  return typeof value === "string" || typeof value === "number"
-    ? String(value)
-    : "0"
-}
+const ModelListResponseSchema = z.object({
+  data: z.array(z.record(z.unknown())),
+})

@@ -67,3 +67,10 @@ export {
   mapSnapshotToPersistedJobSearch,
   isMeaningfulJobSearchEditorSnapshot,
 } from "./editor-snapshot.js"
+
+export {
+  JobSearchSchema,
+  JobSearchEditorSnapshotSchema,
+  JobSearchDraftSchema,
+  JobSearchInfoSchema,
+} from "./schemas.js"

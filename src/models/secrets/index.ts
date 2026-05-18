@@ -15,3 +15,5 @@ export type SecretKey =
   | "googleMapsApiKey"
 
 export { resolveSecrets } from "./resolve.js"
+
+export { MaskedSecretsRecordSchema, SecretTestResultSchema } from "./schemas.js"

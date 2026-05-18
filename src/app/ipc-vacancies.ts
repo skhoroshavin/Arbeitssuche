@@ -1,3 +1,4 @@
+import { VacancyWithStatusSchema } from "@/models/vacancy"
 import type { Activity } from "@/models/vacancy"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { Applicant } from "@/models/applicant"
@@ -37,11 +38,11 @@ export function registerVacanciesHandlers(
     if (!vacancy) {
       throw new Error(`Vacancy "${hash}" not found`)
     }
-    return {
+    return VacancyWithStatusSchema.parse({
       ...vacancy,
       status: vacancy.deriveStatus(),
       sources: vacancy.deriveSources(),
-    }
+    })
   })
   handle(
     "job-searches:vacancies:add-activity",
@@ -51,14 +52,11 @@ export function registerVacanciesHandlers(
     },
   )
 
-  // Vacancy cover letter
   handle(
     "job-searches:vacancies:cover-letter:load",
-    (id: string, hash: string) => {
-      return {
-        content: services.jobSearchRepo.loadApplicationCoverLetter(id, hash),
-      }
-    },
+    (id: string, hash: string) => ({
+      content: services.jobSearchRepo.loadApplicationCoverLetter(id, hash),
+    }),
   )
   handle(
     "job-searches:vacancies:cover-letter:save",
@@ -72,8 +70,6 @@ export function registerVacanciesHandlers(
     (id: string, hash: string) =>
       services.coverLetterWriter.generateForVacancy(id, hash),
   )
-
-  // Re-enrichment handlers
 
   handle("vacancies:re-enrich", async (jobSearchId: string, hash: string) => {
     const vacancy = services.vacancyRepo.findByHash(jobSearchId, hash)

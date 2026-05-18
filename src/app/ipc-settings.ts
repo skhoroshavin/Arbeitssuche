@@ -16,10 +16,8 @@ export function registerSettingsHandlers(
   handle: IpcHandle,
   services: AppServices,
 ): void {
-  // Sites
   handle("sites:list", () => ({ sites: getJobSiteInfos() }))
 
-  // Settings: LLM secrets
   handle("settings:llm:secrets", () =>
     maskedSecretsFor(LLM_SECRET_KEYS, services.secretsRepo.load()),
   )
@@ -35,7 +33,6 @@ export function registerSettingsHandlers(
     testProviderSecret(services, providerId, LLM_SECRET_KEYS),
   )
 
-  // Settings: Commute secrets
   handle("settings:commute:secrets", () =>
     maskedSecretsFor(COMMUTE_SECRET_KEYS, services.secretsRepo.load()),
   )
@@ -51,14 +48,11 @@ export function registerSettingsHandlers(
     testProviderSecret(services, providerId, COMMUTE_SECRET_KEYS),
   )
 
-  // Provider info
   handle("settings:llm-providers", () => getLlmProviders())
   handle("settings:commute-providers", () => getCommuteProviders())
 
-  // LLM models
   handle("settings:llm-models", () => services.modelRegistry.fetchModels())
 
-  // Config (non-secret settings)
   handle("settings:config:load", () =>
     resolveConfig(services.configRepo.load()),
   )
@@ -110,7 +104,12 @@ async function testProviderSecret(
   const key = resolveSecretKey(providerId, mapping)
   const secrets = services.secretsRepo.load()
   const value = secrets[key]
-  if (!value) return { ok: false, error: "Kein Schlüssel gesetzt" }
+  if (!value) {
+    return {
+      ok: false,
+      error: "Kein Schlüssel gesetzt",
+    }
+  }
   const ok =
     mapping === LLM_SECRET_KEYS
       ? await createLlmClientForPing(providerId, value).ping()

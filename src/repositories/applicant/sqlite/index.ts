@@ -19,7 +19,8 @@ import {
   createUniqueDerivedId,
   type Statement,
 } from "@/utils/index.js"
-import typia from "typia"
+import { z } from "zod"
+import { ApplicantSchema } from "@/models/applicant"
 
 export function createSqliteApplicantRepository(
   database: Database,
@@ -71,7 +72,7 @@ class SqliteApplicantRepository implements ApplicantRepository {
   load(id: string): Applicant {
     const applicant = this.loadStmt.getJsonData(id)
     if (applicant === undefined) throw new Error(`Applicant "${id}" not found`)
-    return resolveApplicant(typia.assert<Applicant>(applicant))
+    return resolveApplicant(ApplicantSchema.parse(applicant))
   }
 
   save(id: string, data: Applicant): void {
@@ -128,9 +129,11 @@ class SqliteApplicantRepository implements ApplicantRepository {
   loadDraft(): ApplicantDraft | undefined {
     const raw = this.loadDraftStmt.get()
     if (raw === undefined) return undefined
-    const parsed = typia.assert<ApplicantDraftRow>(raw)
+    const parsed = z
+      .object({ data: z.string(), meaningful: z.number() })
+      .parse(raw)
     const snapshot = resolveApplicant(
-      typia.assert<ApplicantDraftSnapshot>(JSON.parse(parsed.data)),
+      ApplicantSchema.parse(JSON.parse(parsed.data)),
     )
     return {
       snapshot,
@@ -155,16 +158,8 @@ class SqliteApplicantRepository implements ApplicantRepository {
 }
 
 function parseApplicantRow(raw: unknown): ApplicantInfo {
-  const row = typia.assert<ApplicantRow>(raw)
+  const row = z
+    .object({ id: z.string(), name: z.string().nullable() })
+    .parse(raw)
   return { id: row.id, name: row.name || undefined }
-}
-
-interface ApplicantRow {
-  id: string
-  name: string | null
-}
-
-interface ApplicantDraftRow {
-  data: string
-  meaningful: number
 }

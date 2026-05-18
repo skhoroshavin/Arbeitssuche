@@ -1,13 +1,20 @@
 import { Database } from "@/utils/index.js"
+
 import { Vacancy } from "@/models/vacancy/index.js"
-import type { Activity, VacancyDTO } from "@/models/vacancy"
+
+import type { Activity } from "@/models/vacancy"
+
 import { resolveVacancy } from "@/models/vacancy/index.js"
+
 import {
   EMPTY_VACANCY_LIST_OUTPUT,
   createVacancyListOutput,
 } from "@/repositories/vacancy/output.js"
+
 import type { VacancyRepository } from "../types.js"
-import typia from "typia"
+
+import { z } from "zod"
+import { VacancyDTOSchema } from "@/models/vacancy"
 
 export function createSqliteVacancyRepository(
   database: Database,
@@ -57,9 +64,9 @@ class SqliteVacancyRepository implements VacancyRepository {
   loadAll(jobSearchId: string) {
     const metaRaw = this.loadMetaStmt.get(jobSearchId)
     if (metaRaw === undefined) return EMPTY_VACANCY_LIST_OUTPUT
-    const meta = typia.assert<{ generated_at: string; latest_crawl: string }>(
-      metaRaw,
-    )
+    const meta = z
+      .object({ generated_at: z.string(), latest_crawl: z.string() })
+      .parse(metaRaw)
 
     const vacancies = this.loadAllStmt
       .all(jobSearchId)
@@ -126,9 +133,10 @@ function hydrateVacancyRow(row: Record<string, unknown>): Vacancy {
 }
 
 function hydrateVacancy(data: unknown): Vacancy {
-  return new Vacancy(
-    resolveVacancy(typia.assert<Partial<VacancyDTO>>(stripLegacyCommute(data))),
-  )
+  const parsed = VacancyDTOSchema.partial()
+    .loose()
+    .parse(stripLegacyCommute(data))
+  return new Vacancy(resolveVacancy(parsed))
 }
 
 // Old commute data stored durations as strings ("1 hour 5 mins") — strip and let next enrichment recompute.

@@ -19,26 +19,13 @@ export interface LlmModel {
   pricing: { prompt: string; completion: string }
 }
 
-export interface LlmProviderInfo {
-  id: string
-  name: string
-  description: string
-  instructions: string
-}
-
-export interface CommuteProviderInfo {
-  id: string
-  name: string
-  instructions: string
-}
-
 export interface Address {
   street: string
   zip: string
   city: string
 }
 
-export { resolveConfig, type ResolvedConfig } from "./resolve.js"
+export { resolveConfig } from "./resolve.js"
 export {
   DEFAULT_PROVIDER,
   DEFAULT_CONFIG,
@@ -46,3 +33,10 @@ export {
   DEFAULT_COVER_LETTER_MODEL,
   DEFAULT_CONSULTATION_MODEL,
 } from "./constants.js"
+
+export {
+  LlmProviderInfoSchema,
+  CommuteProviderInfoSchema,
+  LlmModelSchema,
+  ResolvedConfigSchema,
+} from "./schemas.js"

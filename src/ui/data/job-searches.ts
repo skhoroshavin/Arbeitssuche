@@ -1,10 +1,17 @@
+import { z } from "zod"
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
 import type {
   JobSearch,
-  JobSearchDraft,
   JobSearchEditorSnapshot,
   JobSearchInfo,
+} from "@/models/job-search"
+
+import {
+  JobSearchSchema,
+  JobSearchInfoSchema,
+  JobSearchDraftSchema,
 } from "@/models/job-search"
 
 import type {
@@ -14,11 +21,16 @@ import type {
   VacancyStatus,
 } from "@/models/vacancy"
 
-import typia from "typia"
+import { VacancyWithStatusSchema } from "@/models/vacancy"
 
 import { api } from "./internal/api"
 
 import { jobSearchQueryKeys, invalidateQuery } from "./job-search-query-keys"
+
+export type VacancyWithStatus = VacancyDTO & {
+  status: VacancyStatus
+  sources: VacancySource[]
+}
 
 export function useJobSearchListView(applicantId?: string) {
   const query = useJobSearches(applicantId)
@@ -32,7 +44,7 @@ export function useJobSearch(id: string) {
   return useQuery({
     queryKey: jobSearchQueryKeys.detail(id),
     queryFn: async () =>
-      typia.assert<JobSearch>(await api().invoke("job-searches:load", id)),
+      JobSearchSchema.parse(await api().invoke("job-searches:load", id)),
     enabled: !!id,
   })
 }
@@ -60,7 +72,7 @@ export function useJobSearchDraft(applicantId: string) {
   return useQuery({
     queryKey: jobSearchQueryKeys.draft(applicantId),
     queryFn: async () =>
-      typia.assert<{ draft?: JobSearchDraft }>(
+      JobSearchDraftResponseSchema.parse(
         await api().invoke("job-searches:draft:load", applicantId),
       ),
     enabled: !!applicantId,
@@ -90,7 +102,7 @@ export function useFinalizeJobSearchDraft(applicantId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async () =>
-      typia.assert<{ id: string; applicantId: string }>(
+      CreatedJobSearchIdSchema.parse(
         await api().invoke("job-searches:draft:finalize", applicantId),
       ),
     onSuccess: async ({ id }) => {
@@ -126,7 +138,7 @@ export function useJobSearchCoverLetter(id: string) {
   return useQuery({
     queryKey: jobSearchQueryKeys.coverLetter(id),
     queryFn: async () =>
-      typia.assert<{ content: string }>(
+      ContentSchema.parse(
         await api().invoke("job-searches:cover-letter:load", id),
       ),
     enabled: !!id,
@@ -146,7 +158,7 @@ export function useUpdateJobSearchCoverLetter(id: string) {
 export function useGenerateCoverLetter(id: string) {
   return useMutation({
     mutationFn: async () =>
-      typia.assert<{ content: string }>(
+      ContentSchema.parse(
         await api().invoke("job-searches:cover-letter:generate", id),
       ),
   })
@@ -155,7 +167,7 @@ export function useGenerateCoverLetter(id: string) {
 export function useGenerateDraftCoverLetter(applicantId: string) {
   return useMutation({
     mutationFn: async () =>
-      typia.assert<{ content: string }>(
+      ContentSchema.parse(
         await api().invoke(
           "job-searches:draft:cover-letter:generate",
           applicantId,
@@ -168,7 +180,7 @@ export function useVacancyCoverLetter(id: string, hash: string) {
   return useQuery({
     queryKey: jobSearchQueryKeys.vacancyCoverLetter(id, hash),
     queryFn: async () =>
-      typia.assert<{ content: string }>(
+      ContentSchema.parse(
         await api().invoke(
           "job-searches:vacancies:cover-letter:load",
           id,
@@ -200,7 +212,7 @@ export function useUpdateVacancyCoverLetter(id: string, hash: string) {
 export function useGenerateVacancyCoverLetter(id: string, hash: string) {
   return useMutation({
     mutationFn: async () =>
-      typia.assert<{ content: string }>(
+      ContentSchema.parse(
         await api().invoke(
           "job-searches:vacancies:cover-letter:generate",
           id,
@@ -228,16 +240,11 @@ export function useJobSearchVacancy(id: string, hash: string) {
   return useQuery({
     queryKey: jobSearchQueryKeys.vacancyDetail(id, hash),
     queryFn: async () =>
-      typia.assert<VacancyWithStatus>(
+      VacancyWithStatusSchema.parse(
         await api().invoke("job-searches:vacancies:load", id, hash),
       ),
     enabled: !!id && !!hash,
   })
-}
-
-export type VacancyWithStatus = VacancyDTO & {
-  status: VacancyStatus
-  sources: VacancySource[]
 }
 
 export function useReEnrichVacancy(jobSearchId: string) {
@@ -310,7 +317,7 @@ function useJobSearches(applicantId?: string) {
   return useQuery({
     queryKey: jobSearchQueryKeys.list(applicantId),
     queryFn: async () =>
-      typia.assert<{ jobSearches: JobSearchInfo[] }>(
+      JobSearchListResponseSchema.parse(
         await api().invoke("job-searches:list", applicantId),
       ),
   })
@@ -320,16 +327,31 @@ function useJobSearchVacancies(id: string) {
   return useQuery({
     queryKey: jobSearchQueryKeys.vacancyList(id),
     queryFn: async () =>
-      typia.assert<VacancyListResponse>(
+      VacancyListResponseSchema.parse(
         await api().invoke("job-searches:vacancies:list", id),
       ),
     enabled: !!id,
   })
 }
 
-interface VacancyListResponse {
-  vacancies: VacancyWithStatus[]
-  totalCount: number
-  generatedAt: string
-  latestCrawl: string
-}
+const JobSearchListResponseSchema = z.object({
+  jobSearches: z.array(JobSearchInfoSchema),
+})
+
+const JobSearchDraftResponseSchema = z.object({
+  draft: JobSearchDraftSchema.optional(),
+})
+
+const CreatedJobSearchIdSchema = z.object({
+  id: z.string(),
+  applicantId: z.string(),
+})
+
+const ContentSchema = z.object({ content: z.string() })
+
+const VacancyListResponseSchema = z.object({
+  vacancies: z.array(VacancyWithStatusSchema),
+  totalCount: z.number(),
+  generatedAt: z.string(),
+  latestCrawl: z.string(),
+})

@@ -13,17 +13,14 @@ export class FetchStub extends HttpStub<StubRoute> {
   }
 }
 
-export interface StubRoute {
+interface StubRoute {
   body: unknown
   status?: number
 }
 
 function resolveUrl(input: string | URL | Request): string {
-  if (typeof input === "string") {
-    return input
+  if (input instanceof Request) {
+    return input.url
   }
-  if (input instanceof URL) {
-    return input.toString()
-  }
-  return input.url
+  return input.toString()
 }

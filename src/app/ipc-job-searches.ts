@@ -1,8 +1,8 @@
-import type {
-  JobSearch,
-  JobSearchEditorSnapshot,
-  SearchMode,
+import {
+  JobSearchSchema,
+  JobSearchEditorSnapshotSchema,
 } from "@/models/job-search"
+import type { SearchMode } from "@/models/job-search"
 import type { AppServices } from "."
 import type { IpcHandle } from "./ipc-handlers.js"
 
@@ -28,8 +28,9 @@ export function registerJobSearchesHandlers(
     },
   )
   handle("job-searches:load", (id: string) => services.jobSearchRepo.load(id))
-  handle("job-searches:save", (id: string, data: JobSearch) => {
-    services.jobSearchRepo.save(id, data)
+  handle("job-searches:save", (id: string, data: unknown) => {
+    const validated = JobSearchSchema.parse(data)
+    services.jobSearchRepo.save(id, validated)
     return { ok: true }
   })
   handle("job-searches:delete", (id: string) => {
@@ -37,17 +38,14 @@ export function registerJobSearchesHandlers(
     return { deleted: id }
   })
 
-  handle("job-searches:draft:load", (applicantId: string) => {
-    const draft = services.jobSearchRepo.loadDraft(applicantId)
-    return { draft }
+  handle("job-searches:draft:load", (applicantId: string) => ({
+    draft: services.jobSearchRepo.loadDraft(applicantId),
+  }))
+  handle("job-searches:draft:save", (applicantId: string, draft: unknown) => {
+    const validated = JobSearchEditorSnapshotSchema.parse(draft)
+    services.jobSearchRepo.saveDraft(applicantId, validated)
+    return { ok: true }
   })
-  handle(
-    "job-searches:draft:save",
-    (applicantId: string, draft: JobSearchEditorSnapshot) => {
-      services.jobSearchRepo.saveDraft(applicantId, draft)
-      return { ok: true }
-    },
-  )
   handle("job-searches:draft:delete", (applicantId: string) => {
     services.jobSearchRepo.deleteDraft(applicantId)
     return { deleted: applicantId }
@@ -57,12 +55,9 @@ export function registerJobSearchesHandlers(
     return { id, applicantId }
   })
 
-  // Cover letter
-  handle("job-searches:cover-letter:load", (id: string) => {
-    return {
-      content: services.jobSearchRepo.loadApplicationCoverLetter(id, ""),
-    }
-  })
+  handle("job-searches:cover-letter:load", (id: string) => ({
+    content: services.jobSearchRepo.loadApplicationCoverLetter(id, ""),
+  }))
   handle("job-searches:cover-letter:save", (id: string, content: string) => {
     services.jobSearchRepo.saveApplicationCoverLetter(id, "", content)
     return { ok: true }

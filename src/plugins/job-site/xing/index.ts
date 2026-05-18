@@ -1,16 +1,21 @@
-import typia from "typia"
+import { z } from "zod"
+
 import * as cheerio from "cheerio/slim"
+
 import type { Browser } from "@/plugins/browser"
+
 import type {
   VacancyDetails,
   JobSite,
   JobPostingJsonLd,
   SearchCriteria,
 } from "@/plugins/job-site"
+
 import {
   extractAbsoluteLinks,
   withOpenedPage,
 } from "@/plugins/job-site/utils/index.js"
+
 import {
   extractJsonLd,
   joinNormalizedText,
@@ -18,6 +23,12 @@ import {
   isRecord,
   stringField,
 } from "@/utils/index.js"
+
+export const SUPPORTED_MODES = [
+  "employment",
+  "entry-level",
+  "apprenticeship",
+] as const
 
 export function createXingSite(browser: Browser): JobSite {
   return new XingSite(browser)
@@ -76,6 +87,8 @@ function extractLinks(html: string): string[] {
   })
 }
 
+const BASE_URL = "https://www.xing.com"
+
 function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
   const qs = new URLSearchParams()
   if (criteria.query) qs.set("keywords", criteria.query)
@@ -89,7 +102,7 @@ function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
 }
 
 function extractFromPosting(jsonLd: object | undefined) {
-  const posting = typia.is<JobPostingJsonLd>(jsonLd) ? jsonLd : undefined
+  const posting = asJobPosting(jsonLd)
   return {
     title: posting?.title,
     company: posting?.hiringOrganization?.name,
@@ -97,6 +110,11 @@ function extractFromPosting(jsonLd: object | undefined) {
     publishedAt: posting?.datePosted,
     address: formatJobPostingAddress(posting),
   }
+}
+
+function asJobPosting(value: unknown): JobPostingJsonLd | undefined {
+  const result = JobPostingJsonLdSchema.safeParse(value)
+  return result.success ? result.data : undefined
 }
 
 function formatJobPostingAddress(
@@ -122,20 +140,6 @@ function extractContact($: cheerio.CheerioAPI): { email: string } | undefined {
   return contactEmail ? { email: contactEmail } : undefined
 }
 
-function modeToCareerLevel(mode: string): string {
-  if (mode === "apprenticeship") return "APPRENTICESHIP"
-  if (mode === "entry-level") return "ENTRY_LEVEL"
-  return ""
-}
-
-export const SUPPORTED_MODES = [
-  "employment",
-  "entry-level",
-  "apprenticeship",
-] as const
-
-const BASE_URL = "https://www.xing.com"
-
 const SELECTORS = {
   company:
     "[data-testid='company-name'], [class*='company-name'], [class*='Company']",
@@ -143,3 +147,40 @@ const SELECTORS = {
     "[data-testid='job-location'], [class*='location'], [class*='Location']",
   contactEmail: "a[href^='mailto:']",
 }
+
+function modeToCareerLevel(mode: string): string {
+  if (mode === "apprenticeship") return "APPRENTICESHIP"
+  if (mode === "entry-level") return "ENTRY_LEVEL"
+  return ""
+}
+
+const JobPostingJsonLdSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  datePosted: z.string().optional(),
+  hiringOrganization: z.object({ name: z.string().optional() }).optional(),
+  jobLocation: z
+    .union([
+      z.object({
+        address: z
+          .object({
+            streetAddress: z.string().optional(),
+            postalCode: z.string().optional(),
+            addressLocality: z.string().optional(),
+          })
+          .optional(),
+      }),
+      z.array(
+        z.object({
+          address: z
+            .object({
+              streetAddress: z.string().optional(),
+              postalCode: z.string().optional(),
+              addressLocality: z.string().optional(),
+            })
+            .optional(),
+        }),
+      ),
+    ])
+    .optional(),
+})

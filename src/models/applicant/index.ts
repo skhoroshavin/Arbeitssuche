@@ -93,3 +93,5 @@ export {
   createDefaultApplicantDraftSnapshot,
   isMeaningfulApplicantDraftSnapshot,
 } from "./draft-snapshot.js"
+
+export { ApplicantSchema, ApplicantInfoSchema } from "./schemas.js"

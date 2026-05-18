@@ -2,18 +2,11 @@ import { describe, it, expect } from "vitest"
 import { toStrictSchema } from "."
 
 describe("toStrictSchema", () => {
-  it("inlines $ref and adds additionalProperties: false", () => {
+  it("adds additionalProperties: false to object", () => {
     const input = {
-      components: {
-        schemas: {
-          Foo: {
-            type: "object",
-            properties: { name: { type: "string" } },
-            required: ["name"],
-          },
-        },
-      },
-      schema: { $ref: "#/components/schemas/Foo" },
+      type: "object",
+      properties: { name: { type: "string" } },
+      required: ["name"],
     }
 
     expect(toStrictSchema(input)).toEqual({
@@ -24,18 +17,15 @@ describe("toStrictSchema", () => {
     })
   })
 
-  it("converts oneOf with const values to enum", () => {
+  it("converts oneOf with const values to enum (defensive)", () => {
     const input = {
-      components: { schemas: {} },
-      schema: {
-        type: "object",
-        properties: {
-          score: {
-            oneOf: [{ const: "low" }, { const: "high" }],
-          },
+      type: "object",
+      properties: {
+        score: {
+          oneOf: [{ const: "low" }, { const: "high" }],
         },
-        required: ["score"],
       },
+      required: ["score"],
     }
 
     expect(toStrictSchema(input)).toEqual({
@@ -50,15 +40,12 @@ describe("toStrictSchema", () => {
 
   it("converts optional properties to nullable and adds to required", () => {
     const input = {
-      components: { schemas: {} },
-      schema: {
-        type: "object",
-        properties: {
-          name: { type: "string" },
-          email: { type: "string" },
-        },
-        required: [],
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        email: { type: "string" },
       },
+      required: [],
     }
 
     expect(toStrictSchema(input)).toEqual({
@@ -74,24 +61,20 @@ describe("toStrictSchema", () => {
 
   it("converts oneOf type alternatives to anyOf", () => {
     const input = {
-      components: {
-        schemas: {
-          Contact: {
-            type: "object",
-            properties: { name: { type: "string" } },
-            required: ["name"],
-          },
+      type: "object",
+      properties: {
+        contact: {
+          oneOf: [
+            { type: "null" },
+            {
+              type: "object",
+              properties: { name: { type: "string" } },
+              required: ["name"],
+            },
+          ],
         },
       },
-      schema: {
-        type: "object",
-        properties: {
-          contact: {
-            oneOf: [{ type: "null" }, { $ref: "#/components/schemas/Contact" }],
-          },
-        },
-        required: ["contact"],
-      },
+      required: ["contact"],
     }
 
     expect(toStrictSchema(input)).toEqual({
@@ -114,20 +97,13 @@ describe("toStrictSchema", () => {
     })
   })
 
-  it("handles array with $ref items", () => {
+  it("handles array with inline items", () => {
     const input = {
-      components: {
-        schemas: {
-          Item: {
-            type: "object",
-            properties: { value: { type: "number" } },
-            required: ["value"],
-          },
-        },
-      },
-      schema: {
-        type: "array",
-        items: { $ref: "#/components/schemas/Item" },
+      type: "array",
+      items: {
+        type: "object",
+        properties: { value: { type: "number" } },
+        required: ["value"],
       },
     }
 
@@ -142,31 +118,18 @@ describe("toStrictSchema", () => {
     })
   })
 
-  it("transforms typia AssessResult schema", () => {
+  it("transforms Zod AssessResult schema (enum, no optional)", () => {
     const input = {
-      version: "3.1",
-      components: {
-        schemas: {
-          AssessResult: {
-            type: "object",
-            properties: {
-              summary: { type: "string" },
-              matchScore: { $ref: "#/components/schemas/MatchScore" },
-            },
-            required: ["summary", "matchScore"],
-          },
-          MatchScore: {
-            oneOf: [
-              { const: "very-bad" },
-              { const: "bad" },
-              { const: "ok" },
-              { const: "good" },
-              { const: "excellent" },
-            ],
-          },
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+        matchScore: {
+          type: "string",
+          enum: ["very-bad", "bad", "ok", "good", "excellent"],
         },
       },
-      schema: { $ref: "#/components/schemas/AssessResult" },
+      required: ["summary", "matchScore"],
+      additionalProperties: false,
     }
 
     expect(toStrictSchema(input)).toEqual({
@@ -183,36 +146,34 @@ describe("toStrictSchema", () => {
     })
   })
 
-  it("transforms typia ContactExtractionResult schema with optional fields", () => {
+  it("transforms Zod ContactExtractionResult schema with optional nullable contact", () => {
     const input = {
-      version: "3.1",
-      components: {
-        schemas: {
-          ContactExtractionResult: {
-            type: "object",
-            properties: {
-              addresses: { type: "array", items: { type: "string" } },
-              contact: {
-                oneOf: [
-                  { type: "null" },
-                  { $ref: "#/components/schemas/VacancyContact" },
-                ],
+      type: "object",
+      properties: {
+        addresses: { type: "array", items: { type: "string" } },
+        contact: {
+          anyOf: [
+            { type: "null" },
+            {
+              type: "object",
+              properties: {
+                name: {
+                  anyOf: [{ type: "string" }, { type: "null" }],
+                },
+                email: {
+                  anyOf: [{ type: "string" }, { type: "null" }],
+                },
+                phone: {
+                  anyOf: [{ type: "string" }, { type: "null" }],
+                },
               },
+              additionalProperties: false,
             },
-            required: ["addresses", "contact"],
-          },
-          VacancyContact: {
-            type: "object",
-            properties: {
-              name: { type: "string" },
-              email: { type: "string" },
-              phone: { type: "string" },
-            },
-            required: [],
-          },
+          ],
         },
       },
-      schema: { $ref: "#/components/schemas/ContactExtractionResult" },
+      required: ["addresses"],
+      additionalProperties: false,
     }
 
     expect(toStrictSchema(input)).toEqual({
@@ -225,9 +186,15 @@ describe("toStrictSchema", () => {
             {
               type: "object",
               properties: {
-                name: { anyOf: [{ type: "string" }, { type: "null" }] },
-                email: { anyOf: [{ type: "string" }, { type: "null" }] },
-                phone: { anyOf: [{ type: "string" }, { type: "null" }] },
+                name: {
+                  anyOf: [{ type: "string" }, { type: "null" }],
+                },
+                email: {
+                  anyOf: [{ type: "string" }, { type: "null" }],
+                },
+                phone: {
+                  anyOf: [{ type: "string" }, { type: "null" }],
+                },
               },
               required: ["name", "email", "phone"],
               additionalProperties: false,
@@ -240,12 +207,10 @@ describe("toStrictSchema", () => {
     })
   })
 
-  it("throws on unresolved $ref", () => {
-    const input = {
-      components: { schemas: {} },
-      schema: { $ref: "#/components/schemas/Missing" },
-    }
-
-    expect(() => toStrictSchema(input)).toThrow("Unresolved $ref")
+  it("throws on invalid input", () => {
+    // @ts-expect-error -- deliberate invalid input to test guard
+    expect(() => toStrictSchema("not an object")).toThrow(
+      "Invalid schema input",
+    )
   })
 })

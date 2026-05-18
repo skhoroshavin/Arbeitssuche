@@ -129,3 +129,5 @@ export {
 } from "./constants.js"
 export { resolveVacancy } from "./resolve.js"
 export { Vacancy } from "./vacancy.js"
+
+export { VacancyDTOSchema, VacancyWithStatusSchema } from "./schemas.js"

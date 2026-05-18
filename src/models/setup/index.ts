@@ -13,3 +13,5 @@ export {
   mergeSetupState,
   resolveSetupState,
 } from "./resolve.js"
+
+export { AppSetupStateSchema } from "./schemas.js"

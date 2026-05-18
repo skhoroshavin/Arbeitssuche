@@ -1,13 +1,15 @@
+import { z } from "zod"
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+
 import type {
   Applicant,
-  ApplicantDraft,
   ApplicantDraftSnapshot,
-  ApplicantInfo,
   ResumeTemplate,
 } from "@/models/applicant"
-import type { ConsultationSuggestion } from "@/models/job-search"
-import typia from "typia"
+
+import { ApplicantSchema, ApplicantInfoSchema } from "@/models/applicant"
+
 import { api } from "./internal/api"
 
 export function useApplicantListView() {
@@ -30,7 +32,7 @@ export function useApplicant(id: string) {
   return useQuery({
     queryKey: ["applicant", id],
     queryFn: async () =>
-      typia.assert<Applicant>(await api().invoke("applicants:load", id)),
+      ApplicantSchema.parse(await api().invoke("applicants:load", id)),
     enabled: !!id,
   })
 }
@@ -39,7 +41,7 @@ export function useApplicantDraft() {
   return useQuery({
     queryKey: ["applicant-draft"],
     queryFn: async () =>
-      typia.assert<{ draft?: ApplicantDraft }>(
+      ApplicantDraftResponseSchema.parse(
         await api().invoke("applicants:draft:load"),
       ),
   })
@@ -68,9 +70,7 @@ export function useFinalizeApplicantDraft() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async () =>
-      typia.assert<{ id: string }>(
-        await api().invoke("applicants:draft:finalize"),
-      ),
+      CreatedIdSchema.parse(await api().invoke("applicants:draft:finalize")),
     onSuccess: async ({ id }) => {
       await queryClient.invalidateQueries({ queryKey: ["applicant-draft"] })
       await queryClient.invalidateQueries({ queryKey: ["applicants"] })
@@ -129,7 +129,7 @@ export function useConsultSearchesView(applicantId: string) {
 function useConsultSearches(applicantId: string) {
   return useMutation({
     mutationFn: async () =>
-      typia.assert<{ suggestions: ConsultationSuggestion[] }>(
+      SuggestionsResponseSchema.parse(
         await api().invoke("applicants:consult-searches", applicantId),
       ),
   })
@@ -139,8 +139,31 @@ function useApplicants() {
   return useQuery({
     queryKey: ["applicants"],
     queryFn: async () =>
-      typia.assert<{ applicants: ApplicantInfo[] }>(
-        await api().invoke("applicants:list"),
-      ),
+      ApplicantListResponseSchema.parse(await api().invoke("applicants:list")),
   })
 }
+
+const CreatedIdSchema = z.object({ id: z.string() })
+
+const ApplicantDraftResponseSchema = z.object({
+  draft: z
+    .object({
+      snapshot: ApplicantSchema,
+      meaningful: z.boolean(),
+    })
+    .optional(),
+})
+
+const ApplicantListResponseSchema = z.object({
+  applicants: z.array(ApplicantInfoSchema),
+})
+
+const SuggestionsResponseSchema = z.object({
+  suggestions: z.array(
+    z.object({
+      searchTerm: z.string(),
+      searchMode: z.enum(["employment", "entry-level", "apprenticeship"]),
+      reason: z.string(),
+    }),
+  ),
+})

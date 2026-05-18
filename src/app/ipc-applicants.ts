@@ -1,4 +1,5 @@
-import type { Applicant, ApplicantDraftSnapshot } from "@/models/applicant"
+import { ApplicantSchema } from "@/models/applicant"
+import type { ApplicantDraftSnapshot } from "@/models/applicant"
 import type { AppServices } from "."
 import type { IpcHandle } from "./ipc-handlers.js"
 
@@ -14,25 +15,25 @@ export function registerApplicantsHandlers(
     return { id }
   })
   handle("applicants:load", (id: string) => services.applicantRepo.load(id))
-  handle("applicants:save", (id: string, data: Applicant) => {
-    services.applicantRepo.save(id, data)
+  handle("applicants:save", (id: string, data: unknown) => {
+    const validated = ApplicantSchema.parse(data)
+    services.applicantRepo.save(id, validated)
     return { ok: true }
   })
   handle("applicants:delete", (id: string) => {
     services.applicantRepo.delete(id)
     return { deleted: id }
   })
-  handle("applicants:draft:load", () => {
-    const draft = services.applicantRepo.loadDraft()
-    return { draft }
-  })
+  handle("applicants:draft:load", () => ({
+    draft: services.applicantRepo.loadDraft(),
+  }))
   handle("applicants:draft:save", (draft: ApplicantDraftSnapshot) => {
     services.applicantRepo.saveDraft(draft)
     return { ok: true }
   })
   handle("applicants:draft:delete", () => {
     services.applicantRepo.deleteDraft()
-    return { deleted: true }
+    return { ok: true }
   })
   handle("applicants:draft:finalize", () => {
     const id = services.applicantRepo.finalizeDraft()
@@ -42,6 +43,8 @@ export function registerApplicantsHandlers(
     services.resumeRenderer.generate(id, template),
   )
   handle("applicants:consult-searches", (id: string) =>
-    services.jobConsultant.consult(id),
+    services.jobConsultant.consult(id).then((suggestions) => ({
+      suggestions,
+    })),
   )
 }
