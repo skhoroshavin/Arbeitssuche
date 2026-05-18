@@ -4,21 +4,13 @@ import { createStubApplicantRepository } from "./stub"
 import { createSqliteApplicantRepository } from "./sqlite"
 import { createDefaultApplicantDraftSnapshot } from "@/models/applicant"
 import type { Applicant } from "@/models/applicant"
+import { ApplicantID } from "@/models/applicant"
 import { Database, setupTemporaryDatabaseDirectory } from "@/utils/index.js"
 
 applicantRepositoryTests("StubApplicantRepository", () => ({
   repo: createStubApplicantRepository(),
   teardown: () => {},
 }))
-
-// --- Stub-specific ---
-
-test("StubApplicantRepository initializes from provided data", () => {
-  const sample = makeSampleApplicant("john")
-  const repo = createStubApplicantRepository({ john: sample })
-  expect(repo.exists("john")).toBe(true)
-  expect(repo.load("john").personal.name).toBe("John Doe")
-})
 
 // --- SqliteApplicantRepository ---
 
@@ -33,8 +25,8 @@ applicantRepositoryTests("SqliteApplicantRepository", () =>
 test("saved applicant survives new repository instance", () => {
   const id = nextId()
   const { repo: repo1, teardown: t1 } = openDatabaseById(id)
-  const applicantId = repo1.create("John Doe")
-  const sample = makeSampleApplicant(applicantId)
+  const applicantId = ApplicantID("1")
+  const sample = makeSampleApplicant()
   repo1.save(applicantId, sample)
   t1()
 
@@ -46,27 +38,29 @@ test("saved applicant survives new repository instance", () => {
 test("list works across instances", () => {
   const id = nextId()
   const { repo: repo1, teardown: t1 } = openDatabaseById(id)
-  const id1 = repo1.create("Alice")
-  const id2 = repo1.create("Bob")
+  const id1 = ApplicantID("1")
+  const id2 = ApplicantID("2")
+  repo1.save(id1, makeSampleApplicant("Alice"))
+  repo1.save(id2, makeSampleApplicant("Bob"))
   t1()
 
   const { repo: repo2, teardown: t2 } = openDatabaseById(id)
-  const ids = repo2.list().map((a: { id: string }) => a.id)
-  expect(ids.toSorted()).toEqual([id1, id2].toSorted())
+  const names = repo2.list().map((a) => a.displayName)
+  expect(names.toSorted()).toEqual(["Alice", "Bob"])
   t2()
 })
 
 test("delete persists across instances", () => {
   const id = nextId()
   const { repo: repo1, teardown: t1 } = openDatabaseById(id)
-  const applicantId = repo1.create("John Doe")
-  const sample = makeSampleApplicant(applicantId)
+  const applicantId = ApplicantID("1")
+  const sample = makeSampleApplicant()
   repo1.save(applicantId, sample)
   repo1.delete(applicantId)
   t1()
 
   const { repo: repo2, teardown: t2 } = openDatabaseById(id)
-  expect(repo2.exists(applicantId)).toBe(false)
+  expect(() => repo2.load(applicantId)).toThrow()
   t2()
 })
 
@@ -81,23 +75,10 @@ function applicantRepositoryTests(
       teardown()
     })
 
-    test("create returns id + exists + load", () => {
-      const { repo, teardown } = createRepo()
-      const id = repo.create("John Doe")
-      expect(typeof id).toBe("string")
-      expect(id.length > 0).toBeTruthy()
-      expect(repo.exists(id)).toBe(true)
-      expect(repo.exists("nobody")).toBe(false)
-      const loaded = repo.load(id)
-      expect(loaded.id).toBe(id)
-      expect(loaded.personal.name).toBe("John Doe")
-      teardown()
-    })
-
     test("save + load round-trips", () => {
       const { repo, teardown } = createRepo()
-      const id = repo.create("John Doe")
-      const sample = makeSampleApplicant(id)
+      const id = ApplicantID("1")
+      const sample = makeSampleApplicant()
       repo.save(id, sample)
       const loaded = repo.load(id)
       expect(loaded).toEqual(sample)
@@ -106,16 +87,16 @@ function applicantRepositoryTests(
 
     test("save throws for non-existent applicant", () => {
       const { repo, teardown } = createRepo()
-      expect(() => repo.save("nope", makeSampleApplicant("nope"))).toThrow()
+      expect(() => repo.save(ApplicantID("nope"), makeSampleApplicant())).toThrow()
       teardown()
     })
 
     test("delete removes applicant", () => {
       const { repo, teardown } = createRepo()
-      const id = repo.create("John Doe")
-      expect(repo.exists(id)).toBe(true)
+      const id = ApplicantID("1")
+      repo.save(id, makeSampleApplicant())
       repo.delete(id)
-      expect(repo.exists(id)).toBe(false)
+      expect(() => repo.load(id)).toThrow()
       teardown()
     })
 
@@ -129,14 +110,14 @@ function applicantRepositoryTests(
       repo.saveDraft(first)
       repo.saveDraft(second)
 
-      expect(repo.loadDraft()?.snapshot.personal.name).toBe("Second")
+      expect(repo.loadDraft()?.personal.name).toBe("Second")
       teardown()
     })
 
     test("blank draft is not meaningful", () => {
       const { repo, teardown } = createRepo()
       repo.saveDraft(createDefaultApplicantDraftSnapshot())
-      expect(repo.loadDraft()?.meaningful).toBe(false)
+      expect(repo.loadDraft()).toBeUndefined()
       teardown()
     })
 
@@ -147,7 +128,7 @@ function applicantRepositoryTests(
 
       repo.saveDraft(draft)
 
-      expect(repo.loadDraft()?.meaningful).toBe(true)
+      expect(repo.loadDraft()?.personal.name).toBe("Ada Lovelace")
       teardown()
     })
 
@@ -177,9 +158,8 @@ function applicantRepositoryTests(
   })
 }
 
-function makeSampleApplicant(id: string): Applicant {
+function makeSampleApplicant(name = "John Doe"): Applicant {
   return {
-    id,
     disclose: {
       birthdate: false,
       gender: false,
@@ -187,7 +167,7 @@ function makeSampleApplicant(id: string): Applicant {
       hobbies: false,
     },
     personal: {
-      name: "John Doe",
+      name,
       email: "john@example.com",
       phone: "+49 123 456",
       address: { street: "Main St 1", zip: "10115", city: "Berlin" },
@@ -214,7 +194,7 @@ function makeSampleApplicant(id: string): Applicant {
     skills: [{ name: "TypeScript" }],
     languages: [{ language: "German", level: "C2" }],
     certifications: [{ name: "AWS", issuer: "Amazon", date: "2023-01" }],
-    personalNotes: ["Prefers remote work"],
+    personalNotes: "Prefers remote work",
   }
 }
 
