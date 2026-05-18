@@ -3,8 +3,7 @@ import { resolveApplicant } from "."
 
 describe("resolveApplicant", () => {
   it("fills missing collections and disclose flags", () => {
-    expect(resolveApplicant({ id: "a1", personal: { name: "Ada" } })).toEqual({
-      id: "a1",
+    expect(resolveApplicant({ personal: { name: "Ada" } })).toEqual({
       personal: { name: "Ada", hobbies: [] },
       disclose: {
         birthdate: false,
@@ -17,7 +16,7 @@ describe("resolveApplicant", () => {
       skills: [],
       languages: [],
       certifications: [],
-      personalNotes: undefined,
+      personalNotes: "",
     })
   })
 })

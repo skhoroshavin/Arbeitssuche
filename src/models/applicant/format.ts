@@ -60,11 +60,13 @@ function formatPersonalSection(p: Applicant["personal"]): string {
   return `## Applicant\n${lines.join("\n")}`
 }
 
-function formatPersonalNotes(
-  notes: Applicant["personalNotes"],
-): string | undefined {
-  if (!notes || notes.length === 0) return undefined
-  return `## Personal Notes\n${notes.map((note) => `- ${note}`).join("\n")}`
+function formatPersonalNotes(notes: string): string | undefined {
+  const lines = notes
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+  if (lines.length === 0) return undefined
+  return `## Personal Notes\n${lines.map((line) => `- ${line}`).join("\n")}`
 }
 
 function formatExperienceLine(entry: ApplicantExperience): string {

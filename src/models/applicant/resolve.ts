@@ -3,7 +3,6 @@ import { DEFAULT_APPLICANT } from "@/models/applicant/constants.js"
 
 export function resolveApplicant(data: ApplicantInput): Applicant {
   return {
-    id: data.id ?? "",
     personal: resolveApplicantPersonal(data.personal),
     disclose: { ...DEFAULT_APPLICANT.disclose, ...data.disclose },
     experience: data.experience ?? [],
@@ -11,7 +10,7 @@ export function resolveApplicant(data: ApplicantInput): Applicant {
     skills: data.skills ?? [],
     languages: data.languages ?? [],
     certifications: data.certifications ?? [],
-    personalNotes: data.personalNotes,
+    personalNotes: data.personalNotes ?? "",
   }
 }
 

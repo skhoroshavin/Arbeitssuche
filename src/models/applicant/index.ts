@@ -2,15 +2,10 @@ import type { Address } from "@/models/config"
 
 export type { Address } from "@/models/config"
 
-export interface ApplicantDraft {
-  snapshot: ApplicantDraftSnapshot
-  meaningful: boolean
-}
-
-export type ApplicantDraftSnapshot = Applicant
+export type { ApplicantID } from "./id.js"
+export { ApplicantID } from "./id.js"
 
 export interface Applicant {
-  id: string
   personal: ApplicantPersonal
   disclose: ApplicantDisclose
   experience: ApplicantExperience[]
@@ -18,7 +13,7 @@ export interface Applicant {
   skills: ApplicantSkill[]
   languages: ApplicantLanguage[]
   certifications: ApplicantCertification[]
-  personalNotes?: string[]
+  personalNotes: string
 }
 
 export interface ApplicantPersonal {
@@ -76,8 +71,8 @@ export interface ApplicantDisclose {
 }
 
 export interface ApplicantInfo {
-  id: string
-  name?: string
+  id: ApplicantID
+  displayName: string
 }
 
 export type ResumeTemplate =
