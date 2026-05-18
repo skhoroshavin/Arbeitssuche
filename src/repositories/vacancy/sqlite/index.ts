@@ -1,3 +1,4 @@
+import { VacancyDTOSchema } from "@/api"
 import { Database } from "@/utils/index.js"
 import { Vacancy } from "@/models/vacancy/index.js"
 import type { Activity } from "@/models/vacancy"
@@ -126,32 +127,7 @@ function hydrateVacancyRow(row: Record<string, unknown>): Vacancy {
 }
 
 function hydrateVacancy(data: unknown): Vacancy {
-  const parsed = z
-    .object({
-      hash: z.string().optional(),
-      title: z.string().optional(),
-      company: z.string().optional(),
-      urls: z.array(z.string()).optional(),
-      addresses: z.array(z.string()).optional(),
-      contact: z
-        .object({
-          name: z.string().optional(),
-          email: z.string().optional(),
-          phone: z.string().optional(),
-        })
-        .optional(),
-      startDate: z.string().optional(),
-      description: z.string().optional(),
-      enriched: z.boolean().optional(),
-      enrichmentDirty: z.boolean().optional(),
-      summary: z.string().optional(),
-      matchScore: z
-        .enum(["very-bad", "bad", "ok", "good", "excellent"])
-        .optional(),
-      commute: z.record(z.unknown()).optional(),
-      activityHistory: z.array(z.unknown()).optional(),
-      active: z.boolean().optional(),
-    })
+  const parsed = VacancyDTOSchema.partial()
     .passthrough()
     .parse(stripLegacyCommute(data))
   return new Vacancy(resolveVacancy(parsed))
