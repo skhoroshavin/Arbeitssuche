@@ -213,7 +213,7 @@ const JOB_SEARCH: JobSearch = {
   coverLetter: "",
 }
 
-const CONTEXT = {
+const _CONTEXT = {
   applicant: APPLICANT,
   jobSearch: JOB_SEARCH,
 }

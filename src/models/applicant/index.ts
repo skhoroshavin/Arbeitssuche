@@ -3,7 +3,7 @@ import type { Address } from "@/models/config"
 export type { Address } from "@/models/config"
 
 import { ApplicantID } from "./id.js"
-export { ApplicantID }
+
 
 export interface Applicant {
   personal: ApplicantPersonal
@@ -90,3 +90,5 @@ export {
 } from "./draft-snapshot.js"
 
 export { ApplicantSchema, ApplicantInfoSchema } from "./schemas.js"
+
+export {ApplicantID} from "./id.js"

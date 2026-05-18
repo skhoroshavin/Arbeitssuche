@@ -1,5 +1,5 @@
 import { JobSearchID, SearchSource } from "./id.js"
-export { JobSearchID, SearchSource }
+
 
 export interface JobSearch {
   searchTerm: string
@@ -42,3 +42,5 @@ export {
 } from "./editor-snapshot.js"
 
 export { JobSearchSchema, JobSearchInfoSchema } from "./schemas.js"
+
+export {JobSearchID, SearchSource} from "./id.js"

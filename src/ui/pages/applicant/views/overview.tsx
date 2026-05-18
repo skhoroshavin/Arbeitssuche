@@ -168,7 +168,7 @@ function useOverviewData(id: string) {
   const { displayName } = useApplicantHeaderName(id)
   const jobSearches = useJobSearchListView(id)
   const jobSearchItems = jobSearches.data.jobSearches.map((js) => ({
-    id: String(js.id),
+    id: typeof js.id === "string" ? js.id : js.id.value,
     label: js.displayName,
   }))
   return {

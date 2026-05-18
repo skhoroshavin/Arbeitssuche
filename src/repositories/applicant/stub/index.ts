@@ -21,9 +21,6 @@ export function createStubApplicantRepository(
 }
 
 class StubApplicantRepository implements ApplicantRepository {
-  private readonly store: Map<string, Applicant>
-  private nextId = 0
-
   constructor(initial?: Record<string, Applicant>) {
     this.store = new Map(initial ? Object.entries(initial) : [])
     this.nextId = this.store.size
