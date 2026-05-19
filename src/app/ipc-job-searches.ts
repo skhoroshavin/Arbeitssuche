@@ -1,9 +1,8 @@
-import { JobSearchSchema } from "@/models/job-search"
-import type { SearchMode } from "@/models/job-search"
+import { JobSearch, type SearchMode } from "@/models/job-search"
 import type { AppServices } from "."
 import type { IpcHandle } from "./ipc-handlers.js"
-import { JobSearchID } from "@/models/job-search"
-import { ApplicantID } from "@/models/applicant"
+import { makeJobSearchID } from "@/models/job-search"
+import { makeApplicantID } from "@/models/applicant"
 
 export function registerJobSearchesHandlers(
   handle: IpcHandle,
@@ -11,7 +10,7 @@ export function registerJobSearchesHandlers(
 ): void {
   handle("job-searches:list", (applicantId: string) => {
     const list = services.jobSearchRepo.listByApplicant(
-      ApplicantID(applicantId),
+      makeApplicantID(applicantId),
     )
     return {
       jobSearches: list.map((info) => ({
@@ -25,7 +24,7 @@ export function registerJobSearchesHandlers(
     (searchTerm: string, applicantId: string, searchMode?: SearchMode) => {
       const id = services.jobSearchRepo.create(
         searchTerm,
-        ApplicantID(applicantId),
+        makeApplicantID(applicantId),
         searchMode,
       )
       return { id: id.value, applicantId }
@@ -33,47 +32,47 @@ export function registerJobSearchesHandlers(
   )
   handle("job-searches:load", (id: string) => {
     const { jobSearch, applicantId } = services.jobSearchRepo.load(
-      JobSearchID(id),
+      makeJobSearchID(id),
     )
     return { jobSearch, applicantId: applicantId.value }
   })
   handle("job-searches:save", (id: string, data: unknown) => {
-    const validated = JobSearchSchema.parse(data)
-    services.jobSearchRepo.save(JobSearchID(id), validated)
+    const validated = JobSearch.parse(data)
+    services.jobSearchRepo.save(makeJobSearchID(id), validated)
     return { ok: true }
   })
   handle("job-searches:delete", (id: string) => {
-    services.jobSearchRepo.delete(JobSearchID(id))
+    services.jobSearchRepo.delete(makeJobSearchID(id))
     return { deleted: id }
   })
 
   handle("job-searches:draft:load", (applicantId: string) => ({
-    draft: services.jobSearchRepo.loadDraft(ApplicantID(applicantId)),
+    draft: services.jobSearchRepo.loadDraft(makeApplicantID(applicantId)),
   }))
   handle("job-searches:draft:save", (applicantId: string, draft: unknown) => {
-    const validated = JobSearchSchema.parse(draft)
-    services.jobSearchRepo.saveDraft(ApplicantID(applicantId), validated)
+    const validated = JobSearch.parse(draft)
+    services.jobSearchRepo.saveDraft(makeApplicantID(applicantId), validated)
     return { ok: true }
   })
   handle("job-searches:draft:delete", (applicantId: string) => {
-    services.jobSearchRepo.deleteDraft(ApplicantID(applicantId))
+    services.jobSearchRepo.deleteDraft(makeApplicantID(applicantId))
     return { deleted: applicantId }
   })
   handle("job-searches:draft:finalize", (applicantId: string) => {
-    const id = services.jobSearchRepo.finalizeDraft(ApplicantID(applicantId))
+    const id = services.jobSearchRepo.finalizeDraft(
+      makeApplicantID(applicantId),
+    )
     return { id: id.value, applicantId }
   })
 
   handle("job-searches:cover-letter:load", (id: string) => {
-    const { jobSearch } = services.jobSearchRepo.load(JobSearchID(id))
+    const { jobSearch } = services.jobSearchRepo.load(makeJobSearchID(id))
     return { content: jobSearch.coverLetter }
   })
   handle("job-searches:cover-letter:save", (id: string, content: string) => {
-    const { jobSearch } = services.jobSearchRepo.load(JobSearchID(id))
-    services.jobSearchRepo.save(JobSearchID(id), {
-      ...jobSearch,
-      coverLetter: content,
-    })
+    const { jobSearch } = services.jobSearchRepo.load(makeJobSearchID(id))
+    jobSearch.coverLetter = content
+    services.jobSearchRepo.save(makeJobSearchID(id), jobSearch)
     return { ok: true }
   })
   handle("job-searches:cover-letter:generate", (id: string) =>

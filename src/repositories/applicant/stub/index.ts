@@ -1,16 +1,11 @@
 import {
-  type Applicant,
   type ApplicantID,
   type ApplicantInfo,
-  ApplicantID as makeApplicantID,
+  Applicant,
+  makeApplicantID,
 } from "@/models/applicant"
 
-import {
-  isMeaningfulApplicantDraftSnapshot,
-  resolveApplicant,
-} from "@/models/applicant/index.js"
-
-import type { ApplicantRepository } from "../types.js"
+import type { ApplicantRepository } from ".."
 
 export function createStubApplicantRepository(
   initial?: Record<string, Applicant>,
@@ -34,11 +29,11 @@ class StubApplicantRepository implements ApplicantRepository {
   }
 
   load(id: ApplicantID): Applicant {
-    return resolveApplicant(structuredClone(this.getOrThrow(id)))
+    return Applicant.parse(structuredClone(this.getOrThrow(id)))
   }
 
   save(id: ApplicantID, data: Applicant): void {
-    this.store.set(id.value, resolveApplicant(structuredClone(data)))
+    this.store.set(id.value, Applicant.parse(structuredClone(data)))
   }
 
   delete(id: ApplicantID): void {
@@ -46,14 +41,14 @@ class StubApplicantRepository implements ApplicantRepository {
   }
 
   saveDraft(draft: Applicant): void {
-    this.store.set(DRAFT_SENTINEL, resolveApplicant(structuredClone(draft)))
+    this.store.set(DRAFT_SENTINEL, Applicant.parse(structuredClone(draft)))
   }
 
   finalizeDraft(): ApplicantID {
     const draft = this.loadDraft()
     if (!draft) throw new Error("Applicant draft not found")
     const id = makeApplicantID(String(++this.nextId))
-    this.store.set(id.value, resolveApplicant(structuredClone(draft)))
+    this.store.set(id.value, Applicant.parse(structuredClone(draft)))
     this.deleteDraft()
     return id
   }
@@ -61,8 +56,8 @@ class StubApplicantRepository implements ApplicantRepository {
   loadDraft(): Applicant | undefined {
     const draft = this.store.get(DRAFT_SENTINEL)
     if (!draft) return undefined
-    const resolved = resolveApplicant(structuredClone(draft))
-    return isMeaningfulApplicantDraftSnapshot(resolved) ? resolved : undefined
+    const parsed = Applicant.parse(structuredClone(draft))
+    return parsed.isDifferentFromDefault() ? parsed : undefined
   }
 
   deleteDraft(): void {

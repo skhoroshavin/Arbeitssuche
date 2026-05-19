@@ -3,9 +3,8 @@ import type { ApplicantRepository } from "@/repositories/applicant"
 import type { VacancyRepository } from "@/repositories/vacancy"
 import type { LlmClient } from "@/plugins/llm"
 import { ensureLlmAvailable } from "@/services/llm/index.js"
-import { resolveDraftJobSearch } from "@/models/job-search/index.js"
-import { JobSearchID } from "@/models/job-search"
-import { ApplicantID } from "@/models/applicant"
+import { makeJobSearchID } from "@/models/job-search"
+import { makeApplicantID } from "@/models/applicant"
 import { generateCoverLetter } from "./generate.js"
 import { generatePersonalizedCoverLetter } from "./generate-personalized.js"
 
@@ -19,7 +18,7 @@ export class CoverLetterWriter {
 
   async generate(jobSearchId: string): Promise<{ content: string }> {
     const { jobSearch, applicantId } = this.jobSearchRepo.load(
-      JobSearchID(jobSearchId),
+      makeJobSearchID(jobSearchId),
     )
     const applicant = this.applicantRepo.load(applicantId)
 
@@ -30,15 +29,13 @@ export class CoverLetterWriter {
   }
 
   async generateFromDraft(applicantId: string): Promise<{ content: string }> {
-    const draft = this.jobSearchRepo.loadDraft(ApplicantID(applicantId))
+    const draft = this.jobSearchRepo.loadDraft(makeApplicantID(applicantId))
     if (!draft)
       throw new Error(`Draft for applicant "${applicantId}" not found`)
-    const applicant = this.applicantRepo.load(ApplicantID(applicantId))
-    const resolved = resolveDraftJobSearch(draft)
-
+    const applicant = this.applicantRepo.load(makeApplicantID(applicantId))
     ensureLlmAvailable(this.llm)
 
-    const content = await generateCoverLetter(applicant, resolved, this.llm)
+    const content = await generateCoverLetter(applicant, draft, this.llm)
     return { content }
   }
 
@@ -49,7 +46,7 @@ export class CoverLetterWriter {
     ensureLlmAvailable(this.llm)
 
     const vacancy = this.vacancyRepo.findByHash(
-      JobSearchID(jobSearchId),
+      makeJobSearchID(jobSearchId),
       vacancyHash,
     )
     if (!vacancy) {
@@ -57,7 +54,7 @@ export class CoverLetterWriter {
     }
 
     const { jobSearch, applicantId } = this.jobSearchRepo.load(
-      JobSearchID(jobSearchId),
+      makeJobSearchID(jobSearchId),
     )
     const applicant = this.applicantRepo.load(applicantId)
     const templateCoverLetter = jobSearch.coverLetter
@@ -70,7 +67,7 @@ export class CoverLetterWriter {
       this.llm,
     )
     this.vacancyRepo.saveCoverLetter(
-      JobSearchID(jobSearchId),
+      makeJobSearchID(jobSearchId),
       vacancyHash,
       content,
     )

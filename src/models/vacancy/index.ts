@@ -57,14 +57,14 @@ export interface FoundActivity extends BaseActivity {
   type: "found"
   site: string
   url: string
-  description?: string
-  contact?: VacancyContact
+  description: string
+  contact: VacancyContact
 }
 
 export interface VacancyContact {
-  name?: string
-  email?: string
-  phone?: string
+  name: string
+  email: string
+  phone: string
 }
 
 export interface NotFoundActivity extends BaseActivity {
@@ -96,8 +96,8 @@ interface InterviewedActivity extends BaseActivity {
 
 interface OfferedActivity extends BaseActivity {
   type: "offered"
-  startDate?: string
-  salary?: string
+  startDate: string
+  salary: string
 }
 
 interface RejectedActivity extends BaseActivity {
@@ -110,7 +110,7 @@ interface NotInterestedActivity extends BaseActivity {
 
 interface BaseActivity {
   date: string
-  notes?: string
+  notes: string
 }
 
 interface CommuteDurations {

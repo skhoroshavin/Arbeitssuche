@@ -1,7 +1,6 @@
-import { ApplicantSchema } from "@/models/applicant"
 import type { AppServices } from "."
 import type { IpcHandle } from "./ipc-handlers.js"
-import { ApplicantID } from "@/models/applicant"
+import { Applicant, makeApplicantID } from "@/models/applicant"
 
 export function registerApplicantsHandlers(
   handle: IpcHandle,
@@ -14,22 +13,22 @@ export function registerApplicantsHandlers(
     })),
   }))
   handle("applicants:load", (id: string) =>
-    services.applicantRepo.load(ApplicantID(id)),
+    services.applicantRepo.load(makeApplicantID(id)),
   )
   handle("applicants:save", (id: string, data: unknown) => {
-    const validated = ApplicantSchema.parse(data)
-    services.applicantRepo.save(ApplicantID(id), validated)
+    const validated = Applicant.parse(data)
+    services.applicantRepo.save(makeApplicantID(id), validated)
     return { ok: true }
   })
   handle("applicants:delete", (id: string) => {
-    services.applicantRepo.delete(ApplicantID(id))
+    services.applicantRepo.delete(makeApplicantID(id))
     return { deleted: id }
   })
   handle("applicants:draft:load", () => ({
     draft: services.applicantRepo.loadDraft(),
   }))
   handle("applicants:draft:save", (draft: unknown) => {
-    const validated = ApplicantSchema.parse(draft)
+    const validated = Applicant.parse(draft)
     services.applicantRepo.saveDraft(validated)
     return { ok: true }
   })

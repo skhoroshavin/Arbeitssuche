@@ -1,7 +1,6 @@
 import type { Applicant } from "@/models/applicant"
 import type { JobSearch } from "@/models/job-search"
 import type { LlmClient } from "@/plugins/llm"
-import { formatApplicantSections } from "@/models/applicant/index.js"
 
 export async function generateCoverLetter(
   applicant: Applicant,
@@ -16,7 +15,7 @@ function buildCoverLetterPrompt(
   applicant: Applicant,
   jobSearch: JobSearch,
 ): string {
-  const sections = formatApplicantSections(applicant)
+  const sections = [applicant.llmFriendlyDescription()]
 
   const searchLines = [`Suchbegriff: ${jobSearch.searchTerm}`]
   if (jobSearch.notes.length > 0) {

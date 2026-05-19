@@ -18,8 +18,7 @@ export function useApplicantForm() {
     toFormValues: toApplicantFormValues,
     onSave: async (formData) => {
       const parsed = fromApplicantFormValues(formData)
-      if (!data) throw new Error("Applicant data not loaded")
-      await update.mutateAsync({ ...data, ...parsed })
+      await update.mutateAsync(parsed)
     },
   })
 }

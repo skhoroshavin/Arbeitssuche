@@ -1,27 +1,24 @@
 import { describe, expect, test, vi } from "vitest"
-import { DEFAULT_APPLICANT } from "@/models/applicant"
-import { createDefaultJobSearchEditorSnapshot } from "@/models/job-search"
+import { Applicant } from "@/models/applicant"
+import { JobSearch } from "@/models/job-search"
 import { createStubApplicantRepository } from "@/repositories/applicant"
 import { createStubJobSearchRepository } from "@/repositories/job-search"
 import { createStubVacancyRepository } from "@/repositories/vacancy"
 import { CoverLetterWriter } from "."
-import { ApplicantID } from "@/models/applicant"
+import { makeApplicantID } from "@/models/applicant"
 
 describe("CoverLetterWriter", () => {
   test("generates cover letter from applicant draft", async () => {
+    const applicant = new Applicant()
+    applicant.personal.name = "Anna Tester"
+
     const applicantRepo = createStubApplicantRepository({
-      "1": {
-        ...DEFAULT_APPLICANT,
-        personal: {
-          ...DEFAULT_APPLICANT.personal,
-          name: "Anna Tester",
-        },
-      },
+      "1": applicant,
     })
     const jobSearchRepo = createStubJobSearchRepository()
-    const draft = createDefaultJobSearchEditorSnapshot()
+    const draft = new JobSearch()
     draft.searchTerm = "React"
-    jobSearchRepo.saveDraft(ApplicantID("1"), draft)
+    jobSearchRepo.saveDraft(makeApplicantID("1"), draft)
 
     const llm = {
       complete: vi.fn().mockResolvedValue("generated letter"),

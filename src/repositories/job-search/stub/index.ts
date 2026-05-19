@@ -1,17 +1,14 @@
 import {
-  isMeaningfulJobSearchEditorSnapshot,
-  resolveDraftJobSearch,
-} from "@/models/job-search/index.js"
-import type {
+  type JobSearchID,
+  type JobSearchInfo,
+  type SearchMode,
   JobSearch,
-  JobSearchID,
-  JobSearchInfo,
-  SearchMode,
+  makeJobSearchID,
 } from "@/models/job-search"
+
 import type { ApplicantID } from "@/models/applicant"
-import { JobSearchID as makeJobSearchID } from "@/models/job-search/index.js"
-import { resolveJobSearch } from "@/models/job-search/index.js"
-import type { JobSearchRepository } from "../types.js"
+
+import type { JobSearchRepository } from ".."
 
 export function createStubJobSearchRepository(
   initial?: Record<string, { jobSearch: JobSearch; applicantId: string }>,
@@ -53,14 +50,14 @@ class StubJobSearchRepository implements JobSearchRepository {
   load(id: JobSearchID): { jobSearch: JobSearch; applicantId: ApplicantID } {
     const entry = this.getOrThrow(id)
     return {
-      jobSearch: resolveJobSearch(structuredClone(entry.jobSearch)),
+      jobSearch: JobSearch.parse(structuredClone(entry.jobSearch)),
       applicantId: { value: entry.applicantId },
     }
   }
 
   save(id: JobSearchID, data: JobSearch): void {
     const entry = this.getOrThrow(id)
-    entry.jobSearch = resolveJobSearch(structuredClone(data))
+    entry.jobSearch = JobSearch.parse(structuredClone(data))
   }
 
   create(
@@ -69,10 +66,9 @@ class StubJobSearchRepository implements JobSearchRepository {
     searchMode?: SearchMode,
   ): JobSearchID {
     const id = makeJobSearchID(String(++this.nextId))
-    const jobSearch = resolveJobSearch({
-      searchTerm,
-      mode: searchMode ?? "employment",
-    })
+    const jobSearch = new JobSearch()
+    jobSearch.searchTerm = searchTerm
+    jobSearch.mode = searchMode ?? "employment"
     this.store.set(id.value, { jobSearch, applicantId: applicantId.value })
     return id
   }
@@ -84,19 +80,21 @@ class StubJobSearchRepository implements JobSearchRepository {
   loadDraft(applicantId: ApplicantID): JobSearch | undefined {
     const snapshot = this.drafts.get(applicantId.value)
     if (!snapshot) return undefined
-    const resolved = resolveJobSearch(structuredClone(snapshot))
-    return isMeaningfulJobSearchEditorSnapshot(resolved) ? resolved : undefined
+    const parsed = JobSearch.parse(structuredClone(snapshot))
+    return parsed.isDifferentFromDefault() ? parsed : undefined
   }
 
   saveDraft(applicantId: ApplicantID, draft: JobSearch): void {
-    this.drafts.set(applicantId.value, resolveJobSearch(structuredClone(draft)))
+    this.drafts.set(applicantId.value, JobSearch.parse(structuredClone(draft)))
   }
 
   finalizeDraft(applicantId: ApplicantID): JobSearchID {
     const draft = this.drafts.get(applicantId.value)
     if (!draft)
       throw new Error(`Draft for applicant "${applicantId.value}" not found`)
-    const resolved = resolveDraftJobSearch(structuredClone(draft))
+    const resolved = this.resolveDraftSearchTerm(
+      JobSearch.parse(structuredClone(draft)),
+    )
     const id = makeJobSearchID(String(++this.nextId))
     this.store.set(id.value, {
       jobSearch: resolved,
@@ -104,6 +102,22 @@ class StubJobSearchRepository implements JobSearchRepository {
     })
     this.deleteDraft(applicantId)
     return id
+  }
+
+  private resolveDraftSearchTerm(jobSearch: JobSearch): JobSearch {
+    const normalized = new JobSearch()
+    normalized.searchTerm =
+      jobSearch.searchTerm.trim().length > 0
+        ? jobSearch.searchTerm.trim()
+        : "Neue Suche"
+    normalized.radiusKm = jobSearch.radiusKm
+    normalized.mode = jobSearch.mode
+    normalized.sources = jobSearch.sources
+    normalized.maxResultsPerSource = jobSearch.maxResultsPerSource
+    normalized.maxCommuteMinutes = jobSearch.maxCommuteMinutes
+    normalized.notes = jobSearch.notes
+    normalized.coverLetter = jobSearch.coverLetter
+    return normalized
   }
 
   deleteDraft(applicantId: ApplicantID): void {

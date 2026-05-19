@@ -118,9 +118,10 @@ interface EnricherDeps {
 }
 
 function resolveCommuteOrigin(applicant: Applicant): string | undefined {
-  const address = applicant.personal.address
-  if (!address) return undefined
-  return `${address.street}, ${address.zip} ${address.city}`
+  const { street, zip, city } = applicant.personal.address
+  const parts = [street, zip, city].filter((s) => s.trim().length > 0)
+  if (parts.length === 0) return undefined
+  return `${street}, ${zip} ${city}`
 }
 
 function runLlmEnrichment(

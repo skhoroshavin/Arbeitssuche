@@ -15,9 +15,25 @@ describe("deriveStatus", () => {
     expect(
       makeVacancy({
         activityHistory: [
-          { type: "found", date: "2025-01-01", site: "s", url: "u" },
-          { type: "not-found", date: "2025-01-02", site: "s" },
-          { type: "found", date: "2025-01-03", site: "s", url: "u" },
+          {
+            type: "found",
+            date: "2025-01-01",
+            site: "s",
+            url: "u",
+            notes: "",
+            description: "",
+            contact: { name: "", email: "", phone: "" },
+          },
+          { type: "not-found", date: "2025-01-02", site: "s", notes: "" },
+          {
+            type: "found",
+            date: "2025-01-03",
+            site: "s",
+            url: "u",
+            notes: "",
+            description: "",
+            contact: { name: "", email: "", phone: "" },
+          },
         ],
       }).deriveStatus(),
     ).toBe("renewed")
@@ -26,7 +42,7 @@ describe("deriveStatus", () => {
   it("returns 'applied' for active vacancy with applied activity", () => {
     expect(
       makeVacancy({
-        activityHistory: [{ type: "applied", date: "2025-01-01" }],
+        activityHistory: [{ type: "applied", date: "2025-01-01", notes: "" }],
       }).deriveStatus(),
     ).toBe("applied")
   })
@@ -35,7 +51,7 @@ describe("deriveStatus", () => {
     expect(
       makeVacancy({
         active: false,
-        activityHistory: [{ type: "applied", date: "2025-01-01" }],
+        activityHistory: [{ type: "applied", date: "2025-01-01", notes: "" }],
       }).deriveStatus(),
     ).toBe("ignored")
   })
@@ -44,11 +60,12 @@ describe("deriveStatus", () => {
     expect(
       makeVacancy({
         activityHistory: [
-          { type: "applied", date: "2025-01-01" },
+          { type: "applied", date: "2025-01-01", notes: "" },
           {
             type: "invited",
             date: "2025-01-02",
             interviewDate: "2025-01-10",
+            notes: "",
           },
         ],
       }).deriveStatus(),
@@ -59,8 +76,13 @@ describe("deriveStatus", () => {
     expect(
       makeVacancy({
         activityHistory: [
-          { type: "applied", date: "2025-01-01" },
-          { type: "interviewed", date: "2025-01-05", outcome: "completed" },
+          { type: "applied", date: "2025-01-01", notes: "" },
+          {
+            type: "interviewed",
+            date: "2025-01-05",
+            outcome: "completed",
+            notes: "",
+          },
         ],
       }).deriveStatus(),
     ).toBe("interviewed")
@@ -69,7 +91,15 @@ describe("deriveStatus", () => {
   it("returns 'offered' when offered activity exists", () => {
     expect(
       makeVacancy({
-        activityHistory: [{ type: "offered", date: "2025-01-01" }],
+        activityHistory: [
+          {
+            type: "offered",
+            date: "2025-01-01",
+            notes: "",
+            startDate: "",
+            salary: "",
+          },
+        ],
       }).deriveStatus(),
     ).toBe("offered")
   })
@@ -78,9 +108,15 @@ describe("deriveStatus", () => {
     expect(
       makeVacancy({
         activityHistory: [
-          { type: "applied", date: "2025-01-01" },
-          { type: "offered", date: "2025-01-02" },
-          { type: "rejected", date: "2025-01-03" },
+          { type: "applied", date: "2025-01-01", notes: "" },
+          {
+            type: "offered",
+            date: "2025-01-02",
+            notes: "",
+            startDate: "",
+            salary: "",
+          },
+          { type: "rejected", date: "2025-01-03", notes: "" },
         ],
       }).deriveStatus(),
     ).toBe("rejected")
@@ -89,7 +125,9 @@ describe("deriveStatus", () => {
   it("returns 'not-interested' when not-interested activity exists", () => {
     expect(
       makeVacancy({
-        activityHistory: [{ type: "not-interested", date: "2025-01-01" }],
+        activityHistory: [
+          { type: "not-interested", date: "2025-01-01", notes: "" },
+        ],
       }).deriveStatus(),
     ).toBe("not-interested")
   })
@@ -98,8 +136,8 @@ describe("deriveStatus", () => {
     expect(
       makeVacancy({
         activityHistory: [
-          { type: "not-interested", date: "2025-01-01" },
-          { type: "applied", date: "2025-01-02" },
+          { type: "not-interested", date: "2025-01-01", notes: "" },
+          { type: "applied", date: "2025-01-02", notes: "" },
         ],
       }).deriveStatus(),
     ).toBe("applied")
@@ -114,7 +152,7 @@ describe("constructor", () => {
       company: "",
       urls: [],
       addresses: [],
-      contact: {},
+      contact: { name: "", email: "", phone: "" },
       startDate: "",
       description: "",
       enriched: false,
@@ -141,6 +179,9 @@ describe("deriveSources", () => {
           date: "2026-01-01",
           site: "xing",
           url: "https://xing.com/job/1",
+          notes: "",
+          description: "",
+          contact: { name: "", email: "", phone: "" },
         },
       ],
     }).deriveSources()
@@ -155,12 +196,18 @@ describe("deriveSources", () => {
           date: "2026-01-01",
           site: "xing",
           url: "https://xing.com/job/1",
+          notes: "",
+          description: "",
+          contact: { name: "", email: "", phone: "" },
         },
         {
           type: "found",
           date: "2026-01-02",
           site: "xing",
           url: "https://xing.com/job/1",
+          notes: "",
+          description: "",
+          contact: { name: "", email: "", phone: "" },
         },
       ],
     }).deriveSources()
@@ -179,12 +226,18 @@ describe("deriveSources", () => {
           date: "2026-01-01",
           site: "xing",
           url: "https://xing.com/job/1",
+          notes: "",
+          description: "",
+          contact: { name: "", email: "", phone: "" },
         },
         {
           type: "found",
           date: "2026-01-02",
           site: "xing",
           url: "https://xing.com/job/2",
+          notes: "",
+          description: "",
+          contact: { name: "", email: "", phone: "" },
         },
       ],
     }).deriveSources()
@@ -199,12 +252,18 @@ describe("deriveSources", () => {
           date: "2026-01-01",
           site: "xing",
           url: "https://xing.com/job/1",
+          notes: "",
+          description: "",
+          contact: { name: "", email: "", phone: "" },
         },
         {
           type: "found",
           date: "2026-01-01",
           site: "arbeitsagentur",
           url: "https://aa.de/job/1",
+          notes: "",
+          description: "",
+          contact: { name: "", email: "", phone: "" },
         },
       ],
     }).deriveSources()
@@ -221,9 +280,12 @@ describe("deriveSources", () => {
           date: "2026-01-01",
           site: "xing",
           url: "https://xing.com/job/1",
+          notes: "",
+          description: "",
+          contact: { name: "", email: "", phone: "" },
         },
-        { type: "applied", date: "2026-01-02" },
-        { type: "not-found", date: "2026-01-03", site: "xing" },
+        { type: "applied", date: "2026-01-02", notes: "" },
+        { type: "not-found", date: "2026-01-03", site: "xing", notes: "" },
       ],
     }).deriveSources()
     expect(result.length).toBe(1)
@@ -280,8 +342,16 @@ describe("getLatestActivityDate", () => {
   test("returns last activity date", () => {
     const v = makeVacancy({
       activityHistory: [
-        { type: "found", date: "2026-01-01", site: "s", url: "u" },
-        { type: "applied", date: "2026-01-15" },
+        {
+          type: "found",
+          date: "2026-01-01",
+          site: "s",
+          url: "u",
+          notes: "",
+          description: "",
+          contact: { name: "", email: "", phone: "" },
+        },
+        { type: "applied", date: "2026-01-15", notes: "" },
       ],
     })
     expect(v.getLatestActivityDate()).toBe("2026-01-15")
@@ -311,6 +381,7 @@ function makeVacancy(overrides: Partial<VacancyDTO> = {}): Vacancy {
     company: "Test Co",
     urls: [],
     addresses: [],
+    contact: { name: "", email: "", phone: "" },
     activityHistory: [],
     active: true,
     ...overrides,

@@ -13,14 +13,16 @@ import {
   createVacancyListOutput,
 } from "@/repositories/vacancy/output.js"
 
-import type { VacancyRepository } from "../types.js"
+import type { VacancyRepository } from ".."
 
 import { z } from "zod"
+
 import { VacancyDTOSchema } from "@/models/vacancy"
 
 export function createSqliteVacancyRepository(
   database: Database,
 ): VacancyRepository {
+  runVacancyMigration(database)
   database.exec(`
     CREATE TABLE IF NOT EXISTS vacancy_meta (
       job_search_id TEXT PRIMARY KEY REFERENCES job_searches(id) ON DELETE CASCADE,
@@ -36,6 +38,40 @@ export function createSqliteVacancyRepository(
     )
   `)
   return new SqliteVacancyRepository(database)
+}
+
+function runVacancyMigration(database: Database): void {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS _migrations (
+      repository TEXT PRIMARY KEY,
+      version TEXT NOT NULL
+    )
+  `)
+
+  const row = database
+    .prepare("SELECT version FROM _migrations WHERE repository = ?")
+    .get("vacancy")
+  const version =
+    row && typeof row === "object" && "version" in row
+      ? String(row.version)
+      : "0.0.0"
+
+  if (semverGreaterThan("0.3.0", version)) {
+    database.transaction(() => {
+      database.exec(`
+        INSERT OR REPLACE INTO _migrations (repository, version)
+        VALUES ('vacancy', '0.3.0')
+      `)
+    })
+  }
+}
+
+function semverGreaterThan(a: string, b: string): boolean {
+  const [aMajor, aMinor, aPatch] = a.split(".").map(Number)
+  const [bMajor, bMinor, bPatch] = b.split(".").map(Number)
+  if (aMajor !== bMajor) return aMajor > bMajor
+  if (aMinor !== bMinor) return aMinor > bMinor
+  return aPatch > bPatch
 }
 
 class SqliteVacancyRepository implements VacancyRepository {

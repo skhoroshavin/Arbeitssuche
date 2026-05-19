@@ -9,7 +9,10 @@ export function needsContactExtraction(vacancy: Vacancy): boolean {
 
   const hasEmptyAddresses = vacancy.addresses.length === 0
   const contact = vacancy.contact
-  const hasPartialContact = !contact.name || !contact.email || !contact.phone
+  const hasPartialContact =
+    contact.name.trim().length === 0 ||
+    contact.email.trim().length === 0 ||
+    contact.phone.trim().length === 0
 
   return hasEmptyAddresses || hasPartialContact
 }
@@ -30,7 +33,7 @@ export async function extractContactInfo(
   const addresses = raw.addresses.map((s) => s.trim()).filter(Boolean)
   const contact = cleanContact(raw.contact)
 
-  if (addresses.length === 0 && !contact) return undefined
+  if (addresses.length === 0 && !hasContact(contact)) return undefined
   return { addresses, contact }
 }
 
@@ -43,7 +46,7 @@ export function mergeContactInfo(
       ? mergeAddresses(vacancy.addresses, extracted.addresses)
       : vacancy.addresses
 
-  const contact = extracted.contact
+  const contact = hasContact(extracted.contact)
     ? { ...vacancy.contact, ...extracted.contact }
     : vacancy.contact
 
@@ -57,7 +60,7 @@ export function mergeContactInfo(
 
 interface ContactExtractionResult {
   addresses: string[]
-  contact?: VacancyContact
+  contact: VacancyContact
 }
 
 const RawContactSchema = z.object({
@@ -86,9 +89,9 @@ function buildContactExtractionPrompt(vacancy: Vacancy): string {
   const contact = vacancy.contact
   const existingContact =
     [
-      contact.name ? `Name: ${contact.name}` : undefined,
-      contact.email ? `E-Mail: ${contact.email}` : undefined,
-      contact.phone ? `Telefon: ${contact.phone}` : undefined,
+      contact.name.trim().length > 0 ? `Name: ${contact.name}` : undefined,
+      contact.email.trim().length > 0 ? `E-Mail: ${contact.email}` : undefined,
+      contact.phone.trim().length > 0 ? `Telefon: ${contact.phone}` : undefined,
     ]
       .filter(Boolean)
       .join(", ") || "Keine vorhanden"
@@ -119,26 +122,23 @@ Regeln:
 
 function cleanContact(
   contact: z.infer<typeof RawContactSchema> | null,
-): VacancyContact | undefined {
-  if (!contact) return undefined
-  const cleaned = pickDefined({
-    name: trimOrUndefined(contact.name),
-    email: trimOrUndefined(contact.email),
-    phone: trimOrUndefined(contact.phone),
-  })
-  return Object.keys(cleaned).length > 0 ? cleaned : undefined
-}
-
-function trimOrUndefined(value?: string | null): string | undefined {
-  return value?.trim() || undefined
-}
-
-function pickDefined(
-  object: Record<string, string | undefined>,
-): Record<string, string> {
-  const result: Record<string, string> = {}
-  for (const [key, value] of Object.entries(object)) {
-    if (value) result[key] = value
+): VacancyContact {
+  if (!contact) return { name: "", email: "", phone: "" }
+  return {
+    name: trimOrEmpty(contact.name),
+    email: trimOrEmpty(contact.email),
+    phone: trimOrEmpty(contact.phone),
   }
-  return result
+}
+
+function trimOrEmpty(value?: string | null): string {
+  return value?.trim() ?? ""
+}
+
+function hasContact(contact: VacancyContact): boolean {
+  return (
+    contact.name.trim().length > 0 ||
+    contact.email.trim().length > 0 ||
+    contact.phone.trim().length > 0
+  )
 }

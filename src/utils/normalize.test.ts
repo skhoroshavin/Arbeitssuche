@@ -16,7 +16,9 @@ describe("normalizeOptionalText", () => {
 
 describe("normalizeAndJoinText", () => {
   test("normalizes and joins non-empty parts", () => {
-    expect(normalizeAndJoinText([" 10115", "Berlin "], " ")).toBe("10115 Berlin")
+    expect(normalizeAndJoinText([" 10115", "Berlin "], " ")).toBe(
+      "10115 Berlin",
+    )
   })
 
   test("returns undefined when all parts are empty", () => {

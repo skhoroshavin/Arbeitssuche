@@ -3,7 +3,7 @@ import type { JobSearchRepository } from "@/repositories/job-search"
 import type { ApplicantRepository } from "@/repositories/applicant"
 import type { JobSite } from "@/plugins/job-site"
 import type { Vacancy } from "@/models/vacancy/index.js"
-import { JobSearchID } from "@/models/job-search"
+import { makeJobSearchID } from "@/models/job-search"
 import type { ProgressEvent } from "@/models/progress/index.js"
 import { SiteCrawler } from "@/services/site-crawler/index.js"
 import { resolveSearchParameters } from "@/services/site-crawler/index.js"
@@ -31,7 +31,7 @@ export class VacancyScanner {
     onProgress: OnProgress,
     siteFactory: JobSiteFactory,
   ): Promise<void> {
-    const searchId = JobSearchID(id)
+    const searchId = makeJobSearchID(id)
     const loaded = this.jobSearchRepo.load(searchId)
     const sitesToRun =
       loaded.jobSearch.sources.length > 0

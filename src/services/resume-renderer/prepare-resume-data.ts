@@ -1,7 +1,7 @@
 import type { Applicant } from "@/models/applicant"
 
 export function prepareResumeData(applicant: Applicant) {
-  const { personal, disclose } = applicant
+  const { personal } = applicant
 
   return {
     personal: {
@@ -37,23 +37,22 @@ export function prepareResumeData(applicant: Applicant) {
       date: conditionalDate(c.discloseDates, c.date),
       description: c.description,
     })),
-    hobbies: disclose.hobbies ? personal.hobbies : undefined,
+    hobbies: personal.discloseHobbies ? personal.hobbies : undefined,
   }
 }
 
-function conditionalDate(
-  disclose?: boolean,
-  date?: string,
-): string | undefined {
+function conditionalDate(disclose: boolean, date: string): string | undefined {
   return disclose ? date : undefined
 }
 
 function prepareLocation(applicant: Applicant): string | undefined {
-  const { personal, disclose } = applicant
+  const { personal } = applicant
   const parts = [
-    personal.address?.street,
-    personal.address?.zip,
-    personal.address?.city,
+    personal.address.street,
+    personal.address.zip,
+    personal.address.city,
   ].filter(Boolean)
-  return disclose.address && parts.length > 0 ? parts.join(", ") : undefined
+  return personal.discloseAddress && parts.length > 0
+    ? parts.join(", ")
+    : undefined
 }

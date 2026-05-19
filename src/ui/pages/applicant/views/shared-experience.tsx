@@ -53,6 +53,8 @@ export function ApplicantEditorExperienceView({
             company: "",
             startDate: "",
             endDate: "",
+            location: "",
+            discloseDates: false,
           })
         }
       >

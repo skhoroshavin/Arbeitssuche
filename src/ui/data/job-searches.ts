@@ -2,9 +2,7 @@ import { z } from "zod"
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
-import type { JobSearch, JobSearchInfo } from "@/models/job-search"
-
-import { JobSearchSchema, JobSearchInfoSchema } from "@/models/job-search"
+import { JobSearch, JobSearchInfoSchema } from "@/models/job-search"
 
 import type {
   Activity,
@@ -37,7 +35,11 @@ export function useJobSearch(id: string) {
     queryKey: jobSearchQueryKeys.detail(id),
     queryFn: async () => {
       const response = await api().invoke("job-searches:load", id)
-      return JobSearchLoadResponseSchema.parse(response)
+      const parsed = JobSearchLoadResponseSchema.parse(response)
+      return {
+        jobSearch: JobSearch.parse(parsed.jobSearch),
+        applicantId: parsed.applicantId,
+      }
     },
     enabled: !!id,
   })
@@ -65,10 +67,11 @@ export function useCreateJobSearch() {
 export function useJobSearchDraft(applicantId: string) {
   return useQuery({
     queryKey: jobSearchQueryKeys.draft(applicantId),
-    queryFn: async () =>
-      JobSearchDraftResponseSchema.parse(
-        await api().invoke("job-searches:draft:load", applicantId),
-      ),
+    queryFn: async () => {
+      const raw = await api().invoke("job-searches:draft:load", applicantId)
+      const parsed = JobSearchDraftResponseSchema.parse(raw)
+      return parsed.draft ? JobSearch.parse(parsed.draft) : undefined
+    },
     enabled: !!applicantId,
   })
 }
@@ -291,7 +294,7 @@ type VacancyListView = Readonly<{
 }>
 
 type JobSearchListView = Readonly<{
-  jobSearches: JobSearchInfo[]
+  jobSearches: import("@/models/job-search").JobSearchInfo[]
 }>
 
 function useJobSearches(applicantId?: string) {
@@ -320,12 +323,12 @@ const JobSearchListResponseSchema = z.object({
 })
 
 const JobSearchLoadResponseSchema = z.object({
-  jobSearch: JobSearchSchema,
+  jobSearch: z.unknown(),
   applicantId: z.string(),
 })
 
 const JobSearchDraftResponseSchema = z.object({
-  draft: JobSearchSchema.optional(),
+  draft: z.unknown().optional(),
 })
 
 const CreatedJobSearchIdSchema = z.object({

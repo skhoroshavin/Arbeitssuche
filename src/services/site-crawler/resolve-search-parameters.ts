@@ -5,7 +5,7 @@ export function resolveSearchParameters(
   jobSearch: JobSearch,
   applicant: Applicant,
 ): JobSearchCriteria {
-  const location = applicant.personal.address?.city ?? ""
+  const location = applicant.personal.address.city
   return {
     location,
     query: jobSearch.searchTerm,

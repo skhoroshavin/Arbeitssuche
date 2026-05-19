@@ -63,7 +63,7 @@ export function ApplicantEditorOtherView({
           rows={2}
           {...register("personal.hobbies")}
         />
-        <Checkbox {...register("disclose.hobbies")} />
+        <Checkbox {...register("personal.discloseHobbies")} />
       </Section>
 
       <Section title="Persönliche Notizen">

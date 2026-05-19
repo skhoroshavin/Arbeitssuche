@@ -2,7 +2,6 @@ import type { Applicant } from "@/models/applicant"
 import type { JobSearch } from "@/models/job-search"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { LlmClient } from "@/plugins/llm"
-import { formatApplicantSections } from "@/models/applicant/index.js"
 
 export async function generatePersonalizedCoverLetter(
   applicant: Applicant,
@@ -26,7 +25,7 @@ function buildPersonalizedCoverLetterPrompt(
   templateCoverLetter: string,
   jobSearch: JobSearch,
 ): string {
-  const sections = formatApplicantSections(applicant)
+  const sections = [applicant.llmFriendlyDescription()]
 
   if (templateCoverLetter) {
     sections.push(`## Example Cover Letter (template)\n${templateCoverLetter}`)
@@ -74,8 +73,10 @@ function formatVacancySection(vacancy: Vacancy): string {
 
 function formatContactLines(contact: Vacancy["contact"]): string[] {
   const lines: string[] = []
-  if (contact.name) lines.push(`Contact: ${contact.name}`)
-  if (contact.email) lines.push(`Contact Email: ${contact.email}`)
-  if (contact.phone) lines.push(`Contact Phone: ${contact.phone}`)
+  if (contact.name.trim().length > 0) lines.push(`Contact: ${contact.name}`)
+  if (contact.email.trim().length > 0)
+    lines.push(`Contact Email: ${contact.email}`)
+  if (contact.phone.trim().length > 0)
+    lines.push(`Contact Phone: ${contact.phone}`)
   return lines
 }

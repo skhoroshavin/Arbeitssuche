@@ -1,26 +1,20 @@
 import {
-  type Applicant,
   type ApplicantID,
   type ApplicantInfo,
-  ApplicantID as makeApplicantID,
+  Applicant,
+  makeApplicantID,
 } from "@/models/applicant"
 
-import {
-  isMeaningfulApplicantDraftSnapshot,
-  resolveApplicant,
-} from "@/models/applicant/index.js"
-
-import type { ApplicantRepository } from "../types.js"
+import type { ApplicantRepository } from ".."
 
 import { Database, type Statement } from "@/utils/index.js"
 
 import { z } from "zod"
 
-import { ApplicantSchema } from "@/models/applicant"
-
 export function createSqliteApplicantRepository(
   database: Database,
 ): ApplicantRepository {
+  runApplicantMigration(database)
   database.exec(`
     CREATE TABLE IF NOT EXISTS applicants (
       id TEXT PRIMARY KEY,
@@ -31,6 +25,56 @@ export function createSqliteApplicantRepository(
   const repo = new SqliteApplicantRepository(database)
   repo.seedNextId()
   return repo
+}
+
+function runApplicantMigration(database: Database): void {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS _migrations (
+      repository TEXT PRIMARY KEY,
+      version TEXT NOT NULL
+    )
+  `)
+
+  const row = database
+    .prepare("SELECT version FROM _migrations WHERE repository = ?")
+    .get("applicant")
+  const version =
+    row && typeof row === "object" && "version" in row
+      ? String(row.version)
+      : "0.0.0"
+
+  if (semverGreaterThan("0.3.0", version)) {
+    database.transaction(() => {
+      database.exec(`DROP TABLE IF EXISTS applicant_draft`)
+
+      if (tableExists(database, "applicants")) {
+        database.exec(`
+          UPDATE applicants SET data = json_remove(data, '$.id')
+          WHERE json_type(data, '$.id') IS NOT NULL
+        `)
+      }
+
+      database.exec(`
+        INSERT OR REPLACE INTO _migrations (repository, version)
+        VALUES ('applicant', '0.3.0')
+      `)
+    })
+  }
+}
+
+function semverGreaterThan(a: string, b: string): boolean {
+  const [aMajor, aMinor, aPatch] = a.split(".").map(Number)
+  const [bMajor, bMinor, bPatch] = b.split(".").map(Number)
+  if (aMajor !== bMajor) return aMajor > bMajor
+  if (aMinor !== bMinor) return aMinor > bMinor
+  return aPatch > bPatch
+}
+
+function tableExists(database: Database, name: string): boolean {
+  const row = database
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .get(name)
+  return row !== undefined
 }
 
 class SqliteApplicantRepository implements ApplicantRepository {
@@ -71,15 +115,15 @@ class SqliteApplicantRepository implements ApplicantRepository {
     const applicant = this.loadStmt.getJsonData(id.value)
     if (applicant === undefined)
       throw new Error(`Applicant "${id.value}" not found`)
-    return resolveApplicant(ApplicantSchema.parse(applicant))
+    return Applicant.parse(applicant)
   }
 
   save(id: ApplicantID, data: Applicant): void {
-    const resolved = resolveApplicant(data)
+    const normalized = Applicant.parse(structuredClone(data))
     this.updateStmt.run(
       id.value,
-      resolved.personal.name,
-      JSON.stringify(resolved),
+      normalized.personal.name,
+      JSON.stringify(normalized),
     )
   }
 
@@ -88,11 +132,11 @@ class SqliteApplicantRepository implements ApplicantRepository {
   }
 
   saveDraft(draft: Applicant): void {
-    const snapshot = resolveApplicant(draft)
+    const normalized = Applicant.parse(structuredClone(draft))
     this.upsertStmt.run(
       DRAFT_SENTINEL,
-      snapshot.personal.name,
-      JSON.stringify(snapshot),
+      normalized.personal.name,
+      JSON.stringify(normalized),
     )
   }
 
@@ -101,11 +145,11 @@ class SqliteApplicantRepository implements ApplicantRepository {
       const draft = this.loadDraft()
       if (!draft) throw new Error("Applicant draft not found")
       const id = this.generateId()
-      const resolved = resolveApplicant(structuredClone(draft))
+      const normalized = Applicant.parse(structuredClone(draft))
       this.insertStmt.run(
         id.value,
-        resolved.personal.name,
-        JSON.stringify(resolved),
+        normalized.personal.name,
+        JSON.stringify(normalized),
       )
       this.deleteDraft()
       return id
@@ -115,8 +159,8 @@ class SqliteApplicantRepository implements ApplicantRepository {
   loadDraft(): Applicant | undefined {
     const applicant = this.loadStmt.getJsonData(DRAFT_SENTINEL)
     if (applicant === undefined) return undefined
-    const parsed = resolveApplicant(ApplicantSchema.parse(applicant))
-    return isMeaningfulApplicantDraftSnapshot(parsed) ? parsed : undefined
+    const parsed = Applicant.parse(applicant)
+    return parsed.isDifferentFromDefault() ? parsed : undefined
   }
 
   deleteDraft(): void {

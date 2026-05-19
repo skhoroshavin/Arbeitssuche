@@ -5,7 +5,7 @@ import {
   EMPTY_VACANCY_LIST_OUTPUT,
   createVacancyListOutput,
 } from "@/repositories/vacancy/output.js"
-import type { VacancyListOutput, VacancyRepository } from "../types.js"
+import type { VacancyListOutput, VacancyRepository } from ".."
 
 export function createStubVacancyRepository(
   initial?: Record<string, { vacancies: Vacancy[]; latestCrawl: string }>,
