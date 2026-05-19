@@ -1,7 +1,8 @@
 import type { AppSetupState } from "@/models/setup"
-import type { ConfigRepository } from "@/app/config"
-import type { SecretsRepository } from "@/app/secrets"
+import type { ConfigRepository } from "@/repositories/config"
 import type { SetupRepository } from "@/app/setup"
+import { Config } from "@/models/config"
+import { Secrets } from "@/models/secrets"
 import type { IpcHandle } from "./ipc-handlers.js"
 
 export function registerSetupHandlers(
@@ -34,9 +35,8 @@ export async function clearAppData({
 
   try {
     controls.deleteDatabaseFiles()
-    await services.configRepo.save({})
-    await services.secretsRepo.save({})
-    controls.deleteSecretsFile()
+    await services.configRepo.saveConfig(new Config())
+    await services.configRepo.saveSecrets(new Secrets())
     await services.setupRepo.reset()
   } catch (error) {
     failure = error
@@ -54,14 +54,12 @@ export async function clearAppData({
 interface SetupHandlerControls {
   closeDatabase: () => void
   deleteDatabaseFiles: () => void
-  deleteSecretsFile: () => void
   reopenDatabase: () => void
   closeApp: () => void
 }
 
 interface SetupHandlerServices {
   configRepo: ConfigRepository
-  secretsRepo: SecretsRepository
   setupRepo: SetupRepository
 }
 

@@ -12,14 +12,12 @@ import path from "node:path"
 import { registerIpcHandlers } from "./ipc.js"
 import { registerAppProtocol } from "./protocol.js"
 import { createAppServices, createSqliteServiceContext } from "."
-import {
-  createStubSecretsRepository,
-  createEncryptedSecretsRepository,
-} from "./secrets"
-import { createElectronStoreConfigRepository } from "./config"
 import { createElectronStoreSetupRepository } from "./setup"
 import { Database } from "@/utils/index.js"
 import { getDataDirectory, getSecretsPath } from "./data-paths.js"
+import { createConfigRepository } from "@/repositories/config"
+import { createElectronKVStore } from "@/plugins/kvstore"
+import { createElectronCipher, createStubCipher } from "@/plugins/cipher"
 import type { AppServices } from "."
 
 let mainWindow: BrowserWindow | undefined
@@ -70,15 +68,15 @@ void (async () => {
 
   appDatabase = Database.open(databasePath)
 
-  const secretsRepo = isTest
-    ? createStubSecretsRepository()
-    : createEncryptedSecretsRepository(secretsPath, safeStorage)
-
-  const configRepo = createElectronStoreConfigRepository()
+  const kvStore = createElectronKVStore()
+  const cipher = isTest ? createStubCipher() : createElectronCipher()
+  const configRepo = createConfigRepository(kvStore, cipher, {
+    secretsFilePath: isTest ? undefined : secretsPath,
+  })
   const setupRepo = createElectronStoreSetupRepository()
 
   currentServices = createAppServices(
-    createSqliteServiceContext(appDatabase, secretsRepo, configRepo, setupRepo),
+    createSqliteServiceContext(appDatabase, configRepo, setupRepo),
   )
   const services = createMutableAppServices(() => getCurrentServices())
 
@@ -87,16 +85,10 @@ void (async () => {
     getWebContents: () => mainWindow?.webContents,
     closeDatabase: () => getCurrentDatabase().close(),
     deleteDatabaseFiles: () => deleteDatabaseFiles(databasePath),
-    deleteSecretsFile: () => rmSync(secretsPath, { force: true }),
     reopenDatabase: () => {
       appDatabase = Database.open(databasePath)
       currentServices = createAppServices(
-        createSqliteServiceContext(
-          appDatabase,
-          secretsRepo,
-          configRepo,
-          setupRepo,
-        ),
+        createSqliteServiceContext(appDatabase, configRepo, setupRepo),
       )
     },
     closeApp: () => app.quit(),
@@ -190,9 +182,6 @@ function createMutableAppServices(getServices: () => AppServices): AppServices {
     },
     get vacancyRepo() {
       return getServices().vacancyRepo
-    },
-    get secretsRepo() {
-      return getServices().secretsRepo
     },
     get configRepo() {
       return getServices().configRepo

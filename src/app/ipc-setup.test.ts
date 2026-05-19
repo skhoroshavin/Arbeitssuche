@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest"
 import { clearAppData, registerSetupHandlers } from "@/app"
-import { createStubConfigRepository } from "@/app/config"
-import { createStubSecretsRepository } from "@/app/secrets"
+import { createConfigRepository } from "@/repositories/config"
 import { createStubSetupRepository } from "@/app/setup"
+import { createStubKVStore } from "@/plugins/kvstore/stub"
+import { createStubCipher } from "@/plugins/cipher/stub"
+import { Config } from "@/models/config"
+import { Secrets } from "@/models/secrets"
 
 describe("setup IPC handlers", () => {
   it("loads, saves, and completes setup state", async () => {
@@ -41,8 +44,14 @@ describe("setup IPC handlers", () => {
     const services = createServices()
     const controls = createControls()
 
-    await services.configRepo.save({ assessmentModel: "test/model" })
-    await services.secretsRepo.save({ openrouterApiKey: "secret" })
+    const config = new Config()
+    config.assessmentModel = "test/model"
+    await services.configRepo.saveConfig(config)
+
+    const secrets = new Secrets()
+    secrets.openrouterApiKey = "secret"
+    await services.configRepo.saveSecrets(secrets)
+
     await services.setupRepo.save({
       lastPhase: "job-search",
       lastStep: "preferences",
@@ -53,10 +62,9 @@ describe("setup IPC handlers", () => {
 
     expect(controls.closeDatabase).toHaveBeenCalledOnce()
     expect(controls.deleteDatabaseFiles).toHaveBeenCalledOnce()
-    expect(controls.deleteSecretsFile).toHaveBeenCalledOnce()
     expect(controls.reopenDatabase).toHaveBeenCalledOnce()
-    expect(services.configRepo.load()).toEqual({})
-    expect(services.secretsRepo.load()).toEqual({})
+    expect(services.configRepo.loadConfig()).toEqual(new Config())
+    expect(services.configRepo.loadSecrets()).toEqual(new Secrets())
     expect(services.setupRepo.load()).toEqual({ completed: false })
   })
 })
@@ -77,16 +85,16 @@ function createControls() {
   return {
     closeDatabase: vi.fn(),
     deleteDatabaseFiles: vi.fn(),
-    deleteSecretsFile: vi.fn(),
     reopenDatabase: vi.fn(),
     closeApp: vi.fn(),
   }
 }
 
 function createServices() {
+  const kvStore = createStubKVStore()
+  const cipher = createStubCipher()
   return {
-    secretsRepo: createStubSecretsRepository(),
-    configRepo: createStubConfigRepository(),
+    configRepo: createConfigRepository(kvStore, cipher),
     setupRepo: createStubSetupRepository(),
   }
 }

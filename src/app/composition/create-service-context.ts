@@ -1,6 +1,5 @@
-import type { ConfigRepository } from "@/app/config"
+import type { ConfigRepository } from "@/repositories/config"
 import type { SetupRepository } from "@/app/setup"
-import type { SecretsRepository } from "@/app/secrets"
 import {
   createSqliteApplicantRepository,
   type ApplicantRepository,
@@ -21,14 +20,12 @@ import type { LlmClientFactory } from "./llm-factory.js"
 
 export function createSqliteServiceContext(
   database: Database,
-  secretsRepo: SecretsRepository,
   configRepo: ConfigRepository,
   setupRepo: SetupRepository,
 ): ServiceContext {
   return {
     applicantRepo: createSqliteApplicantRepository(database),
     jobSearchRepo: createSqliteJobSearchRepository(database),
-    secretsRepo,
     configRepo,
     setupRepo,
     vacancyRepo: createSqliteVacancyRepository(database),
@@ -38,7 +35,6 @@ export function createSqliteServiceContext(
 export interface ServiceContext {
   applicantRepo: ApplicantRepository
   jobSearchRepo: JobSearchRepository
-  secretsRepo: SecretsRepository
   configRepo: ConfigRepository
   setupRepo: SetupRepository
   vacancyRepo: VacancyRepository

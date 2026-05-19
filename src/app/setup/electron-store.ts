@@ -1,4 +1,4 @@
-import { createAppElectronStore } from "@/app/config"
+import { createElectronKVStore } from "@/plugins/kvstore"
 import {
   completeSetupState,
   createIncompleteSetupState,
@@ -9,41 +9,37 @@ import type { AppSetupState } from "@/models/setup"
 import type { SetupRepository } from "./types.js"
 
 export function createElectronStoreSetupRepository(): SetupRepository {
-  const store = createAppElectronStore()
+  const kvStore = createElectronKVStore()
 
   return {
     load(): AppSetupState | undefined {
-      const setup = store.store.setup
-      return setup ? structuredClone(resolveSetupState(setup)) : undefined
+      const setup = kvStore.get("setup")
+      return isSetupState(setup)
+        ? structuredClone(resolveSetupState(setup))
+        : undefined
     },
 
     save(update: Partial<AppSetupState>): Promise<AppSetupState> {
-      const next = mergeSetupState(store.store.setup, update)
-      store.store = mergeStoreData(store.store, next)
+      const current = kvStore.get("setup")
+      const next = mergeSetupState(isSetupState(current) ? current : undefined, update)
+      kvStore.set("setup", next)
       return Promise.resolve(structuredClone(next))
     },
 
     complete(): Promise<AppSetupState> {
       const next = completeSetupState()
-      store.store = mergeStoreData(store.store, next)
+      kvStore.set("setup", next)
       return Promise.resolve(structuredClone(next))
     },
 
     reset(): Promise<AppSetupState> {
       const next = createIncompleteSetupState()
-      store.store = mergeStoreData(store.store, next)
+      kvStore.set("setup", next)
       return Promise.resolve(structuredClone(next))
     },
   }
 }
 
-function mergeStoreData(
-  storeData: ReturnType<typeof createAppElectronStore>["store"],
-  setup: AppSetupState,
-): ReturnType<typeof createAppElectronStore>["store"] {
-  const { setup: _setup, ...config } = storeData
-  return {
-    ...structuredClone(config),
-    setup: structuredClone(setup),
-  }
+function isSetupState(value: unknown): value is Partial<AppSetupState> {
+  return value === undefined || (typeof value === "object" && value !== null)
 }
