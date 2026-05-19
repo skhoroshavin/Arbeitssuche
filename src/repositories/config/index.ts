@@ -7,8 +7,9 @@ import { ConfigRepositoryImpl } from "./impl"
 export const createConfigRepository = (
   kvStore: KVStore,
   cipher: Cipher,
-  migration?: { secretsFilePath?: string },
-): ConfigRepository => new ConfigRepositoryImpl(kvStore, cipher, migration)
+  legacySecretsFile?: string,
+): ConfigRepository =>
+  new ConfigRepositoryImpl(kvStore, cipher, legacySecretsFile)
 
 export interface ConfigRepository {
   loadConfig(): Config

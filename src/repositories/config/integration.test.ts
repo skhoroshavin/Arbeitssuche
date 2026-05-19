@@ -159,9 +159,7 @@ function configRepositoryTests(
       fs.writeFileSync(secretsPath, oldEncrypted)
 
       const kvStore = createStubKVStore()
-      const repo = createConfigRepository(kvStore, cipher, {
-        secretsFilePath: secretsPath,
-      })
+      const repo = createConfigRepository(kvStore, cipher, secretsPath)
       const secrets = repo.loadSecrets()
       expect(secrets.openrouterApiKey).toBe("migrated-key")
       expect(typeof kvStore.get("secrets")).toBe("string")

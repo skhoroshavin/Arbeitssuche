@@ -62,9 +62,11 @@ void (async () => {
 
   const kvStore = createElectronKVStore()
   const cipher = isTest ? createStubCipher() : createElectronCipher()
-  const configRepo = createConfigRepository(kvStore, cipher, {
-    secretsFilePath: isTest ? undefined : secretsPath,
-  })
+  const configRepo = createConfigRepository(
+    kvStore,
+    cipher,
+    isTest ? undefined : secretsPath,
+  )
   const setupRepo = createElectronStoreSetupRepository()
 
   currentServices = createAppServices(

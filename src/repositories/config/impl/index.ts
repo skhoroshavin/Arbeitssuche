@@ -9,7 +9,7 @@ export class ConfigRepositoryImpl implements ConfigRepository {
   constructor(
     private readonly kvStore: KVStore,
     private readonly cipher: Cipher,
-    private readonly migration?: { secretsFilePath?: string },
+    private readonly legacySecretsFile?: string,
   ) {}
 
   loadConfig(): Config {
@@ -44,12 +44,9 @@ export class ConfigRepositoryImpl implements ConfigRepository {
       return this.loadSecretsFromEncrypted(encrypted)
     }
 
-    if (
-      this.migration?.secretsFilePath &&
-      existsSync(this.migration.secretsFilePath)
-    ) {
+    if (this.legacySecretsFile && existsSync(this.legacySecretsFile)) {
       try {
-        const oldEncrypted = readFileSync(this.migration.secretsFilePath)
+        const oldEncrypted = readFileSync(this.legacySecretsFile)
         const decrypted = this.cipher.decryptString(oldEncrypted)
         const secrets = Secrets.parse(JSON.parse(decrypted))
         const json = JSON.stringify(secrets)
