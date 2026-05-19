@@ -54,7 +54,17 @@ export function ApplicantEditorCertificationsView({
           </FieldGrid>
         </FieldArrayCard>
       ))}
-      <AddButton onClick={() => certifications.append({ name: "" })}>
+      <AddButton
+        onClick={() =>
+          certifications.append({
+            name: "",
+            issuer: "",
+            date: "",
+            discloseDates: false,
+            description: "",
+          })
+        }
+      >
         Zertifikat hinzufügen
       </AddButton>
     </ApplicantFormPage>

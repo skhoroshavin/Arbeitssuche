@@ -4,12 +4,9 @@ import { useNavigate, useParams } from "react-router"
 
 import type { UseFormSetValue, UseFormWatch } from "react-hook-form"
 
-import {
-  createDefaultJobSearchEditorSnapshot,
-  isMeaningfulJobSearchEditorSnapshot,
-} from "@/models/job-search"
+import { JobSearch } from "@/models/job-search"
 
-import type { JobSearch } from "@/models/job-search"
+import type { JobSearch as JobSearchType } from "@/models/job-search"
 
 import {
   useApiKeyStatus,
@@ -38,7 +35,7 @@ import type {
   JobSearchEditorConfigValue,
 } from "@/ui/views"
 
-import { SearchSource } from "@/models/job-search"
+import { makeSearchSource } from "@/models/job-search"
 import { splitLines } from "@/ui/views"
 
 export default function JobSearchWizardPage({
@@ -51,7 +48,7 @@ export default function JobSearchWizardPage({
   const [phase, setPhase] = useState<Phase>("loading")
   const [step, setStep] = useState<WizardStep_>(initialStep ?? "parameters")
   const [resolvedSnapshot, setResolvedSnapshot] = useState<
-    JobSearch | undefined
+    JobSearchType | undefined
   >()
 
   const draftQuery = useJobSearchDraft(applicantId)
@@ -64,7 +61,7 @@ export default function JobSearchWizardPage({
 
   useDraftWizardInitialization({
     refetch: () => draftQuery.refetch(),
-    createDefaultSnapshot: createDefaultJobSearchEditorSnapshot,
+    createDefaultSnapshot: () => new JobSearch(),
     setResolvedSnapshot,
     setPhase,
     skipResumePrompt: firstStart.skipDraftResume,
@@ -78,7 +75,7 @@ export default function JobSearchWizardPage({
 
   const isEditing = phase === "editing"
 
-  const { setValue, watch } = useAutoSaveForm<WizardFormValues, JobSearch>({
+  const { setValue, watch } = useAutoSaveForm<WizardFormValues, JobSearchType>({
     queryResult: {
       data: isEditing ? resolvedSnapshot : undefined,
       isLoading: !isEditing,
@@ -89,16 +86,14 @@ export default function JobSearchWizardPage({
     },
     shouldFlushOnUnmount: () => lifecycle.shouldFlushOnUnmount(),
     formOptions: {
-      defaultValues: mapJobSearchToFormValues(
-        createDefaultJobSearchEditorSnapshot(),
-      ),
+      defaultValues: mapJobSearchToFormValues(new JobSearch()),
     },
   })
 
   const currentSnapshot = mapFormValuesToJobSearch(watch())
   const lifecycle = useDraftWizardLifecycle({
     snapshot: currentSnapshot,
-    isMeaningful: isMeaningfulJobSearchEditorSnapshot,
+    isMeaningful: (snapshot) => snapshot.isDifferentFromDefault(),
     ...createDraftWizardMutations({ saveDraft, deleteDraft, finalizeDraft }),
     onClose: () => {
       void navigate(`/applicants/${applicantId}`)
@@ -148,7 +143,7 @@ export default function JobSearchWizardPage({
           onResume: () => setPhase("editing"),
           onDiscardAndStartFresh: async () => {
             await deleteDraft.mutateAsync()
-            setResolvedSnapshot(createDefaultJobSearchEditorSnapshot())
+            setResolvedSnapshot(new JobSearch())
             setPhase("editing")
           },
         }}
@@ -177,7 +172,7 @@ export default function JobSearchWizardPage({
 
 interface JobSearchWizardPageProperties {
   initialStep?: WizardStep_
-  onStepChange?: (step: WizardStep_, snapshot: JobSearch) => void
+  onStepChange?: (step: WizardStep_, snapshot: JobSearchType) => void
 }
 
 type Phase = "loading" | "resume-prompt" | "editing"
@@ -190,7 +185,7 @@ const STEP_LABELS: Record<WizardStep_, string> = {
   "cover-letter": "Anschreiben",
 }
 
-function mapJobSearchToFormValues(jobSearch: JobSearch): WizardFormValues {
+function mapJobSearchToFormValues(jobSearch: JobSearchType): WizardFormValues {
   return {
     searchTerm: jobSearch.searchTerm,
     radiusKm: jobSearch.radiusKm,
@@ -209,17 +204,17 @@ function mapJobSearchToFormValues(jobSearch: JobSearch): WizardFormValues {
   }
 }
 
-function mapFormValuesToJobSearch(values: WizardFormValues): JobSearch {
-  return {
-    searchTerm: values.searchTerm,
-    radiusKm: values.radiusKm,
-    mode: values.searchMode,
-    sources: values.sources.map((s) => SearchSource(s)),
-    maxResultsPerSource: values.maxResults ?? 0,
-    maxCommuteMinutes: values.maxCommuteMinutes ?? 0,
-    notes: values.freeText.join("\n"),
-    coverLetter: values.coverLetterContent,
-  }
+function mapFormValuesToJobSearch(values: WizardFormValues): JobSearchType {
+  const jobSearch = new JobSearch()
+  jobSearch.searchTerm = values.searchTerm
+  jobSearch.radiusKm = values.radiusKm
+  jobSearch.mode = values.searchMode
+  jobSearch.sources = values.sources.map((s) => makeSearchSource(s))
+  jobSearch.maxResultsPerSource = values.maxResults ?? 0
+  jobSearch.maxCommuteMinutes = values.maxCommuteMinutes ?? 0
+  jobSearch.notes = values.freeText.join("\n")
+  jobSearch.coverLetter = values.coverLetterContent
+  return jobSearch
 }
 
 function JobSearchWizardStepView({
@@ -272,9 +267,9 @@ interface JobSearchWizardStepViewProperties {
   watch: UseFormWatch<WizardFormValues>
   setValue: UseFormSetValue<WizardFormValues>
   saveDraft: {
-    mutateAsync: (snapshot: JobSearch) => Promise<unknown>
+    mutateAsync: (snapshot: JobSearchType) => Promise<unknown>
   }
-  currentSnapshot: JobSearch
+  currentSnapshot: JobSearchType
   generateDraftCoverLetter: GenerateDraftCoverLetter
   allSites: SiteEntry[]
   hasLlmKey: boolean

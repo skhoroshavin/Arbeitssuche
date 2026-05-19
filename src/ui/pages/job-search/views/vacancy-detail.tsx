@@ -377,15 +377,16 @@ function buildUserActivity(
   if (type === "found" || type === "not-found") {
     throw new Error(`Cannot record "${type}" activity from UI`)
   }
+  const base = { type, date, notes: "" }
   if (type === "invited") {
-    return { type, date, interviewDate: extra.interviewDate }
+    return { ...base, interviewDate: extra.interviewDate }
   }
   if (type === "interviewed") {
     const outcome = extra.outcome === "cancelled" ? "cancelled" : "completed"
-    return { type, date, outcome }
+    return { ...base, outcome }
   }
   if (type === "offered") {
-    return { type, date, startDate: extra.startDate, salary: extra.salary }
+    return { ...base, startDate: extra.startDate, salary: extra.salary }
   }
-  return { type, date }
+  return base
 }

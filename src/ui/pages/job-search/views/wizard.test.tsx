@@ -2,7 +2,7 @@
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { createDefaultJobSearchEditorSnapshot } from "@/models/job-search"
+import { JobSearch } from "@/models/job-search"
 import { FirstStartWizardContext } from "@/ui/layout"
 import { JobSearchWizardPage } from "@/ui/pages/job-search"
 import { MemoryRouter } from "react-router"
@@ -91,7 +91,7 @@ describe("JobSearchWizardPage in first-start flow", () => {
   })
 
   it("skips the draft resume prompt when first-start already resumed", async () => {
-    const snapshot = createDefaultJobSearchEditorSnapshot()
+    const snapshot = new JobSearch()
     snapshot.searchTerm = "Engineer"
     refetchDraft.mockResolvedValue({
       data: { draft: snapshot },

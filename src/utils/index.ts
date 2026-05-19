@@ -1,5 +1,5 @@
 export { extractJsonLd } from "./json-ld.js"
-export { joinNormalizedText, normalizeOptionalText } from "./normalize.js"
+export { normalizeAndJoinText, normalizeOptionalText } from "./normalize.js"
 export { isRecord, stringField } from "./reflection.js"
 export { setupTemporaryDatabaseDirectory } from "./test-utilities.js"
 export { Database, Statement } from "./database.js"

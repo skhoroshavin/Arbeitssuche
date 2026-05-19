@@ -26,7 +26,7 @@ export function resolveVacancy(data: Partial<VacancyDTO>): VacancyDTO {
   }
 }
 
-const DEFAULT_CONTACT: VacancyContact = {}
+const DEFAULT_CONTACT: VacancyContact = { name: "", email: "", phone: "" }
 
 function resolveStringList(values?: string[]): string[] {
   return values ?? []
@@ -58,8 +58,8 @@ function resolveMatchScore(value?: MatchScore): MatchScore {
 
 function resolveVacancyContact(contact?: VacancyContact): VacancyContact {
   return {
-    name: contact?.name,
-    email: contact?.email,
-    phone: contact?.phone,
+    name: contact?.name ?? "",
+    email: contact?.email ?? "",
+    phone: contact?.phone ?? "",
   }
 }

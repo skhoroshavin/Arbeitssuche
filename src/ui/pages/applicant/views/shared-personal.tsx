@@ -36,13 +36,13 @@ export function ApplicantEditorPersonalView({
           <div>
             <Input label="Geburtsdatum" {...register("personal.birthdate")} />
             <div className="mt-1">
-              <Checkbox {...register("disclose.birthdate")} />
+              <Checkbox {...register("personal.discloseBirthdate")} />
             </div>
           </div>
           <div>
             <Input label="Geschlecht" {...register("personal.gender")} />
             <div className="mt-1">
-              <Checkbox {...register("disclose.gender")} />
+              <Checkbox {...register("personal.discloseGender")} />
             </div>
           </div>
         </div>
@@ -54,7 +54,7 @@ export function ApplicantEditorPersonalView({
           <Input label="PLZ" {...register("personal.address.zip")} />
           <Input label="Stadt" {...register("personal.address.city")} />
         </div>
-        <Checkbox {...register("disclose.address")} />
+        <Checkbox {...register("personal.discloseAddress")} />
       </Section>
     </ApplicantFormPage>
   )

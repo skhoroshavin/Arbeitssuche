@@ -20,7 +20,7 @@ export function process(
   const contact = contactFromDetails(details)
   const description = details.descriptionHtml
     ? htmlToMarkdown(details.descriptionHtml)
-    : undefined
+    : ""
 
   const foundActivity: FoundActivity = {
     type: "found",
@@ -29,6 +29,7 @@ export function process(
     url: details.url,
     description,
     contact,
+    notes: "",
   }
 
   const existing = existingByHash.get(hash)
@@ -51,7 +52,7 @@ export function process(
     urls: [details.url],
     addresses: details.address ? [details.address] : [],
     contact,
-    startDate: details.startDate,
+    startDate: details.startDate ?? "",
     description,
     enriched: false,
     enrichmentDirty: true,
@@ -62,13 +63,14 @@ export function process(
   return { vacancy, hash, isNew: true }
 }
 
-function contactFromDetails(
-  details: VacancyDetails,
-): VacancyContact | undefined {
-  if (!details.contact) return undefined
+function contactFromDetails(details: VacancyDetails): VacancyContact {
+  if (!details.contact) return { name: "", email: "", phone: "" }
   const { name, email, phone } = details.contact
-  if (!name && !email && !phone) return undefined
-  return { name, email, phone }
+  return {
+    name: name ?? "",
+    email: email ?? "",
+    phone: phone ?? "",
+  }
 }
 
 function mergeWithExisting(
@@ -76,8 +78,8 @@ function mergeWithExisting(
   details: VacancyDetails,
   hash: string,
   foundActivity: FoundActivity,
-  contact?: VacancyContact,
-  description?: string,
+  contact: VacancyContact,
+  description: string,
 ): ProcessResult {
   const descriptionChanged = hasDescriptionChanged(
     description,
@@ -90,9 +92,9 @@ function mergeWithExisting(
       existing.addresses,
       details.address ? [details.address] : [],
     ),
-    description: description ?? existing.description,
+    description: description || existing.description,
     enrichmentDirty: existing.enrichmentDirty || descriptionChanged,
-    contact: contact ?? existing.contact,
+    contact: hasContact(contact) ? contact : existing.contact,
     startDate: details.startDate ?? existing.startDate,
     activityHistory: [...existing.activityHistory, foundActivity],
     active: true,
@@ -142,9 +144,16 @@ export function mergeAddresses(
   return merged
 }
 
-function hasDescriptionChanged(
-  newDesc?: string,
-  existingDesc?: string,
-): boolean {
-  return !!newDesc && !!existingDesc && newDesc !== existingDesc
+function hasDescriptionChanged(newDesc: string, existingDesc: string): boolean {
+  return (
+    newDesc.length > 0 && existingDesc.length > 0 && newDesc !== existingDesc
+  )
+}
+
+function hasContact(contact: VacancyContact): boolean {
+  return (
+    contact.name.trim().length > 0 ||
+    contact.email.trim().length > 0 ||
+    contact.phone.trim().length > 0
+  )
 }

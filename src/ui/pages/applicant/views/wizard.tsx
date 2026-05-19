@@ -2,12 +2,9 @@ import { useEffect, useState } from "react"
 
 import { useNavigate } from "react-router"
 
-import {
-  createDefaultApplicantDraftSnapshot,
-  isMeaningfulApplicantDraftSnapshot,
-} from "@/models/applicant"
+import { Applicant } from "@/models/applicant"
 
-import type { Applicant } from "@/models/applicant"
+import type { Applicant as ApplicantType } from "@/models/applicant"
 
 import {
   useApplicantDraft,
@@ -54,7 +51,7 @@ export default function ApplicantWizardPage({
     initialStep ?? "personal",
   )
   const [resolvedSnapshot, setResolvedSnapshot] = useState<
-    Applicant | undefined
+    ApplicantType | undefined
   >()
 
   const draftQuery = useApplicantDraft()
@@ -64,7 +61,7 @@ export default function ApplicantWizardPage({
 
   useDraftWizardInitialization({
     refetch: () => draftQuery.refetch(),
-    createDefaultSnapshot: createDefaultApplicantDraftSnapshot,
+    createDefaultSnapshot: () => new Applicant(),
     setResolvedSnapshot,
     setPhase,
     skipResumePrompt: firstStart.skipDraftResume,
@@ -78,7 +75,7 @@ export default function ApplicantWizardPage({
 
   const isEditing = phase === "editing"
 
-  const form = useAutoSaveForm<ApplicantFormValues, Applicant>({
+  const form = useAutoSaveForm<ApplicantFormValues, ApplicantType>({
     queryResult: {
       data: isEditing ? resolvedSnapshot : undefined,
       isLoading: !isEditing,
@@ -88,9 +85,7 @@ export default function ApplicantWizardPage({
       await saveDraft.mutateAsync(fromApplicantFormValues(formData))
     },
     formOptions: {
-      defaultValues: toApplicantFormValues(
-        createDefaultApplicantDraftSnapshot(),
-      ),
+      defaultValues: toApplicantFormValues(new Applicant()),
     },
     shouldFlushOnUnmount: () => lifecycle.shouldFlushOnUnmount(),
   })
@@ -98,7 +93,7 @@ export default function ApplicantWizardPage({
   const watchedSnapshot = fromApplicantFormValues(form.watch())
   const lifecycle = useDraftWizardLifecycle({
     snapshot: watchedSnapshot,
-    isMeaningful: isMeaningfulApplicantDraftSnapshot,
+    isMeaningful: (snapshot) => snapshot.isDifferentFromDefault(),
     ...createDraftWizardMutations({ saveDraft, deleteDraft, finalizeDraft }),
     onClose: () => {
       void navigate("/")
@@ -149,7 +144,7 @@ export default function ApplicantWizardPage({
           onResume: () => setPhase("editing"),
           onDiscardAndStartFresh: async () => {
             await deleteDraft.mutateAsync()
-            setResolvedSnapshot(createDefaultApplicantDraftSnapshot())
+            setResolvedSnapshot(new Applicant())
             setPhase("editing")
           },
         }}
@@ -169,10 +164,10 @@ export default function ApplicantWizardPage({
 
 interface ApplicantWizardPageProperties {
   initialStep?: ApplicantWizardStep
-  onStepChange?: (step: ApplicantWizardStep, snapshot: Applicant) => void
+  onStepChange?: (step: ApplicantWizardStep, snapshot: ApplicantType) => void
 }
 
-function canFinalizeApplicantWizard(snapshot: Applicant): boolean {
+function canFinalizeApplicantWizard(snapshot: ApplicantType): boolean {
   return snapshot.personal.name.trim().length > 0
 }
 
@@ -203,12 +198,12 @@ function ApplicantWizardStepView({
 }
 
 interface ApplicantWizardStepViewProperties {
-  form: ReturnType<typeof useAutoSaveForm<ApplicantFormValues, Applicant>>
+  form: ReturnType<typeof useAutoSaveForm<ApplicantFormValues, ApplicantType>>
   step: ApplicantWizardStep
 }
 
 interface ApplicantWizardStepViewSharedProperties {
-  form: ReturnType<typeof useAutoSaveForm<ApplicantFormValues, Applicant>>
+  form: ReturnType<typeof useAutoSaveForm<ApplicantFormValues, ApplicantType>>
   isLoading: boolean
   saveStatus: AutoSaveStatus
   useHeaderAutoSave?: boolean

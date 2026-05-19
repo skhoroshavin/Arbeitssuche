@@ -15,6 +15,7 @@ export function markUnseenAsGone(
       type: "not-found",
       date: crawlDate,
       site: "all",
+      notes: "",
     }
     return v.with({
       active: false,

@@ -1,73 +1,14 @@
-import type { Address } from "@/models/config"
-
 export type { Address } from "@/models/config"
 
-import { ApplicantID } from "./id.js"
+export type {
+  ApplicantSkill,
+  ApplicantLanguage,
+  ApplicantCertification,
+} from "./applicant.js"
 
-export interface Applicant {
-  personal: ApplicantPersonal
-  disclose: ApplicantDisclose
-  experience: ApplicantExperience[]
-  education: ApplicantEducation[]
-  skills: ApplicantSkill[]
-  languages: ApplicantLanguage[]
-  certifications: ApplicantCertification[]
-  personalNotes: string
-}
+export { Applicant } from "./applicant.js"
 
-export interface ApplicantPersonal {
-  name: string
-  email?: string
-  phone?: string
-  birthdate?: string
-  gender?: string
-  address?: Address
-  hobbies: string[]
-}
-
-export interface ApplicantExperience {
-  role: string
-  company: string
-  startDate: string
-  endDate: string
-  location?: string
-  discloseDates?: boolean
-  highlights?: string[]
-}
-
-export interface ApplicantEducation {
-  institution: string
-  course: string
-  startDate?: string
-  endDate?: string
-  location?: string
-  discloseDates?: boolean
-  highlights?: string[]
-}
-
-export interface ApplicantSkill {
-  name: string
-}
-
-export interface ApplicantLanguage {
-  language: string
-  level: string
-}
-
-export interface ApplicantCertification {
-  name: string
-  issuer?: string
-  date?: string
-  discloseDates?: boolean
-  description?: string
-}
-
-export interface ApplicantDisclose {
-  birthdate: boolean
-  gender: boolean
-  address: boolean
-  hobbies: boolean
-}
+import type { ApplicantID } from "./id.js"
 
 export interface ApplicantInfo {
   id: ApplicantID
@@ -80,14 +21,18 @@ export type ResumeTemplate =
   | "resume_elegant"
   | "resume_minimal"
 
-export { formatApplicantSections } from "./format.js"
-export { resolveApplicant } from "./resolve.js"
-export { DEFAULT_APPLICANT, RESUME_TEMPLATES } from "./constants.js"
-export {
-  createDefaultApplicantDraftSnapshot,
-  isMeaningfulApplicantDraftSnapshot,
-} from "./draft-snapshot.js"
+export const RESUME_TEMPLATES = [
+  "resume_classic",
+  "resume_modern",
+  "resume_elegant",
+  "resume_minimal",
+] as const
 
-export { ApplicantSchema, ApplicantInfoSchema } from "./schemas.js"
+export { makeApplicantID, type ApplicantID } from "./id.js"
 
-export { ApplicantID } from "./id.js"
+import { z } from "zod"
+
+export const ApplicantInfoSchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+})

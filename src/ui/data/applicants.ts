@@ -2,9 +2,9 @@ import { z } from "zod"
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
-import type { Applicant, ResumeTemplate } from "@/models/applicant"
+import { Applicant, ApplicantInfoSchema } from "@/models/applicant"
 
-import { ApplicantSchema, ApplicantInfoSchema } from "@/models/applicant"
+import type { ResumeTemplate } from "@/models/applicant"
 
 import { api } from "./internal/api"
 
@@ -28,7 +28,7 @@ export function useApplicant(id: string) {
   return useQuery({
     queryKey: ["applicant", id],
     queryFn: async () =>
-      ApplicantSchema.parse(await api().invoke("applicants:load", id)),
+      Applicant.parse(await api().invoke("applicants:load", id)),
     enabled: !!id,
   })
 }
@@ -36,10 +36,11 @@ export function useApplicant(id: string) {
 export function useApplicantDraft() {
   return useQuery({
     queryKey: ["applicant-draft"],
-    queryFn: async () =>
-      ApplicantDraftResponseSchema.parse(
-        await api().invoke("applicants:draft:load"),
-      ),
+    queryFn: async () => {
+      const raw = await api().invoke("applicants:draft:load")
+      const parsed = ApplicantDraftResponseSchema.parse(raw)
+      return { draft: parsed.draft ? Applicant.parse(parsed.draft) : undefined }
+    },
   })
 }
 
@@ -142,7 +143,7 @@ function useApplicants() {
 const CreatedIdSchema = z.object({ id: z.string() })
 
 const ApplicantDraftResponseSchema = z.object({
-  draft: ApplicantSchema.optional(),
+  draft: z.unknown().optional(),
 })
 
 const ApplicantListResponseSchema = z.object({

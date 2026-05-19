@@ -1,4 +1,3 @@
-import { migrateSqliteDatabase } from "@/repositories/sqlite-migrate/index.js"
 import type { ConfigRepository } from "@/app/config"
 import type { SetupRepository } from "@/app/setup"
 import type { SecretsRepository } from "@/app/secrets"
@@ -26,7 +25,6 @@ export function createSqliteServiceContext(
   configRepo: ConfigRepository,
   setupRepo: SetupRepository,
 ): ServiceContext {
-  migrateSqliteDatabase(database)
   return {
     applicantRepo: createSqliteApplicantRepository(database),
     jobSearchRepo: createSqliteJobSearchRepository(database),

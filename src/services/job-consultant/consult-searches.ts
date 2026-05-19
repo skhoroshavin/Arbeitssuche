@@ -2,7 +2,6 @@ import { z } from "zod"
 import type { Applicant } from "@/models/applicant"
 import type { ConsultationSuggestion } from "@/models/job-search"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
-import { formatApplicantSections } from "@/models/applicant/index.js"
 
 export async function consultSearches(
   applicant: Applicant,
@@ -27,7 +26,7 @@ const CONSULT_SEARCHES_SCHEMA: TypedSchema<ConsultationSuggestion[]> = {
 }
 
 function buildConsultSearchesPrompt(applicant: Applicant): string {
-  const sections = formatApplicantSections(applicant)
+  const sections = [applicant.llmFriendlyDescription()]
 
   return `Sie sind ein erfahrener Karriereberater. Analysieren Sie das folgende Bewerberprofil und schlagen Sie 5-10 konkrete Suchbegriffe für Jobbörsen vor.
 

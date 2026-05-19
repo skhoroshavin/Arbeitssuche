@@ -1,4 +1,4 @@
-export function joinNormalizedText(
+export function normalizeAndJoinText(
   parts: Array<null | string | undefined>,
   separator = ", ",
 ): string | undefined {

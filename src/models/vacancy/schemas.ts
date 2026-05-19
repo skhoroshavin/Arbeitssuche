@@ -1,9 +1,9 @@
 import { z } from "zod"
 
 const VacancyContactSchema = z.object({
-  name: z.string().optional(),
-  email: z.string().optional(),
-  phone: z.string().optional(),
+  name: z.string(),
+  email: z.string(),
+  phone: z.string(),
 })
 
 const VacancySourceSchema = z.object({
@@ -25,51 +25,51 @@ const ActivitySchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("found"),
     date: z.string(),
-    notes: z.string().optional(),
+    notes: z.string(),
     site: z.string(),
     url: z.string(),
-    description: z.string().optional(),
-    contact: VacancyContactSchema.optional(),
+    description: z.string(),
+    contact: VacancyContactSchema,
   }),
   z.object({
     type: z.literal("not-found"),
     date: z.string(),
-    notes: z.string().optional(),
+    notes: z.string(),
     site: z.string(),
   }),
   z.object({
     type: z.literal("applied"),
     date: z.string(),
-    notes: z.string().optional(),
+    notes: z.string(),
   }),
   z.object({
     type: z.literal("invited"),
     date: z.string(),
-    notes: z.string().optional(),
+    notes: z.string(),
     interviewDate: z.string(),
   }),
   z.object({
     type: z.literal("interviewed"),
     date: z.string(),
-    notes: z.string().optional(),
+    notes: z.string(),
     outcome: z.enum(["completed", "cancelled"]),
   }),
   z.object({
     type: z.literal("offered"),
     date: z.string(),
-    notes: z.string().optional(),
-    startDate: z.string().optional(),
-    salary: z.string().optional(),
+    notes: z.string(),
+    startDate: z.string(),
+    salary: z.string(),
   }),
   z.object({
     type: z.literal("rejected"),
     date: z.string(),
-    notes: z.string().optional(),
+    notes: z.string(),
   }),
   z.object({
     type: z.literal("not-interested"),
     date: z.string(),
-    notes: z.string().optional(),
+    notes: z.string(),
   }),
 ])
 

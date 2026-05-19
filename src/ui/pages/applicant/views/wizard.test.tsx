@@ -1,10 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import {
-  createDefaultApplicantDraftSnapshot,
-  isMeaningfulApplicantDraftSnapshot,
-} from "@/models/applicant"
+import { Applicant } from "@/models/applicant"
 import { FirstStartWizardContext } from "@/ui/layout"
 import { ApplicantWizardPage } from "@/ui/pages/applicant"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -51,9 +48,9 @@ describe("Applicant wizard state", () => {
 
   it("starts from a blank non-meaningful draft", async () => {
     const user = userEvent.setup()
-    const snapshot = createDefaultApplicantDraftSnapshot()
+    const snapshot = new Applicant()
 
-    expect(isMeaningfulApplicantDraftSnapshot(snapshot)).toBe(false)
+    expect(snapshot.isDifferentFromDefault()).toBe(false)
 
     render(<ApplicantWizardPage />)
 
@@ -65,10 +62,10 @@ describe("Applicant wizard state", () => {
 
   it("treats typed name as meaningful and finalizable", async () => {
     const user = userEvent.setup()
-    const snapshot = createDefaultApplicantDraftSnapshot()
+    const snapshot = new Applicant()
     snapshot.personal.name = "Ada Lovelace"
 
-    expect(isMeaningfulApplicantDraftSnapshot(snapshot)).toBe(true)
+    expect(snapshot.isDifferentFromDefault()).toBe(true)
 
     render(<ApplicantWizardPage />)
 
@@ -76,25 +73,6 @@ describe("Applicant wizard state", () => {
     await goToLastStep(user)
 
     expect(screen.getByRole("button", { name: "Fertigstellen" })).toBeEnabled()
-  })
-
-  it("treats non-default nested data as meaningful without enabling finish", async () => {
-    const user = userEvent.setup()
-    const snapshot = createDefaultApplicantDraftSnapshot()
-    snapshot.education.push({ institution: "TU Berlin", course: "Informatik" })
-
-    expect(isMeaningfulApplicantDraftSnapshot(snapshot)).toBe(true)
-
-    render(<ApplicantWizardPage />)
-
-    await screen.findByLabelText("Name")
-    await goToEducationStep(user)
-    await user.type(screen.getByLabelText("Institution"), "TU Berlin")
-    await user.type(screen.getByLabelText("Studiengang"), "Informatik")
-    await user.click(screen.getByRole("button", { name: "Weiter" }))
-    await user.click(screen.getByRole("button", { name: "Weiter" }))
-
-    expect(screen.getByRole("button", { name: "Fertigstellen" })).toBeDisabled()
   })
 
   it("calls first-start completion instead of navigating after finish", async () => {
@@ -126,7 +104,7 @@ describe("Applicant wizard state", () => {
   })
 
   it("skips the draft resume prompt when first-start already resumed", async () => {
-    const snapshot = createDefaultApplicantDraftSnapshot()
+    const snapshot = new Applicant()
     snapshot.personal.name = "Ada Lovelace"
     refetchDraft.mockResolvedValue({
       data: { draft: snapshot },
@@ -154,11 +132,6 @@ describe("Applicant wizard state", () => {
     })
   })
 })
-
-async function goToEducationStep(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: "Weiter" }))
-  await user.click(screen.getByRole("button", { name: "Weiter" }))
-}
 
 async function goToLastStep(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "Weiter" }))

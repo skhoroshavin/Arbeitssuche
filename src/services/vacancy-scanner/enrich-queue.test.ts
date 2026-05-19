@@ -5,8 +5,8 @@ import {
   VacancyEnricher,
   type EnrichContext,
 } from "@/services/vacancy-enricher"
-import type { Applicant } from "@/models/applicant"
-import type { JobSearch } from "@/models/job-search"
+import { Applicant } from "@/models/applicant"
+import { JobSearch } from "@/models/job-search"
 
 describe("EnrichQueue", () => {
   it("calls onEnriched after enrichment completes", async () => {
@@ -293,32 +293,24 @@ describe("EnrichQueue", () => {
   })
 })
 
-const APPLICANT: Applicant = {
-  personal: { name: "Test", hobbies: [] },
-  disclose: {
-    birthdate: false,
-    gender: false,
-    address: false,
-    hobbies: false,
-  },
-  experience: [],
-  education: [],
-  skills: [],
-  languages: [],
-  certifications: [],
-  personalNotes: "",
-}
+const APPLICANT = (() => {
+  const a = new Applicant()
+  a.personal.name = "Test"
+  return a
+})()
 
-const JOB_SEARCH: JobSearch = {
-  searchTerm: "",
-  radiusKm: 30,
-  mode: "employment",
-  sources: [],
-  maxResultsPerSource: 0,
-  maxCommuteMinutes: 0,
-  notes: "",
-  coverLetter: "",
-}
+const JOB_SEARCH = (() => {
+  const index = new JobSearch()
+  index.searchTerm = ""
+  index.radiusKm = 30
+  index.mode = "employment"
+  index.sources = []
+  index.maxResultsPerSource = 0
+  index.maxCommuteMinutes = 0
+  index.notes = ""
+  index.coverLetter = ""
+  return index
+})()
 
 const CONTEXT: EnrichContext = {
   applicant: APPLICANT,
@@ -330,8 +322,14 @@ function makeVacancy(hash: string): Vacancy {
     hash,
     title: "Dev",
     company: "ACME",
+    description: "",
+    addresses: [],
+    contact: { name: "", email: "", phone: "" },
+    startDate: "",
     activityHistory: [],
     active: true,
+    enriched: false,
+    enrichmentDirty: true,
   })
 }
 

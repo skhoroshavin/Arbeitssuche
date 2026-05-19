@@ -1,9 +1,7 @@
-import { DEFAULT_APPLICANT } from "@/models/applicant"
+import { Applicant } from "@/models/applicant"
 import type {
   Address,
-  Applicant,
   ApplicantCertification,
-  ApplicantDisclose,
   ApplicantLanguage,
   ApplicantSkill,
 } from "@/models/applicant"
@@ -12,11 +10,7 @@ export function toApplicantFormValues(
   applicant: Applicant,
 ): ApplicantFormValues {
   return {
-    ...applicant,
-    personal: {
-      ...applicant.personal,
-      hobbies: joinLines(applicant.personal.hobbies),
-    },
+    personal: applicant.personal,
     experience: applicant.experience.map((entry) => ({
       ...entry,
       highlights: joinLines(entry.highlights),
@@ -25,33 +19,33 @@ export function toApplicantFormValues(
       ...entry,
       highlights: joinLines(entry.highlights),
     })),
+    skills: applicant.skills,
+    languages: applicant.languages,
+    certifications: applicant.certifications,
     personalNotes: applicant.personalNotes,
   }
 }
 
 export function fromApplicantFormValues(form: ApplicantFormValues): Applicant {
-  return {
-    ...form,
-    disclose: form.disclose ?? DEFAULT_APPLICANT.disclose,
-    personal: {
-      ...form.personal,
-      hobbies: splitLines(form.personal.hobbies) ?? [],
-    },
-    experience: form.experience.map((entry) => ({
-      ...entry,
-      highlights: splitLines(entry.highlights),
-    })),
-    education: form.education.map((entry) => ({
-      ...entry,
-      highlights: splitLines(entry.highlights),
-    })),
-    personalNotes: form.personalNotes,
-  }
+  const applicant = new Applicant()
+  applicant.personal = { ...form.personal }
+  applicant.experience = form.experience.map((entry) => ({
+    ...entry,
+    highlights: splitLines(entry.highlights) ?? [],
+  }))
+  applicant.education = form.education.map((entry) => ({
+    ...entry,
+    highlights: splitLines(entry.highlights) ?? [],
+  }))
+  applicant.skills = form.skills
+  applicant.languages = form.languages
+  applicant.certifications = form.certifications
+  applicant.personalNotes = form.personalNotes
+  return applicant
 }
 
 export interface ApplicantFormValues {
   personal: ApplicantFormPersonal
-  disclose?: ApplicantDisclose
   experience: ApplicantFormExperience[]
   education: ApplicantFormEducation[]
   skills: ApplicantSkill[]
@@ -65,29 +59,33 @@ interface ApplicantFormExperience {
   company: string
   startDate: string
   endDate: string
-  location?: string
-  discloseDates?: boolean
+  location: string
+  discloseDates: boolean
   highlights?: string
 }
 
 interface ApplicantFormEducation {
   institution: string
   course: string
-  startDate?: string
-  endDate?: string
-  location?: string
-  discloseDates?: boolean
+  startDate: string
+  endDate: string
+  location: string
+  discloseDates: boolean
   highlights?: string
 }
 
 interface ApplicantFormPersonal {
   name: string
-  email?: string
-  phone?: string
-  birthdate?: string
-  gender?: string
-  address?: Address
-  hobbies?: string
+  email: string
+  phone: string
+  birthdate: string
+  gender: string
+  address: Address
+  hobbies: string
+  discloseBirthdate: boolean
+  discloseGender: boolean
+  discloseAddress: boolean
+  discloseHobbies: boolean
 }
 
 function joinLines(lines: string[] | undefined): string | undefined {

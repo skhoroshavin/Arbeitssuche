@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest"
-import { joinNormalizedText, normalizeOptionalText } from "."
+import { normalizeAndJoinText, normalizeOptionalText } from "."
 
 describe("normalizeOptionalText", () => {
   test("trims non-empty values", () => {
@@ -14,12 +14,14 @@ describe("normalizeOptionalText", () => {
   })
 })
 
-describe("joinNormalizedText", () => {
-  test("joins normalized non-empty parts", () => {
-    expect(joinNormalizedText([" 10115", "Berlin "], " ")).toBe("10115 Berlin")
+describe("normalizeAndJoinText", () => {
+  test("normalizes and joins non-empty parts", () => {
+    expect(normalizeAndJoinText([" 10115", "Berlin "], " ")).toBe(
+      "10115 Berlin",
+    )
   })
 
   test("returns undefined when all parts are empty", () => {
-    expect(joinNormalizedText([" ", undefined, "null"])).toBe(undefined)
+    expect(normalizeAndJoinText([" ", undefined, "null"])).toBe(undefined)
   })
 })

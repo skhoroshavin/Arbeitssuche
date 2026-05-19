@@ -3,7 +3,6 @@ import type { Applicant } from "@/models/applicant"
 import type { JobSearch } from "@/models/job-search"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
-import { formatApplicantSections } from "@/models/applicant/index.js"
 
 export function needsAssessment(vacancy: Vacancy): boolean {
   return !vacancy.summary || vacancy.enrichmentDirty
@@ -42,7 +41,7 @@ Titel: ${vacancy.title}
 Unternehmen: ${vacancy.company}
 Standort: ${vacancy.addresses.join(", ") || "Nicht angegeben"}
 ${vacancy.description ? `Beschreibung:\n${vacancy.description}` : "Keine Beschreibung vorhanden."}`,
-    ...formatApplicantSections(applicant),
+    applicant.llmFriendlyDescription(),
   ]
 
   if (jobSearch.notes.length > 0) {

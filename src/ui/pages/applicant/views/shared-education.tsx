@@ -47,7 +47,16 @@ export function ApplicantEditorEducationView({
         </FieldArrayCard>
       ))}
       <AddButton
-        onClick={() => education.append({ institution: "", course: "" })}
+        onClick={() =>
+          education.append({
+            institution: "",
+            course: "",
+            startDate: "",
+            endDate: "",
+            location: "",
+            discloseDates: false,
+          })
+        }
       >
         Ausbildung hinzufügen
       </AddButton>

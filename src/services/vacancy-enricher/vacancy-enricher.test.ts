@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest"
 import { VacancyEnricher } from "."
 import { Vacancy } from "@/models/vacancy/index.js"
-import type { Applicant } from "@/models/applicant"
-import type { JobSearch } from "@/models/job-search"
+import { Applicant } from "@/models/applicant"
+import { JobSearch } from "@/models/job-search"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
 import type { CommuteClient } from "@/plugins/commute"
 
@@ -102,13 +102,16 @@ describe("VacancyEnricher", () => {
   it("derives commute origin from applicant address", async () => {
     const { commuteClient, getCommuteMock } = makeCommuteClient()
     const enricher = new VacancyEnricher({ commuteClient })
-    const applicant: Applicant = {
-      ...APPLICANT,
-      personal: {
-        ...APPLICANT.personal,
-        address: { street: "Hauptstr. 5", zip: "80331", city: "München" },
-      },
-    }
+    const applicant = (() => {
+      const a = new Applicant()
+      a.personal.name = "Test User"
+      a.personal.address = {
+        street: "Hauptstr. 5",
+        zip: "80331",
+        city: "München",
+      }
+      return a
+    })()
 
     await enricher.enrich(makeVacancy(), {
       applicant,
@@ -187,36 +190,25 @@ describe("VacancyEnricher", () => {
   })
 })
 
-const APPLICANT: Applicant = {
-  personal: {
-    name: "Test User",
-    hobbies: [],
-    address: { street: "Teststr. 1", zip: "10115", city: "Berlin" },
-  },
-  disclose: { birthdate: false, gender: false, address: false, hobbies: false },
-  experience: [],
-  education: [],
-  skills: [],
-  languages: [],
-  certifications: [],
-  personalNotes: "",
-}
+const APPLICANT: Applicant = (() => {
+  const a = new Applicant()
+  a.personal.name = "Test User"
+  a.personal.address = { street: "Teststr. 1", zip: "10115", city: "Berlin" }
+  return a
+})()
 
-const JOB_SEARCH: JobSearch = {
-  searchTerm: "",
-  radiusKm: 30,
-  mode: "employment",
-  sources: [],
-  maxResultsPerSource: 0,
-  maxCommuteMinutes: 0,
-  notes: "",
-  coverLetter: "",
-}
-
-const _CONTEXT = {
-  applicant: APPLICANT,
-  jobSearch: JOB_SEARCH,
-}
+const JOB_SEARCH: JobSearch = (() => {
+  const index = new JobSearch()
+  index.searchTerm = ""
+  index.radiusKm = 30
+  index.mode = "employment"
+  index.sources = []
+  index.maxResultsPerSource = 0
+  index.maxCommuteMinutes = 0
+  index.notes = ""
+  index.coverLetter = ""
+  return index
+})()
 
 function makeVacancy(
   overrides: Partial<ConstructorParameters<typeof Vacancy>[0]> = {},
@@ -227,6 +219,8 @@ function makeVacancy(
     company: "ACME",
     description: "Some job description",
     addresses: ["Berlin"],
+    contact: { name: "", email: "", phone: "" },
+    startDate: "",
     activityHistory: [],
     active: true,
     enriched: false,
