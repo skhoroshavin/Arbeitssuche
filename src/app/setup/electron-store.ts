@@ -21,7 +21,10 @@ export function createElectronStoreSetupRepository(): SetupRepository {
 
     save(update: Partial<AppSetupState>): Promise<AppSetupState> {
       const current = kvStore.get("setup")
-      const next = mergeSetupState(isSetupState(current) ? current : undefined, update)
+      const next = mergeSetupState(
+        isSetupState(current) ? current : undefined,
+        update,
+      )
       kvStore.set("setup", next)
       return Promise.resolve(structuredClone(next))
     },

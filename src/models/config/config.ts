@@ -1,7 +1,5 @@
 import { z } from "zod"
 
-export type LlmProvider = "openrouter" | "requesty"
-
 export interface Address {
   street: string
   zip: string
@@ -14,23 +12,11 @@ export interface LlmModel {
   pricing: { prompt: string; completion: string }
 }
 
-export interface AppConfig {
-  provider?: LlmProvider
-  assessmentModel?: string
-  coverLetterModel?: string
-  consultationModel?: string
-}
-
 export type ConfigKey =
   | "provider"
   | "assessmentModel"
   | "coverLetterModel"
   | "consultationModel"
-
-export const DEFAULT_PROVIDER: LlmProvider = "openrouter"
-export const DEFAULT_ASSESSMENT_MODEL = "google/gemini-2.5-flash"
-export const DEFAULT_COVER_LETTER_MODEL = "anthropic/claude-opus-4"
-export const DEFAULT_CONSULTATION_MODEL = "google/gemini-2.5-flash"
 
 export class Config {
   provider: LlmProvider = DEFAULT_PROVIDER
@@ -48,6 +34,16 @@ export class Config {
     return config
   }
 }
+
+export const DEFAULT_PROVIDER: LlmProvider = "openrouter"
+
+export type LlmProvider = "openrouter" | "requesty"
+
+const DEFAULT_ASSESSMENT_MODEL = "google/gemini-2.5-flash"
+
+const DEFAULT_COVER_LETTER_MODEL = "anthropic/claude-opus-4"
+
+const DEFAULT_CONSULTATION_MODEL = "google/gemini-2.5-flash"
 
 const ConfigInputSchema = z.object({
   provider: z.enum(["openrouter", "requesty"]).default(DEFAULT_PROVIDER),

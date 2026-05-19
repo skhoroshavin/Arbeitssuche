@@ -1,12 +1,4 @@
-import {
-  app,
-  BrowserWindow,
-  Menu,
-  protocol,
-  safeStorage,
-  session,
-  shell,
-} from "electron"
+import { app, BrowserWindow, Menu, protocol, session, shell } from "electron"
 import { rmSync } from "node:fs"
 import path from "node:path"
 import { registerIpcHandlers } from "./ipc.js"

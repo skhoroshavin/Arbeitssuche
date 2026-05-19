@@ -1,16 +1,12 @@
 import { existsSync, readFileSync } from "node:fs"
 
 import { Config } from "@/models/config"
-import { Secrets } from "@/models/secrets"
-import type { Cipher } from "@/plugins/cipher"
-import type { KVStore } from "@/plugins/kvstore"
 
-export interface ConfigRepository {
-  loadConfig(): Config
-  saveConfig(data: Config): Promise<void>
-  loadSecrets(): Secrets
-  saveSecrets(data: Secrets): Promise<void>
-}
+import { Secrets } from "@/models/secrets"
+
+import type { Cipher } from "@/plugins/cipher"
+
+import type { KVStore } from "@/plugins/kvstore"
 
 export function createConfigRepository(
   kvStore: KVStore,
@@ -76,10 +72,14 @@ export function createConfigRepository(
   }
 }
 
-function loadSecretsFromEncrypted(
-  encrypted: unknown,
-  cipher: Cipher,
-): Secrets {
+export interface ConfigRepository {
+  loadConfig(): Config
+  saveConfig(data: Config): Promise<void>
+  loadSecrets(): Secrets
+  saveSecrets(data: Secrets): Promise<void>
+}
+
+function loadSecretsFromEncrypted(encrypted: unknown, cipher: Cipher): Secrets {
   if (typeof encrypted !== "string") return Secrets.parse({})
   try {
     const decrypted = cipher.decryptString(Buffer.from(encrypted, "base64"))

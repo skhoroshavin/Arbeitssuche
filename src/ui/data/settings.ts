@@ -1,56 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+
 import { z } from "zod"
+
 import type { MaskedSecret } from "@/models/secrets"
+
 import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config"
-import {
-  Config,
-  DEFAULT_ASSESSMENT_MODEL,
-  DEFAULT_CONSULTATION_MODEL,
-  DEFAULT_COVER_LETTER_MODEL,
-  DEFAULT_PROVIDER,
-} from "@/models/config"
+
+import { Config, DEFAULT_PROVIDER } from "@/models/config"
+
 import { api } from "./internal/api"
-
-const LlmProviderInfoSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string(),
-  instructions: z.string(),
-})
-
-const CommuteProviderInfoSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  instructions: z.string(),
-})
-
-const LlmModelSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  pricing: z.object({
-    prompt: z.string(),
-    completion: z.string(),
-  }),
-})
-
-const ResolvedConfigSchema = z.object({
-  provider: z.enum(["openrouter", "requesty"]),
-  assessmentModel: z.string(),
-  coverLetterModel: z.string(),
-  consultationModel: z.string(),
-})
-
-const MaskedSecretSchema = z.object({
-  masked: z.string(),
-  isSet: z.boolean(),
-})
-
-const MaskedSecretsRecordSchema = z.record(z.string(), MaskedSecretSchema)
-
-const SecretTestResultSchema = z.object({
-  ok: z.boolean(),
-  error: z.string().optional(),
-})
 
 // --- Provider secrets (factory) ---
 
@@ -238,9 +196,6 @@ function createProviderSecretHooks(type: "llm" | "commute") {
   return { useSecrets, useSave, useClear, useTest }
 }
 
-const llmHooks = createProviderSecretHooks("llm")
-const commuteHooks = createProviderSecretHooks("commute")
-
 // --- Config ---
 
 function useConfig() {
@@ -258,3 +213,41 @@ function useLlmModels() {
       z.array(LlmModelSchema).parse(await api().invoke("settings:llm-models")),
   })
 }
+
+const LlmProviderInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  instructions: z.string(),
+})
+
+const CommuteProviderInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  instructions: z.string(),
+})
+
+const LlmModelSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  pricing: z.object({
+    prompt: z.string(),
+    completion: z.string(),
+  }),
+})
+
+const MaskedSecretSchema = z.object({
+  masked: z.string(),
+  isSet: z.boolean(),
+})
+
+const MaskedSecretsRecordSchema = z.record(z.string(), MaskedSecretSchema)
+
+const SecretTestResultSchema = z.object({
+  ok: z.boolean(),
+  error: z.string().optional(),
+})
+
+const llmHooks = createProviderSecretHooks("llm")
+
+const commuteHooks = createProviderSecretHooks("commute")
