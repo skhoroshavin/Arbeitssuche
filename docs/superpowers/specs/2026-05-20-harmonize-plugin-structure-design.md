@@ -4,7 +4,7 @@
 
 Plugins under `src/plugins/` follow an inconsistent pattern: some define their interfaces directly in `index.ts` (cipher, kvstore) while others extract them to a separate `types.ts`. AGENTS.md prescribes `types.ts` as the standard, but for small interfaces this adds unnecessary indirection. The "right" pattern — short interfaces in `index.ts` — is already in use and should be the default.
 
-Additionally, `job-site/types.ts` mixes truly public types with internal JSON-LD parsing types (`JobPostingJsonLd`, `JobPostingAddress`), but that extraction is out of scope for this change.
+Additionally, `job-site/types.ts` mixes public contract types with site-specific JSON-LD parsing types (`JobPostingJsonLd`, `JobPostingAddress`) whose presence in the shared interface is accidental — each site (xing, dm) uses them independently.
 
 ## Design
 
