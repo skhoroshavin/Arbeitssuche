@@ -27,7 +27,7 @@ With:
 | **browser** | Inline `Browser`, `Page`, `OpenPageOptions` into `index.ts`, delete `types.ts` |
 | **commute** | Inline all interfaces into `index.ts`, delete `types.ts` |
 | **llm** | Inline all interfaces into `index.ts`, delete `types.ts` |
-| **job-site** | Inline public types into `index.ts`; keep `types.ts` with only `JobPostingJsonLd` + `JobPostingAddress` (internal parsing types, to be reorganized separately) |
+| **job-site** | Inline public types into `index.ts`; move `JobPostingJsonLd` and `JobPostingAddress` into xing/ and dm/ as site-local types (the similarity is coincidental, not a shared contract). Delete `types.ts`. Remove `JobPostingJsonLd` export from `index.ts`. |
 | **cipher** | No change (already correct) |
 | **kvstore** | No change (already correct) |
 
@@ -39,6 +39,5 @@ No merging, renaming, or restructuring beyond `types.ts` inlining. The organic v
 
 ## Out of Scope
 
-- Extracting `JobPostingJsonLd` / `JobPostingAddress` from `job-site/types.ts` into crawler-internal modules
 - Simplifying or merging cipher/kvstore (they are "done" and already follow the right pattern)
 - Any changes to plugin subdirectory layout or factory patterns
