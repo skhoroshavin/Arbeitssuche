@@ -1,39 +1,16 @@
-export interface AppConfig {
-  provider?: LlmProvider
-  assessmentModel?: string
-  coverLetterModel?: string
-  consultationModel?: string
-}
-
-export type LlmProvider = "openrouter" | "requesty"
-
-export type ConfigKey =
-  | "provider"
-  | "assessmentModel"
-  | "coverLetterModel"
-  | "consultationModel"
-
-export interface LlmModel {
-  id: string
-  name: string
-  pricing: { prompt: string; completion: string }
-}
-
-export interface Address {
-  street: string
-  zip: string
-  city: string
-}
-
-export { resolveConfig } from "./resolve.js"
+export type { Address, LlmModel, LlmProvider, ConfigKey } from "./config.js"
+export { Config } from "./config.js"
 export {
   DEFAULT_PROVIDER,
-  DEFAULT_CONFIG,
   DEFAULT_ASSESSMENT_MODEL,
   DEFAULT_COVER_LETTER_MODEL,
   DEFAULT_CONSULTATION_MODEL,
-} from "./constants.js"
+} from "./config.js"
 
+// Legacy exports — removed after consumer migration
+export type { AppConfig } from "./config.js"
+
+export { resolveConfig } from "./resolve.js"
 export {
   LlmProviderInfoSchema,
   CommuteProviderInfoSchema,

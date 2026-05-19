@@ -3,22 +3,54 @@ import { z } from "zod"
 import type { MaskedSecret } from "@/models/secrets"
 import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config"
 import {
+  Config,
   DEFAULT_ASSESSMENT_MODEL,
   DEFAULT_CONSULTATION_MODEL,
   DEFAULT_COVER_LETTER_MODEL,
   DEFAULT_PROVIDER,
-} from "@/models/config/index"
-import {
-  LlmProviderInfoSchema,
-  CommuteProviderInfoSchema,
-  LlmModelSchema,
-  ResolvedConfigSchema,
 } from "@/models/config"
-import {
-  MaskedSecretsRecordSchema,
-  SecretTestResultSchema,
-} from "@/models/secrets"
 import { api } from "./internal/api"
+
+const LlmProviderInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  instructions: z.string(),
+})
+
+const CommuteProviderInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  instructions: z.string(),
+})
+
+const LlmModelSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  pricing: z.object({
+    prompt: z.string(),
+    completion: z.string(),
+  }),
+})
+
+const ResolvedConfigSchema = z.object({
+  provider: z.enum(["openrouter", "requesty"]),
+  assessmentModel: z.string(),
+  coverLetterModel: z.string(),
+  consultationModel: z.string(),
+})
+
+const MaskedSecretSchema = z.object({
+  masked: z.string(),
+  isSet: z.boolean(),
+})
+
+const MaskedSecretsRecordSchema = z.record(z.string(), MaskedSecretSchema)
+
+const SecretTestResultSchema = z.object({
+  ok: z.boolean(),
+  error: z.string().optional(),
+})
 
 // --- Provider secrets (factory) ---
 
@@ -135,12 +167,7 @@ function useResolvedConfig() {
   const query = useConfig()
   return {
     ...query,
-    data: query.data ?? {
-      provider: DEFAULT_PROVIDER,
-      assessmentModel: DEFAULT_ASSESSMENT_MODEL,
-      coverLetterModel: DEFAULT_COVER_LETTER_MODEL,
-      consultationModel: DEFAULT_CONSULTATION_MODEL,
-    },
+    data: query.data ?? new Config(),
   }
 }
 
@@ -220,7 +247,7 @@ function useConfig() {
   return useQuery({
     queryKey: ["config"],
     queryFn: async () =>
-      ResolvedConfigSchema.parse(await api().invoke("settings:config:load")),
+      Config.parse(await api().invoke("settings:config:load")),
   })
 }
 
