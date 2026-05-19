@@ -1,34 +1,36 @@
 import { ApplicantSchema } from "@/models/applicant"
-import type { ApplicantDraftSnapshot } from "@/models/applicant"
 import type { AppServices } from "."
 import type { IpcHandle } from "./ipc-handlers.js"
+import { ApplicantID } from "@/models/applicant"
 
 export function registerApplicantsHandlers(
   handle: IpcHandle,
   services: AppServices,
 ): void {
   handle("applicants:list", () => ({
-    applicants: services.applicantRepo.list(),
+    applicants: services.applicantRepo.list().map((info) => ({
+      id: info.id.value,
+      displayName: info.displayName,
+    })),
   }))
-  handle("applicants:create", (name: string) => {
-    const id = services.applicantRepo.create(name)
-    return { id }
-  })
-  handle("applicants:load", (id: string) => services.applicantRepo.load(id))
+  handle("applicants:load", (id: string) =>
+    services.applicantRepo.load(ApplicantID(id)),
+  )
   handle("applicants:save", (id: string, data: unknown) => {
     const validated = ApplicantSchema.parse(data)
-    services.applicantRepo.save(id, validated)
+    services.applicantRepo.save(ApplicantID(id), validated)
     return { ok: true }
   })
   handle("applicants:delete", (id: string) => {
-    services.applicantRepo.delete(id)
+    services.applicantRepo.delete(ApplicantID(id))
     return { deleted: id }
   })
   handle("applicants:draft:load", () => ({
     draft: services.applicantRepo.loadDraft(),
   }))
-  handle("applicants:draft:save", (draft: ApplicantDraftSnapshot) => {
-    services.applicantRepo.saveDraft(draft)
+  handle("applicants:draft:save", (draft: unknown) => {
+    const validated = ApplicantSchema.parse(draft)
+    services.applicantRepo.saveDraft(validated)
     return { ok: true }
   })
   handle("applicants:draft:delete", () => {
@@ -37,7 +39,7 @@ export function registerApplicantsHandlers(
   })
   handle("applicants:draft:finalize", () => {
     const id = services.applicantRepo.finalizeDraft()
-    return { id }
+    return { id: id.value }
   })
   handle("applicants:resume", (id: string, template: string) =>
     services.resumeRenderer.generate(id, template),

@@ -2,23 +2,16 @@ import { describe, expect, it } from "vitest"
 import { resolveJobSearch } from "."
 
 describe("resolveJobSearch", () => {
-  it("fills missing params and preferences defaults", () => {
-    expect(
-      resolveJobSearch({
-        id: "js1",
-        applicantId: "app1",
-        params: { searchTerm: "React" },
-      }),
-    ).toEqual({
-      id: "js1",
-      applicantId: "app1",
-      params: {
-        searchTerm: "React",
-        radiusKm: 30,
-        searchMode: "employment",
-        sources: [],
-      },
-      preferences: { freeText: [] },
+  it("fills missing fields with defaults", () => {
+    expect(resolveJobSearch({ searchTerm: "React" })).toEqual({
+      searchTerm: "React",
+      radiusKm: 30,
+      mode: "employment",
+      sources: [],
+      maxResultsPerSource: 0,
+      maxCommuteMinutes: 0,
+      notes: "",
+      coverLetter: "",
     })
   })
 })

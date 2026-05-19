@@ -1,6 +1,5 @@
 import type { Applicant } from "@/models/applicant"
-import type { JobSearch } from "@/models/job-search"
-import type { JobSearchCriteria } from "@/models/job-search"
+import type { JobSearch, JobSearchCriteria } from "@/models/job-search"
 
 export function resolveSearchParameters(
   jobSearch: JobSearch,
@@ -9,9 +8,12 @@ export function resolveSearchParameters(
   const location = applicant.personal.address?.city ?? ""
   return {
     location,
-    query: jobSearch.params.searchTerm,
-    radiusKm: jobSearch.params.radiusKm,
-    mode: jobSearch.params.searchMode,
-    limit: jobSearch.params.maxResults,
+    query: jobSearch.searchTerm,
+    radiusKm: jobSearch.radiusKm,
+    mode: jobSearch.mode,
+    limit:
+      jobSearch.maxResultsPerSource === 0
+        ? undefined
+        : jobSearch.maxResultsPerSource,
   }
 }

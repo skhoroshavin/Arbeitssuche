@@ -61,7 +61,6 @@ const ApplicantDiscloseSchema = z.object({
 })
 
 export const ApplicantSchema = z.object({
-  id: z.string(),
   personal: ApplicantPersonalSchema,
   disclose: ApplicantDiscloseSchema,
   experience: z.array(ApplicantExperienceSchema),
@@ -69,10 +68,10 @@ export const ApplicantSchema = z.object({
   skills: z.array(ApplicantSkillSchema),
   languages: z.array(ApplicantLanguageSchema),
   certifications: z.array(ApplicantCertificationSchema),
-  personalNotes: z.array(z.string()).optional(),
+  personalNotes: z.string(),
 })
 
 export const ApplicantInfoSchema = z.object({
   id: z.string(),
-  name: z.string().optional(),
+  displayName: z.string(),
 })

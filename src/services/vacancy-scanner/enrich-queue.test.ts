@@ -6,7 +6,7 @@ import {
   type EnrichContext,
 } from "@/services/vacancy-enricher"
 import type { Applicant } from "@/models/applicant"
-import type { SearchPreferences } from "@/models/job-search"
+import type { JobSearch } from "@/models/job-search"
 
 describe("EnrichQueue", () => {
   it("calls onEnriched after enrichment completes", async () => {
@@ -294,7 +294,6 @@ describe("EnrichQueue", () => {
 })
 
 const APPLICANT: Applicant = {
-  id: "a1",
   personal: { name: "Test", hobbies: [] },
   disclose: {
     birthdate: false,
@@ -307,15 +306,23 @@ const APPLICANT: Applicant = {
   skills: [],
   languages: [],
   certifications: [],
+  personalNotes: "",
 }
 
-const PREFERENCES: SearchPreferences = {
-  freeText: [],
+const JOB_SEARCH: JobSearch = {
+  searchTerm: "",
+  radiusKm: 30,
+  mode: "employment",
+  sources: [],
+  maxResultsPerSource: 0,
+  maxCommuteMinutes: 0,
+  notes: "",
+  coverLetter: "",
 }
 
 const CONTEXT: EnrichContext = {
   applicant: APPLICANT,
-  preferences: PREFERENCES,
+  jobSearch: JOB_SEARCH,
 }
 
 function makeVacancy(hash: string): Vacancy {

@@ -4,6 +4,8 @@ import { Vacancy } from "@/models/vacancy/index.js"
 
 import type { Activity } from "@/models/vacancy"
 
+import type { JobSearchID } from "@/models/job-search"
+
 import { resolveVacancy } from "@/models/vacancy/index.js"
 
 import {
@@ -59,17 +61,23 @@ class SqliteVacancyRepository implements VacancyRepository {
     this.updateVacancyStmt = database.prepare(
       "UPDATE vacancies SET data = ? WHERE job_search_id = ? AND hash = ?",
     )
+    this.loadCoverLetterStmt = database.prepare(
+      "SELECT content FROM cover_letters WHERE job_search_id = ? AND vacancy_hash = ?",
+    )
+    this.saveCoverLetterStmt = database.prepare(
+      "INSERT OR REPLACE INTO cover_letters (job_search_id, vacancy_hash, content) VALUES (?, ?, ?)",
+    )
   }
 
-  loadAll(jobSearchId: string) {
-    const metaRaw = this.loadMetaStmt.get(jobSearchId)
+  loadAll(jobSearchId: JobSearchID) {
+    const metaRaw = this.loadMetaStmt.get(jobSearchId.value)
     if (metaRaw === undefined) return EMPTY_VACANCY_LIST_OUTPUT
     const meta = z
       .object({ generated_at: z.string(), latest_crawl: z.string() })
       .parse(metaRaw)
 
     const vacancies = this.loadAllStmt
-      .all(jobSearchId)
+      .all(jobSearchId.value)
       .map((raw) => hydrateVacancyRow(raw))
 
     return {
@@ -79,20 +87,24 @@ class SqliteVacancyRepository implements VacancyRepository {
     }
   }
 
-  save(jobSearchId: string, vacancies: Vacancy[], latestCrawl: string): void {
+  save(
+    jobSearchId: JobSearchID,
+    vacancies: Vacancy[],
+    latestCrawl: string,
+  ): void {
     const output = createVacancyListOutput(vacancies, latestCrawl)
     const hashes = JSON.stringify(vacancies.map((v) => v.hash))
 
     this.database.transaction(() => {
       this.upsertMetaStmt.run(
-        jobSearchId,
+        jobSearchId.value,
         output.generatedAt,
         output.latestCrawl,
       )
-      this.deleteStaleVacanciesStmt.run(jobSearchId, hashes)
+      this.deleteStaleVacanciesStmt.run(jobSearchId.value, hashes)
       for (const vacancy of vacancies) {
         this.upsertVacancyStmt.run(
-          jobSearchId,
+          jobSearchId.value,
           vacancy.hash,
           JSON.stringify(vacancy),
         )
@@ -100,14 +112,18 @@ class SqliteVacancyRepository implements VacancyRepository {
     })
   }
 
-  findByHash(jobSearchId: string, hash: string): Vacancy | undefined {
-    const row = this.findByHashStmt.getJsonData(jobSearchId, hash)
+  findByHash(jobSearchId: JobSearchID, hash: string): Vacancy | undefined {
+    const row = this.findByHashStmt.getJsonData(jobSearchId.value, hash)
     if (row === undefined) return undefined
     return hydrateVacancy(row)
   }
 
-  addActivity(jobSearchId: string, hash: string, activity: Activity): void {
-    const row = this.findByHashStmt.getJsonData(jobSearchId, hash)
+  addActivity(
+    jobSearchId: JobSearchID,
+    hash: string,
+    activity: Activity,
+  ): void {
+    const row = this.findByHashStmt.getJsonData(jobSearchId.value, hash)
     if (row === undefined) throw new Error(`Vacancy "${hash}" not found`)
 
     const vacancy = hydrateVacancy(row)
@@ -115,7 +131,21 @@ class SqliteVacancyRepository implements VacancyRepository {
       activityHistory: [...vacancy.activityHistory, activity],
     })
 
-    this.updateVacancyStmt.run(JSON.stringify(updated), jobSearchId, hash)
+    this.updateVacancyStmt.run(JSON.stringify(updated), jobSearchId.value, hash)
+  }
+
+  loadCoverLetter(jobSearchId: JobSearchID, vacancyHash: string): string {
+    const raw = this.loadCoverLetterStmt.get(jobSearchId.value, vacancyHash)
+    if (raw === undefined) return ""
+    return CoverLetterRowSchema.parse(raw).content
+  }
+
+  saveCoverLetter(
+    jobSearchId: JobSearchID,
+    vacancyHash: string,
+    content: string,
+  ): void {
+    this.saveCoverLetterStmt.run(jobSearchId.value, vacancyHash, content)
   }
 
   private readonly loadMetaStmt
@@ -125,6 +155,8 @@ class SqliteVacancyRepository implements VacancyRepository {
   private readonly upsertVacancyStmt
   private readonly findByHashStmt
   private readonly updateVacancyStmt
+  private readonly loadCoverLetterStmt
+  private readonly saveCoverLetterStmt
 }
 
 function hydrateVacancyRow(row: Record<string, unknown>): Vacancy {
@@ -139,7 +171,6 @@ function hydrateVacancy(data: unknown): Vacancy {
   return new Vacancy(resolveVacancy(parsed))
 }
 
-// Old commute data stored durations as strings ("1 hour 5 mins") — strip and let next enrichment recompute.
 function stripLegacyCommute(data: unknown): unknown {
   if (!isRecord(data)) return data
   if (isRecord(data.commute) && hasLegacyCommuteFormat(data.commute)) {
@@ -160,3 +191,5 @@ function isValidCommuteEntry(entry: unknown): boolean {
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
 }
+
+const CoverLetterRowSchema = z.object({ content: z.string() })

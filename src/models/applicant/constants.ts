@@ -8,7 +8,6 @@ export const RESUME_TEMPLATES = [
 ] as const
 
 export const DEFAULT_APPLICANT: Applicant = {
-  id: "",
   personal: { name: "", hobbies: [] },
   disclose: { birthdate: false, gender: false, address: false, hobbies: false },
   experience: [],
@@ -16,4 +15,5 @@ export const DEFAULT_APPLICANT: Applicant = {
   skills: [],
   languages: [],
   certifications: [],
+  personalNotes: "",
 }

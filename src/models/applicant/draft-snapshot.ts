@@ -1,21 +1,15 @@
 import { DEFAULT_APPLICANT } from "@/models/applicant/constants.js"
 
-import type {
-  Address,
-  Applicant,
-  ApplicantDraftSnapshot,
-  ApplicantEducation,
-  ApplicantExperience,
-} from "@/models/applicant"
+import type { Applicant } from "@/models/applicant"
 
 import { resolveApplicant } from "@/models/applicant/resolve.js"
 
-export function createDefaultApplicantDraftSnapshot(): ApplicantDraftSnapshot {
+export function createDefaultApplicantDraftSnapshot(): Applicant {
   return resolveApplicant(DEFAULT_APPLICANT)
 }
 
 export function isMeaningfulApplicantDraftSnapshot(
-  snapshot: ApplicantDraftSnapshot,
+  snapshot: Applicant,
 ): boolean {
   const resolved = resolveApplicant(snapshot)
   const checks = [
@@ -101,8 +95,8 @@ function hasMeaningfulCertifications(
   )
 }
 
-function hasMeaningfulNotes(notes: Applicant["personalNotes"]): boolean {
-  return notes?.some((note) => hasText(note)) === true
+function hasMeaningfulNotes(notes: string): boolean {
+  return hasText(notes)
 }
 
 function hasMeaningfulTimelineEntry({
@@ -139,3 +133,7 @@ interface MeaningfulTimelineEntry {
   discloseDates?: boolean
   highlights?: string[]
 }
+
+type Address = import("@/models/config").Address
+type ApplicantEducation = import("@/models/applicant").ApplicantEducation
+type ApplicantExperience = import("@/models/applicant").ApplicantExperience

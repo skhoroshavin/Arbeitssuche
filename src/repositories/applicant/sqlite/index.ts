@@ -1,25 +1,21 @@
 import {
   type Applicant,
-  type ApplicantDraft,
-  type ApplicantDraftSnapshot,
+  type ApplicantID,
   type ApplicantInfo,
-  type ApplicantPersonal,
+  ApplicantID as makeApplicantID,
 } from "@/models/applicant"
+
 import {
-  DEFAULT_APPLICANT,
   isMeaningfulApplicantDraftSnapshot,
   resolveApplicant,
 } from "@/models/applicant/index.js"
-import {
-  loadFinalizedApplicantDraft,
-  type ApplicantRepository,
-} from "../types.js"
-import {
-  Database,
-  createUniqueDerivedId,
-  type Statement,
-} from "@/utils/index.js"
+
+import type { ApplicantRepository } from "../types.js"
+
+import { Database, type Statement } from "@/utils/index.js"
+
 import { z } from "zod"
+
 import { ApplicantSchema } from "@/models/applicant"
 
 export function createSqliteApplicantRepository(
@@ -30,136 +26,122 @@ export function createSqliteApplicantRepository(
       id TEXT PRIMARY KEY,
       name TEXT,
       data TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS applicant_draft (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      data TEXT NOT NULL,
-      meaningful INTEGER NOT NULL
     )
   `)
-  return new SqliteApplicantRepository(database)
+  const repo = new SqliteApplicantRepository(database)
+  repo.seedNextId()
+  return repo
 }
 
 class SqliteApplicantRepository implements ApplicantRepository {
   constructor(database: Database) {
     this.database = database
     this.listStmt = database.prepare("SELECT id, name FROM applicants")
-    this.existsStmt = database.prepare("SELECT 1 FROM applicants WHERE id = ?")
     this.loadStmt = database.prepare("SELECT data FROM applicants WHERE id = ?")
     this.updateStmt = database.prepare(
-      "UPDATE applicants SET name = ?, data = ? WHERE id = ?",
+      "INSERT OR REPLACE INTO applicants (id, name, data) VALUES (?, ?, ?)",
     )
     this.insertStmt = database.prepare(
       "INSERT INTO applicants (id, name, data) VALUES (?, ?, ?)",
     )
+    this.upsertStmt = database.prepare(
+      "INSERT OR REPLACE INTO applicants (id, name, data) VALUES (?, ?, ?)",
+    )
     this.deleteStmt = database.prepare("DELETE FROM applicants WHERE id = ?")
-    this.loadDraftStmt = database.prepare(
-      "SELECT data, meaningful FROM applicant_draft WHERE id = 1",
-    )
-    this.saveDraftStmt = database.prepare(
-      "INSERT OR REPLACE INTO applicant_draft (id, data, meaningful) VALUES (1, ?, ?)",
-    )
-    this.deleteDraftStmt = database.prepare(
-      "DELETE FROM applicant_draft WHERE id = 1",
-    )
+  }
+
+  seedNextId(): void {
+    const result = this.database
+      .prepare(
+        "SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0) AS max FROM applicants WHERE id GLOB '[0-9]*'",
+      )
+      .get()
+    const parsed = z.object({ max: z.number() }).safeParse(result)
+    this.nextId = parsed.success ? parsed.data.max : 0
   }
 
   list(): ApplicantInfo[] {
-    return this.listStmt.all().map((row) => parseApplicantRow(row))
+    return this.listStmt
+      .all()
+      .map((row) => parseApplicantRow(row))
+      .filter((info) => info.id.value !== DRAFT_SENTINEL)
   }
 
-  load(id: string): Applicant {
-    const applicant = this.loadStmt.getJsonData(id)
-    if (applicant === undefined) throw new Error(`Applicant "${id}" not found`)
+  load(id: ApplicantID): Applicant {
+    const applicant = this.loadStmt.getJsonData(id.value)
+    if (applicant === undefined)
+      throw new Error(`Applicant "${id.value}" not found`)
     return resolveApplicant(ApplicantSchema.parse(applicant))
   }
 
-  save(id: string, data: Applicant): void {
+  save(id: ApplicantID, data: Applicant): void {
     const resolved = resolveApplicant(data)
-    const result = this.updateStmt.run(
+    this.updateStmt.run(
+      id.value,
       resolved.personal.name,
       JSON.stringify(resolved),
-      id,
     )
-    if (result.changes === 0) throw new Error(`Applicant "${id}" not found`)
   }
 
-  create(name: string): string {
-    const id = createUniqueDerivedId(name, (id) => this.exists(id))
-    const personal: ApplicantPersonal = {
-      ...DEFAULT_APPLICANT.personal,
-      name,
-    }
-    const data = resolveApplicant({ ...DEFAULT_APPLICANT, id, personal })
-    this.insertStmt.run(id, name, JSON.stringify(data))
-    return id
+  delete(id: ApplicantID): void {
+    this.deleteStmt.run(id.value)
   }
 
-  delete(id: string): void {
-    this.deleteStmt.run(id)
-  }
-
-  saveDraft(draft: ApplicantDraftSnapshot): void {
+  saveDraft(draft: Applicant): void {
     const snapshot = resolveApplicant(draft)
-    const meaningful = isMeaningfulApplicantDraftSnapshot(snapshot)
-    this.saveDraftStmt.run(JSON.stringify(snapshot), meaningful ? 1 : 0)
+    this.upsertStmt.run(
+      DRAFT_SENTINEL,
+      snapshot.personal.name,
+      JSON.stringify(snapshot),
+    )
   }
 
-  finalizeDraft(): string {
+  finalizeDraft(): ApplicantID {
     return this.database.transaction(() => {
-      return loadFinalizedApplicantDraft({
-        draft: this.loadDraft(),
-        getSnapshot: (draft) => draft.snapshot,
-        exists: (candidate) => this.exists(candidate),
-        persist: ({ id, data }) => {
-          this.insertStmt.run(id, data.personal.name, JSON.stringify(data))
-        },
-        clearDraft: () => {
-          this.deleteDraft()
-        },
-      })
+      const draft = this.loadDraft()
+      if (!draft) throw new Error("Applicant draft not found")
+      const id = this.generateId()
+      const resolved = resolveApplicant(structuredClone(draft))
+      this.insertStmt.run(
+        id.value,
+        resolved.personal.name,
+        JSON.stringify(resolved),
+      )
+      this.deleteDraft()
+      return id
     })
   }
 
-  exists(id: string): boolean {
-    return this.existsStmt.get(id) !== undefined
-  }
-
-  loadDraft(): ApplicantDraft | undefined {
-    const raw = this.loadDraftStmt.get()
-    if (raw === undefined) return undefined
-    const parsed = z
-      .object({ data: z.string(), meaningful: z.number() })
-      .parse(raw)
-    const snapshot = resolveApplicant(
-      ApplicantSchema.parse(JSON.parse(parsed.data)),
-    )
-    return {
-      snapshot,
-      meaningful: parsed.meaningful === 1,
-    }
+  loadDraft(): Applicant | undefined {
+    const applicant = this.loadStmt.getJsonData(DRAFT_SENTINEL)
+    if (applicant === undefined) return undefined
+    const parsed = resolveApplicant(ApplicantSchema.parse(applicant))
+    return isMeaningfulApplicantDraftSnapshot(parsed) ? parsed : undefined
   }
 
   deleteDraft(): void {
-    this.deleteDraftStmt.run()
+    this.deleteStmt.run(DRAFT_SENTINEL)
+  }
+
+  private generateId(): ApplicantID {
+    return makeApplicantID(String(++this.nextId))
   }
 
   private readonly database: Database
   private readonly listStmt: Statement
-  private readonly existsStmt: Statement
   private readonly loadStmt: Statement
   private readonly updateStmt: Statement
   private readonly insertStmt: Statement
+  private readonly upsertStmt: Statement
   private readonly deleteStmt: Statement
-  private readonly loadDraftStmt: Statement
-  private readonly saveDraftStmt: Statement
-  private readonly deleteDraftStmt: Statement
+  private nextId = 0
 }
+
+const DRAFT_SENTINEL = "$draft"
 
 function parseApplicantRow(raw: unknown): ApplicantInfo {
   const row = z
     .object({ id: z.string(), name: z.string().nullable() })
     .parse(raw)
-  return { id: row.id, name: row.name || undefined }
+  return { id: makeApplicantID(row.id), displayName: row.name || "" }
 }

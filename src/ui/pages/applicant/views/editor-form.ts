@@ -25,7 +25,7 @@ export function toApplicantFormValues(
       ...entry,
       highlights: joinLines(entry.highlights),
     })),
-    personalNotes: joinLines(applicant.personalNotes),
+    personalNotes: applicant.personalNotes,
   }
 }
 
@@ -45,12 +45,11 @@ export function fromApplicantFormValues(form: ApplicantFormValues): Applicant {
       ...entry,
       highlights: splitLines(entry.highlights),
     })),
-    personalNotes: splitLines(form.personalNotes),
+    personalNotes: form.personalNotes,
   }
 }
 
 export interface ApplicantFormValues {
-  id: string
   personal: ApplicantFormPersonal
   disclose?: ApplicantDisclose
   experience: ApplicantFormExperience[]
@@ -58,7 +57,7 @@ export interface ApplicantFormValues {
   skills: ApplicantSkill[]
   languages: ApplicantLanguage[]
   certifications: ApplicantCertification[]
-  personalNotes?: string
+  personalNotes: string
 }
 
 interface ApplicantFormExperience {

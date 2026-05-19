@@ -67,8 +67,10 @@ export class LiveFlowHelper {
 
     const jobSearchId = readJobSearchId(this.jobSearchPage.page.url())
     const jobSearch = await this.api.getJobSearch(jobSearchId)
-    expect(jobSearch.params.sources).toEqual(["arbeitsagentur"])
-    expect(jobSearch.params.maxResults).toBe(5)
+    expect(jobSearch.jobSearch.sources.map((s) => s.value)).toEqual([
+      "arbeitsagentur",
+    ])
+    expect(jobSearch.jobSearch.maxResultsPerSource).toBe(5)
 
     return jobSearchId
   }

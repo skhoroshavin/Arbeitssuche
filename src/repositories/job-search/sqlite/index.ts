@@ -1,35 +1,25 @@
 import {
-  DEFAULT_SEARCH_PARAMS,
-  DEFAULT_PREFERENCES,
   isMeaningfulJobSearchEditorSnapshot,
-  mapSnapshotToPersistedJobSearch,
-  resolveDraftJobSearchEditorSnapshot,
+  resolveDraftJobSearch,
 } from "@/models/job-search/index.js"
 
 import type {
-  JobSearchDraft,
   JobSearch,
+  JobSearchID,
   JobSearchInfo,
-  JobSearchEditorSnapshot,
   SearchMode,
 } from "@/models/job-search"
+import type { ApplicantID } from "@/models/applicant"
 
+import { JobSearchID as makeJobSearchID } from "@/models/job-search/index.js"
 import { resolveJobSearch } from "@/models/job-search/index.js"
 
 import type { JobSearchRepository } from "../types.js"
 
-import {
-  Database,
-  createUniqueDerivedId,
-  type Statement,
-} from "@/utils/index.js"
+import { Database, type Statement } from "@/utils/index.js"
 
 import { z } from "zod"
-
-import {
-  JobSearchSchema,
-  JobSearchEditorSnapshotSchema,
-} from "@/models/job-search"
+import { JobSearchSchema } from "@/models/job-search"
 
 export function createSqliteJobSearchRepository(
   database: Database,
@@ -39,6 +29,7 @@ export function createSqliteJobSearchRepository(
       id TEXT PRIMARY KEY,
       applicant_id TEXT NOT NULL,
       search_term TEXT NOT NULL DEFAULT '',
+      cover_letter TEXT NOT NULL DEFAULT '',
       data TEXT NOT NULL
     );
 
@@ -50,184 +41,162 @@ export function createSqliteJobSearchRepository(
     );
 
     CREATE INDEX IF NOT EXISTS idx_job_searches_applicant ON job_searches(applicant_id);
-
-    CREATE TABLE IF NOT EXISTS job_search_drafts (
-      applicant_id TEXT PRIMARY KEY,
-      data TEXT NOT NULL,
-      meaningful INTEGER NOT NULL
-    );
   `)
-  return new SqliteJobSearchRepository(database)
+  const repo = new SqliteJobSearchRepository(database)
+  repo.seedNextId()
+  return repo
 }
 
 class SqliteJobSearchRepository implements JobSearchRepository {
   constructor(database: Database) {
     this.database = database
-    this.listStmt = database.prepare(
-      "SELECT id, applicant_id, search_term FROM job_searches",
-    )
     this.listByApplicantStmt = database.prepare(
       "SELECT id, applicant_id, search_term FROM job_searches WHERE applicant_id = ?",
     )
-    this.existsStmt = database.prepare(
-      "SELECT 1 FROM job_searches WHERE id = ?",
-    )
     this.loadStmt = database.prepare(
-      "SELECT data FROM job_searches WHERE id = ?",
+      "SELECT applicant_id, data FROM job_searches WHERE id = ?",
     )
     this.updateStmt = database.prepare(
-      "UPDATE job_searches SET applicant_id = ?, search_term = ?, data = ? WHERE id = ?",
+      "UPDATE job_searches SET applicant_id = ?, search_term = ?, cover_letter = ?, data = ? WHERE id = ?",
     )
     this.insertStmt = database.prepare(
-      "INSERT INTO job_searches (id, applicant_id, search_term, data) VALUES (?, ?, ?, ?)",
+      "INSERT INTO job_searches (id, applicant_id, search_term, cover_letter, data) VALUES (?, ?, ?, ?, ?)",
     )
     this.deleteStmt = database.prepare("DELETE FROM job_searches WHERE id = ?")
     this.loadDraftStmt = database.prepare(
-      "SELECT data, meaningful FROM job_search_drafts WHERE applicant_id = ?",
+      "SELECT data FROM job_searches WHERE id = ?",
     )
     this.saveDraftStmt = database.prepare(
-      "INSERT OR REPLACE INTO job_search_drafts (applicant_id, data, meaningful) VALUES (?, ?, ?)",
+      "INSERT OR REPLACE INTO job_searches (id, applicant_id, search_term, cover_letter, data) VALUES (?, ?, '', '', ?)",
     )
     this.deleteDraftStmt = database.prepare(
-      "DELETE FROM job_search_drafts WHERE applicant_id = ?",
-    )
-    this.loadCoverLetterStmt = database.prepare(
-      "SELECT content FROM cover_letters WHERE job_search_id = ? AND vacancy_hash = ?",
-    )
-    this.saveCoverLetterStmt = database.prepare(
-      "INSERT OR REPLACE INTO cover_letters (job_search_id, vacancy_hash, content) VALUES (?, ?, ?)",
+      "DELETE FROM job_searches WHERE id = ?",
     )
   }
 
-  list(): JobSearchInfo[] {
-    return this.listStmt.all().map((row) => parseJobSearchRow(row))
+  seedNextId(): void {
+    const result = this.database
+      .prepare(
+        "SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0) AS max FROM job_searches WHERE id GLOB '[0-9]*'",
+      )
+      .get()
+    const parsed = z.object({ max: z.number() }).safeParse(result)
+    this.nextId = parsed.success ? parsed.data.max : 0
   }
 
-  listByApplicant(applicantId: string): JobSearchInfo[] {
+  listByApplicant(applicantId: ApplicantID): JobSearchInfo[] {
+    const prefix = `$draft_${applicantId.value}`
     return this.listByApplicantStmt
-      .all(applicantId)
+      .all(applicantId.value)
       .map((row) => parseJobSearchRow(row))
+      .filter((info) => info.id.value !== prefix)
   }
 
   create(
     searchTerm: string,
-    applicantId: string,
+    applicantId: ApplicantID,
     searchMode?: SearchMode,
-  ): string {
-    const id = createUniqueDerivedId(searchTerm, (id) => this.exists(id))
-    const parameters = { ...DEFAULT_SEARCH_PARAMS, searchTerm }
-    if (searchMode) parameters.searchMode = searchMode
+  ): JobSearchID {
+    const id = this.generateId()
     const data = resolveJobSearch({
-      id,
-      applicantId,
-      params: parameters,
-      preferences: { ...DEFAULT_PREFERENCES },
+      searchTerm,
+      mode: searchMode ?? "employment",
     })
-    this.insertStmt.run(id, applicantId, searchTerm, JSON.stringify(data))
+    this.insertStmt.run(
+      id.value,
+      applicantId.value,
+      searchTerm,
+      "",
+      JSON.stringify(data),
+    )
     return id
   }
 
-  load(id: string): JobSearch {
-    const jobSearch = this.loadStmt.getJsonData(id)
-    if (jobSearch === undefined) throw new Error(`Job search "${id}" not found`)
-    return resolveJobSearch(JobSearchSchema.parse(jobSearch))
+  load(id: JobSearchID): { jobSearch: JobSearch; applicantId: ApplicantID } {
+    const row = this.loadStmt.get(id.value)
+    if (row === undefined) throw new Error(`Job search "${id.value}" not found`)
+    const parsed = z
+      .object({ applicant_id: z.string(), data: z.string() })
+      .parse(row)
+    const jobSearch = resolveJobSearch(
+      JobSearchSchema.parse(JSON.parse(parsed.data)),
+    )
+    return {
+      jobSearch,
+      applicantId: { value: parsed.applicant_id },
+    }
   }
 
-  save(id: string, data: JobSearch): void {
+  save(id: JobSearchID, data: JobSearch): void {
     const resolved = resolveJobSearch(data)
     const result = this.updateStmt.run(
-      resolved.applicantId,
-      resolved.params.searchTerm,
+      this.loadApplicantId(id),
+      resolved.searchTerm,
+      resolved.coverLetter,
       JSON.stringify(resolved),
-      id,
+      id.value,
     )
-    if (result.changes === 0) throw new Error(`Job search "${id}" not found`)
+    if (result.changes === 0)
+      throw new Error(`Job search "${id.value}" not found`)
   }
 
-  delete(id: string): void {
-    this.deleteStmt.run(id)
+  private loadApplicantId(id: JobSearchID): string {
+    const row = this.loadStmt.get(id.value)
+    if (row === undefined) throw new Error(`Job search "${id.value}" not found`)
+    return z.object({ applicant_id: z.string() }).parse(row).applicant_id
   }
 
-  saveDraft(applicantId: string, draft: JobSearchEditorSnapshot): void {
-    const meaningful = isMeaningfulJobSearchEditorSnapshot(draft)
+  delete(id: JobSearchID): void {
+    this.deleteStmt.run(id.value)
+  }
+
+  saveDraft(applicantId: ApplicantID, draft: JobSearch): void {
+    const resolved = resolveJobSearch(draft)
+    const sentinel = draftSentinel(applicantId)
     this.saveDraftStmt.run(
-      applicantId,
-      JSON.stringify(draft),
-      meaningful ? 1 : 0,
+      sentinel,
+      applicantId.value,
+      JSON.stringify(resolved),
     )
   }
 
-  finalizeDraft(applicantId: string): string {
+  finalizeDraft(applicantId: ApplicantID): JobSearchID {
     return this.database.transaction(() => {
       const draft = this.loadDraft(applicantId)
       if (!draft)
-        throw new Error(`Draft for applicant "${applicantId}" not found`)
-      const resolvedSnapshot = resolveDraftJobSearchEditorSnapshot(
-        draft.snapshot,
-      )
-      const resolvedSearchTerm = resolvedSnapshot.params.searchTerm
-      const id = createUniqueDerivedId(resolvedSearchTerm, (searchId) =>
-        this.exists(searchId),
-      )
-      const jobSearch = mapSnapshotToPersistedJobSearch(
-        id,
-        applicantId,
-        resolvedSnapshot,
-      )
+        throw new Error(`Draft for applicant "${applicantId.value}" not found`)
+      const resolved = resolveDraftJobSearch(structuredClone(draft))
+      const id = this.generateId()
       this.insertStmt.run(
-        id,
-        applicantId,
-        jobSearch.params.searchTerm,
-        JSON.stringify(jobSearch),
+        id.value,
+        applicantId.value,
+        resolved.searchTerm,
+        resolved.coverLetter,
+        JSON.stringify(resolved),
       )
-      this.saveApplicationCoverLetter(id, "", draft.snapshot.coverLetterContent)
       this.deleteDraft(applicantId)
       return id
     })
   }
 
-  exists(id: string): boolean {
-    return this.existsStmt.get(id) !== undefined
+  loadDraft(applicantId: ApplicantID): JobSearch | undefined {
+    const sentinel = draftSentinel(applicantId)
+    const row = this.loadDraftStmt.getJsonData(sentinel)
+    if (row === undefined) return undefined
+    const parsed = resolveJobSearch(JobSearchSchema.parse(row))
+    return isMeaningfulJobSearchEditorSnapshot(parsed) ? parsed : undefined
   }
 
-  loadDraft(applicantId: string): JobSearchDraft | undefined {
-    const raw = this.loadDraftStmt.get(applicantId)
-    if (raw === undefined) return undefined
-    const parsed = z
-      .object({ data: z.string(), meaningful: z.number() })
-      .parse(raw)
-    const snapshot = JobSearchEditorSnapshotSchema.parse(
-      JSON.parse(parsed.data),
-    )
-    return {
-      applicantId,
-      snapshot,
-      meaningful: parsed.meaningful === 1,
-    }
+  deleteDraft(applicantId: ApplicantID): void {
+    this.deleteDraftStmt.run(draftSentinel(applicantId))
   }
 
-  deleteDraft(applicantId: string): void {
-    this.deleteDraftStmt.run(applicantId)
-  }
-
-  loadApplicationCoverLetter(jobSearchId: string, vacancyHash: string): string {
-    const raw = this.loadCoverLetterStmt.get(jobSearchId, vacancyHash)
-    if (raw === undefined) return ""
-    return CoverLetterRowSchema.parse(raw).content
-  }
-
-  saveApplicationCoverLetter(
-    jobSearchId: string,
-    vacancyHash: string,
-    content: string,
-  ): void {
-    this.saveCoverLetterStmt.run(jobSearchId, vacancyHash, content)
+  private generateId(): JobSearchID {
+    return makeJobSearchID(String(++this.nextId))
   }
 
   private readonly database: Database
-  private readonly listStmt: Statement
   private readonly listByApplicantStmt: Statement
-  private readonly existsStmt: Statement
   private readonly loadStmt: Statement
   private readonly updateStmt: Statement
   private readonly insertStmt: Statement
@@ -235,19 +204,19 @@ class SqliteJobSearchRepository implements JobSearchRepository {
   private readonly loadDraftStmt: Statement
   private readonly saveDraftStmt: Statement
   private readonly deleteDraftStmt: Statement
-  private readonly loadCoverLetterStmt: Statement
-  private readonly saveCoverLetterStmt: Statement
+  private nextId = 0
+}
+
+function draftSentinel(applicantId: ApplicantID): string {
+  return `$draft_${applicantId.value}`
 }
 
 function parseJobSearchRow(raw: unknown): JobSearchInfo {
   const r = z
     .object({
       id: z.string(),
-      applicant_id: z.string(),
       search_term: z.string(),
     })
     .parse(raw)
-  return { id: r.id, applicantId: r.applicant_id, searchTerm: r.search_term }
+  return { id: makeJobSearchID(r.id), displayName: r.search_term }
 }
-
-const CoverLetterRowSchema = z.object({ content: z.string() })

@@ -2,17 +2,9 @@ import { z } from "zod"
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
-import type {
-  JobSearch,
-  JobSearchEditorSnapshot,
-  JobSearchInfo,
-} from "@/models/job-search"
+import type { JobSearch, JobSearchInfo } from "@/models/job-search"
 
-import {
-  JobSearchSchema,
-  JobSearchInfoSchema,
-  JobSearchDraftSchema,
-} from "@/models/job-search"
+import { JobSearchSchema, JobSearchInfoSchema } from "@/models/job-search"
 
 import type {
   Activity,
@@ -43,8 +35,10 @@ export function useJobSearchListView(applicantId?: string) {
 export function useJobSearch(id: string) {
   return useQuery({
     queryKey: jobSearchQueryKeys.detail(id),
-    queryFn: async () =>
-      JobSearchSchema.parse(await api().invoke("job-searches:load", id)),
+    queryFn: async () => {
+      const response = await api().invoke("job-searches:load", id)
+      return JobSearchLoadResponseSchema.parse(response)
+    },
     enabled: !!id,
   })
 }
@@ -82,8 +76,8 @@ export function useJobSearchDraft(applicantId: string) {
 export function useSaveJobSearchDraft(applicantId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (snapshot: JobSearchEditorSnapshot) =>
-      api().invoke("job-searches:draft:save", applicantId, snapshot),
+    mutationFn: (draft: JobSearch) =>
+      api().invoke("job-searches:draft:save", applicantId, draft),
     onSuccess: () =>
       invalidateQuery(queryClient, jobSearchQueryKeys.draft(applicantId)),
   })
@@ -181,11 +175,7 @@ export function useVacancyCoverLetter(id: string, hash: string) {
     queryKey: jobSearchQueryKeys.vacancyCoverLetter(id, hash),
     queryFn: async () =>
       ContentSchema.parse(
-        await api().invoke(
-          "job-searches:vacancies:cover-letter:load",
-          id,
-          hash,
-        ),
+        await api().invoke("vacancies:cover-letter:load", id, hash),
       ),
     enabled: !!id && !!hash,
   })
@@ -195,12 +185,7 @@ export function useUpdateVacancyCoverLetter(id: string, hash: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (content: string) =>
-      api().invoke(
-        "job-searches:vacancies:cover-letter:save",
-        id,
-        hash,
-        content,
-      ),
+      api().invoke("vacancies:cover-letter:save", id, hash, content),
     onSuccess: () =>
       invalidateQuery(
         queryClient,
@@ -213,11 +198,7 @@ export function useGenerateVacancyCoverLetter(id: string, hash: string) {
   return useMutation({
     mutationFn: async () =>
       ContentSchema.parse(
-        await api().invoke(
-          "job-searches:vacancies:cover-letter:generate",
-          id,
-          hash,
-        ),
+        await api().invoke("vacancies:cover-letter:generate", id, hash),
       ),
   })
 }
@@ -338,8 +319,13 @@ const JobSearchListResponseSchema = z.object({
   jobSearches: z.array(JobSearchInfoSchema),
 })
 
+const JobSearchLoadResponseSchema = z.object({
+  jobSearch: JobSearchSchema,
+  applicantId: z.string(),
+})
+
 const JobSearchDraftResponseSchema = z.object({
-  draft: JobSearchDraftSchema.optional(),
+  draft: JobSearchSchema.optional(),
 })
 
 const CreatedJobSearchIdSchema = z.object({

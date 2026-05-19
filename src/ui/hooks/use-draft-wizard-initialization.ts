@@ -11,8 +11,8 @@ export function useDraftWizardInitialization<TSnapshot>({
     async function initWizard() {
       const result = await refetch()
       const draft = result.data?.draft
-      if (draft?.meaningful) {
-        setResolvedSnapshot(draft.snapshot)
+      if (draft) {
+        setResolvedSnapshot(draft)
         setPhase(skipResumePrompt ? "editing" : "resume-prompt")
       } else {
         setResolvedSnapshot(createDefaultSnapshot())
@@ -26,9 +26,7 @@ export function useDraftWizardInitialization<TSnapshot>({
 
 interface DraftWizardInitializationOptions<TSnapshot> {
   refetch: () => Promise<{
-    data?:
-      | { draft?: { meaningful: boolean; snapshot: TSnapshot } | null }
-      | undefined
+    data?: { draft?: TSnapshot | null } | undefined
   }>
   createDefaultSnapshot: () => TSnapshot
   setResolvedSnapshot: (snapshot: TSnapshot) => void

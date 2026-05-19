@@ -3,10 +3,9 @@ import type { ApplicantRepository } from "@/repositories/applicant"
 import type { VacancyRepository } from "@/repositories/vacancy"
 import type { LlmClient } from "@/plugins/llm"
 import { ensureLlmAvailable } from "@/services/llm/index.js"
-import {
-  mapSnapshotToPersistedJobSearch,
-  resolveDraftJobSearchEditorSnapshot,
-} from "@/models/job-search/index.js"
+import { resolveDraftJobSearch } from "@/models/job-search/index.js"
+import { JobSearchID } from "@/models/job-search"
+import { ApplicantID } from "@/models/applicant"
 import { generateCoverLetter } from "./generate.js"
 import { generatePersonalizedCoverLetter } from "./generate-personalized.js"
 
@@ -19,8 +18,10 @@ export class CoverLetterWriter {
   ) {}
 
   async generate(jobSearchId: string): Promise<{ content: string }> {
-    const jobSearch = this.jobSearchRepo.load(jobSearchId)
-    const applicant = this.applicantRepo.load(jobSearch.applicantId)
+    const { jobSearch, applicantId } = this.jobSearchRepo.load(
+      JobSearchID(jobSearchId),
+    )
+    const applicant = this.applicantRepo.load(applicantId)
 
     ensureLlmAvailable(this.llm)
 
@@ -29,21 +30,15 @@ export class CoverLetterWriter {
   }
 
   async generateFromDraft(applicantId: string): Promise<{ content: string }> {
-    const draft = this.jobSearchRepo.loadDraft(applicantId)
+    const draft = this.jobSearchRepo.loadDraft(ApplicantID(applicantId))
     if (!draft)
       throw new Error(`Draft for applicant "${applicantId}" not found`)
-    const applicant = this.applicantRepo.load(applicantId)
-    const resolvedSnapshot = resolveDraftJobSearchEditorSnapshot(draft.snapshot)
+    const applicant = this.applicantRepo.load(ApplicantID(applicantId))
+    const resolved = resolveDraftJobSearch(draft)
 
     ensureLlmAvailable(this.llm)
 
-    const jobSearch = mapSnapshotToPersistedJobSearch(
-      "draft",
-      applicantId,
-      resolvedSnapshot,
-    )
-
-    const content = await generateCoverLetter(applicant, jobSearch, this.llm)
+    const content = await generateCoverLetter(applicant, resolved, this.llm)
     return { content }
   }
 
@@ -53,17 +48,19 @@ export class CoverLetterWriter {
   ): Promise<{ content: string }> {
     ensureLlmAvailable(this.llm)
 
-    const vacancy = this.vacancyRepo.findByHash(jobSearchId, vacancyHash)
+    const vacancy = this.vacancyRepo.findByHash(
+      JobSearchID(jobSearchId),
+      vacancyHash,
+    )
     if (!vacancy) {
       throw new Error(`Vacancy "${vacancyHash}" not found`)
     }
 
-    const jobSearch = this.jobSearchRepo.load(jobSearchId)
-    const applicant = this.applicantRepo.load(jobSearch.applicantId)
-    const templateCoverLetter = this.jobSearchRepo.loadApplicationCoverLetter(
-      jobSearchId,
-      "",
+    const { jobSearch, applicantId } = this.jobSearchRepo.load(
+      JobSearchID(jobSearchId),
     )
+    const applicant = this.applicantRepo.load(applicantId)
+    const templateCoverLetter = jobSearch.coverLetter
 
     const content = await generatePersonalizedCoverLetter(
       applicant,
@@ -72,8 +69,8 @@ export class CoverLetterWriter {
       jobSearch,
       this.llm,
     )
-    this.jobSearchRepo.saveApplicationCoverLetter(
-      jobSearchId,
+    this.vacancyRepo.saveCoverLetter(
+      JobSearchID(jobSearchId),
       vacancyHash,
       content,
     )

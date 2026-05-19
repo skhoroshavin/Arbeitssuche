@@ -5,13 +5,13 @@ import { createStubApplicantRepository } from "@/repositories/applicant"
 import { createStubJobSearchRepository } from "@/repositories/job-search"
 import { createStubVacancyRepository } from "@/repositories/vacancy"
 import { CoverLetterWriter } from "."
+import { ApplicantID } from "@/models/applicant"
 
 describe("CoverLetterWriter", () => {
   test("generates cover letter from applicant draft", async () => {
     const applicantRepo = createStubApplicantRepository({
-      anna: {
+      "1": {
         ...DEFAULT_APPLICANT,
-        id: "anna",
         personal: {
           ...DEFAULT_APPLICANT.personal,
           name: "Anna Tester",
@@ -20,8 +20,8 @@ describe("CoverLetterWriter", () => {
     })
     const jobSearchRepo = createStubJobSearchRepository()
     const draft = createDefaultJobSearchEditorSnapshot()
-    draft.params.searchTerm = "React"
-    jobSearchRepo.saveDraft("anna", draft)
+    draft.searchTerm = "React"
+    jobSearchRepo.saveDraft(ApplicantID("1"), draft)
 
     const llm = {
       complete: vi.fn().mockResolvedValue("generated letter"),
@@ -36,7 +36,7 @@ describe("CoverLetterWriter", () => {
       llm,
     )
 
-    const result = await writer.generateFromDraft("anna")
+    const result = await writer.generateFromDraft("1")
 
     expect(result.content).toBe("generated letter")
     expect(llm.complete).toHaveBeenCalledOnce()

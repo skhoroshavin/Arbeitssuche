@@ -9,7 +9,7 @@ import {
   isMeaningfulJobSearchEditorSnapshot,
 } from "@/models/job-search"
 
-import type { JobSearchEditorSnapshot } from "@/models/job-search"
+import type { JobSearch } from "@/models/job-search"
 
 import {
   useApiKeyStatus,
@@ -38,6 +38,9 @@ import type {
   JobSearchEditorConfigValue,
 } from "@/ui/views"
 
+import { SearchSource } from "@/models/job-search"
+import { splitLines } from "@/ui/views"
+
 export default function JobSearchWizardPage({
   initialStep,
   onStepChange,
@@ -48,7 +51,7 @@ export default function JobSearchWizardPage({
   const [phase, setPhase] = useState<Phase>("loading")
   const [step, setStep] = useState<WizardStep_>(initialStep ?? "parameters")
   const [resolvedSnapshot, setResolvedSnapshot] = useState<
-    JobSearchEditorSnapshot | undefined
+    JobSearch | undefined
   >()
 
   const draftQuery = useJobSearchDraft(applicantId)
@@ -75,27 +78,24 @@ export default function JobSearchWizardPage({
 
   const isEditing = phase === "editing"
 
-  const { setValue, watch } = useAutoSaveForm<
-    WizardFormValues,
-    JobSearchEditorSnapshot
-  >({
+  const { setValue, watch } = useAutoSaveForm<WizardFormValues, JobSearch>({
     queryResult: {
       data: isEditing ? resolvedSnapshot : undefined,
       isLoading: !isEditing,
     },
-    toFormValues: mapSnapshotToFormValues,
+    toFormValues: mapJobSearchToFormValues,
     onSave: async (formValues) => {
-      await saveDraft.mutateAsync(mapFormValuesToSnapshot(formValues))
+      await saveDraft.mutateAsync(mapFormValuesToJobSearch(formValues))
     },
     shouldFlushOnUnmount: () => lifecycle.shouldFlushOnUnmount(),
     formOptions: {
-      defaultValues: mapSnapshotToFormValues(
+      defaultValues: mapJobSearchToFormValues(
         createDefaultJobSearchEditorSnapshot(),
       ),
     },
   })
 
-  const currentSnapshot = mapFormValuesToSnapshot(watch())
+  const currentSnapshot = mapFormValuesToJobSearch(watch())
   const lifecycle = useDraftWizardLifecycle({
     snapshot: currentSnapshot,
     isMeaningful: isMeaningfulJobSearchEditorSnapshot,
@@ -177,7 +177,7 @@ export default function JobSearchWizardPage({
 
 interface JobSearchWizardPageProperties {
   initialStep?: WizardStep_
-  onStepChange?: (step: WizardStep_, snapshot: JobSearchEditorSnapshot) => void
+  onStepChange?: (step: WizardStep_, snapshot: JobSearch) => void
 }
 
 type Phase = "loading" | "resume-prompt" | "editing"
@@ -190,36 +190,35 @@ const STEP_LABELS: Record<WizardStep_, string> = {
   "cover-letter": "Anschreiben",
 }
 
-function mapSnapshotToFormValues(
-  snapshot: JobSearchEditorSnapshot,
-): WizardFormValues {
-  const config = mapSnapshotToConfigValue(snapshot)
-
+function mapJobSearchToFormValues(jobSearch: JobSearch): WizardFormValues {
   return {
-    ...config,
-    coverLetterContent: snapshot.coverLetterContent,
+    searchTerm: jobSearch.searchTerm,
+    radiusKm: jobSearch.radiusKm,
+    searchMode: jobSearch.mode,
+    sources: jobSearch.sources.map((s: { value: string }) => s.value),
+    maxResults:
+      jobSearch.maxResultsPerSource === 0
+        ? undefined
+        : jobSearch.maxResultsPerSource,
+    maxCommuteMinutes:
+      jobSearch.maxCommuteMinutes === 0
+        ? undefined
+        : jobSearch.maxCommuteMinutes,
+    freeText: splitLines(jobSearch.notes),
+    coverLetterContent: jobSearch.coverLetter,
   }
 }
 
-function mapFormValuesToSnapshot(
-  values: WizardFormValues,
-): JobSearchEditorSnapshot {
-  const config = mapFormValuesToConfigValue(values)
-
+function mapFormValuesToJobSearch(values: WizardFormValues): JobSearch {
   return {
-    params: {
-      searchTerm: config.searchTerm,
-      radiusKm: config.radiusKm,
-      searchMode: config.searchMode,
-      sources: config.sources,
-      maxResults: config.maxResults,
-    },
-    preferences: {
-      maxDistanceKm: config.maxDistanceKm,
-      maxCommuteMinutes: config.maxCommuteMinutes,
-      freeText: config.freeText,
-    },
-    coverLetterContent: values.coverLetterContent,
+    searchTerm: values.searchTerm,
+    radiusKm: values.radiusKm,
+    mode: values.searchMode,
+    sources: values.sources.map((s) => SearchSource(s)),
+    maxResultsPerSource: values.maxResults ?? 0,
+    maxCommuteMinutes: values.maxCommuteMinutes ?? 0,
+    notes: values.freeText.join("\n"),
+    coverLetter: values.coverLetterContent,
   }
 }
 
@@ -273,9 +272,9 @@ interface JobSearchWizardStepViewProperties {
   watch: UseFormWatch<WizardFormValues>
   setValue: UseFormSetValue<WizardFormValues>
   saveDraft: {
-    mutateAsync: (snapshot: JobSearchEditorSnapshot) => Promise<unknown>
+    mutateAsync: (snapshot: JobSearch) => Promise<unknown>
   }
-  currentSnapshot: JobSearchEditorSnapshot
+  currentSnapshot: JobSearch
   generateDraftCoverLetter: GenerateDraftCoverLetter
   allSites: SiteEntry[]
   hasLlmKey: boolean
@@ -308,7 +307,6 @@ function applyWizardConfigValue(
   setValue("searchMode", nextValues.searchMode, { shouldDirty: true })
   setValue("sources", nextValues.sources, { shouldDirty: true })
   setValue("maxResults", nextValues.maxResults, { shouldDirty: true })
-  setValue("maxDistanceKm", nextValues.maxDistanceKm, { shouldDirty: true })
   setValue("maxCommuteMinutes", nextValues.maxCommuteMinutes, {
     shouldDirty: true,
   })
@@ -324,7 +322,6 @@ function mapConfigValueToFormValues(
   | "searchMode"
   | "sources"
   | "maxResults"
-  | "maxDistanceKm"
   | "maxCommuteMinutes"
   | "freeText"
 > {
@@ -334,30 +331,8 @@ function mapConfigValueToFormValues(
     searchMode: value.searchMode,
     sources: value.sources,
     maxResults: value.maxResults,
-    maxDistanceKm: value.maxDistanceKm,
     maxCommuteMinutes: value.maxCommuteMinutes,
     freeText: value.freeText,
-  }
-}
-
-function mapFormValuesToConfigValue(
-  value: WizardFormValues,
-): JobSearchEditorConfigValue {
-  return mapConfigValueToFormValues(value)
-}
-
-function mapSnapshotToConfigValue(
-  snapshot: JobSearchEditorSnapshot,
-): JobSearchEditorConfigValue {
-  return {
-    searchTerm: snapshot.params.searchTerm,
-    radiusKm: snapshot.params.radiusKm,
-    searchMode: snapshot.params.searchMode,
-    sources: snapshot.params.sources,
-    maxResults: snapshot.params.maxResults,
-    maxDistanceKm: snapshot.preferences.maxDistanceKm,
-    maxCommuteMinutes: snapshot.preferences.maxCommuteMinutes,
-    freeText: snapshot.preferences.freeText,
   }
 }
 
@@ -370,7 +345,6 @@ function readConfigValue(
     searchMode: watch("searchMode"),
     sources: watch("sources"),
     maxResults: watch("maxResults"),
-    maxDistanceKm: watch("maxDistanceKm"),
     maxCommuteMinutes: watch("maxCommuteMinutes"),
     freeText: watch("freeText"),
   }
@@ -382,7 +356,6 @@ interface WizardFormValues {
   searchMode: "employment" | "entry-level" | "apprenticeship"
   sources: string[]
   maxResults?: number
-  maxDistanceKm?: number
   maxCommuteMinutes?: number
   freeText: string[]
   coverLetterContent: string

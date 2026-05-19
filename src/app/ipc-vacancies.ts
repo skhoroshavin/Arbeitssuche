@@ -2,10 +2,11 @@ import { VacancyWithStatusSchema } from "@/models/vacancy"
 import type { Activity } from "@/models/vacancy"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { Applicant } from "@/models/applicant"
-import type { SearchPreferences } from "@/models/job-search"
+import type { JobSearch } from "@/models/job-search"
 import type { AppServices } from "."
 import { EnrichQueue } from "@/services/vacancy-scanner/index.js"
 import type { IpcHandle, SafeSend } from "./ipc-handlers.js"
+import { JobSearchID } from "@/models/job-search"
 
 export function registerVacanciesHandlers(
   handle: IpcHandle,
@@ -13,7 +14,7 @@ export function registerVacanciesHandlers(
   safeSend: SafeSend,
 ): void {
   handle("job-searches:vacancies:list", (id: string) => {
-    const output = services.vacancyRepo.loadAll(id)
+    const output = services.vacancyRepo.loadAll(JobSearchID(id))
     const vacancies = output.vacancies.map((v) => ({
       ...v,
       status: v.deriveStatus(),
@@ -29,12 +30,12 @@ export function registerVacanciesHandlers(
   handle(
     "job-searches:vacancies:seed",
     (id: string, vacancies: Vacancy[], latestCrawl: string) => {
-      services.vacancyRepo.save(id, vacancies, latestCrawl)
+      services.vacancyRepo.save(JobSearchID(id), vacancies, latestCrawl)
       return { ok: true as const, count: vacancies.length }
     },
   )
   handle("job-searches:vacancies:load", (id: string, hash: string) => {
-    const vacancy = services.vacancyRepo.findByHash(id, hash)
+    const vacancy = services.vacancyRepo.findByHash(JobSearchID(id), hash)
     if (!vacancy) {
       throw new Error(`Vacancy "${hash}" not found`)
     }
@@ -47,47 +48,63 @@ export function registerVacanciesHandlers(
   handle(
     "job-searches:vacancies:add-activity",
     (id: string, hash: string, activity: Activity) => {
-      services.vacancyRepo.addActivity(id, hash, activity)
+      services.vacancyRepo.addActivity(JobSearchID(id), hash, activity)
       return { ok: true }
     },
   )
 
   handle(
-    "job-searches:vacancies:cover-letter:load",
-    (id: string, hash: string) => ({
-      content: services.jobSearchRepo.loadApplicationCoverLetter(id, hash),
+    "vacancies:cover-letter:load",
+    (jobSearchId: string, vacancyHash: string) => ({
+      content: services.vacancyRepo.loadCoverLetter(
+        JobSearchID(jobSearchId),
+        vacancyHash,
+      ),
     }),
   )
   handle(
-    "job-searches:vacancies:cover-letter:save",
-    (id: string, hash: string, content: string) => {
-      services.jobSearchRepo.saveApplicationCoverLetter(id, hash, content)
+    "vacancies:cover-letter:save",
+    (jobSearchId: string, vacancyHash: string, content: string) => {
+      services.vacancyRepo.saveCoverLetter(
+        JobSearchID(jobSearchId),
+        vacancyHash,
+        content,
+      )
       return { ok: true }
     },
   )
   handle(
-    "job-searches:vacancies:cover-letter:generate",
-    (id: string, hash: string) =>
-      services.coverLetterWriter.generateForVacancy(id, hash),
+    "vacancies:cover-letter:generate",
+    (jobSearchId: string, vacancyHash: string) =>
+      services.coverLetterWriter.generateForVacancy(jobSearchId, vacancyHash),
   )
 
   handle("vacancies:re-enrich", async (jobSearchId: string, hash: string) => {
-    const vacancy = services.vacancyRepo.findByHash(jobSearchId, hash)
+    const vacancy = services.vacancyRepo.findByHash(
+      JobSearchID(jobSearchId),
+      hash,
+    )
     if (!vacancy) throw new Error(`Vacancy "${hash}" not found`)
 
-    const jobSearch = services.jobSearchRepo.load(jobSearchId)
-    const applicant = services.applicantRepo.load(jobSearch.applicantId)
+    const { jobSearch, applicantId } = services.jobSearchRepo.load(
+      JobSearchID(jobSearchId),
+    )
+    const applicant = services.applicantRepo.load(applicantId)
 
     const dirtyVacancy = vacancy.with({ enrichmentDirty: true })
     const enriched = await services.vacancyEnricher.enrich(dirtyVacancy, {
       applicant,
-      preferences: jobSearch.preferences,
+      jobSearch,
     })
 
-    const latestCrawl = services.vacancyRepo.loadAll(jobSearchId).latestCrawl
-    const allVacancies = services.vacancyRepo.loadAll(jobSearchId).vacancies
+    const latestCrawl = services.vacancyRepo.loadAll(
+      JobSearchID(jobSearchId),
+    ).latestCrawl
+    const allVacancies = services.vacancyRepo.loadAll(
+      JobSearchID(jobSearchId),
+    ).vacancies
     const updated = allVacancies.map((v) => (v.hash === hash ? enriched : v))
-    services.vacancyRepo.save(jobSearchId, updated, latestCrawl)
+    services.vacancyRepo.save(JobSearchID(jobSearchId), updated, latestCrawl)
 
     if (enriched.enrichmentDirty) {
       throw new Error(
@@ -106,9 +123,11 @@ export function registerVacanciesHandlers(
     const abortController = new AbortController()
     batchEnrichAbortControllers.set(jobSearchId, abortController)
 
-    const jobSearch = services.jobSearchRepo.load(jobSearchId)
-    const applicant = services.applicantRepo.load(jobSearch.applicantId)
-    const output = services.vacancyRepo.loadAll(jobSearchId)
+    const { jobSearch, applicantId } = services.jobSearchRepo.load(
+      JobSearchID(jobSearchId),
+    )
+    const applicant = services.applicantRepo.load(applicantId)
+    const output = services.vacancyRepo.loadAll(JobSearchID(jobSearchId))
     const vacanciesNeedingEnrichment = output.vacancies.filter(
       (v) => !v.enriched || v.enrichmentDirty,
     )
@@ -125,7 +144,7 @@ export function registerVacanciesHandlers(
         services,
         jobSearchId,
         applicant,
-        jobSearch.preferences,
+        jobSearch,
         existingByHash,
         output.latestCrawl,
         safeSend,
@@ -144,8 +163,9 @@ export function registerVacanciesHandlers(
         return { count: 0, aborted: true }
       }
 
-      const updatedVacancies =
-        services.vacancyRepo.loadAll(jobSearchId).vacancies
+      const updatedVacancies = services.vacancyRepo.loadAll(
+        JobSearchID(jobSearchId),
+      ).vacancies
       const anyStillDirty = updatedVacancies.some(
         (vacancy) => vacancy.enrichmentDirty,
       )
@@ -176,7 +196,7 @@ function createEnrichQueue(
   services: AppServices,
   jobSearchId: string,
   applicant: Applicant,
-  preferences: SearchPreferences,
+  jobSearch: JobSearch,
   existingByHash: Map<string, Vacancy>,
   latestCrawl: string,
   safeSend: SafeSend,
@@ -184,11 +204,11 @@ function createEnrichQueue(
 ): EnrichQueue {
   return new EnrichQueue({
     enricher: services.vacancyEnricher,
-    context: { applicant, preferences },
+    context: { applicant, jobSearch },
     onEnriched: (enriched, hash) => {
       existingByHash.set(hash, enriched)
       services.vacancyRepo.save(
-        jobSearchId,
+        JobSearchID(jobSearchId),
         [...existingByHash.values()],
         latestCrawl,
       )

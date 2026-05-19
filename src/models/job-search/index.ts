@@ -1,48 +1,27 @@
+import { JobSearchID, SearchSource } from "./id.js"
+
+export interface JobSearch {
+  searchTerm: string
+  radiusKm: number
+  mode: SearchMode
+  sources: SearchSource[]
+  maxResultsPerSource: number
+  maxCommuteMinutes: number
+  notes: string
+  coverLetter: string
+}
+
+export interface JobSearchInfo {
+  id: JobSearchID
+  displayName: string
+}
+
 export interface JobSearchCriteria {
   location: string
   query: string
   radiusKm: number
   mode: SearchMode
   limit?: number
-}
-
-export interface JobSearch {
-  id: string
-  applicantId: string
-  params: SearchParameters
-  preferences: SearchPreferences
-}
-
-export interface JobSearchDraft {
-  applicantId: string
-  snapshot: JobSearchEditorSnapshot
-  meaningful: boolean
-}
-
-export interface JobSearchEditorSnapshot {
-  params: SearchParameters
-  preferences: SearchPreferences
-  coverLetterContent: string
-}
-
-export interface SearchParameters {
-  searchTerm: string
-  radiusKm: number
-  searchMode: SearchMode
-  sources: string[]
-  maxResults?: number
-}
-
-export interface SearchPreferences {
-  maxDistanceKm?: number
-  maxCommuteMinutes?: number
-  freeText: string[]
-}
-
-export interface JobSearchInfo {
-  id: string
-  applicantId: string
-  searchTerm: string
 }
 
 export interface ConsultationSuggestion {
@@ -53,24 +32,14 @@ export interface ConsultationSuggestion {
 
 export type SearchMode = "employment" | "entry-level" | "apprenticeship"
 
-export { SEARCH_MODE_LABELS } from "./constants.js"
-export {
-  SEARCH_MODES,
-  DEFAULT_SEARCH_PARAMS,
-  DEFAULT_PREFERENCES,
-} from "./constants.js"
+export { SEARCH_MODES, SEARCH_MODE_LABELS } from "./constants.js"
 export { resolveJobSearch } from "./resolve.js"
 export {
   createDefaultJobSearchEditorSnapshot,
-  resolveDraftJobSearchEditorSnapshot,
-  mapPersistedJobSearchToSnapshot,
-  mapSnapshotToPersistedJobSearch,
   isMeaningfulJobSearchEditorSnapshot,
+  resolveDraftJobSearch,
 } from "./editor-snapshot.js"
 
-export {
-  JobSearchSchema,
-  JobSearchEditorSnapshotSchema,
-  JobSearchDraftSchema,
-  JobSearchInfoSchema,
-} from "./schemas.js"
+export { JobSearchSchema, JobSearchInfoSchema } from "./schemas.js"
+
+export { JobSearchID, SearchSource } from "./id.js"

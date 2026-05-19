@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest"
 import { VacancyEnricher } from "."
 import { Vacancy } from "@/models/vacancy/index.js"
 import type { Applicant } from "@/models/applicant"
-import type { SearchPreferences } from "@/models/job-search"
+import type { JobSearch } from "@/models/job-search"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
 import type { CommuteClient } from "@/plugins/commute"
 
@@ -13,7 +13,7 @@ describe("VacancyEnricher", () => {
 
     const result = await enricher.enrich(vacancy, {
       applicant: APPLICANT,
-      preferences: PREFERENCES,
+      jobSearch: JOB_SEARCH,
     })
 
     expect(result.enriched).toBe(true)
@@ -28,7 +28,7 @@ describe("VacancyEnricher", () => {
 
     const result = await enricher.enrich(vacancy, {
       applicant: APPLICANT,
-      preferences: PREFERENCES,
+      jobSearch: JOB_SEARCH,
     })
 
     expect(getCommuteMock).toHaveBeenCalledWith(
@@ -47,7 +47,7 @@ describe("VacancyEnricher", () => {
 
     const result = await enricher.enrich(vacancy, {
       applicant: APPLICANT,
-      preferences: PREFERENCES,
+      jobSearch: JOB_SEARCH,
     })
 
     expect(Object.keys(result.commute)).toHaveLength(0)
@@ -60,7 +60,7 @@ describe("VacancyEnricher", () => {
 
     const result = await enricher.enrich(vacancy, {
       applicant: APPLICANT,
-      preferences: PREFERENCES,
+      jobSearch: JOB_SEARCH,
     })
 
     expect(result.summary).toBe("")
@@ -76,7 +76,7 @@ describe("VacancyEnricher", () => {
 
     const result = await enricher.enrich(vacancy, {
       applicant: APPLICANT,
-      preferences: PREFERENCES,
+      jobSearch: JOB_SEARCH,
     })
 
     expect(Object.keys(result.commute)).toHaveLength(0)
@@ -91,7 +91,7 @@ describe("VacancyEnricher", () => {
 
     const result = await enricher.enrich(vacancy, {
       applicant: APPLICANT,
-      preferences: PREFERENCES,
+      jobSearch: JOB_SEARCH,
     })
 
     expect(result.summary).toBe("")
@@ -112,7 +112,7 @@ describe("VacancyEnricher", () => {
 
     await enricher.enrich(makeVacancy(), {
       applicant,
-      preferences: PREFERENCES,
+      jobSearch: JOB_SEARCH,
     })
 
     expect(getCommuteMock).toHaveBeenCalledWith(
@@ -133,7 +133,7 @@ describe("VacancyEnricher", () => {
     await expect(
       enricher.enrich(
         vacancy,
-        { applicant: APPLICANT, preferences: PREFERENCES },
+        { applicant: APPLICANT, jobSearch: JOB_SEARCH },
         controller.signal,
       ),
     ).rejects.toThrow()
@@ -148,7 +148,7 @@ describe("VacancyEnricher", () => {
 
     const promise = enricher.enrich(
       vacancy,
-      { applicant: APPLICANT, preferences: PREFERENCES },
+      { applicant: APPLICANT, jobSearch: JOB_SEARCH },
       controller.signal,
     )
 
@@ -178,7 +178,7 @@ describe("VacancyEnricher", () => {
 
     await enricher.enrich(
       vacancy,
-      { applicant: APPLICANT, preferences: PREFERENCES },
+      { applicant: APPLICANT, jobSearch: JOB_SEARCH },
       controller.signal,
     )
 
@@ -188,7 +188,6 @@ describe("VacancyEnricher", () => {
 })
 
 const APPLICANT: Applicant = {
-  id: "a1",
   personal: {
     name: "Test User",
     hobbies: [],
@@ -200,10 +199,23 @@ const APPLICANT: Applicant = {
   skills: [],
   languages: [],
   certifications: [],
+  personalNotes: "",
 }
 
-const PREFERENCES: SearchPreferences = {
-  freeText: [],
+const JOB_SEARCH: JobSearch = {
+  searchTerm: "",
+  radiusKm: 30,
+  mode: "employment",
+  sources: [],
+  maxResultsPerSource: 0,
+  maxCommuteMinutes: 0,
+  notes: "",
+  coverLetter: "",
+}
+
+const _CONTEXT = {
+  applicant: APPLICANT,
+  jobSearch: JOB_SEARCH,
 }
 
 function makeVacancy(

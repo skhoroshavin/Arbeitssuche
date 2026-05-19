@@ -1,46 +1,25 @@
-import type {
-  JobSearch,
-  SearchParameters,
-  SearchPreferences,
-} from "@/models/job-search"
-import {
-  DEFAULT_PREFERENCES,
-  DEFAULT_SEARCH_PARAMS,
-} from "@/models/job-search/constants.js"
+import type { JobSearch } from "@/models/job-search"
+import { DEFAULT_JOB_SEARCH } from "@/models/job-search/constants.js"
 
-export function resolveJobSearch(data: JobSearchInput): JobSearch {
+export function resolveJobSearch(data: Partial<JobSearch>): JobSearch {
   return {
-    id: data.id ?? "",
-    applicantId: data.applicantId ?? "",
-    params: resolveSearchParameters(data.params),
-    preferences: resolveSearchPreferences(data.preferences),
+    searchTerm: resolveField(data.searchTerm, DEFAULT_JOB_SEARCH.searchTerm),
+    radiusKm: resolveField(data.radiusKm, DEFAULT_JOB_SEARCH.radiusKm),
+    mode: resolveField(data.mode, DEFAULT_JOB_SEARCH.mode),
+    sources: data.sources ?? [],
+    maxResultsPerSource: resolveField(
+      data.maxResultsPerSource,
+      DEFAULT_JOB_SEARCH.maxResultsPerSource,
+    ),
+    maxCommuteMinutes: resolveField(
+      data.maxCommuteMinutes,
+      DEFAULT_JOB_SEARCH.maxCommuteMinutes,
+    ),
+    notes: resolveField(data.notes, DEFAULT_JOB_SEARCH.notes),
+    coverLetter: resolveField(data.coverLetter, DEFAULT_JOB_SEARCH.coverLetter),
   }
 }
 
-interface JobSearchInput extends Omit<
-  Partial<JobSearch>,
-  "params" | "preferences"
-> {
-  params?: Partial<SearchParameters>
-  preferences?: Partial<SearchPreferences>
-}
-
-function resolveSearchParameters(
-  parameters?: Partial<SearchParameters>,
-): SearchParameters {
-  return {
-    ...DEFAULT_SEARCH_PARAMS,
-    ...parameters,
-    sources: parameters?.sources ?? [],
-  }
-}
-
-function resolveSearchPreferences(
-  preferences?: Partial<SearchPreferences>,
-): SearchPreferences {
-  return {
-    ...DEFAULT_PREFERENCES,
-    ...preferences,
-    freeText: preferences?.freeText ?? [],
-  }
+function resolveField<T>(value: T | undefined, defaultValue: T): T {
+  return value ?? defaultValue
 }

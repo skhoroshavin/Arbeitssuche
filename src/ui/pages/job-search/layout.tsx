@@ -71,7 +71,7 @@ function useJobSearchLayoutData(id: string) {
   const applicantId = data?.applicantId
   const { displayName } = useApplicantHeaderName(applicantId)
   return {
-    searchTitle: data?.params.searchTerm || id,
+    searchTitle: data?.jobSearch.searchTerm || id,
     applicantName: displayName,
     applicantId,
   }

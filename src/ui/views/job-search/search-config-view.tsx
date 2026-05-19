@@ -162,18 +162,6 @@ function renderPreferencesSection(
       <SectionHeader>Praferenzen</SectionHeader>
       <div className="grid grid-cols-2 gap-3">
         <Input
-          label="Max. Entfernung (km)"
-          type="number"
-          placeholder="Kein Limit"
-          value={value.maxDistanceKm?.toString() ?? ""}
-          onChange={(event) => {
-            onUpdate({
-              ...value,
-              maxDistanceKm: parseOptionalNumber(event.target.value),
-            })
-          }}
-        />
-        <Input
           label="Max. Fahrtzeit (Min.)"
           type="number"
           placeholder="Kein Limit"

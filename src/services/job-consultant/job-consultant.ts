@@ -13,7 +13,7 @@ export class JobConsultant {
   async consult(
     applicantId: string,
   ): Promise<{ suggestions: ConsultationSuggestion[] }> {
-    const applicant = this.applicantRepo.load(applicantId)
+    const applicant = this.applicantRepo.load({ value: applicantId })
 
     ensureLlmAvailable(this.llm)
 

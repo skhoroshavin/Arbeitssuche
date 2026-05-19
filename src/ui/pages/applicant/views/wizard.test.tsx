@@ -129,7 +129,7 @@ describe("Applicant wizard state", () => {
     const snapshot = createDefaultApplicantDraftSnapshot()
     snapshot.personal.name = "Ada Lovelace"
     refetchDraft.mockResolvedValue({
-      data: { draft: { meaningful: true, snapshot } },
+      data: { draft: snapshot },
     })
 
     render(

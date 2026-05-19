@@ -1,4 +1,4 @@
-import type { SearchMode, SearchParameters, SearchPreferences } from "."
+import type { SearchMode, JobSearch } from "."
 
 export const SEARCH_MODES = [
   "employment",
@@ -12,13 +12,13 @@ export const SEARCH_MODE_LABELS: Record<SearchMode, string> = {
   apprenticeship: "Ausbildung",
 }
 
-export const DEFAULT_SEARCH_PARAMS: SearchParameters = {
+export const DEFAULT_JOB_SEARCH: JobSearch = {
   searchTerm: "",
   radiusKm: 30,
-  searchMode: "employment",
+  mode: "employment",
   sources: [],
-}
-
-export const DEFAULT_PREFERENCES: SearchPreferences = {
-  freeText: [],
+  maxResultsPerSource: 0,
+  maxCommuteMinutes: 0,
+  notes: "",
+  coverLetter: "",
 }
