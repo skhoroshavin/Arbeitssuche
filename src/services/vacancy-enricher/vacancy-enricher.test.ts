@@ -210,11 +210,6 @@ const JOB_SEARCH: JobSearch = (() => {
   return index
 })()
 
-const _CONTEXT = {
-  applicant: APPLICANT,
-  jobSearch: JOB_SEARCH,
-}
-
 function makeVacancy(
   overrides: Partial<ConstructorParameters<typeof Vacancy>[0]> = {},
 ): Vacancy {

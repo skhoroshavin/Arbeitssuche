@@ -5,7 +5,7 @@ import {
   makeApplicantID,
 } from "@/models/applicant"
 
-import type { ApplicantRepository } from ".."
+import type { ApplicantRepository } from "@/repositories/applicant"
 
 import { Database, type Statement } from "@/utils/index.js"
 

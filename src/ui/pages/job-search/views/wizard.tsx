@@ -35,7 +35,7 @@ import type {
   JobSearchEditorConfigValue,
 } from "@/ui/views"
 
-import { SearchSource } from "@/models/job-search"
+import { makeSearchSource } from "@/models/job-search"
 import { splitLines } from "@/ui/views"
 
 export default function JobSearchWizardPage({
@@ -209,7 +209,7 @@ function mapFormValuesToJobSearch(values: WizardFormValues): JobSearchType {
   jobSearch.searchTerm = values.searchTerm
   jobSearch.radiusKm = values.radiusKm
   jobSearch.mode = values.searchMode
-  jobSearch.sources = values.sources.map((s) => SearchSource(s))
+  jobSearch.sources = values.sources.map((s) => makeSearchSource(s))
   jobSearch.maxResultsPerSource = values.maxResults ?? 0
   jobSearch.maxCommuteMinutes = values.maxCommuteMinutes ?? 0
   jobSearch.notes = values.freeText.join("\n")

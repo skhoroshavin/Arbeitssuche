@@ -74,7 +74,6 @@ test("findByHash works across instances", () => {
 
   const { repo: repo2, teardown: t2 } = openDatabaseById(id)
   const found = repo2.findByHash(makeJobSearchID("s1"), "abc123")
-  expect(found).toBeDefined()
   if (!found) {
     throw new Error("Expected persisted vacancy to be found by hash")
   }

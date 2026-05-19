@@ -2,7 +2,7 @@ export {
   JobSearch,
   SEARCH_MODES,
   SEARCH_MODE_LABELS,
-  SearchSource,
+  makeSearchSource,
   makeJobSearchID,
   JobSearchInfoSchema,
   type SearchMode,

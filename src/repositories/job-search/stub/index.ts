@@ -8,7 +8,7 @@ import {
 
 import type { ApplicantID } from "@/models/applicant"
 
-import type { JobSearchRepository } from ".."
+import type { JobSearchRepository } from "@/repositories/job-search"
 
 export function createStubJobSearchRepository(
   initial?: Record<string, { jobSearch: JobSearch; applicantId: string }>,

@@ -8,7 +8,7 @@ import {
 
 import type { ApplicantID } from "@/models/applicant"
 
-import type { JobSearchRepository } from ".."
+import type { JobSearchRepository } from "@/repositories/job-search"
 
 import { Database, type Statement } from "@/utils/index.js"
 

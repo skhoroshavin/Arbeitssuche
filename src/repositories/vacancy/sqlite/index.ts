@@ -13,7 +13,7 @@ import {
   createVacancyListOutput,
 } from "@/repositories/vacancy/output.js"
 
-import type { VacancyRepository } from ".."
+import type { VacancyRepository } from "@/repositories/vacancy"
 
 import { z } from "zod"
 

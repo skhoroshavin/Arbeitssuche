@@ -12,12 +12,6 @@ export const SEARCH_MODE_LABELS: Record<SearchMode, string> = {
   apprenticeship: "Ausbildung",
 }
 
-export interface SearchSource {
-  value: string
-}
-
-export const SearchSource = (value: string): SearchSource => ({ value })
-
 export interface JobSearchInfo {
   id: JobSearchID
   displayName: string
@@ -38,6 +32,14 @@ export interface ConsultationSuggestion {
 }
 
 export type SearchMode = "employment" | "entry-level" | "apprenticeship"
+
+export function makeSearchSource(value: string): SearchSource {
+  return { value }
+}
+
+export interface SearchSource {
+  value: string
+}
 
 export function makeJobSearchID(value: string): JobSearchID {
   return { value }
@@ -79,6 +81,11 @@ export class JobSearch {
   }
 }
 
+export const JobSearchInfoSchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+})
+
 function fillFromParsed(
   jobSearch: JobSearch,
   parsed: z.infer<typeof JobSearchInputSchema>,
@@ -86,7 +93,7 @@ function fillFromParsed(
   jobSearch.searchTerm = parsed.searchTerm
   jobSearch.radiusKm = parsed.radiusKm
   jobSearch.mode = parsed.mode
-  jobSearch.sources = parsed.sources.map((s) => SearchSource(s.value))
+  jobSearch.sources = parsed.sources.map((s) => makeSearchSource(s.value))
   jobSearch.maxResultsPerSource = parsed.maxResultsPerSource
   jobSearch.maxCommuteMinutes = parsed.maxCommuteMinutes
   jobSearch.notes = parsed.notes
@@ -104,9 +111,4 @@ const JobSearchInputSchema = z.object({
   maxCommuteMinutes: z.number().default(0),
   notes: z.string().default(""),
   coverLetter: z.string().default(""),
-})
-
-export const JobSearchInfoSchema = z.object({
-  id: z.string(),
-  displayName: z.string(),
 })

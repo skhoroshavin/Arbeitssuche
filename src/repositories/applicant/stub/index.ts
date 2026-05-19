@@ -5,7 +5,7 @@ import {
   makeApplicantID,
 } from "@/models/applicant"
 
-import type { ApplicantRepository } from ".."
+import type { ApplicantRepository } from "@/repositories/applicant"
 
 export function createStubApplicantRepository(
   initial?: Record<string, Applicant>,

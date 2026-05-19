@@ -3,7 +3,7 @@ import type { UseFormSetValue } from "react-hook-form"
 import { useJobSearch, useUpdateJobSearch, useSiteListView } from "@/ui/data"
 import { useAutoSaveForm } from "@/ui/hooks"
 import type { SearchMode } from "@/models/job-search"
-import { SearchSource } from "@/models/job-search"
+import { makeSearchSource } from "@/models/job-search"
 import { PageHeader, Loading } from "@/ui/components"
 import { useAutoSaveHeader } from "@/ui/layout"
 import {
@@ -99,16 +99,16 @@ function fromConfigFormValues(
   jobSearch: JobSearch,
   form: ConfigFormValues,
 ): JobSearch {
-  return {
-    ...jobSearch,
-    searchTerm: form.searchTerm,
-    radiusKm: Number(form.radiusKm),
-    mode: form.searchMode,
-    sources: form.sources.map((s) => SearchSource(s)),
-    maxResultsPerSource: parseOptionalNumber(form.maxResults) ?? 0,
-    maxCommuteMinutes: parseOptionalNumber(form.maxCommuteMinutes) ?? 0,
-    notes: form.freeText,
-  }
+  const result = new JobSearch()
+  result.searchTerm = form.searchTerm
+  result.radiusKm = Number(form.radiusKm)
+  result.mode = form.searchMode
+  result.sources = form.sources.map((s) => makeSearchSource(s))
+  result.maxResultsPerSource = parseOptionalNumber(form.maxResults) ?? 0
+  result.maxCommuteMinutes = parseOptionalNumber(form.maxCommuteMinutes) ?? 0
+  result.notes = form.freeText
+  result.coverLetter = jobSearch.coverLetter
+  return result
 }
 
 function toEditorConfigValue(

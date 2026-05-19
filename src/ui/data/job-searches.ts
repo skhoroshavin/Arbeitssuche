@@ -70,7 +70,7 @@ export function useJobSearchDraft(applicantId: string) {
     queryFn: async () => {
       const raw = await api().invoke("job-searches:draft:load", applicantId)
       const parsed = JobSearchDraftResponseSchema.parse(raw)
-      return parsed.draft ? JobSearch.parse(parsed.draft) : undefined
+      return { draft: parsed.draft ? JobSearch.parse(parsed.draft) : undefined }
     },
     enabled: !!applicantId,
   })
