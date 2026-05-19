@@ -26,7 +26,6 @@ export function registerIpcHandlers(options: IpcHandlerOptions): void {
   registerSetupHandlers(handle, services, {
     closeDatabase: options.closeDatabase,
     deleteDatabaseFiles: options.deleteDatabaseFiles,
-    deleteSecretsFile: options.deleteSecretsFile,
     reopenDatabase: options.reopenDatabase,
     closeApp: options.closeApp,
   })
@@ -37,7 +36,6 @@ interface IpcHandlerOptions {
   getWebContents: () => WebContents | undefined
   closeDatabase: () => void
   deleteDatabaseFiles: () => void
-  deleteSecretsFile: () => void
   reopenDatabase: () => void
   closeApp: () => void
 }

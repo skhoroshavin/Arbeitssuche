@@ -1,6 +1,4 @@
-import type { AppServices } from "."
 import type { ConfigKey } from "@/models/config"
-import { resolveConfig } from "@/models/config/index.js"
 import { getJobSiteInfos } from "@/plugins/job-site"
 import { getLlmProviders, createLlmClientForPing } from "@/plugins/llm"
 import { getCommuteProviders, createCommuteClient } from "@/plugins/commute"
@@ -11,6 +9,7 @@ import {
   resolveSecretKey,
 } from "./ipc-utilities.js"
 import type { IpcHandle } from "./ipc-handlers.js"
+import type { AppServices } from "."
 
 export function registerSettingsHandlers(
   handle: IpcHandle,
@@ -19,7 +18,7 @@ export function registerSettingsHandlers(
   handle("sites:list", () => ({ sites: getJobSiteInfos() }))
 
   handle("settings:llm:secrets", () =>
-    maskedSecretsFor(LLM_SECRET_KEYS, services.secretsRepo.load()),
+    maskedSecretsFor(LLM_SECRET_KEYS, services.configRepo.loadSecrets()),
   )
   handle(
     "settings:llm:secret:save",
@@ -34,7 +33,7 @@ export function registerSettingsHandlers(
   )
 
   handle("settings:commute:secrets", () =>
-    maskedSecretsFor(COMMUTE_SECRET_KEYS, services.secretsRepo.load()),
+    maskedSecretsFor(COMMUTE_SECRET_KEYS, services.configRepo.loadSecrets()),
   )
   handle(
     "settings:commute:secret:save",
@@ -53,17 +52,15 @@ export function registerSettingsHandlers(
 
   handle("settings:llm-models", () => services.modelRegistry.fetchModels())
 
-  handle("settings:config:load", () =>
-    resolveConfig(services.configRepo.load()),
-  )
+  handle("settings:config:load", () => services.configRepo.loadConfig())
   handle("settings:config:save", async (key: ConfigKey, value: string) => {
-    const config = services.configRepo.load()
+    const config = services.configRepo.loadConfig()
     if (key === "provider") {
       config.provider = value === "requesty" ? "requesty" : "openrouter"
     } else {
       config[key] = value
     }
-    await services.configRepo.save(config)
+    await services.configRepo.saveConfig(config)
     services.rebuild()
     return { ok: true }
   })
@@ -76,9 +73,9 @@ async function saveProviderSecret(
   mapping: typeof LLM_SECRET_KEYS | typeof COMMUTE_SECRET_KEYS,
 ): Promise<{ ok: true }> {
   const key = resolveSecretKey(providerId, mapping)
-  const secrets = services.secretsRepo.load()
+  const secrets = services.configRepo.loadSecrets()
   secrets[key] = value
-  await services.secretsRepo.save(secrets)
+  await services.configRepo.saveSecrets(secrets)
   services.rebuild()
   return { ok: true }
 }
@@ -89,9 +86,9 @@ async function clearProviderSecret(
   mapping: typeof LLM_SECRET_KEYS | typeof COMMUTE_SECRET_KEYS,
 ): Promise<{ ok: true }> {
   const key = resolveSecretKey(providerId, mapping)
-  const secrets = services.secretsRepo.load()
+  const secrets = services.configRepo.loadSecrets()
   delete secrets[key]
-  await services.secretsRepo.save(secrets)
+  await services.configRepo.saveSecrets(secrets)
   services.rebuild()
   return { ok: true }
 }
@@ -102,7 +99,7 @@ async function testProviderSecret(
   mapping: typeof LLM_SECRET_KEYS | typeof COMMUTE_SECRET_KEYS,
 ): Promise<{ ok: boolean; error?: string }> {
   const key = resolveSecretKey(providerId, mapping)
-  const secrets = services.secretsRepo.load()
+  const secrets = services.configRepo.loadSecrets()
   const value = secrets[key]
   if (!value) {
     return {

@@ -1,11 +1,8 @@
-import type { ConfigRepository } from "@/app/config"
+import type { ConfigRepository } from "@/repositories/config"
 import type { SetupRepository } from "@/app/setup"
-import type { SecretsRepository } from "@/app/secrets"
 import type { ApplicantRepository } from "@/repositories/applicant"
 import type { JobSearchRepository } from "@/repositories/job-search"
 import type { VacancyRepository } from "@/repositories/vacancy"
-import { resolveConfig } from "@/models/config/index.js"
-import { resolveSecrets } from "@/models/secrets/index.js"
 import { createGoogleMapsCommuteClient } from "@/plugins/commute"
 import type { LlmClient, LlmModelRegistry } from "@/plugins/llm"
 import { createLlmClient, createModelRegistry } from "@/plugins/llm"
@@ -24,9 +21,10 @@ export function createAppServices(context: ServiceContext): AppServices {
   const pdfRenderer = context.pdfRenderer ?? createElectronPdfRenderer()
 
   function buildServices() {
+    const config = context.configRepo.loadConfig()
+    const secrets = context.configRepo.loadSecrets()
     const { provider, assessmentModel, coverLetterModel, consultationModel } =
-      resolveConfig(context.configRepo.load())
-    const secrets = resolveSecrets(context.secretsRepo.load())
+      config
     const apiKey = getProviderApiKey(provider, secrets)
     const buildConfiguredLlmClient = (model: string) =>
       buildLlmClient(context.llmClientFactory, provider, apiKey, model)
@@ -75,7 +73,6 @@ export function createAppServices(context: ServiceContext): AppServices {
     applicantRepo: context.applicantRepo,
     jobSearchRepo: context.jobSearchRepo,
     vacancyRepo: context.vacancyRepo,
-    secretsRepo: context.secretsRepo,
     configRepo: context.configRepo,
     setupRepo: context.setupRepo,
     get modelRegistry() {
@@ -106,7 +103,6 @@ export interface AppServices {
   applicantRepo: ApplicantRepository
   jobSearchRepo: JobSearchRepository
   vacancyRepo: VacancyRepository
-  secretsRepo: SecretsRepository
   configRepo: ConfigRepository
   setupRepo: SetupRepository
   modelRegistry: LlmModelRegistry
@@ -137,7 +133,7 @@ function buildLlmClient(
 
 function getProviderApiKey(
   provider: string,
-  secrets: ReturnType<typeof resolveSecrets>,
+  secrets: { openrouterApiKey?: string; requestyApiKey?: string },
 ): string | undefined {
   switch (provider) {
     case "requesty": {

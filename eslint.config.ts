@@ -31,7 +31,7 @@ export default tseslint.config(
             imports: ["plugins/*", "utils/+"],
           },
           "repositories/*": {
-            imports: ["repositories/+", "models/+", "utils/+"],
+            imports: ["repositories/+", "models/+", "utils/+", "plugins/+"],
           },
           "services/*": {
             imports: [
@@ -48,6 +48,7 @@ export default tseslint.config(
               "utils/+",
               "models/+",
               "plugins/+",
+              "repositories/+",
               "services/+",
             ],
           },
@@ -57,6 +58,7 @@ export default tseslint.config(
               "utils/+",
               "models/+",
               "plugins/+",
+              "repositories/+",
               "services/+",
             ],
           },
