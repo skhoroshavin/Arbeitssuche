@@ -190,11 +190,13 @@ This is a type-only import (erased at runtime), so no circular dependency. Delet
 ```sql
 CREATE TABLE IF NOT EXISTS _migrations (
   repository TEXT PRIMARY KEY,
-  version INTEGER NOT NULL
+  version TEXT NOT NULL
 )
 ```
 
-Each `createSqlite*Repository(database)` checks its version and runs v0→v0.3 migration **before** `CREATE TABLE IF NOT EXISTS`. The v0 baseline is the schema from the `v0.2.0` git tag.
+Versions are stored as semver strings (e.g. `"0.3.0"`). Comparison uses a simple semver helper that splits on `.` and compares major/minor/patch numerically, so `"0.10.0" > "0.3.0"`.
+
+Each `createSqlite*Repository(database)` checks its version and runs v0→v0.3.0 migration **before** `CREATE TABLE IF NOT EXISTS`. The v0 baseline is the schema from the `v0.2.0` git tag.
 
 #### Applicant Repository Migration (v0→v1)
 
@@ -211,7 +213,7 @@ UPDATE applicants SET data = json_remove(data, '$.id') WHERE json_type(data, '$.
 PRAGMA user_version is NOT used per-repo; use _migrations instead.
 ```
 
-Set `_migrations` version to 0.3 for repository `"applicant"`.
+Set `_migrations` version to `"0.3.0"` for repository `"applicant"`.
 
 #### Job Search Repository Migration (v0→v1)
 
@@ -240,11 +242,11 @@ UPDATE job_searches SET data = json_remove(data, '$.id') WHERE json_type(data, '
 UPDATE job_searches SET data = json_remove(data, '$.applicantId') WHERE json_type(data, '$.applicantId') IS NOT NULL;
 ```
 
-Set `_migrations` version to 0.3 for repository `"job-search"`.
+Set `_migrations` version to `"0.3.0"` for repository `"job-search"`.
 
 #### Vacancy Repository Migration (v0→v1)
 
-No schema changes from v0.2.0. Just set `_migrations` version to 0.3 for repository `"vacancy"`.
+No schema changes from v0.2.0. Just set `_migrations` version to `"0.3.0"` for repository `"vacancy"`.
 
 ### 4.4 Remove `resolveApplicant` / `resolveJobSearch` Usage
 
