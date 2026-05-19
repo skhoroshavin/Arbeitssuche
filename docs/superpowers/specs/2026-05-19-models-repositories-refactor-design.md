@@ -198,7 +198,7 @@ Versions are stored as semver strings (e.g. `"0.3.0"`). Comparison uses a simple
 
 Each `createSqlite*Repository(database)` checks its version and runs v0→v0.3.0 migration **before** `CREATE TABLE IF NOT EXISTS`. The v0 baseline is the schema from the `v0.2.0` git tag.
 
-#### Applicant Repository Migration (v0→v1)
+#### Applicant Repository Migration (v0→v0.3.0)
 
 ```sql
 -- v0.2.0 schema had:
@@ -215,7 +215,7 @@ PRAGMA user_version is NOT used per-repo; use _migrations instead.
 
 Set `_migrations` version to `"0.3.0"` for repository `"applicant"`.
 
-#### Job Search Repository Migration (v0→v1)
+#### Job Search Repository Migration (v0→v0.3.0)
 
 ```sql
 -- v0.2.0 schema had:
@@ -244,7 +244,7 @@ UPDATE job_searches SET data = json_remove(data, '$.applicantId') WHERE json_typ
 
 Set `_migrations` version to `"0.3.0"` for repository `"job-search"`.
 
-#### Vacancy Repository Migration (v0→v1)
+#### Vacancy Repository Migration (v0→v0.3.0)
 
 No schema changes from v0.2.0. Just set `_migrations` version to `"0.3.0"` for repository `"vacancy"`.
 
