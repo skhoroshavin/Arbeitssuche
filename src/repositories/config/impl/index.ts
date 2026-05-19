@@ -1,25 +1,16 @@
 import { existsSync, readFileSync } from "node:fs"
-
 import { Config } from "@/models/config"
-
 import { Secrets } from "@/models/secrets"
-
 import type { Cipher } from "@/plugins/cipher"
-
 import type { KVStore } from "@/plugins/kvstore"
-
 import type { ConfigRepository } from "@/repositories/config"
 
 export class ConfigRepositoryImpl implements ConfigRepository {
   constructor(
-    kvStore: KVStore,
-    cipher: Cipher,
-    migration?: { secretsFilePath?: string },
-  ) {
-    this.kvStore = kvStore
-    this.cipher = cipher
-    this.migration = migration
-  }
+    private readonly kvStore: KVStore,
+    private readonly cipher: Cipher,
+    private readonly migration?: { secretsFilePath?: string },
+  ) {}
 
   loadConfig(): Config {
     const raw = this.kvStore.get("config")
@@ -61,9 +52,10 @@ export class ConfigRepositoryImpl implements ConfigRepository {
         const oldEncrypted = readFileSync(this.migration.secretsFilePath)
         const decrypted = this.cipher.decryptString(oldEncrypted)
         const secrets = Secrets.parse(JSON.parse(decrypted))
+        const json = JSON.stringify(secrets)
         this.kvStore.set(
           "secrets",
-          this.cipher.encryptString(JSON.stringify(secrets)).toString("base64"),
+          this.cipher.encryptString(json).toString("base64"),
         )
         return secrets
       } catch {
@@ -82,6 +74,7 @@ export class ConfigRepositoryImpl implements ConfigRepository {
 
   private loadSecretsFromEncrypted(encrypted: unknown): Secrets {
     if (typeof encrypted !== "string") return Secrets.parse({})
+
     try {
       const decrypted = this.cipher.decryptString(
         Buffer.from(encrypted, "base64"),
@@ -91,8 +84,4 @@ export class ConfigRepositoryImpl implements ConfigRepository {
       return Secrets.parse({})
     }
   }
-
-  private readonly kvStore: KVStore
-  private readonly cipher: Cipher
-  private readonly migration?: { secretsFilePath?: string }
 }

@@ -1,20 +1,14 @@
 import type { Config } from "@/models/config"
-
 import type { Secrets } from "@/models/secrets"
-
 import type { Cipher } from "@/plugins/cipher"
-
 import type { KVStore } from "@/plugins/kvstore"
-
 import { ConfigRepositoryImpl } from "./impl"
 
-export function createConfigRepository(
+export const createConfigRepository = (
   kvStore: KVStore,
   cipher: Cipher,
   migration?: { secretsFilePath?: string },
-): ConfigRepository {
-  return new ConfigRepositoryImpl(kvStore, cipher, migration)
-}
+): ConfigRepository => new ConfigRepositoryImpl(kvStore, cipher, migration)
 
 export interface ConfigRepository {
   loadConfig(): Config
