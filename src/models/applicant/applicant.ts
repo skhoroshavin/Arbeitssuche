@@ -2,37 +2,6 @@ import { z } from "zod"
 
 import type { Address } from "@/models/config"
 
-export interface ApplicantPersonal {
-  name: string
-  email: string
-  phone: string
-  birthdate: string
-  gender: string
-  address: Address
-  hobbies: string
-  discloseBirthdate: boolean
-  discloseGender: boolean
-  discloseAddress: boolean
-  discloseHobbies: boolean
-}
-
-export interface ApplicantSkill {
-  name: string
-}
-
-export interface ApplicantLanguage {
-  language: string
-  level: string
-}
-
-export interface ApplicantCertification {
-  name: string
-  issuer: string
-  date: string
-  discloseDates: boolean
-  description: string
-}
-
 export class Applicant {
   constructor() {
     this.personal = {
@@ -198,6 +167,37 @@ export class Applicant {
     if (lines.length === 0) return undefined
     return `## Personal Notes\n${lines.map((line) => `- ${line}`).join("\n")}`
   }
+}
+
+export interface ApplicantPersonal {
+  name: string
+  email: string
+  phone: string
+  birthdate: string
+  gender: string
+  address: Address
+  hobbies: string
+  discloseBirthdate: boolean
+  discloseGender: boolean
+  discloseAddress: boolean
+  discloseHobbies: boolean
+}
+
+export interface ApplicantSkill {
+  name: string
+}
+
+export interface ApplicantLanguage {
+  language: string
+  level: string
+}
+
+export interface ApplicantCertification {
+  name: string
+  issuer: string
+  date: string
+  discloseDates: boolean
+  description: string
 }
 
 export interface ApplicantExperience {
