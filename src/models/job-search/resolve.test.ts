@@ -3,9 +3,7 @@ import { resolveJobSearch } from "."
 
 describe("resolveJobSearch", () => {
   it("fills missing fields with defaults", () => {
-    expect(
-      resolveJobSearch({ searchTerm: "React" }),
-    ).toEqual({
+    expect(resolveJobSearch({ searchTerm: "React" })).toEqual({
       searchTerm: "React",
       radiusKm: 30,
       mode: "employment",

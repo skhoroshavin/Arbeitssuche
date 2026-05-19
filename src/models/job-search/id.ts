@@ -2,14 +2,10 @@ export interface JobSearchID {
   value: string
 }
 
-export function JobSearchID(value: string): JobSearchID {
-  return { value }
-}
+export const JobSearchID = (value: string): JobSearchID => ({ value })
 
 export interface SearchSource {
   value: string
 }
 
-export function SearchSource(value: string): SearchSource {
-  return { value }
-}
+export const SearchSource = (value: string): SearchSource => ({ value })

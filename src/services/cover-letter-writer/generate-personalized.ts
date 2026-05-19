@@ -36,7 +36,11 @@ function buildPersonalizedCoverLetterPrompt(
 
   if (jobSearch.notes.length > 0) {
     sections.push(
-      `## Preferences\n${jobSearch.notes.split("\n").map((t) => `- ${t.trim()}`).filter(Boolean).join("\n")}`,
+      `## Preferences\n${jobSearch.notes
+        .split("\n")
+        .map((t) => `- ${t.trim()}`)
+        .filter(Boolean)
+        .join("\n")}`,
     )
   }
 

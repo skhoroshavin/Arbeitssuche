@@ -2,12 +2,10 @@ import {
   type Applicant,
   type ApplicantID,
   type ApplicantInfo,
-  type ApplicantPersonal,
   ApplicantID as makeApplicantID,
 } from "@/models/applicant"
 
 import {
-  DEFAULT_APPLICANT,
   isMeaningfulApplicantDraftSnapshot,
   resolveApplicant,
 } from "@/models/applicant/index.js"
@@ -53,10 +51,13 @@ class SqliteApplicantRepository implements ApplicantRepository {
   }
 
   seedNextId(): void {
-    const result = this.database.prepare(
-      "SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0) AS max FROM applicants WHERE id GLOB '[0-9]*'",
-    ).get() as { max: number } | undefined
-    this.nextId = Number(result?.max ?? 0)
+    const result = this.database
+      .prepare(
+        "SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0) AS max FROM applicants WHERE id GLOB '[0-9]*'",
+      )
+      .get()
+    const parsed = z.object({ max: z.number() }).safeParse(result)
+    this.nextId = parsed.success ? parsed.data.max : 0
   }
 
   list(): ApplicantInfo[] {
@@ -88,7 +89,11 @@ class SqliteApplicantRepository implements ApplicantRepository {
 
   saveDraft(draft: Applicant): void {
     const snapshot = resolveApplicant(draft)
-    this.upsertStmt.run(DRAFT_SENTINEL, snapshot.personal.name, JSON.stringify(snapshot))
+    this.upsertStmt.run(
+      DRAFT_SENTINEL,
+      snapshot.personal.name,
+      JSON.stringify(snapshot),
+    )
   }
 
   finalizeDraft(): ApplicantID {
@@ -97,7 +102,11 @@ class SqliteApplicantRepository implements ApplicantRepository {
       if (!draft) throw new Error("Applicant draft not found")
       const id = this.generateId()
       const resolved = resolveApplicant(structuredClone(draft))
-      this.insertStmt.run(id.value, resolved.personal.name, JSON.stringify(resolved))
+      this.insertStmt.run(
+        id.value,
+        resolved.personal.name,
+        JSON.stringify(resolved),
+      )
       this.deleteDraft()
       return id
     })

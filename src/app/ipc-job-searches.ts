@@ -10,7 +10,9 @@ export function registerJobSearchesHandlers(
   services: AppServices,
 ): void {
   handle("job-searches:list", (applicantId: string) => {
-    const list = services.jobSearchRepo.listByApplicant(ApplicantID(applicantId))
+    const list = services.jobSearchRepo.listByApplicant(
+      ApplicantID(applicantId),
+    )
     return {
       jobSearches: list.map((info) => ({
         id: info.id.value,
@@ -67,7 +69,7 @@ export function registerJobSearchesHandlers(
     return { content: jobSearch.coverLetter }
   })
   handle("job-searches:cover-letter:save", (id: string, content: string) => {
-    const { jobSearch, applicantId } = services.jobSearchRepo.load(JobSearchID(id))
+    const { jobSearch } = services.jobSearchRepo.load(JobSearchID(id))
     services.jobSearchRepo.save(JobSearchID(id), {
       ...jobSearch,
       coverLetter: content,

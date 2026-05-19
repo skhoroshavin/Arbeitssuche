@@ -2,12 +2,10 @@ import {
   type Applicant,
   type ApplicantID,
   type ApplicantInfo,
-  type ApplicantPersonal,
   ApplicantID as makeApplicantID,
 } from "@/models/applicant"
 
 import {
-  DEFAULT_APPLICANT,
   isMeaningfulApplicantDraftSnapshot,
   resolveApplicant,
 } from "@/models/applicant/index.js"
@@ -26,7 +24,7 @@ class StubApplicantRepository implements ApplicantRepository {
     this.nextId = this.store.size
   }
 
-list(): ApplicantInfo[] {
+  list(): ApplicantInfo[] {
     return [...this.store.entries()]
       .filter(([id]) => id !== DRAFT_SENTINEL)
       .map(([id, data]) => ({
@@ -35,24 +33,23 @@ list(): ApplicantInfo[] {
       }))
   }
 
-load(id: ApplicantID): Applicant {
+  load(id: ApplicantID): Applicant {
     return resolveApplicant(structuredClone(this.getOrThrow(id)))
   }
 
-save(id: ApplicantID, data: Applicant): void {
-    // removed getOrThrow check
+  save(id: ApplicantID, data: Applicant): void {
     this.store.set(id.value, resolveApplicant(structuredClone(data)))
   }
 
-delete(id: ApplicantID): void {
+  delete(id: ApplicantID): void {
     this.store.delete(id.value)
   }
 
-saveDraft(draft: Applicant): void {
+  saveDraft(draft: Applicant): void {
     this.store.set(DRAFT_SENTINEL, resolveApplicant(structuredClone(draft)))
   }
 
-finalizeDraft(): ApplicantID {
+  finalizeDraft(): ApplicantID {
     const draft = this.loadDraft()
     if (!draft) throw new Error("Applicant draft not found")
     const id = makeApplicantID(String(++this.nextId))
@@ -61,22 +58,25 @@ finalizeDraft(): ApplicantID {
     return id
   }
 
-loadDraft(): Applicant | undefined {
+  loadDraft(): Applicant | undefined {
     const draft = this.store.get(DRAFT_SENTINEL)
     if (!draft) return undefined
     const resolved = resolveApplicant(structuredClone(draft))
     return isMeaningfulApplicantDraftSnapshot(resolved) ? resolved : undefined
   }
 
-deleteDraft(): void {
+  deleteDraft(): void {
     this.store.delete(DRAFT_SENTINEL)
   }
 
-private getOrThrow(id: ApplicantID): Applicant {
+  private getOrThrow(id: ApplicantID): Applicant {
     const data = this.store.get(id.value)
     if (!data) throw new Error(`Applicant "${id.value}" not found`)
     return data
   }
+
+  private readonly store: Map<string, Applicant>
+  private nextId: number
 }
 
 const DRAFT_SENTINEL = "$draft"

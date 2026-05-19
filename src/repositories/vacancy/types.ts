@@ -5,11 +5,19 @@ import type { Activity } from "@/models/vacancy"
 
 export interface VacancyRepository {
   loadAll(jobSearchId: JobSearchID): VacancyListOutput
-  save(jobSearchId: JobSearchID, vacancies: Vacancy[], latestCrawl: string): void
+  save(
+    jobSearchId: JobSearchID,
+    vacancies: Vacancy[],
+    latestCrawl: string,
+  ): void
   findByHash(jobSearchId: JobSearchID, hash: string): Vacancy | undefined
   addActivity(jobSearchId: JobSearchID, hash: string, activity: Activity): void
   loadCoverLetter(jobSearchId: JobSearchID, vacancyHash: string): string
-  saveCoverLetter(jobSearchId: JobSearchID, vacancyHash: string, content: string): void
+  saveCoverLetter(
+    jobSearchId: JobSearchID,
+    vacancyHash: string,
+    content: string,
+  ): void
 }
 
 export interface VacancyListOutput {

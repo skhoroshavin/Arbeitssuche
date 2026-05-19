@@ -1,4 +1,4 @@
-import { migrateSqliteDatabase } from "@/repositories/sqlite-migrate.js"
+import { migrateSqliteDatabase } from "@/repositories/sqlite-migrate/index.js"
 import type { ConfigRepository } from "@/app/config"
 import type { SetupRepository } from "@/app/setup"
 import type { SecretsRepository } from "@/app/secrets"

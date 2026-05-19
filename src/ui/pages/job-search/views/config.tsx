@@ -20,7 +20,10 @@ export default function JobSearchConfig() {
   const update = useUpdateJobSearch(id)
   const sitesQuery = useSiteListView()
 
-  const { setValue, watch, saveStatus } = useAutoSaveForm<ConfigFormValues, { jobSearch: JobSearch; applicantId: string }>({
+  const { setValue, watch, saveStatus } = useAutoSaveForm<
+    ConfigFormValues,
+    { jobSearch: JobSearch; applicantId: string }
+  >({
     queryResult: { data, isLoading },
     formOptions: { defaultValues: DEFAULT_FORM_VALUES },
     toFormValues: toConfigFormValues,
@@ -72,7 +75,10 @@ interface ConfigFormValues {
   freeText: string
 }
 
-function toConfigFormValues(data: { jobSearch: JobSearch; applicantId: string }): ConfigFormValues {
+function toConfigFormValues(data: {
+  jobSearch: JobSearch
+  applicantId: string
+}): ConfigFormValues {
   const search: JobSearch = data.jobSearch
   return {
     searchTerm: search.searchTerm,
@@ -84,9 +90,7 @@ function toConfigFormValues(data: { jobSearch: JobSearch; applicantId: string })
         ? ""
         : String(search.maxResultsPerSource),
     maxCommuteMinutes:
-      search.maxCommuteMinutes === 0
-        ? ""
-        : String(search.maxCommuteMinutes),
+      search.maxCommuteMinutes === 0 ? "" : String(search.maxCommuteMinutes),
     freeText: search.notes,
   }
 }

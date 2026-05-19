@@ -1,7 +1,6 @@
 import {
   isMeaningfulJobSearchEditorSnapshot,
   resolveDraftJobSearch,
-  DEFAULT_JOB_SEARCH,
 } from "@/models/job-search/index.js"
 import type {
   JobSearch,
@@ -13,10 +12,6 @@ import type { ApplicantID } from "@/models/applicant"
 import { JobSearchID as makeJobSearchID } from "@/models/job-search/index.js"
 import { resolveJobSearch } from "@/models/job-search/index.js"
 import type { JobSearchRepository } from "../types.js"
-
-function draftSentinel(applicantId: ApplicantID): string {
-  return `$draft_${applicantId.value}`
-}
 
 export function createStubJobSearchRepository(
   initial?: Record<string, { jobSearch: JobSearch; applicantId: string }>,
@@ -46,7 +41,9 @@ class StubJobSearchRepository implements JobSearchRepository {
   listByApplicant(applicantId: ApplicantID): JobSearchInfo[] {
     const prefix = `$draft_${applicantId.value}`
     return [...this.store.entries()]
-      .filter(([id, data]) => id !== prefix && data.applicantId === applicantId.value)
+      .filter(
+        ([id, data]) => id !== prefix && data.applicantId === applicantId.value,
+      )
       .map(([id, data]) => ({
         id: makeJobSearchID(id),
         displayName: data.jobSearch.searchTerm,
@@ -66,7 +63,11 @@ class StubJobSearchRepository implements JobSearchRepository {
     entry.jobSearch = resolveJobSearch(structuredClone(data))
   }
 
-  create(searchTerm: string, applicantId: ApplicantID, searchMode?: SearchMode): JobSearchID {
+  create(
+    searchTerm: string,
+    applicantId: ApplicantID,
+    searchMode?: SearchMode,
+  ): JobSearchID {
     const id = makeJobSearchID(String(++this.nextId))
     const jobSearch = resolveJobSearch({
       searchTerm,

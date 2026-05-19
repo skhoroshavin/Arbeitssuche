@@ -43,7 +43,11 @@ class StubVacancyRepository implements VacancyRepository {
     }
   }
 
-  save(jobSearchId: JobSearchID, vacancies: Vacancy[], latestCrawl: string): void {
+  save(
+    jobSearchId: JobSearchID,
+    vacancies: Vacancy[],
+    latestCrawl: string,
+  ): void {
     this.store.set(jobSearchId.value, {
       output: createVacancyListOutput(
         vacancies.map((v) => new Vacancy(structuredClone(v))),
@@ -58,9 +62,14 @@ class StubVacancyRepository implements VacancyRepository {
     return found ? new Vacancy(structuredClone(found)) : undefined
   }
 
-  addActivity(jobSearchId: JobSearchID, hash: string, activity: Activity): void {
+  addActivity(
+    jobSearchId: JobSearchID,
+    hash: string,
+    activity: Activity,
+  ): void {
     const data = this.store.get(jobSearchId.value)
-    if (!data) throw new Error(`No vacancies for job search "${jobSearchId.value}"`)
+    if (!data)
+      throw new Error(`No vacancies for job search "${jobSearchId.value}"`)
 
     const vacancy = data.output.vacancies.find((v) => v.hash === hash)
     if (!vacancy) throw new Error(`Vacancy "${hash}" not found`)
@@ -76,7 +85,11 @@ class StubVacancyRepository implements VacancyRepository {
     return this.coverLetters.get(`${jobSearchId.value}:${vacancyHash}`) ?? ""
   }
 
-  saveCoverLetter(jobSearchId: JobSearchID, vacancyHash: string, content: string): void {
+  saveCoverLetter(
+    jobSearchId: JobSearchID,
+    vacancyHash: string,
+    content: string,
+  ): void {
     this.coverLetters.set(`${jobSearchId.value}:${vacancyHash}`, content)
   }
 

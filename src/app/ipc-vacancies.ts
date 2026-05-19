@@ -80,10 +80,15 @@ export function registerVacanciesHandlers(
   )
 
   handle("vacancies:re-enrich", async (jobSearchId: string, hash: string) => {
-    const vacancy = services.vacancyRepo.findByHash(JobSearchID(jobSearchId), hash)
+    const vacancy = services.vacancyRepo.findByHash(
+      JobSearchID(jobSearchId),
+      hash,
+    )
     if (!vacancy) throw new Error(`Vacancy "${hash}" not found`)
 
-    const { jobSearch, applicantId } = services.jobSearchRepo.load(JobSearchID(jobSearchId))
+    const { jobSearch, applicantId } = services.jobSearchRepo.load(
+      JobSearchID(jobSearchId),
+    )
     const applicant = services.applicantRepo.load(applicantId)
 
     const dirtyVacancy = vacancy.with({ enrichmentDirty: true })
@@ -92,8 +97,12 @@ export function registerVacanciesHandlers(
       jobSearch,
     })
 
-    const latestCrawl = services.vacancyRepo.loadAll(JobSearchID(jobSearchId)).latestCrawl
-    const allVacancies = services.vacancyRepo.loadAll(JobSearchID(jobSearchId)).vacancies
+    const latestCrawl = services.vacancyRepo.loadAll(
+      JobSearchID(jobSearchId),
+    ).latestCrawl
+    const allVacancies = services.vacancyRepo.loadAll(
+      JobSearchID(jobSearchId),
+    ).vacancies
     const updated = allVacancies.map((v) => (v.hash === hash ? enriched : v))
     services.vacancyRepo.save(JobSearchID(jobSearchId), updated, latestCrawl)
 
@@ -114,7 +123,9 @@ export function registerVacanciesHandlers(
     const abortController = new AbortController()
     batchEnrichAbortControllers.set(jobSearchId, abortController)
 
-    const { jobSearch, applicantId } = services.jobSearchRepo.load(JobSearchID(jobSearchId))
+    const { jobSearch, applicantId } = services.jobSearchRepo.load(
+      JobSearchID(jobSearchId),
+    )
     const applicant = services.applicantRepo.load(applicantId)
     const output = services.vacancyRepo.loadAll(JobSearchID(jobSearchId))
     const vacanciesNeedingEnrichment = output.vacancies.filter(
@@ -152,8 +163,9 @@ export function registerVacanciesHandlers(
         return { count: 0, aborted: true }
       }
 
-      const updatedVacancies =
-        services.vacancyRepo.loadAll(JobSearchID(jobSearchId)).vacancies
+      const updatedVacancies = services.vacancyRepo.loadAll(
+        JobSearchID(jobSearchId),
+      ).vacancies
       const anyStillDirty = updatedVacancies.some(
         (vacancy) => vacancy.enrichmentDirty,
       )

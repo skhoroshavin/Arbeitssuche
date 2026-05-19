@@ -21,7 +21,11 @@ function buildCoverLetterPrompt(
   const searchLines = [`Suchbegriff: ${jobSearch.searchTerm}`]
   if (jobSearch.notes.length > 0) {
     searchLines.push(
-      `Präferenzen:\n${jobSearch.notes.split("\n").map((t) => `- ${t.trim()}`).filter(Boolean).join("\n")}`,
+      `Präferenzen:\n${jobSearch.notes
+        .split("\n")
+        .map((t) => `- ${t.trim()}`)
+        .filter(Boolean)
+        .join("\n")}`,
     )
   }
   sections.push(`## Stellensuche\n${searchLines.join("\n")}`)

@@ -2,6 +2,4 @@ export interface ApplicantID {
   value: string
 }
 
-export function ApplicantID(value: string): ApplicantID {
-  return { value }
-}
+export const ApplicantID = (value: string): ApplicantID => ({ value })

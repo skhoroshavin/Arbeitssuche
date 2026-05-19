@@ -1,6 +1,5 @@
 import { JobSearchID, SearchSource } from "./id.js"
 
-
 export interface JobSearch {
   searchTerm: string
   radiusKm: number
@@ -33,7 +32,7 @@ export interface ConsultationSuggestion {
 
 export type SearchMode = "employment" | "entry-level" | "apprenticeship"
 
-export { SEARCH_MODES, SEARCH_MODE_LABELS, DEFAULT_JOB_SEARCH } from "./constants.js"
+export { SEARCH_MODES, SEARCH_MODE_LABELS } from "./constants.js"
 export { resolveJobSearch } from "./resolve.js"
 export {
   createDefaultJobSearchEditorSnapshot,
@@ -43,4 +42,4 @@ export {
 
 export { JobSearchSchema, JobSearchInfoSchema } from "./schemas.js"
 
-export {JobSearchID, SearchSource} from "./id.js"
+export { JobSearchID, SearchSource } from "./id.js"

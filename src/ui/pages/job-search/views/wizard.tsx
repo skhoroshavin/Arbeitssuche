@@ -307,13 +307,9 @@ function applyWizardConfigValue(
   setValue("searchMode", nextValues.searchMode, { shouldDirty: true })
   setValue("sources", nextValues.sources, { shouldDirty: true })
   setValue("maxResults", nextValues.maxResults, { shouldDirty: true })
-  setValue(
-    "maxCommuteMinutes",
-    nextValues.maxCommuteMinutes,
-    {
-      shouldDirty: true,
-    },
-  )
+  setValue("maxCommuteMinutes", nextValues.maxCommuteMinutes, {
+    shouldDirty: true,
+  })
   setValue("freeText", nextValues.freeText, { shouldDirty: true })
 }
 

@@ -4,7 +4,6 @@ export type { Address } from "@/models/config"
 
 import { ApplicantID } from "./id.js"
 
-
 export interface Applicant {
   personal: ApplicantPersonal
   disclose: ApplicantDisclose
@@ -91,4 +90,4 @@ export {
 
 export { ApplicantSchema, ApplicantInfoSchema } from "./schemas.js"
 
-export {ApplicantID} from "./id.js"
+export { ApplicantID } from "./id.js"

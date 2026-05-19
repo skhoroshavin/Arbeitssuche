@@ -87,7 +87,11 @@ class SqliteVacancyRepository implements VacancyRepository {
     }
   }
 
-  save(jobSearchId: JobSearchID, vacancies: Vacancy[], latestCrawl: string): void {
+  save(
+    jobSearchId: JobSearchID,
+    vacancies: Vacancy[],
+    latestCrawl: string,
+  ): void {
     const output = createVacancyListOutput(vacancies, latestCrawl)
     const hashes = JSON.stringify(vacancies.map((v) => v.hash))
 
@@ -114,7 +118,11 @@ class SqliteVacancyRepository implements VacancyRepository {
     return hydrateVacancy(row)
   }
 
-  addActivity(jobSearchId: JobSearchID, hash: string, activity: Activity): void {
+  addActivity(
+    jobSearchId: JobSearchID,
+    hash: string,
+    activity: Activity,
+  ): void {
     const row = this.findByHashStmt.getJsonData(jobSearchId.value, hash)
     if (row === undefined) throw new Error(`Vacancy "${hash}" not found`)
 
@@ -132,7 +140,11 @@ class SqliteVacancyRepository implements VacancyRepository {
     return CoverLetterRowSchema.parse(raw).content
   }
 
-  saveCoverLetter(jobSearchId: JobSearchID, vacancyHash: string, content: string): void {
+  saveCoverLetter(
+    jobSearchId: JobSearchID,
+    vacancyHash: string,
+    content: string,
+  ): void {
     this.saveCoverLetterStmt.run(jobSearchId.value, vacancyHash, content)
   }
 

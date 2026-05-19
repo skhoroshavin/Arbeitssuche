@@ -107,7 +107,11 @@ export class VacancyScanner {
 
         const now = Date.now()
         if (now - lastSaveTime >= 1000) {
-          this.vacancyRepo.save(searchId, [...existingByHash.values()], crawlDate)
+          this.vacancyRepo.save(
+            searchId,
+            [...existingByHash.values()],
+            crawlDate,
+          )
           lastSaveTime = now
           onProgress({ message: "", phase: "scan", vacanciesUpdated: true })
         }

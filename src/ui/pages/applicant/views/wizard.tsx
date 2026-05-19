@@ -169,10 +169,7 @@ export default function ApplicantWizardPage({
 
 interface ApplicantWizardPageProperties {
   initialStep?: ApplicantWizardStep
-  onStepChange?: (
-    step: ApplicantWizardStep,
-    snapshot: Applicant,
-  ) => void
+  onStepChange?: (step: ApplicantWizardStep, snapshot: Applicant) => void
 }
 
 function canFinalizeApplicantWizard(snapshot: Applicant): boolean {
@@ -206,16 +203,12 @@ function ApplicantWizardStepView({
 }
 
 interface ApplicantWizardStepViewProperties {
-  form: ReturnType<
-    typeof useAutoSaveForm<ApplicantFormValues, Applicant>
-  >
+  form: ReturnType<typeof useAutoSaveForm<ApplicantFormValues, Applicant>>
   step: ApplicantWizardStep
 }
 
 interface ApplicantWizardStepViewSharedProperties {
-  form: ReturnType<
-    typeof useAutoSaveForm<ApplicantFormValues, Applicant>
-  >
+  form: ReturnType<typeof useAutoSaveForm<ApplicantFormValues, Applicant>>
   isLoading: boolean
   saveStatus: AutoSaveStatus
   useHeaderAutoSave?: boolean

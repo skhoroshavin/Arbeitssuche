@@ -1,5 +1,4 @@
 import {
-  DEFAULT_JOB_SEARCH,
   isMeaningfulJobSearchEditorSnapshot,
   resolveDraftJobSearch,
 } from "@/models/job-search/index.js"
@@ -76,10 +75,13 @@ class SqliteJobSearchRepository implements JobSearchRepository {
   }
 
   seedNextId(): void {
-    const result = this.database.prepare(
-      "SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0) AS max FROM job_searches WHERE id GLOB '[0-9]*'",
-    ).get() as { max: number } | undefined
-    this.nextId = Number(result?.max ?? 0)
+    const result = this.database
+      .prepare(
+        "SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0) AS max FROM job_searches WHERE id GLOB '[0-9]*'",
+      )
+      .get()
+    const parsed = z.object({ max: z.number() }).safeParse(result)
+    this.nextId = parsed.success ? parsed.data.max : 0
   }
 
   listByApplicant(applicantId: ApplicantID): JobSearchInfo[] {
@@ -116,7 +118,9 @@ class SqliteJobSearchRepository implements JobSearchRepository {
     const parsed = z
       .object({ applicant_id: z.string(), data: z.string() })
       .parse(row)
-    const jobSearch = resolveJobSearch(JobSearchSchema.parse(JSON.parse(parsed.data)))
+    const jobSearch = resolveJobSearch(
+      JobSearchSchema.parse(JSON.parse(parsed.data)),
+    )
     return {
       jobSearch,
       applicantId: { value: parsed.applicant_id },

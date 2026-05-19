@@ -47,7 +47,11 @@ ${vacancy.description ? `Beschreibung:\n${vacancy.description}` : "Keine Beschre
 
   if (jobSearch.notes.length > 0) {
     sections.push(
-      `## Suchpräferenzen\n${jobSearch.notes.split("\n").map((t) => `- ${t.trim()}`).filter(Boolean).join("\n")}`,
+      `## Suchpräferenzen\n${jobSearch.notes
+        .split("\n")
+        .map((t) => `- ${t.trim()}`)
+        .filter(Boolean)
+        .join("\n")}`,
     )
   }
 
