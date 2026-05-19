@@ -92,7 +92,7 @@ export class ElectronApiHelper {
   ): Promise<{ status: number; body: unknown }> {
     try {
       const body = await this.invoke(
-        "job-searches:vacancies:cover-letter:load",
+        "vacancies:cover-letter:load",
         jobSearchId,
         hash,
       )
@@ -143,15 +143,17 @@ export class ElectronApiHelper {
 }
 
 interface E2eJobSearch {
-  id: string
-  applicantId: string
-  params: {
+  jobSearch: {
     searchTerm: string
     radiusKm: number
-    searchMode: string
-    sources: string[]
-    maxResults?: number
+    mode: string
+    sources: Array<{ value: string }>
+    maxResultsPerSource: number
+    maxCommuteMinutes: number
+    notes: string
+    coverLetter: string
   }
+  applicantId: string
 }
 
 interface E2eVacancyList {

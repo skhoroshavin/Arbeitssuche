@@ -9,20 +9,30 @@ export function migrateSqliteDatabase(database: Database): void {
   database.transaction(() => {
     database.exec(`DROP TABLE IF EXISTS applicant_draft`)
     database.exec(`DROP TABLE IF EXISTS job_search_drafts`)
-    database.exec(
-      `ALTER TABLE job_searches ADD COLUMN cover_letter TEXT NOT NULL DEFAULT ''`,
-    )
-    database.exec(`
-      UPDATE job_searches
-      SET cover_letter = COALESCE((
-        SELECT content FROM cover_letters
-        WHERE cover_letters.job_search_id = job_searches.id
-          AND cover_letters.vacancy_hash = ''
-      ), '')
-    `)
-    database.exec(`DELETE FROM cover_letters WHERE vacancy_hash = ''`)
-    migrateApplicantData(database)
-    migrateJobSearchData(database)
+
+    if (tableExists(database, "job_searches")) {
+      database.exec(
+        `ALTER TABLE job_searches ADD COLUMN cover_letter TEXT NOT NULL DEFAULT ''`,
+      )
+      database.exec(`
+        UPDATE job_searches
+        SET cover_letter = COALESCE((
+          SELECT content FROM cover_letters
+          WHERE cover_letters.job_search_id = job_searches.id
+            AND cover_letters.vacancy_hash = ''
+        ), '')
+      `)
+      database.exec(`DELETE FROM cover_letters WHERE vacancy_hash = ''`)
+    }
+
+    if (tableExists(database, "applicants")) {
+      migrateApplicantData(database)
+    }
+
+    if (tableExists(database, "job_searches")) {
+      migrateJobSearchData(database)
+    }
+
     database.exec(`PRAGMA user_version = 1`)
   })
 }
@@ -70,6 +80,13 @@ function parseJsonObject(value: string): Record<string, unknown> {
     result[key] = value_
   }
   return result
+}
+
+function tableExists(database: Database, name: string): boolean {
+  const row = database
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .get(name)
+  return row !== undefined
 }
 
 const RowSchema = z.object({ id: z.string(), data: z.string() })

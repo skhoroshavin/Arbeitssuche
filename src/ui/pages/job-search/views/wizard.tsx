@@ -330,8 +330,8 @@ function mapConfigValueToFormValues(
     radiusKm: value.radiusKm,
     searchMode: value.searchMode,
     sources: value.sources,
-    maxResults: stringifyOptionalNumber(value.maxResults),
-    maxCommuteMinutes: stringifyOptionalNumber(value.maxCommuteMinutes),
+    maxResults: value.maxResults,
+    maxCommuteMinutes: value.maxCommuteMinutes,
     freeText: value.freeText,
   }
 }
@@ -348,10 +348,6 @@ function readConfigValue(
     maxCommuteMinutes: watch("maxCommuteMinutes"),
     freeText: watch("freeText"),
   }
-}
-
-function stringifyOptionalNumber(value: number | undefined): string {
-  return value === undefined ? "" : value.toString()
 }
 
 interface WizardFormValues {
