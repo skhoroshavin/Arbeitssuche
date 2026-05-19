@@ -18,7 +18,7 @@ import {
 
 import {
   extractJsonLd,
-  joinNormalizedText,
+  normalizeAndJoinText,
   normalizeOptionalText,
   isRecord,
   stringField,
@@ -124,7 +124,7 @@ function formatJobPostingAddress(
   const location = posting.jobLocation
   const loc: unknown = Array.isArray(location) ? location[0] : location
   if (!isRecord(loc) || !isRecord(loc.address)) return undefined
-  return joinNormalizedText(
+  return normalizeAndJoinText(
     [
       stringField(loc.address, "streetAddress"),
       stringField(loc.address, "postalCode"),

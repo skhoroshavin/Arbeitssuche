@@ -10,7 +10,7 @@ import type {
   SearchCriteria,
 } from "@/plugins/job-site"
 
-import { joinNormalizedText } from "@/utils/index.js"
+import { normalizeAndJoinText } from "@/utils/index.js"
 
 export const SUPPORTED_MODES = [
   "employment",
@@ -122,8 +122,8 @@ function buildAddressFromLocations(
   if (!locations?.length) return undefined
   const addr = locations[0].adresse
   if (!addr) return undefined
-  const cityLine = joinNormalizedText([addr.plz, addr.ort], " ")
-  return joinNormalizedText([addr.strasse, cityLine])
+  const cityLine = normalizeAndJoinText([addr.plz, addr.ort], " ")
+  return normalizeAndJoinText([addr.strasse, cityLine])
 }
 
 function modeToAngebotsart(mode: string): string {
