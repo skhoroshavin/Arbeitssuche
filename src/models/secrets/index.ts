@@ -1,8 +1,4 @@
-export interface Secrets {
-  openrouterApiKey?: string
-  requestyApiKey?: string
-  googleMapsApiKey?: string
-}
+export { Secrets } from "./secrets.js"
 
 export interface MaskedSecret {
   masked: string
@@ -14,6 +10,6 @@ export type SecretKey =
   | "requestyApiKey"
   | "googleMapsApiKey"
 
+// Legacy exports — removed after consumer migration
 export { resolveSecrets } from "./resolve.js"
-
 export { MaskedSecretsRecordSchema, SecretTestResultSchema } from "./schemas.js"
