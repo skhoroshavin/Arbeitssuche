@@ -31,7 +31,7 @@ Guidelines for autonomous coding agents in this repository.
 | `utils` | (shared — no declared imports) |
 | `models/*` | `models/*` |
 | `plugins/*` | `plugins/*`, `utils` |
-| `repositories/*` | `repositories/*`, `models/*`, `utils` |
+| `repositories/*` | `repositories/*`, `models/*`, `plugins/*`, `utils` |
 | `services/*` | `services/*`, `repositories/*`, `plugins/*`, `models/*`, `utils` |
 | `app`, `app/*` | `app/*`, `utils`, `models/*`, `plugins/*`, `repositories/*`, `services/*` |
 | `ui/components` | `ui/hooks` |
@@ -50,6 +50,11 @@ Guidelines for autonomous coding agents in this repository.
 - **Destructure component props** in function signatures.
 - **Shared modules** (`utils`, `ui/components`) must be consumed by **at least 2 packages**. If a symbol only has one consumer, move it into that consumer's package — don't leave it in shared.
 - **Tests must import only public surfaces** (`index.ts`). No white-box testing against internal modules.
+
+### Structural Patterns
+
+- **Models as parseable classes.** Domain models that need validation should be exported as classes with a `static parse(data: unknown): Model` factory. The Zod schema stays private to the model file.
+- **Repository implementations live in subfolders.** The public surface (`index.ts`) exports only the interface and factory function. Implementation code goes in `impl/` when backend-agnostic, or in backend-specific folders (`sqlite/`, `stub/`) when it is not.
 
 ## Error Handling
 
