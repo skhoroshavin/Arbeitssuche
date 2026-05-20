@@ -1,5 +1,5 @@
 import { test, describe, expect } from "vitest"
-import { HttpStub } from "."
+import { HttpStub } from "./index.js"
 
 describe("HttpStub", () => {
   describe("get()", () => {
