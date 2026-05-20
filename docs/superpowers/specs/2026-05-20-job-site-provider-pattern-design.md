@@ -128,7 +128,7 @@ class VacancyAddress {
     readonly city: string,
   ) {}
 
-  /** Flat string for storage and commute. Joins non-empty parts with ", ". */
+  /** Flat string for storage and commute. Format: "street, zipCode city" (skips empty parts). */
   format(): string
 
   /** True when street, zipCode, and city are all non-empty. */
@@ -136,7 +136,7 @@ class VacancyAddress {
 }
 ```
 
-An empty (absent) address is `new VacancyAddress("", "", "")`. The `format()` method skips empty components (e.g., `"Berlin"` → `"Berlin"`, `"Musterstraße 1, 10115, Berlin"` → `"Musterstraße 1, 10115, Berlin"`).
+An empty (absent) address is `new VacancyAddress("", "", "")`. The `format()` method skips empty components: `"Musterstraße 1, 10115 Berlin"`, `"Berlin"`, `"10115 Berlin"`.
 
 ### `DateString` (branded wrapper, like `JobSearchID`)
 
