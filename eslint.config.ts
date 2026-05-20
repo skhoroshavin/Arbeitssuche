@@ -34,12 +34,7 @@ export default tseslint.config(
             shared: true,
           },
           "plugins/*": {
-            imports: [
-              "plugins/*",
-              "utils/+",
-              "test-helpers",
-              "models/common",
-            ],
+            imports: ["plugins/*", "utils/+", "test-helpers", "models/common"],
           },
           "repositories/*": {
             imports: [
@@ -119,7 +114,7 @@ export default tseslint.config(
               "ui/layout",
               "ui/data",
               "ui/views/+",
-              "models/+"
+              "models/+",
             ],
           },
         },
