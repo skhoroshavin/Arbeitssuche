@@ -7,7 +7,6 @@ import type { Browser } from "@/plugins/browser"
 import type {
   VacancyDetails,
   JobSite,
-  JobPostingJsonLd,
   SearchCriteria,
 } from "@/plugins/job-site"
 
@@ -20,6 +19,22 @@ import {
   isRecord,
   stringField,
 } from "@/utils/index.js"
+
+interface JobPostingJsonLd {
+  title?: string
+  description?: string
+  datePosted?: string
+  hiringOrganization?: { name?: string }
+  jobLocation?:
+    | { address?: JobPostingAddress }
+    | { address?: JobPostingAddress }[]
+}
+
+interface JobPostingAddress {
+  streetAddress?: string
+  postalCode?: string
+  addressLocality?: string
+}
 
 export const SUPPORTED_MODES = ["employment", "apprenticeship"] as const
 
