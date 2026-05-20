@@ -8,13 +8,13 @@ import type { JobSearchCriteria } from "@/models/job-search"
 import { formatError } from "@/services/vacancy-scanner/index.js"
 
 export function resolveEffectiveMode(
-  site: JobSite,
+  supportedModes: readonly SearchMode[],
   mode: SearchMode,
 ): SearchMode | undefined {
-  if (site.supportedModes.includes(mode)) {
+  if (supportedModes.includes(mode)) {
     return mode
   }
-  if (mode === "entry-level" && site.supportedModes.includes("employment")) {
+  if (mode === "entry-level" && supportedModes.includes("employment")) {
     return "employment"
   }
   return undefined
@@ -33,16 +33,17 @@ export function derivePluginCriteria(
 }
 
 export async function fetchSearchPage(
-  site: JobSite,
+  scraper: JobSite,
+  siteName: string,
   criteria: SearchCriteria,
   pageId: string | undefined,
   pageNumber: number,
 ): Promise<VacancyListPage | undefined> {
   try {
-    return await site.getVacancyList(criteria, pageId)
+    return await scraper.getVacancyList(criteria, pageId)
   } catch (error) {
     console.error(
-      `[${site.name}] Failed to fetch search page ${pageNumber}:`,
+      `[${siteName}] Failed to fetch search page ${pageNumber}:`,
       formatError(error),
     )
     return undefined
