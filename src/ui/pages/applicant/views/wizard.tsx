@@ -22,6 +22,7 @@ import {
 } from "@/ui/hooks"
 
 import { DraftWizardPage, useFirstStartWizardContext } from "@/ui/layout"
+
 import { WizardCancelChoicesModal } from "@/ui/components"
 
 import {
@@ -167,11 +168,11 @@ interface ApplicantWizardPageProperties {
   onStepChange?: (step: ApplicantWizardStep, snapshot: ApplicantType) => void
 }
 
+type Phase = "loading" | "resume-prompt" | "editing"
+
 function canFinalizeApplicantWizard(snapshot: ApplicantType): boolean {
   return snapshot.personal.name.trim().length > 0
 }
-
-type Phase = "loading" | "resume-prompt" | "editing"
 
 function ApplicantWizardStepView({
   form,
@@ -202,12 +203,12 @@ interface ApplicantWizardStepViewProperties {
   step: ApplicantWizardStep
 }
 
-interface ApplicantWizardStepViewSharedProperties {
-  form: ReturnType<typeof useAutoSaveForm<ApplicantFormValues, ApplicantType>>
-  isLoading: boolean
-  saveStatus: AutoSaveStatus
-  useHeaderAutoSave?: boolean
-}
+type ApplicantWizardStep =
+  | "personal"
+  | "experience"
+  | "education"
+  | "certifications"
+  | "other"
 
 const STEP_LABELS: Record<ApplicantWizardStep, string> = {
   personal: "Persönlich",
@@ -217,13 +218,13 @@ const STEP_LABELS: Record<ApplicantWizardStep, string> = {
   other: "Sonstiges",
 }
 
-type ApplicantWizardStep =
-  | "personal"
-  | "experience"
-  | "education"
-  | "certifications"
-  | "other"
-
 type StepView = (
   properties: ApplicantWizardStepViewSharedProperties,
 ) => React.JSX.Element
+
+interface ApplicantWizardStepViewSharedProperties {
+  form: ReturnType<typeof useAutoSaveForm<ApplicantFormValues, ApplicantType>>
+  isLoading: boolean
+  saveStatus: AutoSaveStatus
+  useHeaderAutoSave?: boolean
+}
