@@ -8,8 +8,7 @@ Align job-site plugins with the LLM provider pattern, eliminate optional fields 
 
 ```
 src/plugins/job-site/
-├── index.ts              # JobSiteProvider, VacancyAddress, DateString interfaces, PROVIDERS array, public API
-├── make-date-string.ts   # makeDateString() factory — normalizes raw date strings to ISO 8601 DateString
+├── index.ts              # JobSiteProvider, JobSite interfaces, PROVIDERS array, public API
 ├── arbeitsagentur/
 │   ├── index.ts          # exports ArbeitsagenturProvider: JobSiteProvider
 │   └── index.test.ts
@@ -98,7 +97,7 @@ interface VacancyDetails {
   url: string
   title: string
   company: string
-  address: VacancyAddress        // was address?: string
+  address: Address               // was address?: string
   descriptionHtml: string        // was descriptionHtml?: string
   startDate: DateString          // was startDate?: string
   publishedAt: DateString        // was publishedAt?: string
@@ -118,10 +117,10 @@ interface VacancyContact {
 
 Empty string `""` means "no data" throughout. No `undefined`, no `?`.
 
-### `VacancyAddress` (class with helpers)
+### `Address` (in `src/utils/address.ts` — shared by plugins and models)
 
 ```ts
-class VacancyAddress {
+class Address {
   constructor(
     readonly street: string,
     readonly zipCode: string,
@@ -136,9 +135,11 @@ class VacancyAddress {
 }
 ```
 
-An empty (absent) address is `new VacancyAddress("", "", "")`. The `format()` method skips empty components: `"Musterstraße 1, 10115 Berlin"`, `"Berlin"`, `"10115 Berlin"`.
+An empty (absent) address is `new Address("", "", "")`. The `format()` method skips empty components: `"Musterstraße 1, 10115 Berlin"`, `"Berlin"`, `"10115 Berlin"`.
 
-### `DateString` (branded wrapper, like `JobSearchID`)
+Replaces the existing `Address` interface in `models/applicant/applicant.ts` (which had `zip` instead of `zipCode`).
+
+### `DateString` (in `src/utils/date-string.ts` — branded wrapper like `JobSearchID`)
 
 ```ts
 interface DateString {
@@ -146,7 +147,7 @@ interface DateString {
 }
 ```
 
-A factory function `makeDateString(raw: string): DateString` normalizes the input to ISO 8601 at the extraction boundary. If the input cannot be parsed, returns `""` as the value. Consumers extract `.value` for the plain ISO string.
+`makeDateString(raw: string): DateString` normalizes the input to ISO 8601 and validates the format. If the input cannot be parsed, returns `{ value: "" }`. Consumers extract `.value` for the plain ISO string.
 
 `SearchCriteria`, `VacancyListPage`, and `SearchMode` are unchanged.
 
@@ -156,18 +157,18 @@ Each site's `extractVacancy` (or equivalent) must return a complete `VacancyDeta
 
 | Site | What changes |
 |------|-------------|
-| **arbeitsagentur** | `contact` → non-optional `VacancyContact`. `buildAddressFromLocations` returns `VacancyAddress` (API gives `strasse`, `plz`, `ort` — map directly). Dates normalized to `DateString` via `makeDateString()`. `descriptionHtml` gets `?? ""`. |
-| **dm** | Add missing `startDate`, `contact`, `publishedAt`. JSON-LD gives `streetAddress`/`postalCode`/`addressLocality` → map to `VacancyAddress`. HTML fallback parsed from `"Adresse"` `<dd>`. Dates via `makeDateString()`. `descriptionHtml` gets `?? ""`. |
-| **xing** | Add missing `startDate`. JSON-LD gives structured address → map to `VacancyAddress`. HTML fallback parsed from location selector. Dates via `makeDateString()`. `extractContact` returns `VacancyContact` (all-empty when nothing found). |
-| **zalando** | Add missing `startDate`, `publishedAt`. Flat location text from `<dd>` parsed into `VacancyAddress` (best-effort split on `", "`; city-only when just a city name). Dates via `makeDateString()`. `descriptionHtml` gets `?? ""`. `createContact` returns `VacancyContact` (never `undefined`). |
+| **arbeitsagentur** | `contact` → non-optional `VacancyContact`. `buildAddressFromLocations` returns `Address` (API gives `strasse`, `plz`, `ort` — map directly). Dates normalized to `DateString` via `makeDateString()`. `descriptionHtml` gets `?? ""`. |
+| **dm** | Add missing `startDate`, `contact`, `publishedAt`. JSON-LD gives `streetAddress`/`postalCode`/`addressLocality` → map to `Address`. HTML fallback parsed from `"Adresse"` `<dd>`. Dates via `makeDateString()`. `descriptionHtml` gets `?? ""`. |
+| **xing** | Add missing `startDate`. JSON-LD gives structured address → map to `Address`. HTML fallback parsed from location selector. Dates via `makeDateString()`. `extractContact` returns `VacancyContact` (all-empty when nothing found). |
+| **zalando** | Add missing `startDate`, `publishedAt`. Flat location text from `<dd>` parsed into `Address` (best-effort split on `", "`; city-only when just a city name). Dates via `makeDateString()`. `descriptionHtml` gets `?? ""`. `createContact` returns `VacancyContact` (never `undefined`). |
 
 ### Internal helpers
 
 `normalizeOptionalText` stays as-is (`string | undefined` return). Callers add `?? ""` at the boundary.
 
-`makeDateString(raw: string): DateString` — new shared utility. Parses ISO 8601, German date formats (`DD.MM.YYYY`), and JSON-LD dates. Returns `{ value: "" }` for unparseable input.
+`Address` (in `src/utils/`) — class with `format()` and `isValid()`. Each extraction function constructs one from its source fields.
 
-`VacancyAddress` — class with `format()` for flat string output and `isValid()` for quality checks. Each extraction function constructs one from its source fields.
+`makeDateString()` (in `src/utils/`) — parses ISO 8601, German date formats (`DD.MM.YYYY`), and JSON-LD dates. Returns `{ value: "" }` for unparseable input.
 
 ## Downstream Impact
 
@@ -186,7 +187,7 @@ After:
 const contact = details.contact  // already VacancyContact with string fields
 ```
 
-**Address:** `details.address` is now a `VacancyAddress`. Use `details.address.isValid()` to decide whether to include it, and `details.address.format()` to get the flat string for the model's `addresses: string[]` and for commute lookups. The old `details.address ? [details.address] : []` becomes `details.address.isValid() ? [details.address.format()] : []`.
+**Address:** `details.address` is now an `Address`. Use `details.address.isValid()` to decide whether to include it, and `details.address.format()` to get the flat string for the model's `addresses: string[]` and for commute lookups. The old `details.address ? [details.address] : []` becomes `details.address.isValid() ? [details.address.format()] : []`.
 
 **Dates:** `details.startDate` and `details.publishedAt` are `DateString`. Extract `.value` for the model (which stores `string`). `details.startDate.value` replaces `details.startDate ?? ""`.
 
@@ -223,7 +224,7 @@ Passes `browser` directly to `vacancyScanner.scan()` instead of wrapping it in a
 
 - `createXingSite(browser)` → `XingProvider.createScraper(browser)` (access the exported provider, not a free function)
 - `createDmSite(browser)` → `DmProvider.createScraper(browser)`, etc.
-- Address assertions use `vacancy.address.isValid()` or check individual `street`/`zipCode`/`city` fields
+- Address assertions use `vacancy.address.isValid()` or check `street`/`zipCode`/`city` fields on the `Address` instance
 - Date assertions check `vacancy.startDate.value` / `vacancy.publishedAt.value` for ISO 8601 format or empty string
 - `descriptionHtml` assertions: `expect(vacancy.descriptionHtml.length).toBeGreaterThan(0)` replaces `toBeTruthy()`
 - Tests that omit optional fields when constructing expected results must include all fields
@@ -267,10 +268,12 @@ Tests that relied on `contactFromDetails` or optional field guards need updates 
 
 | File | Change |
 |------|--------|
-| `src/plugins/job-site/index.ts` | New interfaces (`JobSiteProvider`, `JobSiteProviderInfo`, `VacancyAddress`, `DateString`), `PROVIDERS` array, `getJobSiteProviders()`, `getJobSiteProvider()`, `getJobSiteProviderIds()`. Remove `REGISTRY`, `createJobSite()`, `getJobSiteInfos()`, `getJobSiteNames()`, `SiteEntry`, `isRegistryKey`. |
-| `src/plugins/job-site/make-date-string.ts` | New file: `makeDateString(raw)` normalizes to ISO 8601 `DateString`. |
+| `src/utils/address.ts` | New file: `Address` class (`street`, `zipCode`, `city`; `format()`, `isValid()`). Replaces `VacancyAddress` and the existing `Address` interface in `models/applicant`. |
+| `src/utils/date-string.ts` | New file: `DateString` interface and `makeDateString(raw)` factory — normalizes to ISO 8601, validates format. |
+| `src/plugins/job-site/index.ts` | New interfaces (`JobSiteProvider`, `JobSiteProviderInfo`), `PROVIDERS` array, `getJobSiteProviders()`, `getJobSiteProvider()`, `getJobSiteProviderIds()`. Imports `Address`, `DateString` from utils. Remove `REGISTRY`, `createJobSite()`, `getJobSiteInfos()`, `getJobSiteNames()`, `SiteEntry`, `isRegistryKey`. |
 | `src/plugins/llm/index.ts` | `LlmProviderInfo` becomes explicit interface (not `Pick`), `LlmProvider` extends it. Same extend-info pattern. |
-| `src/plugins/job-site/arbeitsagentur/index.ts` | Export `ArbeitsagenturProvider: JobSiteProvider`. Extraction returns all-required fields. |
+| `src/models/applicant/applicant.ts` | `Address` interface → imports `Address` class from utils. `hasMeaningfulAddress()` → `address.isValid()`. Inline address formatting → `address.format()`. Zod schema for address uses `Address` schema/parse. |
+| `src/services/resume-renderer/prepare-resume-data.ts` | `personal.address.street`/`.zip`/`.city` → `personal.address.street`/`.zipCode`/`.city`. |
 | `src/plugins/job-site/dm/index.ts` | Export `DmProvider: JobSiteProvider`. Extraction returns all-required fields. |
 | `src/plugins/job-site/xing/index.ts` | Export `XingProvider: JobSiteProvider`. Extraction returns all-required fields. |
 | `src/plugins/job-site/zalando/index.ts` | Export `ZalandoProvider: JobSiteProvider`. Extraction returns all-required fields. |
@@ -285,6 +288,10 @@ Tests that relied on `contactFromDetails` or optional field guards need updates 
 | `src/app/composition/create-services.ts` | `getJobSiteNames` → `getJobSiteProviderIds`, passes `getJobSiteProvider` to scanner. |
 | `src/app/ipc-settings.ts` | `getJobSiteInfos()` → `getJobSiteProviders()`. |
 
+
+### Layer import rules
+
+`models/*` may now import from `utils`. Necessary because `Address` and `DateString` live in utils but are consumed by both models and plugins. Update `eslint.config.ts` and `AGENTS.md` accordingly.
 
 ## Out of Scope
 
