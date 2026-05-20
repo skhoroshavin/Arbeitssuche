@@ -22,7 +22,7 @@ describe("crawl-manager", () => {
     let resolveScan: (() => void) | undefined
     const scanStarted = createDeferred<void>()
 
-    startCrawl({
+    void startCrawl({
       jobSearchId: "job-1",
       vacancyScanner: makeScanner(
         async (
@@ -73,7 +73,7 @@ describe("crawl-manager", () => {
       enrichAborted: boolean
     }>()
 
-    startCrawl({
+    void startCrawl({
       jobSearchId: "job-1",
       vacancyScanner: makeScanner(
         (_jobSearchId, crawlController, enrichController, _onProgress) => {

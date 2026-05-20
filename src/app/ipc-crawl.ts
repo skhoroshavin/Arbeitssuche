@@ -11,7 +11,7 @@ export function registerCrawlHandlers(
   services: AppServices,
   safeSend: SafeSend,
 ): void {
-  handle("job-searches:crawl:start", (id: string) => {
+  handle("job-searches:crawl:start", (id: string) =>
     startCrawl({
       jobSearchId: id,
       vacancyScanner: services.vacancyScanner,
@@ -34,8 +34,8 @@ export function registerCrawlHandlers(
           source: "crawl",
         })
       },
-    })
-  })
+    }),
+  )
 
   handle("job-searches:crawl:abort", (id: string) => {
     abortCrawl(id)
