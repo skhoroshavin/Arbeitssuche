@@ -3,7 +3,8 @@ import type { VacancyScanner, OnProgress } from "@/services/vacancy-scanner"
 import { abortCrawlEnrichment, startCrawl } from "@/app"
 
 vi.mock("@/plugins/job-site", () => ({
-  createJobSite: vi.fn(() => ({})),
+  getJobSiteProviderIds: vi.fn(() => []),
+  getJobSiteProvider: vi.fn(() => ({})),
 }))
 
 vi.mock("@/plugins/browser", () => ({

@@ -20,7 +20,7 @@ export const ArbeitsagenturProvider: JobSiteProvider = {
 
 const API_BASE = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service"
 
-export class ArbeitsagenturSite implements JobSite {
+class ArbeitsagenturSite implements JobSite {
   constructor(_browser: Browser, fetch?: Fetch) {
     this.fetch = fetch ?? globalThis.fetch
   }

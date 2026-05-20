@@ -48,7 +48,7 @@ export interface JobSite {
   getVacancyDetails(url: string): Promise<VacancyDetails>
 }
 
-interface JobSiteProviderInfo {
+export interface JobSiteProviderInfo {
   readonly id: string
   readonly name: string
   readonly supportedModes: readonly SearchMode[]
@@ -58,8 +58,12 @@ export interface JobSiteProvider extends JobSiteProviderInfo {
   createScraper(browser: Browser): JobSite
 }
 
-export function getJobSiteProviders(): JobSiteProvider[] {
-  return [...PROVIDERS]
+export function getJobSiteProviders(): JobSiteProviderInfo[] {
+  return PROVIDERS.map(({ id, name, supportedModes }) => ({
+    id,
+    name,
+    supportedModes,
+  }))
 }
 
 export function getJobSiteProvider(id: string): JobSiteProvider {

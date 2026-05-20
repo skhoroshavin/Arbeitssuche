@@ -1,6 +1,6 @@
 import { test, describe, beforeAll, afterAll, expect } from "vitest"
 import { createPlaywrightBrowser, type Browser } from "@/plugins/browser"
-import { getJobSiteProviders } from "."
+import { getJobSiteProviderIds, getJobSiteProvider } from "."
 
 describe("job-site plugins", () => {
   let browser: Browser
@@ -15,7 +15,8 @@ describe("job-site plugins", () => {
 
   const SKIP_SITES = new Set<string>(["xing"])
 
-  for (const provider of getJobSiteProviders()) {
+  for (const id of getJobSiteProviderIds()) {
+    const provider = getJobSiteProvider(id)
     const mode = provider.supportedModes[0]
     const skip = SKIP_SITES.has(provider.id)
 
