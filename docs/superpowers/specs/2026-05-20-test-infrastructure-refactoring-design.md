@@ -63,9 +63,43 @@ File: `.github/workflows/ci.yml`
 
 Remove the "Crawler tests" step. Keep only unit tests.
 
+Add Playwright browser caching. Both `validate` and `validate-live` jobs use the same cache pattern.
+
 ### New `validate-live` job (replaces `e2e-live`)
 
-Rename `e2e-live` to `validate-live`. Move integration tests into this job alongside E2E tests:
+Rename `e2e-live` to `validate-live`. Move integration tests into this job alongside E2E tests.
+
+### Playwright browser caching
+
+Both jobs that install Playwright (`validate` for build verification, `validate-live` for integration + E2E) should cache the browser binaries.
+
+Playwright stores browsers in `~/.cache/ms-playwright` on Linux. Cache key is based on the Playwright version from `package-lock.json`.
+
+Add before the install step:
+
+```yaml
+- name: Cache Playwright browsers
+  id: playwright-cache
+  uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2625 # v4.2.3
+  with:
+    path: ~/.cache/ms-playwright
+    key: playwright-${{ hashFiles('package-lock.json') }}
+```
+
+Then conditionally install:
+
+```yaml
+- name: Install Playwright and system dependencies
+  if: steps.playwright-cache.outputs.cache-hit != 'true'
+  run: npx playwright install --with-deps chromium
+- name: Install Playwright system dependencies (cached)
+  if: steps.playwright-cache.outputs.cache-hit == 'true'
+  run: npx playwright install-deps chromium
+```
+
+Note: System dependencies still need installation even when browsers are cached (they live outside `~/.cache/ms-playwright`).
+
+### Full `validate-live` job
 
 ```yaml
 validate-live:
@@ -84,8 +118,18 @@ validate-live:
         node-version: 24
         cache: npm
     - run: npm ci
+    - name: Cache Playwright browsers
+      id: playwright-cache
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2625 # v4.2.3
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ hashFiles('package-lock.json') }}
     - name: Install Playwright and system dependencies
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: npx playwright install --with-deps chromium
+    - name: Install Playwright system dependencies (cached)
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      run: npx playwright install-deps chromium
     - name: Integration tests
       run: npm run test:integration
     - name: E2E tests
