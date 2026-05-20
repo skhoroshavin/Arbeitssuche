@@ -62,18 +62,16 @@ interface JobSiteProviderInfo {
 
 `getJobSiteProviders()` returns `JobSiteProviderInfo[]` (subset, like LLM's `LlmProviderInfo`).
 
-### `JobSite` (unchanged name, created by provider)
+### `JobSite` (pure scraper — no identity or metadata)
 
 ```ts
 interface JobSite {
-  readonly name: string
-  readonly supportedModes: SearchMode[]
   getVacancyList(criteria: SearchCriteria, pageId?: string): Promise<VacancyListPage>
   getVacancyDetails(url: string): Promise<VacancyDetails>
 }
 ```
 
-`name` and `supportedModes` stay on the scraper because `site-crawler` reads them from the instance.
+`name` and `supportedModes` are removed. Identity and mode resolution live solely on `JobSiteProvider`. The crawler receives providers (which carry metadata) and calls `provider.createScraper(browser)` internally when it needs to scrape.
 
 ### `VacancyDetails` (all fields required `string`)
 
@@ -138,22 +136,28 @@ const contact = details.contact  // already VacancyContact with string fields
 
 `details.address ? [details.address] : []` stays — an empty string still produces an empty array, which is correct behavior.
 
-### `src/services/site-crawler/site-crawler.ts` and `paginate.ts`
+### `src/services/site-crawler/site-crawler.ts`
 
-No interface changes — the crawler still receives `JobSite[]`. The factory that creates those `JobSite` instances changes in the layers above.
+`CrawlOptions.sites: JobSite[]` → `CrawlOptions.providers: JobSiteProvider[]`. Adds `browser: Browser` to `CrawlOptions`. The crawler calls `provider.createScraper(options.browser)` internally for each provider, and reads `provider.name` / `provider.supportedModes` directly for logging and mode resolution.
+
+### `src/services/site-crawler/paginate.ts`
+
+`resolveEffectiveMode(site, mode)` → `resolveEffectiveMode(supportedModes, mode)` — takes `readonly SearchMode[]` directly instead of a `JobSite`.
+
+`fetchSearchPage(site, criteria, pageId, pageNumber)` → `fetchSearchPage(scraper, siteName, criteria, pageId, pageNumber)` — takes a `JobSite` (scraper) and a `string` (site name for error logging) separately.
 
 ### `src/services/vacancy-scanner/vacancy-scanner.ts`
 
-- Constructor: `listJobSiteNames: () => string[]` → `listJobSiteProviderIds: () => string[]`
-- `scan()`: `JobSiteFactory` signature stays `(id: string) => JobSite` — the factory implementation changes, but the scanner's API is unchanged
+- Constructor: receives `listProviderIds: () => string[]` and `getProvider: (id: string) => JobSiteProvider` (replaces `listJobSiteNames`)
+- `scan()`: loses `siteFactory: JobSiteFactory` parameter, gains `browser: Browser`. Resolves provider IDs → providers internally, passes `{ providers, browser }` to `siteCrawler.crawl()`
 
 ### `src/app/crawl-manager.ts`
 
-Factory changes from `(name) => createJobSite(name, browser)` to `(id) => getJobSiteProvider(id).createScraper(browser)`.
+Passes `browser` directly to `vacancyScanner.scan()` instead of wrapping it in a factory closure.
 
 ### `src/app/composition/create-services.ts`
 
-`getJobSiteNames` → `getJobSiteProviderIds`.
+`getJobSiteNames` → `getJobSiteProviderIds`. Additionally passes `getJobSiteProvider` to `VacancyScanner` constructor (for ID → provider resolution).
 
 ### `src/app/ipc-settings.ts`
 
@@ -214,11 +218,11 @@ Tests that relied on `contactFromDetails` or optional field guards need updates 
 | `src/plugins/job-site/integration.test.ts` | Remove `SKIPPED_SITES`, use `skipIntegrationTests`, generic quality check. |
 | `src/services/vacancy-processor/process.ts` | Delete `contactFromDetails()`, simplify field access. |
 | `src/services/vacancy-processor/process.test.ts` (or equivalent) | Update for simplified `process.ts`. |
-| `src/services/site-crawler/site-crawler.ts` | No interface changes. |
-| `src/services/site-crawler/paginate.ts` | No changes. |
-| `src/services/vacancy-scanner/vacancy-scanner.ts` | `listJobSiteNames` → `listJobSiteProviderIds` (constructor param rename). |
-| `src/app/crawl-manager.ts` | Factory: `createJobSite(name, browser)` → `getJobSiteProvider(id).createScraper(browser)`. |
-| `src/app/composition/create-services.ts` | `getJobSiteNames` → `getJobSiteProviderIds`. |
+| `src/services/site-crawler/site-crawler.ts` | `CrawlOptions.sites` → `providers`, adds `browser`. Internally calls `createScraper` and reads provider metadata. |
+| `src/services/site-crawler/paginate.ts` | `resolveEffectiveMode` takes `supportedModes` directly. `fetchSearchPage` takes `scraper` + `siteName` separately. |
+| `src/services/vacancy-scanner/vacancy-scanner.ts` | Constructor: receives `listProviderIds` + `getProvider`. `scan()`: loses `siteFactory`, gains `browser`. |
+| `src/app/crawl-manager.ts` | Passes `browser` directly to `scan()` (no more factory closure). |
+| `src/app/composition/create-services.ts` | `getJobSiteNames` → `getJobSiteProviderIds`, passes `getJobSiteProvider` to scanner. |
 | `src/app/ipc-settings.ts` | `getJobSiteInfos()` → `getJobSiteProviders()`. |
 
 ## Out of Scope
