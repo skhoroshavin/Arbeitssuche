@@ -47,12 +47,7 @@ function conditionalDate(disclose: boolean, date: string): string | undefined {
 
 function prepareLocation(applicant: Applicant): string | undefined {
   const { personal } = applicant
-  const parts = [
-    personal.address.street,
-    personal.address.zip,
-    personal.address.city,
-  ].filter(Boolean)
-  return personal.discloseAddress && parts.length > 0
-    ? parts.join(", ")
+  return personal.discloseAddress && !personal.address.isEmpty()
+    ? personal.address.format()
     : undefined
 }

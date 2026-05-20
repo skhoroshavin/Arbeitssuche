@@ -1,8 +1,10 @@
 import type {
   JobSite,
+  JobSiteProvider,
   VacancyDetails,
   SearchCriteria,
 } from "@/plugins/job-site"
+import type { Browser } from "@/plugins/browser"
 import type { JobSearchCriteria } from "@/models/job-search"
 import type { ProgressEvent } from "@/models/progress/index.js"
 import { formatError } from "@/services/vacancy-scanner/index.js"
@@ -19,27 +21,31 @@ export class SiteCrawler {
   async crawl(options: CrawlOptions): Promise<CrawlSummary> {
     const allUrls = new Set<string>()
 
-    for (const site of options.sites) {
+    for (const provider of options.providers) {
       if (options.signal?.aborted) break
-      await this.crawlSite(site, options, allUrls)
+      await this.crawlSite(provider, options, allUrls)
     }
 
     return { totalUrls: allUrls.size }
   }
 
   private async crawlSite(
-    site: JobSite,
+    provider: JobSiteProvider,
     options: CrawlOptions,
     allUrls: Set<string>,
   ): Promise<void> {
-    const effectiveMode = resolveEffectiveMode(site, options.criteria.mode)
+    const effectiveMode = resolveEffectiveMode(
+      provider.supportedModes,
+      options.criteria.mode,
+    )
     if (!effectiveMode) return
 
     options.onProgress?.({
-      message: `Scanning ${site.name}...`,
+      message: `Scanning ${provider.name}...`,
       phase: "search",
     })
 
+    const scraper = provider.createScraper(options.browser)
     const siteUrls = new Set<string>()
     const pluginCriteria = derivePluginCriteria(options.criteria, effectiveMode)
     let pageId: string | undefined
@@ -47,7 +53,8 @@ export class SiteCrawler {
     for (let page = 0; page < 20; page++) {
       if (options.signal?.aborted) break
       const next = await this.crawlPage(
-        site,
+        scraper,
+        provider.name,
         pluginCriteria,
         effectiveMode,
         pageId,
@@ -62,7 +69,8 @@ export class SiteCrawler {
   }
 
   private async crawlPage(
-    site: JobSite,
+    scraper: JobSite,
+    siteName: string,
     pluginCriteria: SearchCriteria,
     effectiveMode: string,
     pageId: string | undefined,
@@ -72,7 +80,8 @@ export class SiteCrawler {
     options: CrawlOptions,
   ): Promise<string | undefined> {
     const listResult = await fetchSearchPage(
-      site,
+      scraper,
+      siteName,
       pluginCriteria,
       pageId,
       page + 1,
@@ -83,7 +92,7 @@ export class SiteCrawler {
     if (newUrls.length === 0) return undefined
 
     options.onProgress?.({
-      message: `[${site.name}] Search (${effectiveMode}) page ${page + 1}: ${siteUrls.size} URLs found`,
+      message: `[${siteName}] Search (${effectiveMode}) page ${page + 1}: ${siteUrls.size} URLs found`,
       phase: "search",
     })
 
@@ -92,7 +101,7 @@ export class SiteCrawler {
       siteUrls.size,
       options.criteria.limit,
     )
-    await this.processUrls(site, urlsToProcess, options)
+    await this.processUrls(scraper, siteName, urlsToProcess, options)
 
     if (
       !shouldContinuePaging(
@@ -107,41 +116,44 @@ export class SiteCrawler {
   }
 
   private async processUrls(
-    site: JobSite,
+    scraper: JobSite,
+    siteName: string,
     urls: string[],
     options: CrawlOptions,
   ): Promise<void> {
     for (const url of urls) {
       if (options.signal?.aborted) break
-      await this.fetchAndEmit(site, url, options)
+      await this.fetchAndEmit(scraper, siteName, url, options)
     }
   }
 
   private async fetchAndEmit(
-    site: JobSite,
+    scraper: JobSite,
+    siteName: string,
     url: string,
     options: CrawlOptions,
   ): Promise<void> {
     let details
     try {
-      details = await site.getVacancyDetails(url)
+      details = await scraper.getVacancyDetails(url)
     } catch (error) {
       console.error(
-        `[${site.name}] Failed to extract ${url}:`,
+        `[${siteName}] Failed to extract ${url}:`,
         formatError(error),
       )
       options.onProgress?.({
-        message: `[${site.name}] Failed to extract ${url}`,
+        message: `[${siteName}] Failed to extract ${url}`,
         phase: "scan",
       })
       return
     }
-    options.onResult(details, site.name)
+    options.onResult(details, siteName)
   }
 }
 
 interface CrawlOptions {
-  sites: JobSite[]
+  providers: JobSiteProvider[]
+  browser: Browser
   criteria: JobSearchCriteria
   signal?: AbortSignal
   onProgress?: (event: ProgressEvent) => void

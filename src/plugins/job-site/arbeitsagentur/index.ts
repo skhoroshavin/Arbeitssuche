@@ -1,26 +1,21 @@
 import { z } from "zod"
 
 import type { Browser } from "@/plugins/browser"
-
 import type {
-  VacancyDetails,
   JobSite,
+  JobSiteProvider,
   SearchCriteria,
+  VacancyDetails,
 } from "@/plugins/job-site"
+import { Address } from "@/models/common"
+import { makeDateString } from "../date-string.js"
 
-import { normalizeAndJoinText } from "@/utils/index.js"
-
-export const SUPPORTED_MODES = [
-  "employment",
-  "entry-level",
-  "apprenticeship",
-] as const
-
-export function createArbeitsagenturSite(
-  browser: Browser,
-  fetch?: Fetch,
-): JobSite {
-  return new ArbeitsagenturSite(browser, fetch)
+export const ArbeitsagenturProvider: JobSiteProvider = {
+  id: "arbeitsagentur",
+  name: "arbeitsagentur",
+  supportedModes: ["employment", "entry-level", "apprenticeship"],
+  createScraper: (browser: Browser, fetch?: Fetch) =>
+    new ArbeitsagenturSite(browser, fetch),
 }
 
 const API_BASE = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service"
@@ -29,9 +24,6 @@ class ArbeitsagenturSite implements JobSite {
   constructor(_browser: Browser, fetch?: Fetch) {
     this.fetch = fetch ?? globalThis.fetch
   }
-
-  readonly name = "arbeitsagentur"
-  readonly supportedModes = [...SUPPORTED_MODES]
 
   async getVacancyList(criteria: SearchCriteria, pageId?: string) {
     const url = buildSearchApiUrl(criteria, pageId)
@@ -92,11 +84,17 @@ function mapDetailsResponse(
     title: data.stellenangebotsTitel ?? "",
     company: data.firma ?? "",
     address: buildAddressFromLocations(data.stellenlokationen),
-    descriptionHtml: data.stellenangebotsBeschreibung,
-    startDate: data.eintrittszeitraum?.von,
-    publishedAt: data.veroeffentlichungszeitraum?.von,
-    contact: undefined,
+    descriptionHtml: data.stellenangebotsBeschreibung ?? "",
+    startDate: dateFromNested(data.eintrittszeitraum),
+    publishedAt: dateFromNested(data.veroeffentlichungszeitraum),
+    contact: { name: "", email: "", phone: "" },
   }
+}
+
+function dateFromNested(nested: { von?: string } | undefined): {
+  value: string
+} {
+  return makeDateString(nested?.von ?? "")
 }
 
 function buildSearchApiUrl(criteria: SearchCriteria, pageId?: string): string {
@@ -118,12 +116,15 @@ function refnrToUrl(refnr: string): string {
 
 function buildAddressFromLocations(
   locations: z.infer<typeof ApiJobDetailsSchema>["stellenlokationen"],
-): string | undefined {
-  if (!locations?.length) return undefined
+): Address {
+  const address = new Address()
+  if (!locations?.length) return address
   const addr = locations[0].adresse
-  if (!addr) return undefined
-  const cityLine = normalizeAndJoinText([addr.plz, addr.ort], " ")
-  return normalizeAndJoinText([addr.strasse, cityLine])
+  if (!addr) return address
+  address.street = addr.strasse ?? ""
+  address.zip = addr.plz ?? ""
+  address.city = addr.ort ?? ""
+  return address
 }
 
 function modeToAngebotsart(mode: string): string {

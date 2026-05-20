@@ -1,23 +1,25 @@
 import * as cheerio from "cheerio/slim"
 import type { Browser } from "@/plugins/browser"
 import type {
-  VacancyContact,
-  VacancyDetails,
   JobSite,
+  JobSiteProvider,
   SearchCriteria,
+  VacancyDetails,
 } from "@/plugins/job-site"
+import { Address } from "@/models/common"
+import { makeDateString } from "../date-string.js"
 import { extractAbsoluteLinks } from "@/plugins/job-site/utils/index.js"
 import { normalizeOptionalText } from "@/utils/index.js"
 
-export function createZalandoSite(browser: Browser): JobSite {
-  return new ZalandoSite(browser)
+export const ZalandoProvider: JobSiteProvider = {
+  id: "zalando",
+  name: "zalando",
+  supportedModes: ["employment"],
+  createScraper: (browser: Browser) => new ZalandoSite(browser),
 }
 
 class ZalandoSite implements JobSite {
   constructor(private readonly browser: Browser) {}
-
-  readonly name = "zalando"
-  readonly supportedModes = [...SUPPORTED_MODES]
 
   async getVacancyList(criteria: SearchCriteria, pageId?: string) {
     const page = await this.browser.openPage(buildSearchUrl(criteria, pageId), {
@@ -53,7 +55,7 @@ function extractVacancy(html: string, url: string): VacancyDetails {
 
   const title = $(SELECTORS.title).first().text().trim()
 
-  const address = normalizeOptionalText(
+  const rawAddress = normalizeOptionalText(
     $("dt")
       .filter((_index, element) => $(element).text().trim() === "Location")
       .first()
@@ -61,7 +63,7 @@ function extractVacancy(html: string, url: string): VacancyDetails {
       .text(),
   )
 
-  let descriptionHtml: string | undefined
+  let descriptionHtml = ""
   let maxLength = 0
   $("section").each((_index, element) => {
     const text = $(element).text().trim()
@@ -70,7 +72,7 @@ function extractVacancy(html: string, url: string): VacancyDetails {
       !text.includes("Application Form") &&
       text.length > maxLength
     ) {
-      descriptionHtml = $(element).html() || undefined
+      descriptionHtml = $(element).html() || ""
       maxLength = text.length
     }
   })
@@ -85,10 +87,32 @@ function extractVacancy(html: string, url: string): VacancyDetails {
     url,
     title,
     company: "Zalando",
-    address,
+    address: parseFlatAddress(rawAddress ?? ""),
     descriptionHtml,
-    contact: createContact({ name: recName, email: recEmail }),
+    startDate: makeDateString(""),
+    publishedAt: makeDateString(""),
+    contact: { name: recName ?? "", email: recEmail ?? "", phone: "" },
   }
+}
+
+function parseFlatAddress(raw: string): Address {
+  const address = new Address()
+  if (!raw) return address
+  const parts = raw.split(", ").map((p) => p.trim())
+  if (parts.length >= 2) {
+    address.street = parts[0]
+    const lastPart = parts.at(-1)
+    const cityParts = lastPart.split(" ")
+    if (cityParts.length >= 2) {
+      address.zip = cityParts[0]
+      address.city = cityParts.slice(1).join(" ")
+    } else {
+      address.city = lastPart
+    }
+  } else {
+    address.city = parts[0] ?? ""
+  }
+  return address
 }
 
 function extractLinks(html: string): string[] {
@@ -105,20 +129,6 @@ function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
   const offset = Number(pageId ?? "0")
   return `${BASE_URL}/en/jobs?q=${q}&location=${location}&offset=${offset}`
 }
-
-function createContact(contact: VacancyContact): VacancyContact | undefined {
-  const normalizedContact = {
-    name: normalizeOptionalText(contact.name),
-    email: normalizeOptionalText(contact.email),
-    phone: normalizeOptionalText(contact.phone),
-  }
-  if (Object.values(normalizedContact).every((value) => value === undefined)) {
-    return undefined
-  }
-  return normalizedContact
-}
-
-export const SUPPORTED_MODES = ["employment"] as const
 
 const BASE_URL = "https://jobs.zalando.com"
 const BLOCK_PATTERNS = [/usercentrics\.eu/]

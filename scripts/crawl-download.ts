@@ -3,7 +3,7 @@ import { parseArgs } from "node:util"
 import { SEARCH_MODES } from "@/models/job-search/index.js"
 import type { SearchMode } from "@/models/job-search"
 import { createPlaywrightBrowser } from "@/plugins/browser"
-import { createJobSite, getJobSiteNames } from "@/plugins/job-site"
+import { getJobSiteProviderIds, getJobSiteProvider } from "@/plugins/job-site"
 
 const { values } = parseArgs({
   options: {
@@ -31,13 +31,13 @@ const location = values.location
 const query = values.query
 const outputDirectory = values["out-dir"]
 
-const allSiteNames = getJobSiteNames()
-const sitesToRun = values.site ? [values.site] : allSiteNames
+const allProviderIds = getJobSiteProviderIds()
+const sitesToRun = values.site ? [values.site] : allProviderIds
 
-const unknown = sitesToRun.filter((s) => !allSiteNames.includes(s))
+const unknown = sitesToRun.filter((s) => !allProviderIds.includes(s))
 if (unknown.length > 0) {
   throw new Error(
-    `Unknown sites: ${unknown.join(", ")}. Available: ${allSiteNames.join(", ")}`,
+    `Unknown sites: ${unknown.join(", ")}. Available: ${allProviderIds.join(", ")}`,
   )
 }
 
@@ -50,7 +50,8 @@ for (const siteName of sitesToRun) {
 
   const browser = await createPlaywrightBrowser({ recordDirectory })
   try {
-    const site = createJobSite(siteName, browser)
+    const provider = getJobSiteProvider(siteName)
+    const site = provider.createScraper(browser)
     const criteria = { location, query, mode, radiusKm: 25 }
 
     // Collect URLs via pagination

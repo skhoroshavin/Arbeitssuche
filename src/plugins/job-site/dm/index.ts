@@ -3,36 +3,33 @@ import { z } from "zod"
 import * as cheerio from "cheerio/slim"
 
 import type { Browser } from "@/plugins/browser"
-
 import type {
-  VacancyDetails,
   JobSite,
+  JobSiteProvider,
   SearchCriteria,
+  VacancyDetails,
 } from "@/plugins/job-site"
-
+import { Address } from "@/models/common"
+import { makeDateString } from "../date-string.js"
 import { withOpenedPage } from "@/plugins/job-site/utils/index.js"
-
 import {
   extractJsonLd,
-  normalizeAndJoinText,
   normalizeOptionalText,
   isRecord,
   stringField,
 } from "@/utils/index.js"
 
-export const SUPPORTED_MODES = ["employment", "apprenticeship"] as const
-
-export function createDmSite(browser: Browser): JobSite {
-  return new DmSite(browser)
+export const DmProvider: JobSiteProvider = {
+  id: "dm",
+  name: "dm",
+  supportedModes: ["employment", "apprenticeship"],
+  createScraper: (browser: Browser) => new DmSite(browser),
 }
 
 const BASE_URL = "https://www.dm-jobs.de"
 
 class DmSite implements JobSite {
   constructor(private readonly browser: Browser) {}
-
-  readonly name = "dm"
-  readonly supportedModes = [...SUPPORTED_MODES]
 
   async getVacancyList(criteria: SearchCriteria) {
     const page = await this.browser.openPage(buildSearchUrl(criteria), {
@@ -70,12 +67,18 @@ function extractVacancy(html: string, url: string): VacancyDetails {
 
   return {
     url,
-    title: ld.title ?? $("h1").first().text().trim(),
-    company: ld.company ?? "dm",
-    address: ld.address ?? extractAddressFallback($),
-    descriptionHtml: ld.description ?? extractDescriptionFallback($),
-    publishedAt: ld.publishedAt,
+    title: pick(ld.title, $("h1").first().text().trim()),
+    company: pick(ld.company, "dm"),
+    address: pick(ld.address, extractAddressFallback($)),
+    descriptionHtml: pick(ld.description, extractDescriptionFallback($)),
+    startDate: makeDateString(""),
+    publishedAt: makeDateString(pick(ld.publishedAt, "")),
+    contact: { name: "", email: "", phone: "" },
   }
+}
+
+function pick<T>(value: T | undefined, fallback: T): T {
+  return value === undefined ? fallback : value
 }
 
 function extractLinks(html: string): string[] {
@@ -100,66 +103,82 @@ function buildSearchUrl(criteria: SearchCriteria): string {
   return `${BASE_URL}/job-listing/?${qs}`
 }
 
-function extractFromPosting(jsonLd: object | undefined) {
-  const posting = asJobPosting(jsonLd)
+function extractFromPosting(jsonLd: object | undefined): PostingData {
+  const result = JobPostingJsonLdSchema.safeParse(jsonLd)
+  if (!result.success) {
+    return { address: new Address() }
+  }
+  const posting = result.data
   return {
-    title: posting?.title,
-    company: posting?.hiringOrganization?.name,
-    description: posting?.description,
-    publishedAt: posting?.datePosted,
+    title: posting.title,
+    company: posting.hiringOrganization?.name,
+    description: posting.description,
+    publishedAt: posting.datePosted,
     address: formatJobPostingAddress(posting),
   }
 }
 
-function asJobPosting(value: unknown): JobPostingJsonLd | undefined {
-  const result = JobPostingJsonLdSchema.safeParse(value)
-  return result.success ? result.data : undefined
-}
-
-interface JobPostingJsonLd {
+interface PostingData {
   title?: string
+  company?: string
   description?: string
-  datePosted?: string
-  hiringOrganization?: { name?: string }
-  jobLocation?:
-    | { address?: JobPostingAddress }
-    | { address?: JobPostingAddress }[]
-}
-
-interface JobPostingAddress {
-  streetAddress?: string
-  postalCode?: string
-  addressLocality?: string
+  publishedAt?: string
+  address: Address
 }
 
 function formatJobPostingAddress(
   posting: { jobLocation?: unknown } | undefined,
-): string | undefined {
-  if (!posting) return undefined
-  const location = posting.jobLocation
-  const loc: unknown = Array.isArray(location) ? location[0] : location
-  if (!isRecord(loc) || !isRecord(loc.address)) return undefined
-  return normalizeAndJoinText(
-    [
-      stringField(loc.address, "streetAddress"),
-      stringField(loc.address, "postalCode"),
-      stringField(loc.address, "addressLocality"),
-    ],
-    ", ",
-  )
+): Address {
+  const address = new Address()
+  if (!posting) return address
+  const loc = firstLocation(posting.jobLocation)
+  if (!isRecord(loc) || !isRecord(loc.address)) return address
+  applyAddressFields(address, loc.address)
+  return address
 }
 
-function extractAddressFallback($: cheerio.CheerioAPI): string | undefined {
-  return normalizeOptionalText(
+function firstLocation(location: unknown): unknown {
+  return Array.isArray(location) ? location[0] : location
+}
+
+function applyAddressFields(
+  address: Address,
+  record: Record<string, unknown>,
+): void {
+  address.street = stringField(record, "streetAddress") ?? ""
+  address.zip = stringField(record, "postalCode") ?? ""
+  address.city = stringField(record, "addressLocality") ?? ""
+}
+
+function extractAddressFallback($: cheerio.CheerioAPI): Address {
+  const address = new Address()
+  const raw = normalizeOptionalText(
     $("dt")
       .filter((_index, element) => $(element).text().trim() === "Adresse")
       .first()
       .next("dd")
       .text(),
   )
+  if (raw) {
+    const parts = raw.split(",").map((p) => p.trim())
+    if (parts.length >= 2) {
+      address.street = parts[0]
+      const lastPart = parts.at(-1)
+      const cityParts = lastPart.split(" ")
+      if (cityParts.length >= 2) {
+        address.zip = cityParts[0]
+        address.city = cityParts.slice(1).join(" ")
+      } else {
+        address.city = lastPart
+      }
+    } else {
+      address.city = raw
+    }
+  }
+  return address
 }
 
-function extractDescriptionFallback($: cheerio.CheerioAPI): string | undefined {
+function extractDescriptionFallback($: cheerio.CheerioAPI): string {
   const parts: string[] = []
   $("h2").each((_index, element) => {
     const heading = $(element).text().trim()
@@ -168,7 +187,7 @@ function extractDescriptionFallback($: cheerio.CheerioAPI): string | undefined {
       parts.push(`<h2>${heading}</h2>${siblingHtml}`)
     }
   })
-  return parts.length > 0 ? parts.join("") : undefined
+  return parts.length > 0 ? parts.join("") : ""
 }
 
 const JobPostingJsonLdSchema = z.object({

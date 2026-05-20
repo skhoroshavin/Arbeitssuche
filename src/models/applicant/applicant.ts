@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { Address } from "@/models/common"
 
 export class Applicant {
   constructor() {
@@ -8,7 +9,7 @@ export class Applicant {
       phone: "",
       birthdate: "",
       gender: "",
-      address: { street: "", zip: "", city: "" },
+      address: new Address(),
       hobbies: "",
       discloseBirthdate: false,
       discloseGender: false,
@@ -134,13 +135,9 @@ export class Applicant {
   private formatPersonalSection(): string {
     const p = this.personal
     const lines = [`Name: ${p.name}`]
-    const addressParts = [
-      p.address.street,
-      p.address.zip,
-      p.address.city,
-    ].filter((value) => value.trim().length > 0)
-    if (addressParts.length > 0) {
-      lines.push(`Adresse: ${addressParts.join(", ")}`)
+    const formatted = p.address.format()
+    if (formatted) {
+      lines.push(`Adresse: ${formatted}`)
     }
     if (p.email.trim().length > 0) lines.push(`E-Mail: ${p.email}`)
     if (p.phone.trim().length > 0) lines.push(`Telefon: ${p.phone}`)
@@ -181,12 +178,6 @@ export interface ApplicantPersonal {
   discloseHobbies: boolean
 }
 
-export interface Address {
-  street: string
-  zip: string
-  city: string
-}
-
 export interface ApplicantSkill {
   name: string
 }
@@ -225,9 +216,7 @@ export interface ApplicantEducation {
 }
 
 function hasMeaningfulAddress(address: Address): boolean {
-  return [address.street, address.zip, address.city].some(
-    (value) => value.trim().length > 0,
-  )
+  return !address.isEmpty()
 }
 
 function hasMeaningfulExperience(entry: ApplicantExperience): boolean {
@@ -264,7 +253,7 @@ function fillPersonal(
   target.phone = source.phone
   target.birthdate = source.birthdate
   target.gender = source.gender
-  target.address = source.address
+  target.address = Address.parse(source.address)
   target.hobbies = parseHobbies(source.hobbies)
   target.discloseBirthdate = source.discloseBirthdate
   target.discloseGender = source.discloseGender
@@ -345,13 +334,7 @@ const PersonalInputSchema = z.object({
   phone: z.string().default(""),
   birthdate: z.string().default(""),
   gender: z.string().default(""),
-  address: z
-    .object({
-      street: z.string().default(""),
-      zip: z.string().default(""),
-      city: z.string().default(""),
-    })
-    .default({ street: "", zip: "", city: "" }),
+  address: Address.schema.default({ street: "", zip: "", city: "" }),
   hobbies: z.union([z.string(), z.array(z.string())]).optional(),
   discloseBirthdate: z.boolean().default(false),
   discloseGender: z.boolean().default(false),

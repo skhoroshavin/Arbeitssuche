@@ -13,11 +13,11 @@ export function process(
   const hash = vacancyHash(
     details.title,
     details.company,
-    details.address,
-    details.contact?.name,
+    details.address.format(),
+    details.contact.name,
   )
 
-  const contact = contactFromDetails(details)
+  const contact = details.contact
   const description = details.descriptionHtml
     ? htmlToMarkdown(details.descriptionHtml)
     : ""
@@ -50,9 +50,9 @@ export function process(
     title: details.title,
     company: details.company,
     urls: [details.url],
-    addresses: details.address ? [details.address] : [],
+    addresses: details.address.isValid() ? [details.address.format()] : [],
     contact,
-    startDate: details.startDate ?? "",
+    startDate: details.startDate.value,
     description,
     enriched: false,
     enrichmentDirty: true,
@@ -61,16 +61,6 @@ export function process(
   })
 
   return { vacancy, hash, isNew: true }
-}
-
-function contactFromDetails(details: VacancyDetails): VacancyContact {
-  if (!details.contact) return { name: "", email: "", phone: "" }
-  const { name, email, phone } = details.contact
-  return {
-    name: name ?? "",
-    email: email ?? "",
-    phone: phone ?? "",
-  }
 }
 
 function mergeWithExisting(
@@ -90,12 +80,12 @@ function mergeWithExisting(
     urls: mergeUrls(existing.urls, details.url),
     addresses: mergeAddresses(
       existing.addresses,
-      details.address ? [details.address] : [],
+      details.address.isValid() ? [details.address.format()] : [],
     ),
     description: description || existing.description,
     enrichmentDirty: existing.enrichmentDirty || descriptionChanged,
     contact: hasContact(contact) ? contact : existing.contact,
-    startDate: details.startDate ?? existing.startDate,
+    startDate: details.startDate.value || existing.startDate,
     activityHistory: [...existing.activityHistory, foundActivity],
     active: true,
   })

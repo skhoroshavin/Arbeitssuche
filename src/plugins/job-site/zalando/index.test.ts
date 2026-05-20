@@ -1,12 +1,12 @@
 import { test, describe, expect } from "vitest"
 import path from "node:path"
-import { createZalandoSite } from "."
+import { ZalandoProvider } from "."
 import { BrowserStub } from "@/plugins/browser"
 
 describe("zalando", () => {
   test("getVacancyList returns absolute URLs from search page", async () => {
     const browser = BrowserStub.fromDirectory(SAMPLES_DIR)
-    const site = createZalandoSite(browser)
+    const site = ZalandoProvider.createScraper(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
       query: "",
@@ -21,7 +21,7 @@ describe("zalando", () => {
 
   test("getVacancyDetails returns title and company", async () => {
     const browser = BrowserStub.fromDirectory(SAMPLES_DIR)
-    const site = createZalandoSite(browser)
+    const site = ZalandoProvider.createScraper(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
       query: "",
@@ -56,22 +56,16 @@ describe("zalando", () => {
     `
     const vacancyUrl = "https://jobs.zalando.com/en/jobs/12345"
     const browser = new BrowserStub().set(vacancyUrl, html)
-    const site = createZalandoSite(browser)
+    const site = ZalandoProvider.createScraper(browser)
     const vacancy = await site.getVacancyDetails(vacancyUrl)
-    const descriptionHtml = expectDescriptionHtml(vacancy.descriptionHtml)
-    expect(descriptionHtml.includes("<strong>talented engineer</strong>")).toBe(
+    expect(vacancy.descriptionHtml.length).toBeGreaterThan(0)
+    expect(
+      vacancy.descriptionHtml.includes("<strong>talented engineer</strong>"),
+    ).toBe(true)
+    expect(vacancy.descriptionHtml.includes("<li>Requirement number 1")).toBe(
       true,
     )
-    expect(descriptionHtml.includes("<li>Requirement number 1")).toBe(true)
   })
 })
 
 const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples")
-
-function expectDescriptionHtml(descriptionHtml: string | undefined): string {
-  expect(descriptionHtml).toBeTruthy()
-  if (!descriptionHtml) {
-    throw new Error("Expected vacancy description HTML")
-  }
-  return descriptionHtml
-}

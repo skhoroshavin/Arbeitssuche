@@ -1,5 +1,5 @@
 import type { ConfigKey } from "@/models/config"
-import { getJobSiteInfos } from "@/plugins/job-site"
+import { getJobSiteProviders } from "@/plugins/job-site"
 import { getLlmProviders, getLlmProvider } from "@/plugins/llm"
 import { getCommuteProvider } from "@/plugins/commute"
 import {
@@ -15,7 +15,7 @@ export function registerSettingsHandlers(
   handle: IpcHandle,
   services: AppServices,
 ): void {
-  handle("sites:list", () => ({ sites: getJobSiteInfos() }))
+  handle("sites:list", () => ({ sites: getJobSiteProviders() }))
 
   handle("settings:llm:secrets", () =>
     maskedSecretsFor(LLM_SECRET_KEYS, services.configRepo.loadSecrets()),

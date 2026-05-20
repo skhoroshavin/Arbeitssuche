@@ -6,7 +6,7 @@ import type { VacancyRepository } from "@/repositories/vacancy"
 import { GoogleMapsCommuteProvider } from "@/plugins/commute"
 import type { LlmClient, LlmModelRegistry } from "@/plugins/llm"
 import { getLlmProvider } from "@/plugins/llm"
-import { getJobSiteNames } from "@/plugins/job-site"
+import { getJobSiteProviderIds, getJobSiteProvider } from "@/plugins/job-site"
 import { createElectronPdfRenderer } from "@/plugins/pdf-renderer"
 import { CoverLetterWriter } from "@/services/cover-letter-writer/index.js"
 import { JobConsultant } from "@/services/job-consultant/index.js"
@@ -57,7 +57,8 @@ export function createAppServices(context: ServiceContext): AppServices {
         context.applicantRepo,
         new SiteCrawler(),
         vacancyEnricher,
-        getJobSiteNames,
+        getJobSiteProviderIds,
+        getJobSiteProvider,
       ),
       coverLetterWriter: new CoverLetterWriter(
         context.jobSearchRepo,

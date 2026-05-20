@@ -3,41 +3,34 @@ import { z } from "zod"
 import * as cheerio from "cheerio/slim"
 
 import type { Browser } from "@/plugins/browser"
-
 import type {
-  VacancyDetails,
   JobSite,
+  JobSiteProvider,
   SearchCriteria,
+  VacancyDetails,
 } from "@/plugins/job-site"
-
+import { Address } from "@/models/common"
+import { makeDateString } from "../date-string.js"
 import {
   extractAbsoluteLinks,
   withOpenedPage,
 } from "@/plugins/job-site/utils/index.js"
-
 import {
   extractJsonLd,
-  normalizeAndJoinText,
   normalizeOptionalText,
   isRecord,
   stringField,
 } from "@/utils/index.js"
 
-export const SUPPORTED_MODES = [
-  "employment",
-  "entry-level",
-  "apprenticeship",
-] as const
-
-export function createXingSite(browser: Browser): JobSite {
-  return new XingSite(browser)
+export const XingProvider: JobSiteProvider = {
+  id: "xing",
+  name: "xing",
+  supportedModes: ["employment", "entry-level", "apprenticeship"],
+  createScraper: (browser: Browser) => new XingSite(browser),
 }
 
 class XingSite implements JobSite {
   constructor(private readonly browser: Browser) {}
-
-  readonly name = "xing"
-  readonly supportedModes = [...SUPPORTED_MODES]
 
   async getVacancyList(criteria: SearchCriteria, pageId?: string) {
     const page = await this.browser.openPage(buildSearchUrl(criteria, pageId))
@@ -63,19 +56,32 @@ class XingSite implements JobSite {
 function extractVacancy(html: string, url: string): VacancyDetails {
   const $ = cheerio.load(html)
   const ld = extractFromPosting(extractJsonLd($, "JobPosting"))
-
   const text = (selector: string) =>
     normalizeOptionalText($(selector).first().text())
 
+  return buildVacancyDetails(url, ld, $, text)
+}
+
+function buildVacancyDetails(
+  url: string,
+  ld: ReturnType<typeof extractFromPosting>,
+  $: cheerio.CheerioAPI,
+  text: (selector: string) => string | undefined,
+): VacancyDetails {
   return {
     url,
-    title: ld.title ?? text("h1") ?? "",
-    company: ld.company ?? text(SELECTORS.company) ?? "",
-    address: ld.address ?? text(SELECTORS.address),
-    descriptionHtml: ld.descriptionHtml,
-    publishedAt: ld.publishedAt,
+    title: pick(ld.title, pick(text("h1"), "")),
+    company: pick(ld.company, pick(text(SELECTORS.company), "")),
+    address: pick(ld.address, extractAddressFallback($)),
+    descriptionHtml: pick(ld.descriptionHtml, ""),
+    startDate: makeDateString(""),
+    publishedAt: makeDateString(pick(ld.publishedAt, "")),
     contact: extractContact($),
   }
+}
+
+function pick<T>(value: T | undefined, fallback: T): T {
+  return value === undefined ? fallback : value
 }
 
 function extractLinks(html: string): string[] {
@@ -100,7 +106,13 @@ function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
   return `${BASE_URL}/jobs/search?${qs.toString()}`
 }
 
-function extractFromPosting(jsonLd: object | undefined) {
+function extractFromPosting(jsonLd: object | undefined): {
+  title: string | undefined
+  company: string | undefined
+  descriptionHtml: string | undefined
+  publishedAt: string | undefined
+  address: Address
+} {
   const posting = asJobPosting(jsonLd)
   return {
     title: posting?.title,
@@ -134,25 +146,45 @@ interface JobPostingAddress {
 
 function formatJobPostingAddress(
   posting: { jobLocation?: unknown } | undefined,
-): string | undefined {
-  if (!posting) return undefined
-  const location = posting.jobLocation
-  const loc: unknown = Array.isArray(location) ? location[0] : location
-  if (!isRecord(loc) || !isRecord(loc.address)) return undefined
-  return normalizeAndJoinText(
-    [
-      stringField(loc.address, "streetAddress"),
-      stringField(loc.address, "postalCode"),
-      stringField(loc.address, "addressLocality"),
-    ],
-    ", ",
-  )
+): Address {
+  const address = new Address()
+  if (!posting) return address
+  const loc = firstLocation(posting.jobLocation)
+  if (!isRecord(loc) || !isRecord(loc.address)) return address
+  applyAddressFields(address, loc.address)
+  return address
 }
 
-function extractContact($: cheerio.CheerioAPI): { email: string } | undefined {
+function firstLocation(location: unknown): unknown {
+  return Array.isArray(location) ? location[0] : location
+}
+
+function applyAddressFields(
+  address: Address,
+  record: Record<string, unknown>,
+): void {
+  address.street = stringField(record, "streetAddress") ?? ""
+  address.zip = stringField(record, "postalCode") ?? ""
+  address.city = stringField(record, "addressLocality") ?? ""
+}
+
+function extractAddressFallback($: cheerio.CheerioAPI): Address {
+  const address = new Address()
+  const raw = normalizeOptionalText($(SELECTORS.address).first().text())
+  if (raw) {
+    address.city = raw
+  }
+  return address
+}
+
+function extractContact($: cheerio.CheerioAPI): {
+  name: string
+  email: string
+  phone: string
+} {
   const emailHref = $(SELECTORS.contactEmail).first().attr("href")
   const contactEmail = normalizeOptionalText(emailHref?.replace(/^mailto:/, ""))
-  return contactEmail ? { email: contactEmail } : undefined
+  return { name: "", email: contactEmail ?? "", phone: "" }
 }
 
 const SELECTORS = {
