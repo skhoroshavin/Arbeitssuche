@@ -116,7 +116,7 @@ function useCommuteProviders() {
     queryKey: ["commute-providers"],
     queryFn: async () =>
       z
-        .array(CommuteProviderInfoSchema)
+        .array(CommuteProviderSchema)
         .parse(await api().invoke("settings:commute-providers")),
   })
 }
@@ -221,7 +221,7 @@ const LlmProviderInfoSchema = z.object({
   instructions: z.string(),
 })
 
-const CommuteProviderInfoSchema = z.object({
+const CommuteProviderSchema = z.object({
   id: z.string(),
   name: z.string(),
   instructions: z.string(),

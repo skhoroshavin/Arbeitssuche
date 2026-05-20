@@ -3,7 +3,7 @@ import type { SetupRepository } from "@/app/setup"
 import type { ApplicantRepository } from "@/repositories/applicant"
 import type { JobSearchRepository } from "@/repositories/job-search"
 import type { VacancyRepository } from "@/repositories/vacancy"
-import { createGoogleMapsCommuteClient } from "@/plugins/commute"
+import { GoogleMapsCommuteProvider } from "@/plugins/commute"
 import type { LlmClient, LlmModelRegistry } from "@/plugins/llm"
 import { createLlmClient, createModelRegistry } from "@/plugins/llm"
 import { getJobSiteNames } from "@/plugins/job-site"
@@ -35,7 +35,7 @@ export function createAppServices(context: ServiceContext): AppServices {
 
     const googleMapsApiKey = secrets.googleMapsApiKey
     const commuteClient = googleMapsApiKey
-      ? createGoogleMapsCommuteClient(googleMapsApiKey)
+      ? GoogleMapsCommuteProvider.createClient(googleMapsApiKey)
       : context.commuteClient
 
     const modelRegistry = context.modelRegistry ?? createModelRegistry(provider)

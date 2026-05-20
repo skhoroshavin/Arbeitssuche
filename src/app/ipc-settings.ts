@@ -1,7 +1,7 @@
 import type { ConfigKey } from "@/models/config"
 import { getJobSiteInfos } from "@/plugins/job-site"
 import { getLlmProviders, createLlmClientForPing } from "@/plugins/llm"
-import { getCommuteProviders, createCommuteClient } from "@/plugins/commute"
+import { getCommuteProviders, getCommuteProvider } from "@/plugins/commute"
 import {
   LLM_SECRET_KEYS,
   COMMUTE_SECRET_KEYS,
@@ -110,6 +110,6 @@ async function testProviderSecret(
   const ok =
     mapping === LLM_SECRET_KEYS
       ? await createLlmClientForPing(providerId, value).ping()
-      : await createCommuteClient(providerId, value).ping()
+      : await getCommuteProvider(providerId).ping(value)
   return { ok }
 }

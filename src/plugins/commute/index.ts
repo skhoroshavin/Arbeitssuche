@@ -1,32 +1,50 @@
-export type {
-  CommuteClient,
-  CommuteProviderInfo,
-  CommuteResult,
-} from "./types.js"
-
-import {
-  createGoogleMapsCommuteClient as buildGoogleMapsCommuteClient,
-  googleMapsProviderInfo,
-} from "./google-maps"
-import type { CommuteClient, CommuteProviderInfo } from "./types.js"
-
-export { createGoogleMapsCommuteClient } from "./google-maps"
-export { createStubCommuteClient } from "./stub"
-
-export function getCommuteProviders(): CommuteProviderInfo[] {
-  return [googleMapsProviderInfo]
+export interface CommuteClient {
+  getCommute(
+    origin: string,
+    destination: string,
+    signal?: AbortSignal,
+  ): Promise<CommuteResult>
+  ping(): Promise<boolean>
 }
 
-export function createCommuteClient(
-  provider: string,
-  apiKey: string,
-): CommuteClient {
-  switch (provider) {
-    case "google-maps": {
-      return buildGoogleMapsCommuteClient(apiKey)
-    }
-    default: {
-      throw new Error(`Unknown commute provider: ${provider}`)
-    }
+export interface CommuteResult {
+  distance: string
+  durations: CommuteDurations
+  fetchedAt: string
+}
+
+export interface CommuteProvider {
+  readonly id: string
+  readonly name: string
+  readonly instructions: string
+  createClient(apiKey: string): CommuteClient
+  ping(apiKey: string): Promise<boolean>
+}
+
+export type CommuteProviderInfo = Pick<
+  CommuteProvider,
+  "id" | "name" | "instructions"
+>
+
+interface CommuteDurations {
+  morning: number
+  day: number
+  evening: number
+}
+
+export { GoogleMapsCommuteProvider } from "./google-maps"
+export { createStubCommuteClient } from "./stub"
+
+const PROVIDERS: readonly CommuteProvider[] = [GoogleMapsCommuteProvider]
+
+export function getCommuteProviders(): readonly CommuteProviderInfo[] {
+  return PROVIDERS
+}
+
+export function getCommuteProvider(providerId: string): CommuteProvider {
+  const provider = PROVIDERS.find((p) => p.id === providerId)
+  if (!provider) {
+    throw new Error(`Unknown commute provider: ${providerId}`)
   }
+  return provider
 }

@@ -1,16 +1,8 @@
 import { z } from "zod"
 
-import type {
-  CommuteResult,
-  CommuteClient,
-  CommuteProviderInfo,
-} from "@/plugins/commute"
+import type { CommuteClient, CommuteProvider, CommuteResult } from "@/plugins/commute"
 
-export function createGoogleMapsCommuteClient(apiKey: string): CommuteClient {
-  return new GoogleMapsCommuteClient(apiKey)
-}
-
-export const googleMapsProviderInfo: CommuteProviderInfo = {
+export const GoogleMapsCommuteProvider: CommuteProvider = {
   id: "google-maps",
   name: "Google Maps",
   instructions: [
@@ -24,6 +16,12 @@ export const googleMapsProviderInfo: CommuteProviderInfo = {
     "8. Kopiere den Schlüssel - er beginnt mit `AIza...`",
     "9. Füge ihn oben ein",
   ].join("\n"),
+  createClient(apiKey: string): CommuteClient {
+    return new GoogleMapsCommuteClient(apiKey)
+  },
+  async ping(apiKey: string): Promise<boolean> {
+    return new GoogleMapsCommuteClient(apiKey).ping()
+  },
 }
 
 class GoogleMapsCommuteClient implements CommuteClient {
@@ -130,7 +128,6 @@ function parseRouteElement(
 
 function getNextWeekday(): Date {
   const now = new Date()
-  //                    Sun Mon Tue Wed Thu Fri Sat
   const DAYS_UNTIL_MON = [1, 1, 1, 1, 1, 3, 2] as const
   const daysUntil = DAYS_UNTIL_MON[now.getDay()]
 
