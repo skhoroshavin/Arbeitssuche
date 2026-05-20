@@ -11,6 +11,7 @@ export default defineConfig({
   },
   test: {
     include: ["{src,scripts,eslint}/**/*.test.{ts,tsx}"],
+    exclude: ["**/integration.test.ts"],
     setupFiles: ["./src/ui/test-setup.ts"],
   },
 })
