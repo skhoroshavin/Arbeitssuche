@@ -1,7 +1,7 @@
 import { test, describe, expect } from "vitest"
 import { createArbeitsagenturSite } from "."
 import { BrowserStub } from "@/plugins/browser"
-import { FetchStub } from "@/utils"
+import { FetchStub } from "@/test-helpers"
 import type { SearchCriteria } from "@/plugins/job-site"
 
 describe("arbeitsagentur", () => {

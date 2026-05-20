@@ -5,7 +5,8 @@ import { createSqliteApplicantRepository } from "./sqlite"
 import { Applicant } from "@/models/applicant"
 import type { Applicant as ApplicantType } from "@/models/applicant"
 import { makeApplicantID } from "@/models/applicant"
-import { Database, setupTemporaryDatabaseDirectory } from "@/utils/index.js"
+import { setupTemporaryDatabaseDirectory } from "@/test-helpers"
+import { Database } from "@/utils"
 
 applicantRepositoryTests("StubApplicantRepository", () => ({
   repo: createStubApplicantRepository(),

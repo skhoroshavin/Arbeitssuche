@@ -6,7 +6,8 @@ import { JobSearch } from "@/models/job-search"
 import type { JobSearch as JobSearchType } from "@/models/job-search"
 import { makeJobSearchID } from "@/models/job-search"
 import { makeApplicantID } from "@/models/applicant"
-import { Database, setupTemporaryDatabaseDirectory } from "@/utils/index.js"
+import { setupTemporaryDatabaseDirectory } from "@/test-helpers"
+import { Database } from "@/utils"
 
 jobSearchRepositoryTests("StubJobSearchRepository", () => ({
   repo: createStubJobSearchRepository(),
