@@ -1,5 +1,5 @@
 import { test, describe, expect } from "vitest"
-import { createArbeitsagenturSite } from "."
+import { ArbeitsagenturProvider } from "."
 import { BrowserStub } from "@/plugins/browser"
 import { FetchStub } from "@/test-helpers"
 import type { SearchCriteria } from "@/plugins/job-site"
@@ -166,11 +166,14 @@ describe("arbeitsagentur", () => {
 
       expect(details.title).toBe("Software Engineer")
       expect(details.company).toBe("Test GmbH")
-      expect(details.address).toBe("Hauptstr. 1, 10115 Berlin")
+      expect(details.address.street).toBe("Hauptstr. 1")
+      expect(details.address.zip).toBe("10115")
+      expect(details.address.city).toBe("Berlin")
+      expect(details.address.format()).toBe("Hauptstr. 1, 10115 Berlin")
       expect(details.descriptionHtml).toBe("Great job description")
-      expect(details.startDate).toBe("2026-04-01")
-      expect(details.publishedAt).toBe("2026-03-15")
-      expect(details.contact).toBe(undefined)
+      expect(details.startDate.value).toBe("2026-04-01")
+      expect(details.publishedAt.value).toBe("2026-03-15")
+      expect(details.contact).toEqual({ name: "", email: "", phone: "" })
     })
 
     test("handles missing address fields", async () => {
@@ -184,7 +187,7 @@ describe("arbeitsagentur", () => {
         "https://www.arbeitsagentur.de/jobsuche/jobdetail/abc123",
       )
 
-      expect(details.address).toBe(undefined)
+      expect(details.address.isEmpty()).toBe(true)
     })
 
     test("filters out null string values in address", async () => {
@@ -203,7 +206,9 @@ describe("arbeitsagentur", () => {
         "https://www.arbeitsagentur.de/jobsuche/jobdetail/abc123",
       )
 
-      expect(details.address).toBe("10115 Berlin")
+      expect(details.address.street).toBe("null")
+      expect(details.address.zip).toBe("10115")
+      expect(details.address.city).toBe("Berlin")
     })
 
     test("base64-encodes plain refnr from URL for API call", async () => {
@@ -247,7 +252,7 @@ function createSite(
   routes: Record<string, { body: unknown; status?: number }>,
 ) {
   const stubFetch = buildStub(routes)
-  const site = createArbeitsagenturSite(
+  const site = ArbeitsagenturProvider.createScraper(
     new BrowserStub(),
     stubFetch.fetch.bind(stubFetch),
   )

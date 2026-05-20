@@ -1,12 +1,12 @@
 import { test, describe, expect } from "vitest"
 import path from "node:path"
-import { createXingSite } from "."
+import { XingProvider } from "."
 import { BrowserStub } from "@/plugins/browser"
 
 describe("xing", () => {
   test("getVacancyList returns absolute URLs from search page", async () => {
     const browser = BrowserStub.fromDirectory(SAMPLES_DIR)
-    const site = createXingSite(browser)
+    const site = XingProvider.createScraper(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
       query: "",
@@ -21,7 +21,7 @@ describe("xing", () => {
 
   test("getVacancyDetails returns title and company", async () => {
     const browser = BrowserStub.fromDirectory(SAMPLES_DIR)
-    const site = createXingSite(browser)
+    const site = XingProvider.createScraper(browser)
     const { urls } = await site.getVacancyList({
       location: "Berlin",
       query: "",
@@ -54,20 +54,12 @@ describe("xing", () => {
     `
     const vacancyUrl = "https://www.xing.com/jobs/test-job-123"
     const browser = new BrowserStub().set(vacancyUrl, html)
-    const site = createXingSite(browser)
+    const site = XingProvider.createScraper(browser)
     const vacancy = await site.getVacancyDetails(vacancyUrl)
-    const descriptionHtml = expectDescriptionHtml(vacancy.descriptionHtml)
-    expect(descriptionHtml.includes("<li>React</li>")).toBeTruthy()
-    expect(descriptionHtml.includes("<strong>TypeScript</strong>")).toBeTruthy()
+    expect(vacancy.descriptionHtml.length).toBeGreaterThan(0)
+    expect(vacancy.descriptionHtml.includes("<li>React</li>")).toBeTruthy()
+    expect(vacancy.descriptionHtml.includes("<strong>TypeScript</strong>")).toBeTruthy()
   })
 })
 
 const SAMPLES_DIR = path.join(import.meta.dirname, "html_samples")
-
-function expectDescriptionHtml(descriptionHtml: string | undefined): string {
-  expect(descriptionHtml).toBeTruthy()
-  if (!descriptionHtml) {
-    throw new Error("Expected vacancy description HTML")
-  }
-  return descriptionHtml
-}
