@@ -2,7 +2,7 @@ import {
   createModelRegistry,
   createOpenAICompatibleClient,
   normalizeFlatPricing,
-} from "@/plugins/openai-compatible/index.js"
+} from "@/plugins/llm/openai-compatible/index.js"
 import type {
   LlmClient,
   LlmModelInfo,
