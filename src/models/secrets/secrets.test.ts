@@ -2,18 +2,18 @@ import { describe, expect, it } from "vitest"
 import { Secrets } from "@/models/secrets"
 
 describe("Secrets", () => {
-  it("default constructor produces undefined fields", () => {
+  it("default constructor produces empty strings", () => {
     const s = new Secrets()
-    expect(s.openrouterApiKey).toBeUndefined()
-    expect(s.requestyApiKey).toBeUndefined()
-    expect(s.googleMapsApiKey).toBeUndefined()
+    expect(s.openrouterApiKey).toBe("")
+    expect(s.requestyApiKey).toBe("")
+    expect(s.googleMapsApiKey).toBe("")
   })
 
-  it("parse fills missing fields with undefined", () => {
+  it("parse fills missing fields with empty strings", () => {
     const s = Secrets.parse({})
-    expect(s.openrouterApiKey).toBeUndefined()
-    expect(s.requestyApiKey).toBeUndefined()
-    expect(s.googleMapsApiKey).toBeUndefined()
+    expect(s.openrouterApiKey).toBe("")
+    expect(s.requestyApiKey).toBe("")
+    expect(s.googleMapsApiKey).toBe("")
   })
 
   it("parse preserves provided values", () => {
@@ -22,7 +22,7 @@ describe("Secrets", () => {
       googleMapsApiKey: "maps-test",
     })
     expect(s.openrouterApiKey).toBe("sk-test")
-    expect(s.requestyApiKey).toBeUndefined()
+    expect(s.requestyApiKey).toBe("")
     expect(s.googleMapsApiKey).toBe("maps-test")
   })
 })

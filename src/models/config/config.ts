@@ -1,11 +1,5 @@
 import { z } from "zod"
 
-export interface Address {
-  street: string
-  zip: string
-  city: string
-}
-
 export interface LlmModel {
   id: string
   name: string

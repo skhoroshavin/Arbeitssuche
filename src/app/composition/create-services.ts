@@ -134,7 +134,7 @@ function buildLlmClient(
 
 function getProviderApiKey(
   provider: string,
-  secrets: { openrouterApiKey?: string; requestyApiKey?: string },
+  secrets: { openrouterApiKey: string; requestyApiKey: string },
 ): string | undefined {
   switch (provider) {
     case "requesty": {

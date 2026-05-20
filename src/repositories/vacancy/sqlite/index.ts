@@ -1,4 +1,4 @@
-import { Database } from "@/utils/index.js"
+import { Database, semverGreaterThan } from "@/utils/index.js"
 
 import { Vacancy } from "@/models/vacancy/index.js"
 
@@ -64,14 +64,6 @@ function runVacancyMigration(database: Database): void {
       `)
     })
   }
-}
-
-function semverGreaterThan(a: string, b: string): boolean {
-  const [aMajor, aMinor, aPatch] = a.split(".").map(Number)
-  const [bMajor, bMinor, bPatch] = b.split(".").map(Number)
-  if (aMajor !== bMajor) return aMajor > bMajor
-  if (aMinor !== bMinor) return aMinor > bMinor
-  return aPatch > bPatch
 }
 
 class SqliteVacancyRepository implements VacancyRepository {

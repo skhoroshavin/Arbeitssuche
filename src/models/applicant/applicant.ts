@@ -1,7 +1,5 @@
 import { z } from "zod"
 
-import type { Address } from "@/models/config"
-
 export class Applicant {
   constructor() {
     this.personal = {
@@ -181,6 +179,12 @@ export interface ApplicantPersonal {
   discloseGender: boolean
   discloseAddress: boolean
   discloseHobbies: boolean
+}
+
+export interface Address {
+  street: string
+  zip: string
+  city: string
 }
 
 export interface ApplicantSkill {

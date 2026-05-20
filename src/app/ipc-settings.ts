@@ -87,7 +87,7 @@ async function clearProviderSecret(
 ): Promise<{ ok: true }> {
   const key = resolveSecretKey(providerId, mapping)
   const secrets = services.configRepo.loadSecrets()
-  delete secrets[key]
+  secrets[key] = ""
   await services.configRepo.saveSecrets(secrets)
   services.rebuild()
   return { ok: true }

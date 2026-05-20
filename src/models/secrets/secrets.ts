@@ -1,9 +1,9 @@
 import { z } from "zod"
 
 export class Secrets {
-  openrouterApiKey?: string
-  requestyApiKey?: string
-  googleMapsApiKey?: string
+  openrouterApiKey = ""
+  requestyApiKey = ""
+  googleMapsApiKey = ""
 
   static parse(data: unknown): Secrets {
     const parsed = SecretsInputSchema.parse(data)
@@ -16,7 +16,7 @@ export class Secrets {
 }
 
 const SecretsInputSchema = z.object({
-  openrouterApiKey: z.string().optional(),
-  requestyApiKey: z.string().optional(),
-  googleMapsApiKey: z.string().optional(),
+  openrouterApiKey: z.string().default(""),
+  requestyApiKey: z.string().default(""),
+  googleMapsApiKey: z.string().default(""),
 })
