@@ -7,7 +7,7 @@ import {
 } from "@/ui/data"
 import { useState } from "react"
 import { useNavigate } from "react-router"
-import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config"
+import type { ConfigKey, LlmModel, LlmProviderId } from "@/models/config"
 import { Card, PageHeader, SectionHeader, Loading } from "@/ui/components"
 import {
   ConfirmationDialog,
@@ -125,7 +125,7 @@ function ProviderSelector({
   onSelect,
 }: {
   providers: { id: string; name: string; description: string }[]
-  provider: LlmProvider
+  provider: LlmProviderId
   onSelect: (id: string) => void
 }) {
   return (

@@ -1,32 +1,41 @@
-export type {
-  CommuteClient,
-  CommuteProviderInfo,
-  CommuteResult,
-} from "./types.js"
+import { GoogleMapsCommuteProvider } from "./google-maps"
 
-import {
-  createGoogleMapsCommuteClient as buildGoogleMapsCommuteClient,
-  googleMapsProviderInfo,
-} from "./google-maps"
-import type { CommuteClient, CommuteProviderInfo } from "./types.js"
+export { GoogleMapsCommuteProvider } from "./google-maps"
 
-export { createGoogleMapsCommuteClient } from "./google-maps"
-export { createStubCommuteClient } from "./stub"
-
-export function getCommuteProviders(): CommuteProviderInfo[] {
-  return [googleMapsProviderInfo]
+export function getCommuteProvider(providerId: string): CommuteProvider {
+  const providers: readonly CommuteProvider[] = [GoogleMapsCommuteProvider]
+  const provider = providers.find((p) => p.id === providerId)
+  if (!provider) {
+    throw new Error(`Unknown commute provider: ${providerId}`)
+  }
+  return provider
 }
 
-export function createCommuteClient(
-  provider: string,
-  apiKey: string,
-): CommuteClient {
-  switch (provider) {
-    case "google-maps": {
-      return buildGoogleMapsCommuteClient(apiKey)
-    }
-    default: {
-      throw new Error(`Unknown commute provider: ${provider}`)
-    }
-  }
+export interface CommuteProvider {
+  readonly id: string
+  readonly name: string
+  readonly instructions: string
+  createClient(apiKey: string): CommuteClient
+  ping(apiKey: string): Promise<boolean>
+}
+
+export interface CommuteClient {
+  getCommute(
+    origin: string,
+    destination: string,
+    signal?: AbortSignal,
+  ): Promise<CommuteResult>
+  ping(): Promise<boolean>
+}
+
+export interface CommuteResult {
+  distance: string
+  durations: CommuteDurations
+  fetchedAt: string
+}
+
+interface CommuteDurations {
+  morning: number
+  day: number
+  evening: number
 }

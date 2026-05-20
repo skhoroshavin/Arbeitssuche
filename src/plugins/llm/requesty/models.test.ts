@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest"
-import { createRequestyModelRegistry } from "."
+import { RequestyProvider } from "."
 
 describe("createRequestyModelRegistry", () => {
   const originalFetch = globalThis.fetch
@@ -25,7 +25,7 @@ describe("createRequestyModelRegistry", () => {
       ],
     })
 
-    const registry = createRequestyModelRegistry()
+    const registry = RequestyProvider.createModelRegistry()
     const models = await registry.fetchModels()
 
     expect(models[0].name).toBe("Claude 3.7 Sonnet")
@@ -44,7 +44,7 @@ describe("createRequestyModelRegistry", () => {
       ],
     })
 
-    const registry = createRequestyModelRegistry()
+    const registry = RequestyProvider.createModelRegistry()
     const models = await registry.fetchModels()
 
     expect(models[0].name).toBe("Claude Sonnet 4")
@@ -61,7 +61,7 @@ describe("createRequestyModelRegistry", () => {
       ],
     })
 
-    const registry = createRequestyModelRegistry()
+    const registry = RequestyProvider.createModelRegistry()
     const models = await registry.fetchModels()
 
     expect(models[0].pricing.prompt).toBe("0.000003")
@@ -94,7 +94,7 @@ describe("createRequestyModelRegistry", () => {
       ],
     })
 
-    const registry = createRequestyModelRegistry()
+    const registry = RequestyProvider.createModelRegistry()
     const models = await registry.fetchModels()
 
     expect(models.length).toBe(2)
@@ -117,7 +117,7 @@ describe("createRequestyModelRegistry", () => {
       ],
     })
 
-    const registry = createRequestyModelRegistry()
+    const registry = RequestyProvider.createModelRegistry()
     const models = await registry.fetchModels()
 
     expect(models.length).toBe(5)
@@ -144,7 +144,7 @@ describe("createRequestyModelRegistry", () => {
       ],
     })
 
-    const registry = createRequestyModelRegistry()
+    const registry = RequestyProvider.createModelRegistry()
     const models = await registry.fetchModels()
 
     expect(models.length).toBe(1)

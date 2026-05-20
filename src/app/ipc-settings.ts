@@ -1,7 +1,7 @@
 import type { ConfigKey } from "@/models/config"
 import { getJobSiteInfos } from "@/plugins/job-site"
-import { getLlmProviders, createLlmClientForPing } from "@/plugins/llm"
-import { getCommuteProviders, createCommuteClient } from "@/plugins/commute"
+import { getLlmProviders, getLlmProvider } from "@/plugins/llm"
+import { getCommuteProvider } from "@/plugins/commute"
 import {
   LLM_SECRET_KEYS,
   COMMUTE_SECRET_KEYS,
@@ -48,8 +48,6 @@ export function registerSettingsHandlers(
   )
 
   handle("settings:llm-providers", () => getLlmProviders())
-  handle("settings:commute-providers", () => getCommuteProviders())
-
   handle("settings:llm-models", () => services.modelRegistry.fetchModels())
 
   handle("settings:config:load", () => services.configRepo.loadConfig())
@@ -87,7 +85,7 @@ async function clearProviderSecret(
 ): Promise<{ ok: true }> {
   const key = resolveSecretKey(providerId, mapping)
   const secrets = services.configRepo.loadSecrets()
-  delete secrets[key]
+  secrets[key] = ""
   await services.configRepo.saveSecrets(secrets)
   services.rebuild()
   return { ok: true }
@@ -109,7 +107,7 @@ async function testProviderSecret(
   }
   const ok =
     mapping === LLM_SECRET_KEYS
-      ? await createLlmClientForPing(providerId, value).ping()
-      : await createCommuteClient(providerId, value).ping()
+      ? await getLlmProvider(providerId).ping(value)
+      : await getCommuteProvider(providerId).ping(value)
   return { ok }
 }

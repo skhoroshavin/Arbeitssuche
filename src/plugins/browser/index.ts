@@ -1,8 +1,5 @@
-import type { Browser } from "./types.js"
-
-export type { Browser, OpenPageOptions, Page } from "./types.js"
-
 export { createElectronBrowser } from "./electron"
+
 export { BrowserStub } from "./stub"
 
 export async function createPlaywrightBrowser(options?: {
@@ -11,4 +8,20 @@ export async function createPlaywrightBrowser(options?: {
 }): Promise<Browser> {
   const module = await import("./playwright")
   return module.createPlaywrightBrowser(options)
+}
+
+export interface Browser {
+  openPage(url: string, options?: OpenPageOptions): Promise<Page>
+  close(): Promise<void>
+}
+
+export interface OpenPageOptions {
+  waitFor?: string
+  blockPatterns?: RegExp[]
+}
+
+export interface Page {
+  html: string
+  navigate(url: string, options?: { waitFor?: string }): Promise<void>
+  close(): Promise<void>
 }

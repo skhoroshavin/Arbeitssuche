@@ -1,4 +1,4 @@
-import { HttpStub } from "@/utils/index.js"
+import { HttpStub } from "./http-stub.js"
 
 export class FetchStub extends HttpStub<StubRoute> {
   fetch(input: string | URL | Request, _init?: RequestInit): Promise<Response> {

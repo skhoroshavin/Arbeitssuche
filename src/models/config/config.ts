@@ -1,11 +1,5 @@
 import { z } from "zod"
 
-export interface Address {
-  street: string
-  zip: string
-  city: string
-}
-
 export interface LlmModel {
   id: string
   name: string
@@ -19,7 +13,7 @@ export type ConfigKey =
   | "consultationModel"
 
 export class Config {
-  provider: LlmProvider = DEFAULT_PROVIDER
+  provider: LlmProviderId = DEFAULT_PROVIDER
   assessmentModel: string = DEFAULT_ASSESSMENT_MODEL
   coverLetterModel: string = DEFAULT_COVER_LETTER_MODEL
   consultationModel: string = DEFAULT_CONSULTATION_MODEL
@@ -35,9 +29,9 @@ export class Config {
   }
 }
 
-export const DEFAULT_PROVIDER: LlmProvider = "openrouter"
+export const DEFAULT_PROVIDER: LlmProviderId = "openrouter"
 
-export type LlmProvider = "openrouter" | "requesty"
+export type LlmProviderId = "openrouter" | "requesty"
 
 const DEFAULT_ASSESSMENT_MODEL = "google/gemini-2.5-flash"
 

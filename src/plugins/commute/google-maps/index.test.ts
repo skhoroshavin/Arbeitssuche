@@ -1,6 +1,6 @@
 import { test, describe, expect } from "vitest"
-import { createGoogleMapsCommuteClient } from "."
-import { FetchStub } from "@/plugins/fetch"
+import { GoogleMapsCommuteProvider } from "."
+import { FetchStub } from "@/utils"
 
 const API_PATTERN = "maps.googleapis.com/maps/api/distancematrix"
 
@@ -12,7 +12,7 @@ describe("GoogleMapsCommuteClient", () => {
     globalThis.fetch = stub.fetch.bind(stub)
 
     try {
-      const client = createGoogleMapsCommuteClient("test-api-key")
+      const client = GoogleMapsCommuteProvider.createClient("test-api-key")
       const result = await client.getCommute("Berlin", "Potsdam")
 
       expect(result.distance).toBe("15.3 km")
@@ -32,7 +32,7 @@ describe("GoogleMapsCommuteClient", () => {
     globalThis.fetch = stub.fetch.bind(stub)
 
     try {
-      const client = createGoogleMapsCommuteClient("test-key")
+      const client = GoogleMapsCommuteProvider.createClient("test-key")
       await client.getCommute("A", "B")
 
       expect(stub.requestedUrls.length).toBe(3)
@@ -55,7 +55,7 @@ describe("GoogleMapsCommuteClient", () => {
     globalThis.fetch = stub.fetch.bind(stub)
 
     try {
-      const client = createGoogleMapsCommuteClient("bad-key")
+      const client = GoogleMapsCommuteProvider.createClient("bad-key")
       await expect(() => client.getCommute("A", "B")).rejects.toThrow(
         /Distance Matrix API status: REQUEST_DENIED/,
       )
@@ -74,7 +74,7 @@ describe("GoogleMapsCommuteClient", () => {
     globalThis.fetch = stub.fetch.bind(stub)
 
     try {
-      const client = createGoogleMapsCommuteClient("test-key")
+      const client = GoogleMapsCommuteProvider.createClient("test-key")
       await expect(() => client.getCommute("A", "Nowhere")).rejects.toThrow(
         /No route found for "Nowhere"/,
       )

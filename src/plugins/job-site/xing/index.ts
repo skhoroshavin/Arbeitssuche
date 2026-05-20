@@ -7,7 +7,6 @@ import type { Browser } from "@/plugins/browser"
 import type {
   VacancyDetails,
   JobSite,
-  JobPostingJsonLd,
   SearchCriteria,
 } from "@/plugins/job-site"
 
@@ -115,6 +114,22 @@ function extractFromPosting(jsonLd: object | undefined) {
 function asJobPosting(value: unknown): JobPostingJsonLd | undefined {
   const result = JobPostingJsonLdSchema.safeParse(value)
   return result.success ? result.data : undefined
+}
+
+interface JobPostingJsonLd {
+  title?: string
+  description?: string
+  datePosted?: string
+  hiringOrganization?: { name?: string }
+  jobLocation?:
+    | { address?: JobPostingAddress }
+    | { address?: JobPostingAddress }[]
+}
+
+interface JobPostingAddress {
+  streetAddress?: string
+  postalCode?: string
+  addressLocality?: string
 }
 
 function formatJobPostingAddress(

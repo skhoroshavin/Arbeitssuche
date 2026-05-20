@@ -6,7 +6,7 @@ import {
   makeJobSearchID,
 } from "@/models/job-search"
 
-import type { ApplicantID } from "@/models/applicant"
+import { makeApplicantID, type ApplicantID } from "@/models/applicant"
 
 import type { JobSearchRepository } from "@/repositories/job-search"
 
@@ -51,7 +51,7 @@ class StubJobSearchRepository implements JobSearchRepository {
     const entry = this.getOrThrow(id)
     return {
       jobSearch: JobSearch.parse(structuredClone(entry.jobSearch)),
-      applicantId: { value: entry.applicantId },
+      applicantId: makeApplicantID(entry.applicantId),
     }
   }
 

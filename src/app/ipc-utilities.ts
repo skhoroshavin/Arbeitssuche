@@ -11,7 +11,7 @@ export const COMMUTE_SECRET_KEYS = {
 
 export function maskedSecretsFor(
   mapping: SecretKeyMapping,
-  secrets: Partial<Record<SecretKey, string | undefined>>,
+  secrets: Record<SecretKey, string>,
 ): Record<string, { masked: string; isSet: boolean }> {
   const result: Record<string, { masked: string; isSet: boolean }> = {}
   for (const [providerId, key] of Object.entries(mapping)) {

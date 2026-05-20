@@ -6,11 +6,11 @@ import {
   makeJobSearchID,
 } from "@/models/job-search"
 
-import type { ApplicantID } from "@/models/applicant"
+import { makeApplicantID, type ApplicantID } from "@/models/applicant"
 
 import type { JobSearchRepository } from "@/repositories/job-search"
 
-import { Database, type Statement } from "@/utils/index.js"
+import { Database, type Statement, semverGreaterThan } from "@/utils/index.js"
 
 import { z } from "zod"
 
@@ -93,14 +93,6 @@ function runJobSearchMigration(database: Database): void {
       `)
     })
   }
-}
-
-function semverGreaterThan(a: string, b: string): boolean {
-  const [aMajor, aMinor, aPatch] = a.split(".").map(Number)
-  const [bMajor, bMinor, bPatch] = b.split(".").map(Number)
-  if (aMajor !== bMajor) return aMajor > bMajor
-  if (aMinor !== bMinor) return aMinor > bMinor
-  return aPatch > bPatch
 }
 
 function tableExists(database: Database, name: string): boolean {
@@ -194,7 +186,7 @@ class SqliteJobSearchRepository implements JobSearchRepository {
     const jobSearch = JobSearch.parse(JSON.parse(parsed.data))
     return {
       jobSearch,
-      applicantId: { value: parsed.applicant_id },
+      applicantId: makeApplicantID(parsed.applicant_id),
     }
   }
 

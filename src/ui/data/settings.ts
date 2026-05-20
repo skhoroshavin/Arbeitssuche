@@ -4,7 +4,7 @@ import { z } from "zod"
 
 import type { MaskedSecret } from "@/models/secrets"
 
-import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config"
+import type { ConfigKey, LlmModel, LlmProviderId } from "@/models/config"
 
 import { Config, DEFAULT_PROVIDER } from "@/models/config"
 
@@ -41,14 +41,6 @@ export function resolveSecret(
 
 // --- Provider info ---
 
-export function useCommuteProviderListView() {
-  const query = useCommuteProviders()
-  return {
-    ...query,
-    data: query.data ?? [],
-  }
-}
-
 // --- API key status (used across the app) ---
 
 export function useApiKeyStatus(): {
@@ -61,7 +53,7 @@ export function useApiKeyStatus(): {
     useCommuteSecrets()
   const { data: config, isLoading: configLoading } = useConfig()
 
-  const provider: LlmProvider = config?.provider ?? DEFAULT_PROVIDER
+  const provider: LlmProviderId = config?.provider ?? DEFAULT_PROVIDER
   const isLoading = llmLoading || commuteLoading || configLoading
 
   return {
@@ -100,7 +92,7 @@ export function useLlmProviders() {
     queryKey: ["llm-providers"],
     queryFn: async () =>
       z
-        .array(LlmProviderInfoSchema)
+        .array(LlmProviderSchema)
         .parse(await api().invoke("settings:llm-providers")),
   })
 }
@@ -109,16 +101,6 @@ const EMPTY_MASKED_SECRET: MaskedSecret = { masked: "", isSet: false }
 
 function useLlmSecrets() {
   return llmHooks.useSecrets()
-}
-
-function useCommuteProviders() {
-  return useQuery({
-    queryKey: ["commute-providers"],
-    queryFn: async () =>
-      z
-        .array(CommuteProviderInfoSchema)
-        .parse(await api().invoke("settings:commute-providers")),
-  })
 }
 
 function useResolvedConfig() {
@@ -214,16 +196,10 @@ function useLlmModels() {
   })
 }
 
-const LlmProviderInfoSchema = z.object({
+const LlmProviderSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
-  instructions: z.string(),
-})
-
-const CommuteProviderInfoSchema = z.object({
-  id: z.string(),
-  name: z.string(),
   instructions: z.string(),
 })
 

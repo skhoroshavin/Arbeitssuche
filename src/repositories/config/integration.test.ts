@@ -89,7 +89,7 @@ function configRepositoryTests(
     test("returns empty secrets initially", () => {
       const { repo, teardown } = createRepo()
       const secrets = repo.loadSecrets()
-      expect(secrets.openrouterApiKey).toBeUndefined()
+      expect(secrets.openrouterApiKey).toBe("")
       teardown()
     })
 
@@ -134,7 +134,7 @@ function configRepositoryTests(
       const { repo, teardown, kvStore } = createRepo()
       kvStore.set("secrets", "garbled-data")
       const secrets = repo.loadSecrets()
-      expect(secrets.openrouterApiKey).toBeUndefined()
+      expect(secrets.openrouterApiKey).toBe("")
       teardown()
     })
 
