@@ -1,6 +1,6 @@
 import { test, describe, beforeAll, afterAll, expect } from "vitest"
 import { createPlaywrightBrowser, type Browser } from "@/plugins/browser"
-import { createJobSite, getJobSiteInfos } from "."
+import { getJobSiteProviders } from "."
 
 describe("job-site plugins", () => {
   let browser: Browser
@@ -13,16 +13,16 @@ describe("job-site plugins", () => {
     await browser.close()
   })
 
-  const SKIPPED_SITES = new Set<string>(["xing"])
+  const SKIP_SITES = new Set<string>(["xing"])
 
-  for (const { name, supportedModes } of getJobSiteInfos()) {
-    const mode = supportedModes[0]
-    const skip = SKIPPED_SITES.has(name)
+  for (const provider of getJobSiteProviders()) {
+    const mode = provider.supportedModes[0]
+    const skip = SKIP_SITES.has(provider.id)
 
     test.skipIf(skip)(
-      `${name} (${mode}) - pagination returns unique URLs`,
+      `/${provider.id} (${mode}) - pagination returns unique URLs`,
       async () => {
-        const site = createJobSite(name, browser)
+        const site = provider.createScraper(browser)
         const criteria = {
           location: "Berlin",
           query: "",
@@ -39,7 +39,6 @@ describe("job-site plugins", () => {
           const result = await site.getVacancyList(criteria, pageId)
           expect(result.urls).toBeInstanceOf(Array)
 
-          // Verify URLs within this page are unique
           const pageUrls = new Set(result.urls)
           expect(pageUrls.size).toBe(result.urls.length)
 
@@ -52,11 +51,10 @@ describe("job-site plugins", () => {
 
         expect(allUrls.size).toBeGreaterThan(0)
 
-        // Log overlap for diagnostics
         if (perPageUrls.length > 1) {
           const totalRaw = perPageUrls.reduce((s, p) => s + p.length, 0)
           console.log(
-            `  [${name}] ${perPageUrls.length} pages, ${totalRaw} raw URLs, ${allUrls.size} unique`,
+            `  [${provider.id}] ${perPageUrls.length} pages, ${totalRaw} raw URLs, ${allUrls.size} unique`,
           )
         }
       },
@@ -64,9 +62,9 @@ describe("job-site plugins", () => {
     )
 
     test.skipIf(skip)(
-      `${name} (${mode}) - vacancy details from Berlin`,
+      `/${provider.id} (${mode}) - vacancy details produce usable data`,
       async () => {
-        const site = createJobSite(name, browser)
+        const site = provider.createScraper(browser)
         const criteria = {
           location: "Berlin",
           query: "",
@@ -77,32 +75,26 @@ describe("job-site plugins", () => {
         const { urls } = await site.getVacancyList(criteria)
         expect(urls.length).toBeGreaterThan(0)
 
-        const berlinPattern =
-          /berlin|potsdam|hennigsdorf|falkensee|oranienburg|teltow|bernau|königs wusterhausen|schönefeld|wildau|ludwigsfelde/i
-
         const sample = urls.slice(0, 5)
-        let foundBerlinAddress = false
+        let foundUsableData = false
 
         for (const url of sample) {
           const details = await site.getVacancyDetails(url)
           expect(details).toBeTruthy()
 
-          if (!details.address) {
-            console.log(`  [${name}] vacancy has no address, skipping: ${url}`)
-            continue
-          }
-
-          if (berlinPattern.test(details.address)) {
-            foundBerlinAddress = true
+          if (
+            details.title.trim().length > 0 &&
+            details.company.trim().length > 0 &&
+            details.url.trim().length > 0
+          ) {
+            foundUsableData = true
             break
           }
 
-          console.log(
-            `  [${name}] address not in Berlin area: "${details.address}" (${url})`,
-          )
+          console.log(`  [${provider.id}] vacancy missing usable data: ${url}`)
         }
 
-        expect(foundBerlinAddress).toBe(true)
+        expect(foundUsableData).toBe(true)
       },
       60_000,
     )

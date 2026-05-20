@@ -1,9 +1,6 @@
 export { extractJsonLd } from "./json-ld.js"
-export { normalizeAndJoinText, normalizeOptionalText } from "./normalize.js"
+export { normalizeOptionalText } from "./normalize.js"
 export { isRecord, stringField } from "./reflection.js"
 export { Database, Statement } from "./database.js"
 export { semverGreaterThan } from "./semver.js"
 export { Address } from "./address.js"
-export { makeDateString } from "./date-string.js"
-
-

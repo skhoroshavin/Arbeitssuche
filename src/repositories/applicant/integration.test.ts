@@ -3,6 +3,7 @@ import type { ApplicantRepository } from "."
 import { createStubApplicantRepository } from "./stub"
 import { createSqliteApplicantRepository } from "./sqlite"
 import { Applicant } from "@/models/applicant"
+import { Address } from "@/utils/index.js"
 import type { Applicant as ApplicantType } from "@/models/applicant"
 import { makeApplicantID } from "@/models/applicant"
 import { setupTemporaryDatabaseDirectory } from "@/test-helpers"
@@ -215,7 +216,11 @@ function makeSampleApplicant(name = "John Doe"): ApplicantType {
   a.personal.name = name
   a.personal.email = "john@example.com"
   a.personal.phone = "+49 123 456"
-  a.personal.address = { street: "Main St 1", zip: "10115", city: "Berlin" }
+  a.personal.address = Address.parse({
+    street: "Main St 1",
+    zip: "10115",
+    city: "Berlin",
+  })
   a.personal.hobbies = "cycling"
   a.experience = [
     {

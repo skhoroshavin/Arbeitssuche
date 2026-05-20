@@ -1,5 +1,5 @@
 import { test, describe, expect } from "vitest"
-import { ArbeitsagenturProvider } from "."
+import { ArbeitsagenturSite } from "."
 import { BrowserStub } from "@/plugins/browser"
 import { FetchStub } from "@/test-helpers"
 import type { SearchCriteria } from "@/plugins/job-site"
@@ -252,7 +252,7 @@ function createSite(
   routes: Record<string, { body: unknown; status?: number }>,
 ) {
   const stubFetch = buildStub(routes)
-  const site = ArbeitsagenturProvider.createScraper(
+  const site = new ArbeitsagenturSite(
     new BrowserStub(),
     stubFetch.fetch.bind(stubFetch),
   )

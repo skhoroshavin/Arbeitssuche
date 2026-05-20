@@ -1,4 +1,4 @@
-export type { Address } from "./applicant.js"
+export { Address } from "@/utils/index.js"
 
 export type {
   ApplicantSkill,

@@ -16,10 +16,12 @@ export function getLlmProviders(): readonly LlmProviderInfo[] {
   }))
 }
 
-export type LlmProviderInfo = Pick<
-  LlmProvider,
-  "id" | "name" | "description" | "instructions"
->
+export interface LlmProviderInfo {
+  readonly id: string
+  readonly name: string
+  readonly description: string
+  readonly instructions: string
+}
 
 export function getLlmProvider(providerId: string): LlmProvider {
   const provider = PROVIDERS.find((p) => p.id === providerId)

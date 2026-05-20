@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest"
 import { VacancyEnricher } from "."
 import { Vacancy } from "@/models/vacancy/index.js"
 import { Applicant } from "@/models/applicant"
+import { Address } from "@/utils/index.js"
 import { JobSearch } from "@/models/job-search"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
 import type { CommuteClient } from "@/plugins/commute"
@@ -105,11 +106,11 @@ describe("VacancyEnricher", () => {
     const applicant = (() => {
       const a = new Applicant()
       a.personal.name = "Test User"
-      a.personal.address = {
+      a.personal.address = Address.parse({
         street: "Hauptstr. 5",
         zip: "80331",
         city: "München",
-      }
+      })
       return a
     })()
 
@@ -193,7 +194,11 @@ describe("VacancyEnricher", () => {
 const APPLICANT: Applicant = (() => {
   const a = new Applicant()
   a.personal.name = "Test User"
-  a.personal.address = { street: "Teststr. 1", zip: "10115", city: "Berlin" }
+  a.personal.address = Address.parse({
+    street: "Teststr. 1",
+    zip: "10115",
+    city: "Berlin",
+  })
   return a
 })()
 

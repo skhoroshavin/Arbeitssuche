@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest"
 import { process, markUnseenAsGone, vacancyHash } from "."
 import { Vacancy } from "@/models/vacancy/index.js"
 import type { VacancyDetails } from "@/plugins/job-site"
-import { Address, makeDateString } from "@/utils/index.js"
+import { Address } from "@/utils/index.js"
+import { makeDateString } from "@/plugins/job-site"
 
 describe("process", () => {
   it("creates new vacancy with enriched=false and enrichmentDirty=true", () => {

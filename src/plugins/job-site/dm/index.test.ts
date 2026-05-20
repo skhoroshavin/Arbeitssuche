@@ -57,8 +57,12 @@ describe("dm", () => {
     const site = DmProvider.createScraper(browser)
     const vacancy = await site.getVacancyDetails(vacancyUrl)
     expect(vacancy.descriptionHtml.length).toBeGreaterThan(0)
-    expect(vacancy.descriptionHtml.includes("<strong>Drogist</strong>")).toBeTruthy()
-    expect(vacancy.descriptionHtml.includes("<li>Training provided</li>")).toBeTruthy()
+    expect(
+      vacancy.descriptionHtml.includes("<strong>Drogist</strong>"),
+    ).toBeTruthy()
+    expect(
+      vacancy.descriptionHtml.includes("<li>Training provided</li>"),
+    ).toBeTruthy()
   })
 
   test("getVacancyDetails DOM fallback produces HTML with headings", async () => {

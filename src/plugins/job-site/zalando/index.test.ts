@@ -59,8 +59,12 @@ describe("zalando", () => {
     const site = ZalandoProvider.createScraper(browser)
     const vacancy = await site.getVacancyDetails(vacancyUrl)
     expect(vacancy.descriptionHtml.length).toBeGreaterThan(0)
-    expect(vacancy.descriptionHtml.includes("<strong>talented engineer</strong>")).toBe(true)
-    expect(vacancy.descriptionHtml.includes("<li>Requirement number 1")).toBe(true)
+    expect(
+      vacancy.descriptionHtml.includes("<strong>talented engineer</strong>"),
+    ).toBe(true)
+    expect(vacancy.descriptionHtml.includes("<li>Requirement number 1")).toBe(
+      true,
+    )
   })
 })
 

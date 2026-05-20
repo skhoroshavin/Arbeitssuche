@@ -3,7 +3,6 @@ import type {
   OnProgress,
 } from "@/services/vacancy-scanner/index.js"
 import type { ProgressEvent } from "@/models/progress/index.js"
-import { createJobSite } from "@/plugins/job-site"
 import { createElectronBrowser } from "@/plugins/browser"
 
 export function startCrawl(options: StartCrawlOptions): void {
@@ -36,7 +35,7 @@ export function startCrawl(options: StartCrawlOptions): void {
       abortController,
       enrichAbortController,
       wrappedOnProgress,
-      (name) => createJobSite(name, browser),
+      browser,
     )
     .then(() => onComplete())
     .catch((error) =>

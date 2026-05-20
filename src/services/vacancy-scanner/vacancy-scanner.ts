@@ -1,7 +1,8 @@
 import type { VacancyRepository } from "@/repositories/vacancy"
 import type { JobSearchRepository } from "@/repositories/job-search"
 import type { ApplicantRepository } from "@/repositories/applicant"
-import type { JobSite } from "@/plugins/job-site"
+import type { JobSiteProvider } from "@/plugins/job-site"
+import type { Browser } from "@/plugins/browser"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import { makeJobSearchID } from "@/models/job-search"
 import type { ProgressEvent } from "@/models/progress/index.js"
@@ -21,7 +22,8 @@ export class VacancyScanner {
     private readonly applicantRepo: ApplicantRepository,
     private readonly siteCrawler: SiteCrawler,
     private readonly enricher: VacancyEnricher,
-    private readonly listJobSiteNames: () => string[] = () => [],
+    private readonly listProviderIds: () => string[] = () => [],
+    private readonly getProvider: (id: string) => JobSiteProvider,
   ) {}
 
   async scan(
@@ -29,14 +31,14 @@ export class VacancyScanner {
     abortController: AbortController,
     enrichAbortController: AbortController,
     onProgress: OnProgress,
-    siteFactory: JobSiteFactory,
+    browser: Browser,
   ): Promise<void> {
     const searchId = makeJobSearchID(id)
     const loaded = this.jobSearchRepo.load(searchId)
-    const sitesToRun =
+    const providerIdsToRun =
       loaded.jobSearch.sources.length > 0
         ? loaded.jobSearch.sources.map((s: { value: string }) => s.value)
-        : this.listJobSiteNames()
+        : this.listProviderIds()
 
     const applicant = this.applicantRepo.load(loaded.applicantId)
     const criteria = resolveSearchParameters(loaded.jobSearch, applicant)
@@ -48,7 +50,7 @@ export class VacancyScanner {
       existingByHash.set(v.hash, v)
     }
 
-    const sites = sitesToRun.map((name) => siteFactory(name))
+    const providers = providerIdsToRun.map((id) => this.getProvider(id))
 
     let lastSaveTime = 0
     const seenHashes = new Set<string>()
@@ -78,7 +80,8 @@ export class VacancyScanner {
     })
 
     await this.siteCrawler.crawl({
-      sites,
+      providers,
+      browser,
       criteria,
       signal: abortController.signal,
       onProgress,
@@ -155,8 +158,6 @@ export class VacancyScanner {
 }
 
 export type OnProgress = (event: ProgressEvent) => void
-
-type JobSiteFactory = (name: string) => JobSite
 
 async function drainQueue(queue: EnrichQueue): Promise<void> {
   try {

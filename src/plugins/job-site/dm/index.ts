@@ -9,11 +9,11 @@ import type {
   SearchCriteria,
   VacancyDetails,
 } from "@/plugins/job-site"
-import { Address, makeDateString } from "@/utils/index.js"
+import { Address } from "@/utils/index.js"
+import { makeDateString } from "../date-string.js"
 import { withOpenedPage } from "@/plugins/job-site/utils/index.js"
 import {
   extractJsonLd,
-  normalizeAndJoinText,
   normalizeOptionalText,
   isRecord,
   stringField,
@@ -67,14 +67,18 @@ function extractVacancy(html: string, url: string): VacancyDetails {
 
   return {
     url,
-    title: ld.title ?? $("h1").first().text().trim(),
-    company: ld.company ?? "dm",
-    address: ld.address ?? extractAddressFallback($),
-    descriptionHtml: ld.description ?? extractDescriptionFallback($),
+    title: pick(ld.title, $("h1").first().text().trim()),
+    company: pick(ld.company, "dm"),
+    address: pick(ld.address, extractAddressFallback($)),
+    descriptionHtml: pick(ld.description, extractDescriptionFallback($)),
     startDate: makeDateString(""),
-    publishedAt: makeDateString(ld.publishedAt ?? ""),
+    publishedAt: makeDateString(pick(ld.publishedAt, "")),
     contact: { name: "", email: "", phone: "" },
   }
+}
+
+function pick<T>(value: T | undefined, fallback: T): T {
+  return value === undefined ? fallback : value
 }
 
 function extractLinks(html: string): string[] {
@@ -99,36 +103,27 @@ function buildSearchUrl(criteria: SearchCriteria): string {
   return `${BASE_URL}/job-listing/?${qs}`
 }
 
-function extractFromPosting(jsonLd: object | undefined) {
-  const posting = asJobPosting(jsonLd)
+function extractFromPosting(jsonLd: object | undefined): PostingData {
+  const result = JobPostingJsonLdSchema.safeParse(jsonLd)
+  if (!result.success) {
+    return { address: new Address() }
+  }
+  const posting = result.data
   return {
-    title: posting?.title,
-    company: posting?.hiringOrganization?.name,
-    description: posting?.description,
-    publishedAt: posting?.datePosted,
+    title: posting.title,
+    company: posting.hiringOrganization?.name,
+    description: posting.description,
+    publishedAt: posting.datePosted,
     address: formatJobPostingAddress(posting),
   }
 }
 
-function asJobPosting(value: unknown): JobPostingJsonLd | undefined {
-  const result = JobPostingJsonLdSchema.safeParse(value)
-  return result.success ? result.data : undefined
-}
-
-interface JobPostingJsonLd {
+interface PostingData {
   title?: string
+  company?: string
   description?: string
-  datePosted?: string
-  hiringOrganization?: { name?: string }
-  jobLocation?:
-    | { address?: JobPostingAddress }
-    | { address?: JobPostingAddress }[]
-}
-
-interface JobPostingAddress {
-  streetAddress?: string
-  postalCode?: string
-  addressLocality?: string
+  publishedAt?: string
+  address: Address
 }
 
 function formatJobPostingAddress(
@@ -136,13 +131,23 @@ function formatJobPostingAddress(
 ): Address {
   const address = new Address()
   if (!posting) return address
-  const location = posting.jobLocation
-  const loc: unknown = Array.isArray(location) ? location[0] : location
+  const loc = firstLocation(posting.jobLocation)
   if (!isRecord(loc) || !isRecord(loc.address)) return address
-  address.street = stringField(loc.address, "streetAddress") ?? ""
-  address.zip = stringField(loc.address, "postalCode") ?? ""
-  address.city = stringField(loc.address, "addressLocality") ?? ""
+  applyAddressFields(address, loc.address)
   return address
+}
+
+function firstLocation(location: unknown): unknown {
+  return Array.isArray(location) ? location[0] : location
+}
+
+function applyAddressFields(
+  address: Address,
+  record: Record<string, unknown>,
+): void {
+  address.street = stringField(record, "streetAddress") ?? ""
+  address.zip = stringField(record, "postalCode") ?? ""
+  address.city = stringField(record, "addressLocality") ?? ""
 }
 
 function extractAddressFallback($: cheerio.CheerioAPI): Address {
@@ -158,12 +163,13 @@ function extractAddressFallback($: cheerio.CheerioAPI): Address {
     const parts = raw.split(",").map((p) => p.trim())
     if (parts.length >= 2) {
       address.street = parts[0]
-      const cityParts = parts[parts.length - 1].split(" ")
+      const lastPart = parts.at(-1)
+      const cityParts = lastPart.split(" ")
       if (cityParts.length >= 2) {
         address.zip = cityParts[0]
         address.city = cityParts.slice(1).join(" ")
       } else {
-        address.city = parts[parts.length - 1]
+        address.city = lastPart
       }
     } else {
       address.city = raw

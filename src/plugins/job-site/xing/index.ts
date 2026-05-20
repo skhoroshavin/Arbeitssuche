@@ -9,14 +9,14 @@ import type {
   SearchCriteria,
   VacancyDetails,
 } from "@/plugins/job-site"
-import { Address, makeDateString } from "@/utils/index.js"
+import { Address } from "@/utils/index.js"
+import { makeDateString } from "../date-string.js"
 import {
   extractAbsoluteLinks,
   withOpenedPage,
 } from "@/plugins/job-site/utils/index.js"
 import {
   extractJsonLd,
-  normalizeAndJoinText,
   normalizeOptionalText,
   isRecord,
   stringField,
@@ -56,20 +56,32 @@ class XingSite implements JobSite {
 function extractVacancy(html: string, url: string): VacancyDetails {
   const $ = cheerio.load(html)
   const ld = extractFromPosting(extractJsonLd($, "JobPosting"))
-
   const text = (selector: string) =>
     normalizeOptionalText($(selector).first().text())
 
+  return buildVacancyDetails(url, ld, $, text)
+}
+
+function buildVacancyDetails(
+  url: string,
+  ld: ReturnType<typeof extractFromPosting>,
+  $: cheerio.CheerioAPI,
+  text: (selector: string) => string | undefined,
+): VacancyDetails {
   return {
     url,
-    title: ld.title ?? text("h1") ?? "",
-    company: ld.company ?? text(SELECTORS.company) ?? "",
-    address: ld.address ?? extractAddressFallback($),
-    descriptionHtml: ld.descriptionHtml ?? "",
+    title: pick(ld.title, pick(text("h1"), "")),
+    company: pick(ld.company, pick(text(SELECTORS.company), "")),
+    address: pick(ld.address, extractAddressFallback($)),
+    descriptionHtml: pick(ld.descriptionHtml, ""),
     startDate: makeDateString(""),
-    publishedAt: makeDateString(ld.publishedAt ?? ""),
+    publishedAt: makeDateString(pick(ld.publishedAt, "")),
     contact: extractContact($),
   }
+}
+
+function pick<T>(value: T | undefined, fallback: T): T {
+  return value === undefined ? fallback : value
 }
 
 function extractLinks(html: string): string[] {
@@ -94,7 +106,13 @@ function buildSearchUrl(criteria: SearchCriteria, pageId?: string): string {
   return `${BASE_URL}/jobs/search?${qs.toString()}`
 }
 
-function extractFromPosting(jsonLd: object | undefined) {
+function extractFromPosting(jsonLd: object | undefined): {
+  title: string | undefined
+  company: string | undefined
+  descriptionHtml: string | undefined
+  publishedAt: string | undefined
+  address: Address
+} {
   const posting = asJobPosting(jsonLd)
   return {
     title: posting?.title,
@@ -131,13 +149,23 @@ function formatJobPostingAddress(
 ): Address {
   const address = new Address()
   if (!posting) return address
-  const location = posting.jobLocation
-  const loc: unknown = Array.isArray(location) ? location[0] : location
+  const loc = firstLocation(posting.jobLocation)
   if (!isRecord(loc) || !isRecord(loc.address)) return address
-  address.street = stringField(loc.address, "streetAddress") ?? ""
-  address.zip = stringField(loc.address, "postalCode") ?? ""
-  address.city = stringField(loc.address, "addressLocality") ?? ""
+  applyAddressFields(address, loc.address)
   return address
+}
+
+function firstLocation(location: unknown): unknown {
+  return Array.isArray(location) ? location[0] : location
+}
+
+function applyAddressFields(
+  address: Address,
+  record: Record<string, unknown>,
+): void {
+  address.street = stringField(record, "streetAddress") ?? ""
+  address.zip = stringField(record, "postalCode") ?? ""
+  address.city = stringField(record, "addressLocality") ?? ""
 }
 
 function extractAddressFallback($: cheerio.CheerioAPI): Address {
@@ -197,7 +225,7 @@ const JobPostingJsonLdSchema = z.object({
               postalCode: z.string().optional(),
               addressLocality: z.string().optional(),
             })
-          .optional(),
+            .optional(),
         }),
       ),
     ])

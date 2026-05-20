@@ -58,7 +58,9 @@ describe("xing", () => {
     const vacancy = await site.getVacancyDetails(vacancyUrl)
     expect(vacancy.descriptionHtml.length).toBeGreaterThan(0)
     expect(vacancy.descriptionHtml.includes("<li>React</li>")).toBeTruthy()
-    expect(vacancy.descriptionHtml.includes("<strong>TypeScript</strong>")).toBeTruthy()
+    expect(
+      vacancy.descriptionHtml.includes("<strong>TypeScript</strong>"),
+    ).toBeTruthy()
   })
 })
 

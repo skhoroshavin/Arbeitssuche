@@ -1,6 +1,8 @@
 import type { Browser } from "@/plugins/browser"
 import type { Address } from "@/utils/index.js"
-import type { DateString } from "@/utils/index.js"
+import type { DateString } from "./date-string.js"
+
+export { makeDateString } from "./date-string.js"
 
 import { ArbeitsagenturProvider } from "./arbeitsagentur"
 import { DmProvider } from "./dm"
@@ -32,18 +34,21 @@ export interface VacancyDetails {
   contact: VacancyContact
 }
 
-export interface VacancyContact {
+interface VacancyContact {
   name: string
   email: string
   phone: string
 }
 
 export interface JobSite {
-  getVacancyList(criteria: SearchCriteria, pageId?: string): Promise<VacancyListPage>
+  getVacancyList(
+    criteria: SearchCriteria,
+    pageId?: string,
+  ): Promise<VacancyListPage>
   getVacancyDetails(url: string): Promise<VacancyDetails>
 }
 
-export interface JobSiteProviderInfo {
+interface JobSiteProviderInfo {
   readonly id: string
   readonly name: string
   readonly supportedModes: readonly SearchMode[]
@@ -53,12 +58,8 @@ export interface JobSiteProvider extends JobSiteProviderInfo {
   createScraper(browser: Browser): JobSite
 }
 
-export function getJobSiteProviders(): JobSiteProviderInfo[] {
-  return PROVIDERS.map(({ id, name, supportedModes }) => ({
-    id,
-    name,
-    supportedModes,
-  }))
+export function getJobSiteProviders(): JobSiteProvider[] {
+  return [...PROVIDERS]
 }
 
 export function getJobSiteProvider(id: string): JobSiteProvider {

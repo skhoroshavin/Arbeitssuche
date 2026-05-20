@@ -7,7 +7,8 @@ import type {
   SearchCriteria,
   VacancyDetails,
 } from "@/plugins/job-site"
-import { Address, makeDateString } from "@/utils/index.js"
+import { Address } from "@/utils/index.js"
+import { makeDateString } from "../date-string.js"
 
 export const ArbeitsagenturProvider: JobSiteProvider = {
   id: "arbeitsagentur",
@@ -19,7 +20,7 @@ export const ArbeitsagenturProvider: JobSiteProvider = {
 
 const API_BASE = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service"
 
-class ArbeitsagenturSite implements JobSite {
+export class ArbeitsagenturSite implements JobSite {
   constructor(_browser: Browser, fetch?: Fetch) {
     this.fetch = fetch ?? globalThis.fetch
   }
@@ -84,10 +85,16 @@ function mapDetailsResponse(
     company: data.firma ?? "",
     address: buildAddressFromLocations(data.stellenlokationen),
     descriptionHtml: data.stellenangebotsBeschreibung ?? "",
-    startDate: makeDateString(data.eintrittszeitraum?.von ?? ""),
-    publishedAt: makeDateString(data.veroeffentlichungszeitraum?.von ?? ""),
+    startDate: dateFromNested(data.eintrittszeitraum),
+    publishedAt: dateFromNested(data.veroeffentlichungszeitraum),
     contact: { name: "", email: "", phone: "" },
   }
+}
+
+function dateFromNested(nested: { von?: string } | undefined): {
+  value: string
+} {
+  return makeDateString(nested?.von ?? "")
 }
 
 function buildSearchApiUrl(criteria: SearchCriteria, pageId?: string): string {

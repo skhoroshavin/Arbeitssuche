@@ -3,7 +3,11 @@ import { Address } from "."
 
 describe("Address", () => {
   it("parses from zod-compatible object", () => {
-    const address = Address.parse({ street: "Musterstr. 1", zip: "10115", city: "Berlin" })
+    const address = Address.parse({
+      street: "Musterstr. 1",
+      zip: "10115",
+      city: "Berlin",
+    })
     expect(address.street).toBe("Musterstr. 1")
     expect(address.zip).toBe("10115")
     expect(address.city).toBe("Berlin")
@@ -17,7 +21,11 @@ describe("Address", () => {
   })
 
   it("formats full address", () => {
-    const address = Address.parse({ street: "Hauptstr. 1", zip: "10115", city: "Berlin" })
+    const address = Address.parse({
+      street: "Hauptstr. 1",
+      zip: "10115",
+      city: "Berlin",
+    })
     expect(address.format()).toBe("Hauptstr. 1, 10115 Berlin")
   })
 

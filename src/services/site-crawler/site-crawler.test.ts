@@ -239,36 +239,20 @@ const CRITERIA: JobSearchCriteria = {
 }
 
 function makeProvider(overrides: MakeProviderOptions = {}): JobSiteProvider {
-  const provider: JobSiteProvider = {
+  const getVacancyList =
+    overrides.getVacancyList ?? createVacancyListMock(overrides.pages)
+  const getVacancyDetails =
+    overrides.getVacancyDetails ?? createVacancyDetailsMock(overrides.details)
+
+  return {
     id: "test",
-    name: "test-site",
-    supportedModes: ["employment"],
+    name: overrides.name ?? "test-site",
+    supportedModes: overrides.supportedModes ?? ["employment"],
     createScraper: () => ({
-      getVacancyList: createVacancyListMock(overrides.pages),
-      getVacancyDetails: createVacancyDetailsMock(overrides.details),
+      getVacancyList,
+      getVacancyDetails,
     }),
   }
-
-  if (overrides.name) {
-    provider.name = overrides.name
-  }
-  if (overrides.supportedModes) {
-    provider.supportedModes = overrides.supportedModes
-  }
-  if (overrides.getVacancyList) {
-    provider.createScraper = () => ({
-      getVacancyList: overrides.getVacancyList,
-      getVacancyDetails: createVacancyDetailsMock(overrides.details),
-    })
-  }
-  if (overrides.getVacancyDetails) {
-    provider.createScraper = () => ({
-      getVacancyList: createVacancyListMock(overrides.pages),
-      getVacancyDetails: overrides.getVacancyDetails,
-    })
-  }
-
-  return provider
 }
 
 type MakeProviderOptions = {

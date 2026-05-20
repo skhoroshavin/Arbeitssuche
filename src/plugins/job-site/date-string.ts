@@ -1,7 +1,3 @@
-export interface DateString {
-  readonly value: string
-}
-
 export function makeDateString(raw: string): DateString {
   const trimmed = raw.trim()
   if (!trimmed) return { value: "" }
@@ -24,4 +20,8 @@ export function makeDateString(raw: string): DateString {
   const month = String(parsed.getMonth() + 1).padStart(2, "0")
   const day = String(parsed.getDate()).padStart(2, "0")
   return { value: `${year}-${month}-${day}` }
+}
+
+export interface DateString {
+  readonly value: string
 }

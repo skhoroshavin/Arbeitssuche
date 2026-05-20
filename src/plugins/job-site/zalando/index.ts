@@ -6,7 +6,8 @@ import type {
   SearchCriteria,
   VacancyDetails,
 } from "@/plugins/job-site"
-import { Address, makeDateString } from "@/utils/index.js"
+import { Address } from "@/utils/index.js"
+import { makeDateString } from "../date-string.js"
 import { extractAbsoluteLinks } from "@/plugins/job-site/utils/index.js"
 import { normalizeOptionalText } from "@/utils/index.js"
 
@@ -100,12 +101,13 @@ function parseFlatAddress(raw: string): Address {
   const parts = raw.split(", ").map((p) => p.trim())
   if (parts.length >= 2) {
     address.street = parts[0]
-    const cityParts = parts[parts.length - 1].split(" ")
+    const lastPart = parts.at(-1)
+    const cityParts = lastPart.split(" ")
     if (cityParts.length >= 2) {
       address.zip = cityParts[0]
       address.city = cityParts.slice(1).join(" ")
     } else {
-      address.city = parts[parts.length - 1]
+      address.city = lastPart
     }
   } else {
     address.city = parts[0] ?? ""
