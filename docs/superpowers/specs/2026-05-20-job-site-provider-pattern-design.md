@@ -77,17 +77,7 @@ interface LlmProvider extends LlmProviderInfo {
 
 Replaces the current `type LlmProviderInfo = Pick<LlmProvider, ...>` with an explicit interface. The rest of `LlmClient`, `LlmModelRegistry`, etc. are unchanged.
 
-### Integration-test skip flag (not on the production interface)
 
-Each site module exports a separate `skipIntegrationTests` boolean alongside its provider:
-
-```ts
-// xing/index.ts
-export const XingProvider: JobSiteProvider = { ... }
-export const skipIntegrationTests = true
-```
-
-The integration test imports the flag directly from each site module instead of reading it from the provider interface. This keeps test concerns out of the production type.
 
 ### `JobSite` (pure scraper — no identity or metadata)
 
@@ -216,16 +206,10 @@ for (const { name, supportedModes } of getJobSiteInfos()) {
 
 After:
 ```ts
-import { skipIntegrationTests as skipXing } from "./xing"
-// ... per-site imports
-
-const SKIP_MAP: Record<string, boolean> = {
-  xing: skipXing,
-  // ...
-}
+const SKIP_SITES = new Set(["xing"])
 
 for (const provider of getJobSiteProviders()) {
-  test.skipIf(SKIP_MAP[provider.id])(`${provider.id} ...`, async () => {
+  test.skipIf(SKIP_SITES.has(provider.id))(`/${provider.id} ...`, async () => {
     const site = provider.createScraper(browser)
     // ...
   })
@@ -251,7 +235,7 @@ Tests that relied on `contactFromDetails` or optional field guards need updates 
 | `src/plugins/job-site/xing/index.ts` | Export `XingProvider: JobSiteProvider`. Extraction returns all-required fields. |
 | `src/plugins/job-site/zalando/index.ts` | Export `ZalandoProvider: JobSiteProvider`. Extraction returns all-required fields. |
 | `src/plugins/job-site/{site}/index.test.ts` | Update factory calls to provider access, fix assertions. |
-| `src/plugins/job-site/integration.test.ts` | Import `skipIntegrationTests` from each site module. Generic quality check replaces Berlin regex. |
+| `src/plugins/job-site/integration.test.ts` | Uses local `SKIP_SITES` set (unchanged mechanism). Generic quality check replaces Berlin regex. |
 | `src/services/vacancy-processor/process.ts` | Delete `contactFromDetails()`, simplify field access. |
 | `src/services/vacancy-processor/process.test.ts` (or equivalent) | Update for simplified `process.ts`. |
 | `src/services/site-crawler/site-crawler.ts` | `CrawlOptions.sites` → `providers`, adds `browser`. Internally calls `createScraper` and reads provider metadata. |
@@ -260,7 +244,7 @@ Tests that relied on `contactFromDetails` or optional field guards need updates 
 | `src/app/crawl-manager.ts` | Passes `browser` directly to `scan()` (no more factory closure). |
 | `src/app/composition/create-services.ts` | `getJobSiteNames` → `getJobSiteProviderIds`, passes `getJobSiteProvider` to scanner. |
 | `src/app/ipc-settings.ts` | `getJobSiteInfos()` → `getJobSiteProviders()`. |
-| `src/plugins/job-site/{arbeitsagentur,dm,xing,zalando}/index.ts` | Each exports `skipIntegrationTests` boolean (xing=true, others=false) alongside provider. |
+
 
 ## Out of Scope
 
