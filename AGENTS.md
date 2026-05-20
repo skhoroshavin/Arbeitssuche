@@ -43,8 +43,8 @@ Guidelines for autonomous coding agents in this repository.
 ### Key Enforced Rules
 
 - **No parent imports** (`../`) under `src/`. Use `@/` for cross-module, `./` for same-module.
-- **Public surfaces:** Cross-module imports must go through `index.ts`. `types.ts` is an internal contract file for repositories and plugins — do not import it cross-module.
-- **File naming:** `*.ts`, `*.tsx` → `kebab-case`. Test suffixes: `.test.ts`, `.test.tsx`, `.test-suite.ts`, `.integration-test.ts`.
+- **Public surfaces:** Cross-module imports must go through `index.ts`. Prefer defining interfaces directly in `index.ts`; extract to a separate file only when the type surface is large enough to hurt readability.
+- **File naming:** `*.ts`, `*.tsx` → `kebab-case`. Test suffixes: `.test.ts`, `.test.tsx`, `.test-suite.ts`, `.integration.test.ts`.
 - **Complexity:** max cyclomatic complexity `7`. Max file length: `500` lines (`80` for `src/utils/*.ts`).
 - **No type assertions** (`as` / angle-brackets, but `as const` is still allowed) and **no non-null assertions** (`!`).
 - **Destructure component props** in function signatures.

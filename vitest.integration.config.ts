@@ -9,7 +9,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["src/plugins/job-site/*.integration-test.ts"],
+    include: ["src/plugins/**/integration.test.ts"],
     testTimeout: 60_000,
   },
 })
