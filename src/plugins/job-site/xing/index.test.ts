@@ -10,7 +10,7 @@ describe("xing", () => {
     const { urls } = await site.getVacancyList({
       location: "Berlin",
       query: "",
-      radiusKm: 30,
+      radiusKm: 15,
       mode: "employment",
     })
     expect(urls.length > 0).toBeTruthy()
@@ -25,7 +25,7 @@ describe("xing", () => {
     const { urls } = await site.getVacancyList({
       location: "Berlin",
       query: "",
-      radiusKm: 30,
+      radiusKm: 15,
       mode: "employment",
     })
     const vacancy = await site.getVacancyDetails(urls[0])

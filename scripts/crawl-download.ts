@@ -52,7 +52,7 @@ for (const siteName of sitesToRun) {
   try {
     const provider = getJobSiteProvider(siteName)
     const site = provider.createScraper(browser)
-    const criteria = { location, query, mode, radiusKm: 25 }
+    const criteria = { location, query, mode, radiusKm: 15 }
 
     // Collect URLs via pagination
     let pageId: string | undefined

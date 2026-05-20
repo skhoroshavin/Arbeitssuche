@@ -51,7 +51,7 @@ export interface JobSearchID {
 
 export class JobSearch {
   searchTerm = ""
-  radiusKm = 30
+  radiusKm = 15
   mode: SearchMode = "employment"
   sources: SearchSource[] = []
   maxResultsPerSource = 0
@@ -69,7 +69,7 @@ export class JobSearch {
   isDifferentFromDefault(): boolean {
     const checks = [
       this.searchTerm.trim().length > 0,
-      this.radiusKm !== 30,
+      this.radiusKm !== 15,
       this.mode !== "employment",
       this.sources.length > 0,
       this.maxResultsPerSource !== 0,
@@ -102,7 +102,7 @@ function fillFromParsed(
 
 const JobSearchInputSchema = z.object({
   searchTerm: z.string().default(""),
-  radiusKm: z.number().default(30),
+  radiusKm: z.number().default(15),
   mode: z
     .enum(["employment", "entry-level", "apprenticeship"])
     .default("employment"),

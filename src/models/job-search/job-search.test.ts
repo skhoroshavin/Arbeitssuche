@@ -5,7 +5,7 @@ describe("JobSearch", () => {
   it("default constructor produces default job search", () => {
     const index = new JobSearch()
     expect(index.searchTerm).toBe("")
-    expect(index.radiusKm).toBe(30)
+    expect(index.radiusKm).toBe(15)
     expect(index.mode).toBe("employment")
     expect(index.sources).toEqual([])
     expect(index.isDifferentFromDefault()).toBe(false)
@@ -14,7 +14,7 @@ describe("JobSearch", () => {
   it("parse fills missing fields with defaults", () => {
     const index = JobSearch.parse({ searchTerm: "React" })
     expect(index.searchTerm).toBe("React")
-    expect(index.radiusKm).toBe(30)
+    expect(index.radiusKm).toBe(15)
     expect(index.isDifferentFromDefault()).toBe(true)
   })
 
