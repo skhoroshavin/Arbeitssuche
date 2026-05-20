@@ -1,7 +1,7 @@
 import { test, expect } from "vitest"
 import fs from "node:fs"
 import path from "node:path"
-import { setupTemporaryDatabaseDirectory } from "./index.js"
+import { setupTemporaryDatabaseDirectory } from "."
 
 const { nextId, pathForId } = setupTemporaryDatabaseDirectory("test-utils-test")
 

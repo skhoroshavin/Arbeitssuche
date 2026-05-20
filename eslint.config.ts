@@ -24,14 +24,23 @@ export default tseslint.config(
           utils: {
             shared: true,
           },
+          "test-helpers": {
+            shared: true,
+          },
           "models/*": {
             imports: ["models/+"],
           },
           "plugins/*": {
-            imports: ["plugins/*", "utils/+"],
+            imports: ["plugins/*", "utils/+", "test-helpers/+"],
           },
           "repositories/*": {
-            imports: ["repositories/+", "models/+", "utils/+", "plugins/+"],
+            imports: [
+              "repositories/+",
+              "models/+",
+              "utils/+",
+              "plugins/+",
+              "test-helpers/+",
+            ],
           },
           "services/*": {
             imports: [
@@ -176,6 +185,15 @@ export default tseslint.config(
         { assertionStyle: "never" },
       ],
       "@typescript-eslint/no-non-null-assertion": "error",
+      "unicorn/prevent-abbreviations": [
+        "error",
+        {
+          allowList: {
+            env: true,
+            Env: true,
+          },
+        },
+      ],
       "import-x/no-useless-path-segments": ["error", { noUselessIndex: true }],
     },
   },
@@ -188,6 +206,14 @@ export default tseslint.config(
         "error",
         { max: 80, skipBlankLines: true, skipComments: true },
       ],
+    },
+  },
+
+  // Disable false-sharing for test-helpers (shared utility that grows organically)
+  {
+    files: ["src/test-helpers/**/*.ts"],
+    rules: {
+      "unslop/no-false-sharing": "off",
     },
   },
 
