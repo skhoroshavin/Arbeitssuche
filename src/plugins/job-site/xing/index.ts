@@ -15,22 +15,6 @@ import {
   withOpenedPage,
 } from "@/plugins/job-site/utils/index.js"
 
-interface JobPostingJsonLd {
-  title?: string
-  description?: string
-  datePosted?: string
-  hiringOrganization?: { name?: string }
-  jobLocation?:
-    | { address?: JobPostingAddress }
-    | { address?: JobPostingAddress }[]
-}
-
-interface JobPostingAddress {
-  streetAddress?: string
-  postalCode?: string
-  addressLocality?: string
-}
-
 import {
   extractJsonLd,
   normalizeAndJoinText,
@@ -130,6 +114,22 @@ function extractFromPosting(jsonLd: object | undefined) {
 function asJobPosting(value: unknown): JobPostingJsonLd | undefined {
   const result = JobPostingJsonLdSchema.safeParse(value)
   return result.success ? result.data : undefined
+}
+
+interface JobPostingJsonLd {
+  title?: string
+  description?: string
+  datePosted?: string
+  hiringOrganization?: { name?: string }
+  jobLocation?:
+    | { address?: JobPostingAddress }
+    | { address?: JobPostingAddress }[]
+}
+
+interface JobPostingAddress {
+  streetAddress?: string
+  postalCode?: string
+  addressLocality?: string
 }
 
 function formatJobPostingAddress(

@@ -38,7 +38,8 @@ export function createAppServices(context: ServiceContext): AppServices {
       ? GoogleMapsCommuteProvider.createClient(googleMapsApiKey)
       : context.commuteClient
 
-    const modelRegistry = context.modelRegistry ?? getLlmProvider(provider).createModelRegistry()
+    const modelRegistry =
+      context.modelRegistry ?? getLlmProvider(provider).createModelRegistry()
 
     const vacancyEnricher = new VacancyEnricher({
       llmClient: assessmentLlm,

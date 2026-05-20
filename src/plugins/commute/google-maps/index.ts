@@ -1,6 +1,10 @@
 import { z } from "zod"
 
-import type { CommuteClient, CommuteProvider, CommuteResult } from "@/plugins/commute"
+import type {
+  CommuteClient,
+  CommuteProvider,
+  CommuteResult,
+} from "@/plugins/commute"
 
 export const GoogleMapsCommuteProvider: CommuteProvider = {
   id: "google-maps",

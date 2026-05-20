@@ -4,8 +4,11 @@ import {
   createArbeitsagenturSite,
   SUPPORTED_MODES as ARBEITSAGENTUR_MODES,
 } from "./arbeitsagentur"
+
 import { createDmSite, SUPPORTED_MODES as DM_MODES } from "./dm"
+
 import { createXingSite, SUPPORTED_MODES as XING_MODES } from "./xing"
+
 import { createZalandoSite, SUPPORTED_MODES as ZALANDO_MODES } from "./zalando"
 
 export interface SearchCriteria {
@@ -13,6 +16,27 @@ export interface SearchCriteria {
   query: string
   radiusKm: number
   mode: SearchMode
+}
+
+export function getJobSiteInfos(): JobSiteInfo[] {
+  return Object.entries(REGISTRY).map(([name, entry]) => ({
+    name,
+    supportedModes: entry.supportedModes,
+  }))
+}
+
+export interface JobSiteInfo {
+  name: string
+  supportedModes: readonly SearchMode[]
+}
+
+export function createJobSite(name: string, browser: Browser): JobSite {
+  if (!isRegistryKey(name)) {
+    throw new Error(
+      `Unknown site: "${name}". Available: ${getJobSiteNames().join(", ")}`,
+    )
+  }
+  return REGISTRY[name].factory(browser)
 }
 
 export interface JobSite {
@@ -26,11 +50,6 @@ export interface JobSite {
 }
 
 export type SearchMode = "employment" | "entry-level" | "apprenticeship"
-
-export interface JobSiteInfo {
-  name: string
-  supportedModes: readonly SearchMode[]
-}
 
 export interface VacancyListPage {
   urls: string[]
@@ -54,24 +73,13 @@ export interface VacancyContact {
   phone?: string
 }
 
-export function getJobSiteInfos(): JobSiteInfo[] {
-  return Object.entries(REGISTRY).map(([name, entry]) => ({
-    name,
-    supportedModes: entry.supportedModes,
-  }))
-}
-
-export function createJobSite(name: string, browser: Browser): JobSite {
-  if (!isRegistryKey(name)) {
-    throw new Error(
-      `Unknown site: "${name}". Available: ${getJobSiteNames().join(", ")}`,
-    )
-  }
-  return REGISTRY[name].factory(browser)
-}
-
 export function getJobSiteNames(): string[] {
   return Object.keys(REGISTRY)
+}
+
+interface SiteEntry {
+  factory: (browser: Browser) => JobSite
+  supportedModes: readonly SearchMode[]
 }
 
 function isRegistryKey(name: string): name is keyof typeof REGISTRY {
@@ -87,8 +95,3 @@ const REGISTRY = {
   zalando: { factory: createZalandoSite, supportedModes: ZALANDO_MODES },
   dm: { factory: createDmSite, supportedModes: DM_MODES },
 } satisfies Record<string, SiteEntry>
-
-interface SiteEntry {
-  factory: (browser: Browser) => JobSite
-  supportedModes: readonly SearchMode[]
-}

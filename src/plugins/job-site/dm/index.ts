@@ -20,22 +20,6 @@ import {
   stringField,
 } from "@/utils/index.js"
 
-interface JobPostingJsonLd {
-  title?: string
-  description?: string
-  datePosted?: string
-  hiringOrganization?: { name?: string }
-  jobLocation?:
-    | { address?: JobPostingAddress }
-    | { address?: JobPostingAddress }[]
-}
-
-interface JobPostingAddress {
-  streetAddress?: string
-  postalCode?: string
-  addressLocality?: string
-}
-
 export const SUPPORTED_MODES = ["employment", "apprenticeship"] as const
 
 export function createDmSite(browser: Browser): JobSite {
@@ -130,6 +114,22 @@ function extractFromPosting(jsonLd: object | undefined) {
 function asJobPosting(value: unknown): JobPostingJsonLd | undefined {
   const result = JobPostingJsonLdSchema.safeParse(value)
   return result.success ? result.data : undefined
+}
+
+interface JobPostingJsonLd {
+  title?: string
+  description?: string
+  datePosted?: string
+  hiringOrganization?: { name?: string }
+  jobLocation?:
+    | { address?: JobPostingAddress }
+    | { address?: JobPostingAddress }[]
+}
+
+interface JobPostingAddress {
+  streetAddress?: string
+  postalCode?: string
+  addressLocality?: string
 }
 
 function formatJobPostingAddress(

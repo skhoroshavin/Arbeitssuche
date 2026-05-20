@@ -1,4 +1,9 @@
-import type { LlmClient, LlmModelInfo, LlmModelRegistry, LlmProvider } from "@/plugins/llm"
+import type {
+  LlmClient,
+  LlmModelInfo,
+  LlmModelRegistry,
+  LlmProvider,
+} from "@/plugins/llm"
 import {
   createOpenAICompatibleClient,
   createModelRegistry,
@@ -30,7 +35,8 @@ export const RequestyProvider: LlmProvider = {
       "https://router.eu.requesty.ai/v1/models",
       (m) => ({
         id: String(m.id),
-        name: typeof m.name === "string" ? m.name : deriveModelName(String(m.id)),
+        name:
+          typeof m.name === "string" ? m.name : deriveModelName(String(m.id)),
         pricing: normalizeFlatPricing(m),
       }),
     )

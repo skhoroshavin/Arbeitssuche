@@ -27,14 +27,11 @@ export const OpenRouterProvider: LlmProvider = {
     )
   },
   createModelRegistry(): LlmModelRegistry {
-    return createModelRegistry(
-      "https://openrouter.ai/api/v1/models",
-      (m) => ({
-        id: String(m.id),
-        name: String(m.name),
-        pricing: normalizeNestedPricing(m.pricing),
-      }),
-    )
+    return createModelRegistry("https://openrouter.ai/api/v1/models", (m) => ({
+      id: String(m.id),
+      name: String(m.name),
+      pricing: normalizeNestedPricing(m.pricing),
+    }))
   },
   async ping(apiKey: string): Promise<boolean> {
     return createOpenAICompatibleClient(

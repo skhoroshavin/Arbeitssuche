@@ -2,8 +2,6 @@ import { z } from "zod"
 
 import type { Browser } from "@/plugins/browser"
 
-type Fetch = (url: string, init?: RequestInit) => Promise<Response>
-
 import type {
   VacancyDetails,
   JobSite,
@@ -60,6 +58,8 @@ class ArbeitsagenturSite implements JobSite {
 }
 
 const API_HEADERS = { "X-API-Key": "jobboerse-jobsuche" }
+
+type Fetch = (url: string, init?: RequestInit) => Promise<Response>
 
 function assertOk(response: Response, url: string): void {
   if (!response.ok) {

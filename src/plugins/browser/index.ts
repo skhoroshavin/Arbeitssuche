@@ -1,6 +1,18 @@
+export { createElectronBrowser } from "./electron"
+
+export { BrowserStub } from "./stub"
+
 export interface OpenPageOptions {
   waitFor?: string
   blockPatterns?: RegExp[]
+}
+
+export async function createPlaywrightBrowser(options?: {
+  headless?: boolean
+  recordDirectory?: string
+}): Promise<Browser> {
+  const module = await import("./playwright")
+  return module.createPlaywrightBrowser(options)
 }
 
 export interface Browser {
@@ -12,15 +24,4 @@ export interface Page {
   html: string
   navigate(url: string, options?: { waitFor?: string }): Promise<void>
   close(): Promise<void>
-}
-
-export { createElectronBrowser } from "./electron"
-export { BrowserStub } from "./stub"
-
-export async function createPlaywrightBrowser(options?: {
-  headless?: boolean
-  recordDirectory?: string
-}): Promise<Browser> {
-  const module = await import("./playwright")
-  return module.createPlaywrightBrowser(options)
 }

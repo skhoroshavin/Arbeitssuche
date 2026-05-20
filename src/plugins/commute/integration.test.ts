@@ -9,13 +9,16 @@ describe("Google Maps CommuteProvider", () => {
     expect(result).toBe(true)
   })
 
-  test.skipIf(!apiKey)("createClient returns commute data for Berlin to Munich", async () => {
-    const client = GoogleMapsCommuteProvider.createClient(apiKey ?? "")
-    const result = await client.getCommute("Berlin", "Munich")
-    expect(result.distance).toBeTruthy()
-    expect(result.durations.morning).toBeGreaterThan(0)
-    expect(result.fetchedAt).toBeTruthy()
-  })
+  test.skipIf(!apiKey)(
+    "createClient returns commute data for Berlin to Munich",
+    async () => {
+      const client = GoogleMapsCommuteProvider.createClient(apiKey ?? "")
+      const result = await client.getCommute("Berlin", "Munich")
+      expect(result.distance).toBeTruthy()
+      expect(result.durations.morning).toBeGreaterThan(0)
+      expect(result.fetchedAt).toBeTruthy()
+    },
+  )
 
   test("ping returns false with an invalid API key", async () => {
     const result = await GoogleMapsCommuteProvider.ping("invalid-key")
