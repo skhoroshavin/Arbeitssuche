@@ -36,8 +36,9 @@ Each site module (`arbeitsagentur/index.ts`, etc.) exports a `JobSiteProvider` o
 Public API:
 - `getJobSiteProviders()` → `JobSiteProviderInfo[]` (id, name, supportedModes)
 - `getJobSiteProvider(id)` → `JobSiteProvider`
+- `getJobSiteProviderIds()` → `string[]` (replaces `getJobSiteNames()`)
 
-The `REGISTRY` record is removed. The `createJobSite()` function is removed — callers use `provider.createScraper(browser)` instead.
+The `REGISTRY` record is removed. The `createJobSite()` function is removed — callers use `getJobSiteProvider(id).createScraper(browser)` instead.
 
 ## Interfaces
 
@@ -139,7 +140,24 @@ const contact = details.contact  // already VacancyContact with string fields
 
 ### `src/services/site-crawler/site-crawler.ts` and `paginate.ts`
 
-`createJobSite(name, browser)` → `provider.createScraper(browser)`. The crawler receives providers instead of site names, or the orchestration code in `vacancy-scanner` changes to iterate providers.
+No interface changes — the crawler still receives `JobSite[]`. The factory that creates those `JobSite` instances changes in the layers above.
+
+### `src/services/vacancy-scanner/vacancy-scanner.ts`
+
+- Constructor: `listJobSiteNames: () => string[]` → `listJobSiteProviderIds: () => string[]`
+- `scan()`: `JobSiteFactory` signature stays `(id: string) => JobSite` — the factory implementation changes, but the scanner's API is unchanged
+
+### `src/app/crawl-manager.ts`
+
+Factory changes from `(name) => createJobSite(name, browser)` to `(id) => getJobSiteProvider(id).createScraper(browser)`.
+
+### `src/app/composition/create-services.ts`
+
+`getJobSiteNames` → `getJobSiteProviderIds`.
+
+### `src/app/ipc-settings.ts`
+
+`sites:list` handler: `getJobSiteInfos()` → `getJobSiteProviders()` (return type is compatible — both have `name`).
 
 ## Test Changes
 
@@ -196,8 +214,12 @@ Tests that relied on `contactFromDetails` or optional field guards need updates 
 | `src/plugins/job-site/integration.test.ts` | Remove `SKIPPED_SITES`, use `skipIntegrationTests`, generic quality check. |
 | `src/services/vacancy-processor/process.ts` | Delete `contactFromDetails()`, simplify field access. |
 | `src/services/vacancy-processor/process.test.ts` (or equivalent) | Update for simplified `process.ts`. |
-| `src/services/site-crawler/site-crawler.ts` | `createJobSite` → `provider.createScraper`. |
-| `src/services/site-crawler/paginate.ts` | If it references `createJobSite` or registry, update. |
+| `src/services/site-crawler/site-crawler.ts` | No interface changes. |
+| `src/services/site-crawler/paginate.ts` | No changes. |
+| `src/services/vacancy-scanner/vacancy-scanner.ts` | `listJobSiteNames` → `listJobSiteProviderIds` (constructor param rename). |
+| `src/app/crawl-manager.ts` | Factory: `createJobSite(name, browser)` → `getJobSiteProvider(id).createScraper(browser)`. |
+| `src/app/composition/create-services.ts` | `getJobSiteNames` → `getJobSiteProviderIds`. |
+| `src/app/ipc-settings.ts` | `getJobSiteInfos()` → `getJobSiteProviders()`. |
 
 ## Out of Scope
 
