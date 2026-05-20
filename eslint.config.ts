@@ -49,6 +49,7 @@ export default tseslint.config(
               "plugins/*",
               "models/+",
               "utils/+",
+              "test-helpers",
             ],
           },
           app: {
@@ -59,6 +60,7 @@ export default tseslint.config(
               "plugins/+",
               "repositories/+",
               "services/+",
+              "test-helpers",
             ],
           },
           "app/*": {
@@ -69,6 +71,7 @@ export default tseslint.config(
               "plugins/+",
               "repositories/+",
               "services/+",
+              "test-helpers",
             ],
           },
           "app/composition": {
@@ -79,6 +82,7 @@ export default tseslint.config(
               "plugins/+",
               "repositories/+",
               "services/+",
+              "test-helpers",
             ],
           },
           "ui/components": {
