@@ -28,7 +28,7 @@ export default tseslint.config(
             shared: true,
           },
           "models/*": {
-            imports: ["models/+"],
+            imports: ["models/+", "utils/+"],
           },
           "plugins/*": {
             imports: ["plugins/*", "utils/+", "test-helpers/+"],

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { makeDateString } from "./date-string.js"
+import { makeDateString } from "."
 
 describe("makeDateString", () => {
   it("returns empty for empty string", () => {

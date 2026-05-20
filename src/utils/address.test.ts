@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Address } from "./address.js"
+import { Address } from "."
 
 describe("Address", () => {
   it("parses from zod-compatible object", () => {
