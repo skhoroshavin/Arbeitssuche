@@ -121,23 +121,29 @@ Empty string `""` means "no data" throughout. No `undefined`, no `?`.
 
 ```ts
 class Address {
-  constructor(
-    readonly street: string,
-    readonly zipCode: string,
-    readonly city: string,
-  ) {}
+  street = ""
+  zip = ""
+  city = ""
 
-  /** Flat string for storage and commute. Format: "street, zipCode city" (skips empty parts). */
+  static readonly schema: z.ZodObject<...>
+  static parse(data: unknown): Address
+
+  /** Flat string for storage and commute. Format: "street, zip city" (skips empty parts). */
   format(): string
 
-  /** True when street, zipCode, and city are all non-empty. */
+  /** True when all fields are empty. */
+  isEmpty(): boolean
+
+  /** True when street, zip, and city are all non-empty (properly filled address). */
   isValid(): boolean
 }
 ```
 
-An empty (absent) address is `new Address("", "", "")`. The `format()` method skips empty components: `"Musterstraße 1, 10115 Berlin"`, `"Berlin"`, `"10115 Berlin"`.
+No constructor — mutable public fields with defaults. Follows the `static parse` / Zod schema pattern used by model classes (even though it lives in utils).
 
-Replaces the existing `Address` interface in `models/applicant/applicant.ts` (which had `zip` instead of `zipCode`).
+`format()` skips empty components: `"Musterstraße 1, 10115 Berlin"`, `"Berlin"`, `"10115 Berlin"`.
+
+Replaces the existing `Address` interface in `models/applicant/applicant.ts`.
 
 ### `DateString` (in `src/utils/date-string.ts` — branded wrapper like `JobSearchID`)
 
@@ -224,7 +230,7 @@ Passes `browser` directly to `vacancyScanner.scan()` instead of wrapping it in a
 
 - `createXingSite(browser)` → `XingProvider.createScraper(browser)` (access the exported provider, not a free function)
 - `createDmSite(browser)` → `DmProvider.createScraper(browser)`, etc.
-- Address assertions use `vacancy.address.isValid()` or check `street`/`zipCode`/`city` fields on the `Address` instance
+- Address assertions use `vacancy.address.isValid()` or check `street`/`zip`/`city` fields on the `Address` instance
 - Date assertions check `vacancy.startDate.value` / `vacancy.publishedAt.value` for ISO 8601 format or empty string
 - `descriptionHtml` assertions: `expect(vacancy.descriptionHtml.length).toBeGreaterThan(0)` replaces `toBeTruthy()`
 - Tests that omit optional fields when constructing expected results must include all fields
@@ -268,12 +274,12 @@ Tests that relied on `contactFromDetails` or optional field guards need updates 
 
 | File | Change |
 |------|--------|
-| `src/utils/address.ts` | New file: `Address` class (`street`, `zipCode`, `city`; `format()`, `isValid()`). Replaces `VacancyAddress` and the existing `Address` interface in `models/applicant`. |
+| `src/utils/address.ts` | New file: `Address` class (`street`, `zip`, `city`; `format()`, `isEmpty()`, `isValid()`, `static parse`, `static schema`). Replaces `VacancyAddress` and the existing `Address` interface in `models/applicant`. |
 | `src/utils/date-string.ts` | New file: `DateString` interface and `makeDateString(raw)` factory — normalizes to ISO 8601, validates format. |
 | `src/plugins/job-site/index.ts` | New interfaces (`JobSiteProvider`, `JobSiteProviderInfo`), `PROVIDERS` array, `getJobSiteProviders()`, `getJobSiteProvider()`, `getJobSiteProviderIds()`. Imports `Address`, `DateString` from utils. Remove `REGISTRY`, `createJobSite()`, `getJobSiteInfos()`, `getJobSiteNames()`, `SiteEntry`, `isRegistryKey`. |
 | `src/plugins/llm/index.ts` | `LlmProviderInfo` becomes explicit interface (not `Pick`), `LlmProvider` extends it. Same extend-info pattern. |
-| `src/models/applicant/applicant.ts` | `Address` interface → imports `Address` class from utils. `hasMeaningfulAddress()` → `address.isValid()`. Inline address formatting → `address.format()`. Zod schema for address uses `Address` schema/parse. |
-| `src/services/resume-renderer/prepare-resume-data.ts` | `personal.address.street`/`.zip`/`.city` → `personal.address.street`/`.zipCode`/`.city`. |
+| `src/models/applicant/applicant.ts` | `Address` interface → imports `Address` class from utils. `hasMeaningfulAddress()` → `!address.isEmpty()`. Inline address formatting → `address.format()`. Zod schema for address uses `Address.schema`. |
+| `src/services/resume-renderer/prepare-resume-data.ts` | `personal.address` is now an `Address` instance. Uses `address.format()` or individual fields. |
 | `src/plugins/job-site/dm/index.ts` | Export `DmProvider: JobSiteProvider`. Extraction returns all-required fields. |
 | `src/plugins/job-site/xing/index.ts` | Export `XingProvider: JobSiteProvider`. Extraction returns all-required fields. |
 | `src/plugins/job-site/zalando/index.ts` | Export `ZalandoProvider: JobSiteProvider`. Extraction returns all-required fields. |
