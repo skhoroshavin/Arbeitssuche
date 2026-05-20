@@ -161,8 +161,6 @@ interface CommuteDurations {
   evening: number
 }
 
-import { GoogleMapsCommuteProvider } from "./google-maps"
-
 export { GoogleMapsCommuteProvider } from "./google-maps"
 export { createStubCommuteClient } from "./stub"
 
@@ -351,57 +349,66 @@ const DistanceMatrixResponseSchema = z.object({
 })
 ```
 
-- [ ] **Step 3: Delete commute/types.ts and the stub-only test**
+- [ ] **Step 3: Update google-maps/index.test.ts for changed exports**
+
+`src/plugins/commute/google-maps/index.test.ts` imports `createGoogleMapsCommuteClient` from the sibling `index.ts`. After Step 2, that export no longer exists — the module now exports `GoogleMapsCommuteProvider`. Update the test:
+
+Replace:
+```ts
+import { createGoogleMapsCommuteClient } from "."
+```
+With:
+```ts
+import { GoogleMapsCommuteProvider } from "."
+```
+
+Replace all calls `createGoogleMapsCommuteClient("test-api-key")` with `GoogleMapsCommuteProvider.createClient("test-api-key")` (4 occurrences in the file).
+
+- [ ] **Step 4: Delete commute/types.ts and the stub-only test**
 
 ```bash
 rm src/plugins/commute/types.ts
 rm src/plugins/commute/commute.test.ts
 ```
 
-- [ ] **Step 4: Update ipc-settings.ts**
+- [ ] **Step 5: Update ipc-settings.ts (commute only)**
 
-In `src/app/ipc-settings.ts`, replace:
+In `src/app/ipc-settings.ts`, update only the commute-related imports and calls. The LLM imports (`createLlmClientForPing`) stay unchanged until Task 6.
+
+Replace the commute import line:
 ```ts
-import { getLlmProviders, createLlmClientForPing } from "@/plugins/llm"
 import { getCommuteProviders, createCommuteClient } from "@/plugins/commute"
 ```
 With:
 ```ts
-import { getLlmProviders, getLlmProvider } from "@/plugins/llm"
 import { getCommuteProviders, getCommuteProvider } from "@/plugins/commute"
 ```
 
-And in `testProviderSecret`, replace:
+In `testProviderSecret`, replace only the commute branch:
 ```ts
-const ok =
-  mapping === LLM_SECRET_KEYS
-    ? await createLlmClientForPing(providerId, value).ping()
     : await createCommuteClient(providerId, value).ping()
 ```
 With:
 ```ts
-const ok =
-  mapping === LLM_SECRET_KEYS
-    ? await getLlmProvider(providerId).ping(value)
     : await getCommuteProvider(providerId).ping(value)
 ```
 
-- [ ] **Step 5: Update create-services.ts**
+The LLM branch (`createLlmClientForPing`) remains unchanged. Task 6 will update both branches to their final form.
 
-In `src/app/composition/create-services.ts`, replace:
+- [ ] **Step 6: Update create-services.ts (commute only)**
+
+In `src/app/composition/create-services.ts`, update only the commute-related imports and calls.
+
+Replace the commute import line:
 ```ts
 import { createGoogleMapsCommuteClient } from "@/plugins/commute"
-import type { LlmClient, LlmModelRegistry } from "@/plugins/llm"
-import { createLlmClient, createModelRegistry } from "@/plugins/llm"
 ```
 With:
 ```ts
 import { GoogleMapsCommuteProvider } from "@/plugins/commute"
-import type { LlmClient, LlmModelRegistry } from "@/plugins/llm"
-import { getLlmProvider } from "@/plugins/llm"
 ```
 
-Replace the commute line:
+Replace the commute client creation:
 ```ts
 const commuteClient = googleMapsApiKey
   ? createGoogleMapsCommuteClient(googleMapsApiKey)
@@ -414,36 +421,11 @@ const commuteClient = googleMapsApiKey
   : context.commuteClient
 ```
 
-Replace the `buildLlmClient` function's fallback:
-```ts
-return createLlmClient(provider, apiKey, model)
-```
-With:
-```ts
-return getLlmProvider(provider).createClient(apiKey, model)
-```
+The LLM imports and calls (`createLlmClient`, `createModelRegistry`) stay unchanged. Task 6 will update those.
 
-Replace `createModelRegistry(provider)`:
-```ts
-const modelRegistry = context.modelRegistry ?? createModelRegistry(provider)
-```
-With:
-```ts
-const modelRegistry = context.modelRegistry ?? getLlmProvider(provider).createModelRegistry()
-```
+- [ ] **Step 7: Update settings.ts Zod schema name (commute only)**
 
-- [ ] **Step 6: Update settings.ts Zod schema name**
-
-In `src/ui/data/settings.ts`, rename `CommuteProviderInfoSchema` to `CommuteProviderSchema` and `LlmProviderInfoSchema` to `LlmProviderSchema`. The schema shapes stay identical since both serialize the same fields (id, name, instructions / id, name, description, instructions).
-
-Change:
-```ts
-const LlmProviderInfoSchema = z.object({
-```
-To:
-```ts
-const LlmProviderSchema = z.object({
-```
+In `src/ui/data/settings.ts`, rename only the commute schema:
 
 Change:
 ```ts
@@ -454,15 +436,17 @@ To:
 const CommuteProviderSchema = z.object({
 ```
 
-Update all references to these renamed variables in the same file.
+Update the reference to this renamed variable in the same file.
 
-- [ ] **Step 7: Run tests**
+The `LlmProviderInfoSchema` rename is deferred to Task 6, since the `LlmProvider` type doesn't exist yet.
+
+- [ ] **Step 8: Run tests**
 
 ```bash
 npm test -- src/plugins/commute
 ```
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add -A
@@ -745,7 +729,7 @@ import {
   createOpenAICompatibleClient,
   createModelRegistry,
   normalizeNestedPricing,
-} from "@/plugins/openai-compatible/index.js"
+} from "@/plugins/llm/openai-compatible/index.js"
 
 export const OpenRouterProvider: LlmProvider = {
   id: "openrouter",
@@ -799,7 +783,7 @@ import {
   createOpenAICompatibleClient,
   createModelRegistry,
   normalizeFlatPricing,
-} from "@/plugins/openai-compatible/index.js"
+} from "@/plugins/llm/openai-compatible/index.js"
 
 export const RequestyProvider: LlmProvider = {
   id: "requesty",
@@ -906,13 +890,71 @@ const EU_REGIONS = new Set([
 ])
 ```
 
-- [ ] **Step 6: Update remaining consumers**
+- [ ] **Step 6: Update LLM consumers**
 
-The `ipc-settings.ts` and `create-services.ts` updates were already done in Task 3 (for commute) and will be done here (for llm). Ensure all files that imported `LlmProviderInfo`, `getLlmProviders`, `createLlmClient`, `createLlmClientForPing`, or `createModelRegistry` from `@/plugins/llm` are updated:
+Task 3 only touched commute-specific code — all LLM consumer updates happen here.
 
-- `src/app/ipc-settings.ts` — already updated in Task 3 Step 4 to use `getLlmProvider`; verify `getLlmProviders` still works (it now returns `LlmProviderInfo[]`)
-- `src/app/composition/create-services.ts` — already updated in Task 3 Step 5 to use `getLlmProvider`; verify `getLlmProvider(provider).createModelRegistry()` is used
-- `src/ui/data/settings.ts` — rename `LlmProviderInfoSchema` → `LlmProviderSchema` (already covered in Task 3 Step 6 but applied here since it depends on LlmProvider being defined)
+**ipc-settings.ts:**
+
+Replace:
+```ts
+import { getLlmProviders, createLlmClientForPing } from "@/plugins/llm"
+```
+With:
+```ts
+import { getLlmProviders, getLlmProvider } from "@/plugins/llm"
+```
+
+In `testProviderSecret`, replace the LLM branch (the commute branch was already updated in Task 3):
+```ts
+    ? await createLlmClientForPing(providerId, value).ping()
+```
+With:
+```ts
+    ? await getLlmProvider(providerId).ping(value)
+```
+
+**create-services.ts:**
+
+Replace the LLM value imports:
+```ts
+import { createLlmClient, createModelRegistry } from "@/plugins/llm"
+```
+With:
+```ts
+import { getLlmProvider } from "@/plugins/llm"
+```
+
+Replace `buildLlmClient` fallback:
+```ts
+return createLlmClient(provider, apiKey, model)
+```
+With:
+```ts
+return getLlmProvider(provider).createClient(apiKey, model)
+```
+
+Replace `createModelRegistry(provider)` call:
+```ts
+const modelRegistry = context.modelRegistry ?? createModelRegistry(provider)
+```
+With:
+```ts
+const modelRegistry = context.modelRegistry ?? getLlmProvider(provider).createModelRegistry()
+```
+
+**settings.ts:**
+
+Rename `LlmProviderInfoSchema` → `LlmProviderSchema`:
+```ts
+const LlmProviderInfoSchema = z.object({
+```
+→
+```ts
+const LlmProviderSchema = z.object({
+```
+
+Update all references to this variable in the same file.
 
 - [ ] **Step 7: Run tests**
 
@@ -1093,15 +1135,90 @@ git commit -m "refactor: inline job-site types, move JobPostingJsonLd to site-lo
 
 ---
 
-## Task 8: Verify openai-compatible still works
+## Task 8: Move openai-compatible source into plugins/llm/openai-compatible/
 
-- [ ] **Step 1: Verify openai-compatible tests still pass**
+> **Execute this task BEFORE Task 6.** Task 6 writes new provider files that import from the moved location.
+
+**Files:**
+- Move: `src/plugins/openai-compatible/index.ts` → `src/plugins/llm/openai-compatible/index.ts` (merged)
+- Move: `src/plugins/openai-compatible/strict-schema.ts` → `src/plugins/llm/openai-compatible/strict-schema.ts`
+- Modify: `src/plugins/llm/openrouter/index.ts`
+- Modify: `src/plugins/llm/requesty/index.ts`
+- Delete: `src/plugins/openai-compatible/` directory
+
+Currently the source lives at `src/plugins/openai-compatible/` (sibling of `llm/`) while tests live at `src/plugins/llm/openai-compatible/` behind a thin re-export wrapper. Move the source files into `src/plugins/llm/openai-compatible/` so implementation and tests are co-located.
+
+- [ ] **Step 1: Merge openai-compatible/index.ts**
+
+The existing `src/plugins/llm/openai-compatible/index.ts` is a thin re-export:
+```ts
+export {
+  createModelRegistry,
+  createOpenAICompatibleClient,
+  normalizeFlatPricing,
+  normalizeNestedPricing,
+  toStrictSchema,
+} from "@/plugins/openai-compatible/index.js"
+```
+
+Replace it with the contents of `src/plugins/openai-compatible/index.ts`. No other changes — the file now contains the actual implementation directly.
+
+- [ ] **Step 2: Move strict-schema.ts**
+
+```bash
+cp src/plugins/openai-compatible/strict-schema.ts src/plugins/llm/openai-compatible/strict-schema.ts
+```
+
+The existing `strict-schema.ts` import (`from "./strict-schema.js"`) in the merged index.ts still works — `strict-schema.ts` is now a sibling file.
+
+- [ ] **Step 3: Update openrouter and requesty imports**
+
+In `src/plugins/llm/openrouter/index.ts`, replace:
+```ts
+} from "@/plugins/openai-compatible/index.js"
+```
+With:
+```ts
+} from "@/plugins/llm/openai-compatible/index.js"
+```
+
+In `src/plugins/llm/requesty/index.ts`, replace:
+```ts
+} from "@/plugins/openai-compatible/index.js"
+```
+With:
+```ts
+} from "@/plugins/llm/openai-compatible/index.js"
+```
+
+- [ ] **Step 4: Delete the old openai-compatible directory**
+
+```bash
+rm -rf src/plugins/openai-compatible/
+```
+
+- [ ] **Step 5: Verify no stale import references**
+
+```bash
+rg "@/plugins/openai-compatible" src/
+```
+
+Expected: no results.
+
+- [ ] **Step 6: Run tests**
 
 ```bash
 npm test -- src/plugins/llm/openai-compatible/
 ```
 
-The `openai-compatible` module remains a shared internal utility. No structural changes needed — Task 6 already converted the top-level LLM factories to `LlmProvider` objects.
+Expected: All pass (tests import from `.` / the sibling index.ts, which now holds the real implementation).
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add -A
+git commit -m "refactor: move openai-compatible source into plugins/llm/, merge with test wrapper"
+```
 
 ---
 

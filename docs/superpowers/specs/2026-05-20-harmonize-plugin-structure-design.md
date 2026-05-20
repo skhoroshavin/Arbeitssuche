@@ -7,7 +7,7 @@ Several structural inconsistencies across `src/plugins/`:
 1. **`types.ts` inconsistency** — some plugins define interfaces in `types.ts`, others in `index.ts`. The simpler pattern (interfaces directly in `index.ts`) should be the default; `types.ts` only when the type surface is large.
 2. **`job-site/types.ts`** — mixes public contract types with site-specific JSON-LD types (`JobPostingJsonLd`, `JobPostingAddress`) that belong in xing/ and dm/ respectively.
 3. **`plugins/fetch/`** — only a type alias + test stub, with no production implementation. The type can live at its sole consumer (arbeitsagentur), and `FetchStub` belongs in utils.
-4. **`plugins/openai-compatible/`** — should become a proper provider class, and `LlmProviderInfo` / `CommuteProviderInfo` should be upgraded to full provider interfaces.
+4. **`plugins/openai-compatible/`** — lives as a sibling of `plugins/llm/` at the root plugins level, while its tests live under `plugins/llm/openai-compatible/` behind a thin re-export wrapper. Move the source into `plugins/llm/openai-compatible/`, merge with the wrapper, and upgrade `LlmProviderInfo` / `CommuteProviderInfo` to full provider interfaces with factory methods (`createClient`, `createModelRegistry`, `ping`).
 5. **Plugin-level test naming** — inconsistency between `.test.ts` and `.integration-test.ts`; plugin-level tests should be `integration.test.ts`.
 6. **Stale stub tests** — `pdf-renderer` test only exercises the stub (delete it); `commute` test only exercises the stub (replace with real integration test calling Google Maps API).
 
@@ -29,9 +29,9 @@ with:
 
 with:
 
-> Test suffixes: `.test.ts`, `.test.tsx`, `.test-suite.ts`, `.integration.test.ts`.
+> Test suffixes: `.test.ts`, `.test.tsx`, `.test-suite.ts`.
 
-Update `vitest.integration.config.ts` include pattern from `*.integration-test.ts` to `*.integration.test.ts`.
+Update `vitest.integration.config.ts` include pattern from `src/plugins/job-site/*.integration-test.ts` to `src/plugins/**/integration.test.ts`. This adopts the new suffix convention and broadens the scope to cover integration tests across all plugins (commute, llm, etc.).
 
 ### 2. Inline and delete `types.ts` files
 
@@ -57,9 +57,11 @@ The `Fetch` type alias has a single consumer (`arbeitsagentur`), and `FetchStub`
 - Delete `src/plugins/fetch/types.ts` and `src/plugins/fetch/stub/index.ts` and the `src/plugins/fetch/` directory.
 - Update imports in `src/plugins/commute/google-maps/index.test.ts` and `src/plugins/job-site/arbeitsagentur/index.test.ts` to import `FetchStub` from `@/utils`.
 
-### 4. Convert `openai-compatible` to a provider class
+### 4. Move `openai-compatible` into `plugins/llm/` and upgrade to provider objects
 
-Create an `OpenAICompatibleProvider` class that bundles metadata + client creation + model registry:
+Currently `plugins/openai-compatible/` (source) and `plugins/llm/openai-compatible/` (thin re-export + tests) are separate directories. Move the source files (`index.ts`, `strict-schema.ts`) from `plugins/openai-compatible/` into `plugins/llm/openai-compatible/`, merging the two `index.ts` files. The re-export wrapper disappears — the implementation and its tests now live together.
+
+Then introduce the `LlmProvider` interface that bundles metadata + client creation + model registry:
 
 ```ts
 interface LlmProvider {
@@ -73,10 +75,11 @@ interface LlmProvider {
 }
 ```
 
-- `OpenAICompatibleProvider` extends this interface with `baseUrl` and config-based construction. OpenRouter and Requesty become thin subclasses or instances that set `baseUrl`, `providerName`, and pricing normalization.
-- The existing `LlmProviderInfo` interface is replaced by `LlmProvider` (which includes the old fields plus factory methods).
+- `OpenRouterProvider` and `RequestyProvider` become provider objects implementing `LlmProvider`. They delegate to the (now-co-located) `openai-compatible` utility functions internally.
+- The existing `LlmProviderInfo` interface is replaced by `LlmProvider` (which includes the old fields plus factory methods). `LlmProviderInfo` is preserved as `Pick<LlmProvider, "id" | "name" | "description" | "instructions">` for the serializable subset sent over IPC.
 - The existing `createLlmClient`, `createLlmClientForPing`, `createModelRegistry`, and `getLlmProviders` functions in `llm/index.ts` are replaced by a registry/routing that dispatches by provider ID to an `LlmProvider` instance.
-- `normalizeNestedPricing` and `normalizeFlatPricing` become methods or stay as utilities internally — consumer code never calls them directly.
+- `normalizeNestedPricing` and `normalizeFlatPricing` stay as internal utilities — consumer code never calls them directly.
+- Delete the now-empty `plugins/openai-compatible/` directory.
 
 ### 5. Convert `CommuteProviderInfo` to `CommuteProvider` interface
 
