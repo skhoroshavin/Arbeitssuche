@@ -1,41 +1,46 @@
 import {
   useCommuteSecrets,
-  useCommuteProviderListView,
   useProviderSecretActions,
   resolveSecret,
 } from "@/ui/data"
+
 import { PageHeader, Loading } from "@/ui/components"
+
 import { ProviderSecretCard } from "@/ui/pages/settings/components"
 
 export default function SettingsMaps() {
-  const mapData = useMapSettingsData()
-  const actions = useProviderSecretActions("commute", mapData.providerId)
+  const { data: secrets, isLoading } = useCommuteSecrets()
+  const secret = resolveSecret(secrets, PROVIDER_ID)
+  const actions = useProviderSecretActions("commute", PROVIDER_ID)
 
-  if (mapData.isLoading) return <Loading />
+  if (isLoading) return <Loading />
 
   return (
     <>
       <PageHeader title="Karten" />
-      {mapData.provider && (
-        <ProviderSecretCard
-          providerName={mapData.provider.name}
-          instructions={mapData.provider.instructions}
-          masked={mapData.masked}
-          isSet={mapData.isSet}
-          onSave={actions.onSave}
-          onClear={actions.onClear}
-          onTest={actions.onTest}
-        />
-      )}
+      <ProviderSecretCard
+        providerName="Google Maps"
+        instructions={PROVIDER_INSTRUCTIONS}
+        masked={secret.masked}
+        isSet={secret.isSet}
+        onSave={actions.onSave}
+        onClear={actions.onClear}
+        onTest={actions.onTest}
+      />
     </>
   )
 }
 
-function useMapSettingsData() {
-  const { data: secrets, isLoading } = useCommuteSecrets()
-  const { data: providers } = useCommuteProviderListView()
-  const provider = providers.find((candidate) => candidate.id === "google-maps")
-  const providerId = provider ? provider.id : "google-maps"
-  const secret = resolveSecret(secrets, providerId)
-  return { isLoading, provider, providerId, ...secret }
-}
+const PROVIDER_ID = "google-maps"
+
+const PROVIDER_INSTRUCTIONS = [
+  "1. Öffne die [Google Cloud Console](https://console.cloud.google.com)",
+  "2. Erstelle ein [neues Projekt](https://console.cloud.google.com/projectcreate) oder wähle ein bestehendes aus",
+  "3. Aktiviere die [Abrechnung](https://console.cloud.google.com/billing) für das Projekt (erforderlich für API-Zugriff)",
+  '4. Öffne die [API-Bibliothek](https://console.cloud.google.com/apis/library) und suche nach "Distance Matrix API"',
+  '5. Klicke auf [Distance Matrix API](https://console.cloud.google.com/apis/library/distance-matrix-backend.googleapis.com) → "Aktivieren"',
+  '6. Gehe zu [Anmeldedaten](https://console.cloud.google.com/apis/credentials) → "Anmeldedaten erstellen" → "API-Schlüssel"',
+  '7. Klicke auf "Schlüssel einschränken" und wähle unter "API-Einschränkungen" nur die Distance Matrix API',
+  "8. Kopiere den Schlüssel - er beginnt mit `AIza...`",
+  "9. Füge ihn oben ein",
+].join("\n")

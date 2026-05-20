@@ -2,21 +2,9 @@ import { GoogleMapsCommuteProvider } from "./google-maps"
 
 export { GoogleMapsCommuteProvider } from "./google-maps"
 
-export function getCommuteProviders(): readonly CommuteProviderInfo[] {
-  return PROVIDERS.map(({ id, name, instructions }) => ({
-    id,
-    name,
-    instructions,
-  }))
-}
-
-export type CommuteProviderInfo = Pick<
-  CommuteProvider,
-  "id" | "name" | "instructions"
->
-
 export function getCommuteProvider(providerId: string): CommuteProvider {
-  const provider = PROVIDERS.find((p) => p.id === providerId)
+  const providers: readonly CommuteProvider[] = [GoogleMapsCommuteProvider]
+  const provider = providers.find((p) => p.id === providerId)
   if (!provider) {
     throw new Error(`Unknown commute provider: ${providerId}`)
   }
@@ -45,8 +33,6 @@ export interface CommuteResult {
   durations: CommuteDurations
   fetchedAt: string
 }
-
-const PROVIDERS: readonly CommuteProvider[] = [GoogleMapsCommuteProvider]
 
 interface CommuteDurations {
   morning: number

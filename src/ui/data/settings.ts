@@ -41,14 +41,6 @@ export function resolveSecret(
 
 // --- Provider info ---
 
-export function useCommuteProviderListView() {
-  const query = useCommuteProviders()
-  return {
-    ...query,
-    data: query.data ?? [],
-  }
-}
-
 // --- API key status (used across the app) ---
 
 export function useApiKeyStatus(): {
@@ -109,16 +101,6 @@ const EMPTY_MASKED_SECRET: MaskedSecret = { masked: "", isSet: false }
 
 function useLlmSecrets() {
   return llmHooks.useSecrets()
-}
-
-function useCommuteProviders() {
-  return useQuery({
-    queryKey: ["commute-providers"],
-    queryFn: async () =>
-      z
-        .array(CommuteProviderSchema)
-        .parse(await api().invoke("settings:commute-providers")),
-  })
 }
 
 function useResolvedConfig() {
@@ -218,12 +200,6 @@ const LlmProviderSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
-  instructions: z.string(),
-})
-
-const CommuteProviderSchema = z.object({
-  id: z.string(),
-  name: z.string(),
   instructions: z.string(),
 })
 

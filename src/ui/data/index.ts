@@ -41,7 +41,6 @@ export {
 export {
   useProviderSecretActions,
   resolveSecret,
-  useCommuteProviderListView,
   useApiKeyStatus,
   useAISettingsView,
   useCommuteSecrets,

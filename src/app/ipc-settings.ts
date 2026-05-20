@@ -1,7 +1,7 @@
 import type { ConfigKey } from "@/models/config"
 import { getJobSiteInfos } from "@/plugins/job-site"
 import { getLlmProviders, getLlmProvider } from "@/plugins/llm"
-import { getCommuteProviders, getCommuteProvider } from "@/plugins/commute"
+import { getCommuteProvider } from "@/plugins/commute"
 import {
   LLM_SECRET_KEYS,
   COMMUTE_SECRET_KEYS,
@@ -48,8 +48,6 @@ export function registerSettingsHandlers(
   )
 
   handle("settings:llm-providers", () => getLlmProviders())
-  handle("settings:commute-providers", () => getCommuteProviders())
-
   handle("settings:llm-models", () => services.modelRegistry.fetchModels())
 
   handle("settings:config:load", () => services.configRepo.loadConfig())
