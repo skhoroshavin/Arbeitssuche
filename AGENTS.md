@@ -17,8 +17,8 @@ Guidelines for autonomous coding agents in this repository.
 | `npm run fix` | Auto-fix lint, formatting, unused deps. **Always run first.** |
 | `npm test -- <file>` | Single vitest unit/component test |
 | `npm test -- -t "<pattern>"` | Filter vitest by test name |
-| `npm run test:crawler:<site>` | Single-site crawler (arbeitsagentur, xing, zalando, dm) |
-| `npx vitest run --config vitest.integration.config.ts <file>` | Single integration test |
+| `npm run test:integration -- <file>` | Single integration test file |
+| `npm run test:integration -- -t "<pattern>"` | Filter integration tests by name |
 | `npx playwright test <spec> --config=e2e/playwright.electron.config.ts` | Single E2E spec |
 | `npx playwright test <spec> --config=e2e/playwright.visual.config.ts` | Single visual spec |
 
@@ -29,6 +29,7 @@ Guidelines for autonomous coding agents in this repository.
 | Layer | May Import |
 |---|---|
 | `utils` | (shared — no declared imports) |
+| `test-helpers` | (shared — no declared imports) |
 | `models/*` | `models/*` |
 | `plugins/*` | `plugins/*`, `utils` |
 | `repositories/*` | `repositories/*`, `models/*`, `plugins/*`, `utils` |
@@ -44,11 +45,11 @@ Guidelines for autonomous coding agents in this repository.
 
 - **No parent imports** (`../`) under `src/`. Use `@/` for cross-module, `./` for same-module.
 - **Public surfaces:** Cross-module imports must go through `index.ts`. Prefer defining interfaces directly in `index.ts`; extract to a separate file only when the type surface is large enough to hurt readability.
-- **File naming:** `*.ts`, `*.tsx` → `kebab-case`. Test suffixes: `.test.ts`, `.test.tsx`, `.test-suite.ts`, `.integration.test.ts`.
+- **File naming:** `*.ts`, `*.tsx` → `kebab-case`. Test suffixes: `.test.ts`, `.test.tsx`, `.test-suite.ts`. Integration test filename: `integration.test.ts`.
 - **Complexity:** max cyclomatic complexity `7`. Max file length: `500` lines (`80` for `src/utils/*.ts`).
 - **No type assertions** (`as` / angle-brackets, but `as const` is still allowed) and **no non-null assertions** (`!`).
 - **Destructure component props** in function signatures.
-- **Shared modules** (`utils`, `ui/components`) must be consumed by **at least 2 packages**. If a symbol only has one consumer, move it into that consumer's package — don't leave it in shared.
+- **Shared modules** (`utils`, `ui/components`, `test-helpers`) must be consumed by **at least 2 packages**. If a symbol only has one consumer, move it into that consumer's package — don't leave it in shared.
 - **Tests must import only public surfaces** (`index.ts`). No white-box testing against internal modules.
 
 ### Structural Patterns

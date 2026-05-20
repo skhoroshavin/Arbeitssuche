@@ -1,8 +1,5 @@
 export { extractJsonLd } from "./json-ld.js"
 export { normalizeAndJoinText, normalizeOptionalText } from "./normalize.js"
 export { isRecord, stringField } from "./reflection.js"
-export { setupTemporaryDatabaseDirectory } from "./test-utilities.js"
 export { Database, Statement } from "./database.js"
-export { HttpStub } from "./http-stub.js"
-export { FetchStub } from "./fetch-stub.js"
 export { semverGreaterThan } from "./semver.js"

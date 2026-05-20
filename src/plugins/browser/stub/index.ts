@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import path from "node:path"
 import { gunzipSync } from "node:zlib"
 import { z } from "zod"
-import { HttpStub } from "@/utils/index.js"
+import { HttpStub } from "@/test-helpers"
 import type { Browser, Page, OpenPageOptions } from "@/plugins/browser"
 
 export class BrowserStub extends HttpStub<string> implements Browser {

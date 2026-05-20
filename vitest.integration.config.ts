@@ -12,7 +12,10 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["src/plugins/**/integration.test.ts"],
+    include: [
+      "src/plugins/**/integration.test.ts",
+      "src/repositories/**/integration.test.ts",
+    ],
     testTimeout: 60_000,
     env: {
       GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY ?? "",
