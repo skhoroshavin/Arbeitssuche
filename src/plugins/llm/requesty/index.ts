@@ -1,25 +1,11 @@
+import type { LlmClient, LlmModelInfo, LlmModelRegistry, LlmProvider } from "@/plugins/llm"
 import {
-  createModelRegistry,
   createOpenAICompatibleClient,
+  createModelRegistry,
   normalizeFlatPricing,
 } from "@/plugins/llm/openai-compatible/index.js"
-import type {
-  LlmClient,
-  LlmModelInfo,
-  LlmModelRegistry,
-  LlmProviderInfo,
-} from "@/plugins/llm"
 
-export function createRequestyClient(apiKey: string, model: string): LlmClient {
-  return createOpenAICompatibleClient(
-    "https://router.eu.requesty.ai/v1",
-    apiKey,
-    model,
-    "Requesty",
-  )
-}
-
-export const requestyProviderInfo: LlmProviderInfo = {
+export const RequestyProvider: LlmProvider = {
   id: "requesty",
   name: "Requesty",
   description: "EU-Datenverarbeitung",
@@ -31,19 +17,33 @@ export const requestyProviderInfo: LlmProviderInfo = {
     "5. Kopiere den Schlüssel",
     "6. Füge ihn oben ein",
   ].join("\n"),
-}
-
-export function createRequestyModelRegistry(): LlmModelRegistry {
-  const inner = createModelRegistry(
-    "https://router.eu.requesty.ai/v1/models",
-    (m) => ({
-      id: String(m.id),
-      name: typeof m.name === "string" ? m.name : deriveModelName(String(m.id)),
-      pricing: normalizeFlatPricing(m),
-    }),
-  )
-
-  return new EuFilteredModelRegistry(inner)
+  createClient(apiKey: string, model: string): LlmClient {
+    return createOpenAICompatibleClient(
+      "https://router.eu.requesty.ai/v1",
+      apiKey,
+      model,
+      "Requesty",
+    )
+  },
+  createModelRegistry(): LlmModelRegistry {
+    const inner = createModelRegistry(
+      "https://router.eu.requesty.ai/v1/models",
+      (m) => ({
+        id: String(m.id),
+        name: typeof m.name === "string" ? m.name : deriveModelName(String(m.id)),
+        pricing: normalizeFlatPricing(m),
+      }),
+    )
+    return new EuFilteredModelRegistry(inner)
+  },
+  async ping(apiKey: string): Promise<boolean> {
+    return createOpenAICompatibleClient(
+      "https://router.eu.requesty.ai/v1",
+      apiKey,
+      "",
+      "Requesty",
+    ).ping()
+  },
 }
 
 class EuFilteredModelRegistry implements LlmModelRegistry {

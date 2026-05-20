@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest"
-import { createOpenRouterModelRegistry } from "."
+import { OpenRouterProvider } from "."
 
 describe("createOpenRouterModelRegistry", () => {
   const originalFetch = globalThis.fetch
@@ -30,7 +30,7 @@ describe("createOpenRouterModelRegistry", () => {
       ],
     })
 
-    const registry = createOpenRouterModelRegistry()
+    const registry = OpenRouterProvider.createModelRegistry()
     const models = await registry.fetchModels()
 
     for (const model of models) {
@@ -50,7 +50,7 @@ describe("createOpenRouterModelRegistry", () => {
       ],
     })
 
-    const registry = createOpenRouterModelRegistry()
+    const registry = OpenRouterProvider.createModelRegistry()
     const models = await registry.fetchModels()
 
     expect(models[0].pricing.prompt).toBe("0.000003")
@@ -62,7 +62,7 @@ describe("createOpenRouterModelRegistry", () => {
       data: [{ id: "test/model", name: "Test Model" }],
     })
 
-    const registry = createOpenRouterModelRegistry()
+    const registry = OpenRouterProvider.createModelRegistry()
     const models = await registry.fetchModels()
 
     expect(models[0].pricing.prompt).toBe("0")

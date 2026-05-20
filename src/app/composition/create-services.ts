@@ -5,7 +5,7 @@ import type { JobSearchRepository } from "@/repositories/job-search"
 import type { VacancyRepository } from "@/repositories/vacancy"
 import { GoogleMapsCommuteProvider } from "@/plugins/commute"
 import type { LlmClient, LlmModelRegistry } from "@/plugins/llm"
-import { createLlmClient, createModelRegistry } from "@/plugins/llm"
+import { getLlmProvider } from "@/plugins/llm"
 import { getJobSiteNames } from "@/plugins/job-site"
 import { createElectronPdfRenderer } from "@/plugins/pdf-renderer"
 import { CoverLetterWriter } from "@/services/cover-letter-writer/index.js"
@@ -38,7 +38,7 @@ export function createAppServices(context: ServiceContext): AppServices {
       ? GoogleMapsCommuteProvider.createClient(googleMapsApiKey)
       : context.commuteClient
 
-    const modelRegistry = context.modelRegistry ?? createModelRegistry(provider)
+    const modelRegistry = context.modelRegistry ?? getLlmProvider(provider).createModelRegistry()
 
     const vacancyEnricher = new VacancyEnricher({
       llmClient: assessmentLlm,
@@ -128,7 +128,7 @@ function buildLlmClient(
     }
   }
   if (!apiKey) return undefined
-  return createLlmClient(provider, apiKey, model)
+  return getLlmProvider(provider).createClient(apiKey, model)
 }
 
 function getProviderApiKey(

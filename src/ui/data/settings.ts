@@ -4,7 +4,7 @@ import { z } from "zod"
 
 import type { MaskedSecret } from "@/models/secrets"
 
-import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config"
+import type { ConfigKey, LlmModel, LlmProviderId } from "@/models/config"
 
 import { Config, DEFAULT_PROVIDER } from "@/models/config"
 
@@ -61,7 +61,7 @@ export function useApiKeyStatus(): {
     useCommuteSecrets()
   const { data: config, isLoading: configLoading } = useConfig()
 
-  const provider: LlmProvider = config?.provider ?? DEFAULT_PROVIDER
+  const provider: LlmProviderId = config?.provider ?? DEFAULT_PROVIDER
   const isLoading = llmLoading || commuteLoading || configLoading
 
   return {
@@ -100,7 +100,7 @@ export function useLlmProviders() {
     queryKey: ["llm-providers"],
     queryFn: async () =>
       z
-        .array(LlmProviderInfoSchema)
+        .array(LlmProviderSchema)
         .parse(await api().invoke("settings:llm-providers")),
   })
 }
@@ -214,7 +214,7 @@ function useLlmModels() {
   })
 }
 
-const LlmProviderInfoSchema = z.object({
+const LlmProviderSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),

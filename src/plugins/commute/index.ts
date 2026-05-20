@@ -35,6 +35,8 @@ interface CommuteDurations {
 export { GoogleMapsCommuteProvider } from "./google-maps"
 export { createStubCommuteClient } from "./stub"
 
+import { GoogleMapsCommuteProvider } from "./google-maps"
+
 const PROVIDERS: readonly CommuteProvider[] = [GoogleMapsCommuteProvider]
 
 export function getCommuteProviders(): readonly CommuteProviderInfo[] {

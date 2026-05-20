@@ -1,27 +1,11 @@
+import type { LlmClient, LlmModelRegistry, LlmProvider } from "@/plugins/llm"
 import {
-  createModelRegistry,
   createOpenAICompatibleClient,
+  createModelRegistry,
   normalizeNestedPricing,
 } from "@/plugins/llm/openai-compatible/index.js"
-import type {
-  LlmClient,
-  LlmModelRegistry,
-  LlmProviderInfo,
-} from "@/plugins/llm"
 
-export function createOpenRouterClient(
-  apiKey: string,
-  model: string,
-): LlmClient {
-  return createOpenAICompatibleClient(
-    "https://openrouter.ai/api/v1",
-    apiKey,
-    model,
-    "OpenRouter",
-  )
-}
-
-export const openrouterProviderInfo: LlmProviderInfo = {
+export const OpenRouterProvider: LlmProvider = {
   id: "openrouter",
   name: "OpenRouter",
   description: "Global",
@@ -34,12 +18,30 @@ export const openrouterProviderInfo: LlmProviderInfo = {
     "6. Kopiere den Schlüssel - er beginnt mit `sk-or-...`",
     "7. Füge ihn oben ein",
   ].join("\n"),
-}
-
-export function createOpenRouterModelRegistry(): LlmModelRegistry {
-  return createModelRegistry("https://openrouter.ai/api/v1/models", (m) => ({
-    id: String(m.id),
-    name: String(m.name),
-    pricing: normalizeNestedPricing(m.pricing),
-  }))
+  createClient(apiKey: string, model: string): LlmClient {
+    return createOpenAICompatibleClient(
+      "https://openrouter.ai/api/v1",
+      apiKey,
+      model,
+      "OpenRouter",
+    )
+  },
+  createModelRegistry(): LlmModelRegistry {
+    return createModelRegistry(
+      "https://openrouter.ai/api/v1/models",
+      (m) => ({
+        id: String(m.id),
+        name: String(m.name),
+        pricing: normalizeNestedPricing(m.pricing),
+      }),
+    )
+  },
+  async ping(apiKey: string): Promise<boolean> {
+    return createOpenAICompatibleClient(
+      "https://openrouter.ai/api/v1",
+      apiKey,
+      "",
+      "OpenRouter",
+    ).ping()
+  },
 }
