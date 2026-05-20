@@ -8,7 +8,7 @@ import type {
 } from "@/plugins/job-site"
 import type { JobSearchCriteria } from "@/models/job-search"
 import { BrowserStub } from "@/plugins/browser"
-import { Address } from "@/utils/index.js"
+import { Address } from "@/models/common"
 
 describe("SiteCrawler", () => {
   it("calls onResult for each vacancy detail fetched", async () => {

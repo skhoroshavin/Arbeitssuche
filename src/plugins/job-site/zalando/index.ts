@@ -6,7 +6,7 @@ import type {
   SearchCriteria,
   VacancyDetails,
 } from "@/plugins/job-site"
-import { Address } from "@/utils/index.js"
+import { Address } from "@/models/common"
 import { makeDateString } from "../date-string.js"
 import { extractAbsoluteLinks } from "@/plugins/job-site/utils/index.js"
 import { normalizeOptionalText } from "@/utils/index.js"

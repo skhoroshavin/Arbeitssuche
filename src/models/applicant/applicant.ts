@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { Address } from "@/utils/index.js"
+import { Address } from "@/models/common"
 
 export class Applicant {
   constructor() {

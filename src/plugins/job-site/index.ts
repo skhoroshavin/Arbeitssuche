@@ -1,5 +1,5 @@
 import type { Browser } from "@/plugins/browser"
-import type { Address } from "@/utils/index.js"
+import type { Address } from "@/models/common"
 import type { DateString } from "./date-string.js"
 
 export { makeDateString } from "./date-string.js"

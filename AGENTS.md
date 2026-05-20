@@ -30,8 +30,8 @@ Guidelines for autonomous coding agents in this repository.
 |---|---|
 | `utils` | (shared — no declared imports) |
 | `test-helpers` | (shared — no declared imports) |
-| `models/*` | `models/*`, `utils` |
-| `plugins/*` | `plugins/*`, `utils` |
+| `models/*` | `models/*` |
+| `plugins/*` | `plugins/*`, `utils`, `models/common` |
 | `repositories/*` | `repositories/*`, `models/*`, `plugins/*`, `utils` |
 | `services/*` | `services/*`, `repositories/*`, `plugins/*`, `models/*`, `utils` |
 | `app`, `app/*` | `app/*`, `utils`, `models/*`, `plugins/*`, `repositories/*`, `services/*` |

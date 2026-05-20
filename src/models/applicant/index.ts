@@ -1,4 +1,4 @@
-export { Address } from "@/utils/index.js"
+export { Address } from "@/models/common"
 
 export type {
   ApplicantSkill,
