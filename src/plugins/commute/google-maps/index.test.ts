@@ -1,6 +1,6 @@
 import { test, describe, expect } from "vitest"
 import { GoogleMapsCommuteProvider } from "."
-import { FetchStub } from "@/plugins/fetch"
+import { FetchStub } from "@/utils"
 
 const API_PATTERN = "maps.googleapis.com/maps/api/distancematrix"
 

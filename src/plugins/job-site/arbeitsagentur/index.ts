@@ -2,7 +2,7 @@ import { z } from "zod"
 
 import type { Browser } from "@/plugins/browser"
 
-import type { Fetch } from "@/plugins/fetch"
+type Fetch = (url: string, init?: RequestInit) => Promise<Response>
 
 import type {
   VacancyDetails,
