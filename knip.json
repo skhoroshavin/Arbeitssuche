@@ -7,7 +7,7 @@
     "electron.vite.config.ts"
   ],
   "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts"],
-  "ignoreDependencies": ["@tailwindcss/typography", "tailwindcss"],
+  "ignoreDependencies": ["@tailwindcss/typography", "tailwindcss", "dotenv"],
   "eslint": {
     "config": ["eslint.config.ts"],
     "entry": ["eslint/**/*.ts"]

@@ -3,7 +3,11 @@ import { GoogleMapsCommuteProvider } from "./google-maps"
 export { GoogleMapsCommuteProvider } from "./google-maps"
 
 export function getCommuteProviders(): readonly CommuteProviderInfo[] {
-  return PROVIDERS
+  return PROVIDERS.map(({ id, name, instructions }) => ({
+    id,
+    name,
+    instructions,
+  }))
 }
 
 export type CommuteProviderInfo = Pick<

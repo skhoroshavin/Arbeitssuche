@@ -8,7 +8,12 @@ export interface TypedSchema<T> {
 }
 
 export function getLlmProviders(): readonly LlmProviderInfo[] {
-  return PROVIDERS
+  return PROVIDERS.map(({ id, name, description, instructions }) => ({
+    id,
+    name,
+    description,
+    instructions,
+  }))
 }
 
 export type LlmProviderInfo = Pick<
