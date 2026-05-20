@@ -33,7 +33,7 @@ With:
 In `vitest.integration.config.ts`, change the include pattern to match the new convention and broaden to cover all plugin integration tests:
 
 ```ts
-include: ["src/plugins/**/*.integration.test.ts"],
+include: ["src/plugins/**/integration.test.ts"],
 ```
 
 - [ ] **Step 4: Commit**
@@ -49,10 +49,6 @@ git commit -m "docs: update public surfaces rule and test suffix convention"
 
 **Files:**
 - Modify: `src/plugins/browser/index.ts`
-- Modify: `src/plugins/browser/electron/index.ts`
-- Modify: `src/plugins/browser/stub/index.ts`
-- Modify: `src/plugins/browser/playwright/index.ts`
-- Modify: `src/plugins/job-site/utils/index.ts`
 - Delete: `src/plugins/browser/types.ts`
 
 - [ ] **Step 1: Move interface definitions into browser/index.ts**
@@ -120,19 +116,16 @@ git commit -m "refactor: inline browser types into index.ts, delete types.ts"
 **Files:**
 - Modify: `src/plugins/commute/index.ts`
 - Modify: `src/plugins/commute/google-maps/index.ts`
-- Modify: `src/plugins/commute/stub/index.ts`
+- Modify: `src/app/ipc-settings.ts`
+- Modify: `src/app/composition/create-services.ts`
+- Modify: `src/ui/data/settings.ts`
 - Delete: `src/plugins/commute/types.ts`
+- Delete: `src/plugins/commute/commute.test.ts`
 
-This task has two parts: (a) inline types, (b) convert `CommuteProviderInfo` → `CommuteProvider`.
+`CommuteProvider` has methods (`createClient`, `ping`) that won't survive Electron IPC serialization. The existing `CommuteProviderInfo` shape (id, name, instructions) is what the UI needs over IPC. We keep `CommuteProviderInfo` as a `Pick` type for the serializable subset.
 
 - [ ] **Step 1: Write the new commute/index.ts**
 
-The current `types.ts` exports: `CommuteClient`, `CommuteResult`, `CommuteProviderInfo`, and an internal `CommuteDurations`.
-
-Replace `CommuteProviderInfo` with `CommuteProvider` (which adds `createClient` and `ping`).
-
-Write `src/plugins/commute/index.ts`:
-
 ```ts
 export interface CommuteClient {
   getCommute(
@@ -157,57 +150,10 @@ export interface CommuteProvider {
   ping(apiKey: string): Promise<boolean>
 }
 
-interface CommuteDurations {
-  morning: number
-  day: number
-  evening: number
-}
-
-export { GoogleMapsCommuteProvider } from "./google-maps"
-export { createStubCommuteClient } from "./stub"
-
-const PROVIDERS: CommuteProvider[] = []
-
-export function getCommuteProviders(): CommuteProvider[] {
-  return PROVIDERS
-}
-
-export function getCommuteProvider(providerId: string): CommuteProvider {
-  const provider = PROVIDERS.find((p) => p.id === providerId)
-  if (!provider) {
-    throw new Error(`Unknown commute provider: ${providerId}`)
-  }
-  return provider
-}
-```
-
-Wait — we need to register `GoogleMapsCommuteProvider` in the PROVIDERS array. That requires importing it at module level. We'll do that.
-
-Write `src/plugins/commute/index.ts`:
-
-```ts
-export interface CommuteClient {
-  getCommute(
-    origin: string,
-    destination: string,
-    signal?: AbortSignal,
-  ): Promise<CommuteResult>
-  ping(): Promise<boolean>
-}
-
-export interface CommuteResult {
-  distance: string
-  durations: CommuteDurations
-  fetchedAt: string
-}
-
-export interface CommuteProvider {
-  readonly id: string
-  readonly name: string
-  readonly instructions: string
-  createClient(apiKey: string): CommuteClient
-  ping(apiKey: string): Promise<boolean>
-}
+export type CommuteProviderInfo = Pick<
+  CommuteProvider,
+  "id" | "name" | "instructions"
+>
 
 interface CommuteDurations {
   morning: number
@@ -222,7 +168,7 @@ export { createStubCommuteClient } from "./stub"
 
 const PROVIDERS: readonly CommuteProvider[] = [GoogleMapsCommuteProvider]
 
-export function getCommuteProviders(): readonly CommuteProvider[] {
+export function getCommuteProviders(): readonly CommuteProviderInfo[] {
   return PROVIDERS
 }
 
@@ -237,7 +183,7 @@ export function getCommuteProvider(providerId: string): CommuteProvider {
 
 - [ ] **Step 2: Refactor google-maps/index.ts to export a CommuteProvider**
 
-The current file exports `createGoogleMapsCommuteClient` (factory) and `googleMapsProviderInfo` (data). Replace with a `GoogleMapsCommuteProvider` object implementing `CommuteProvider`.
+Replace the current exports (`createGoogleMapsCommuteClient` factory, `googleMapsProviderInfo` data object) with a single `GoogleMapsCommuteProvider` object implementing `CommuteProvider`. The `GoogleMapsCommuteClient` class stays unchanged.
 
 Write `src/plugins/commute/google-maps/index.ts`:
 
@@ -405,67 +351,122 @@ const DistanceMatrixResponseSchema = z.object({
 })
 ```
 
-Wait — the `ping` in the provider needs to call `createGoogleMapsCommuteClient(apiKey).ping()` which creates a `GoogleMapsCommuteClient`. We can just create the client inline. Let me simplify the provider:
-
-```ts
-export const GoogleMapsCommuteProvider: CommuteProvider = {
-  id: "google-maps",
-  name: "Google Maps",
-  instructions: "...\n...",
-  createClient(apiKey: string): CommuteClient {
-    return new GoogleMapsCommuteClient(apiKey)
-  },
-  ping(apiKey: string): Promise<boolean> {
-    return new GoogleMapsCommuteClient(apiKey).ping()
-  },
-}
-```
-
-The `@deprecated` export of `createGoogleMapsCommuteClient` is unnecessary overhead — just keep the provider. The only external consumer using `createGoogleMapsCommuteClient` directly is `create-services.ts`, which we'll update to use the provider.
-
-- [ ] **Step 3: Delete commute/types.ts**
+- [ ] **Step 3: Delete commute/types.ts and the stub-only test**
 
 ```bash
 rm src/plugins/commute/types.ts
+rm src/plugins/commute/commute.test.ts
 ```
 
-- [ ] **Step 4: Update commute/stub/index.ts**
+- [ ] **Step 4: Update ipc-settings.ts**
 
-The stub imports from types.ts. Change:
-
+In `src/app/ipc-settings.ts`, replace:
 ```ts
-import type { CommuteClient, CommuteResult } from "@/plugins/commute"
+import { getLlmProviders, createLlmClientForPing } from "@/plugins/llm"
+import { getCommuteProviders, createCommuteClient } from "@/plugins/commute"
+```
+With:
+```ts
+import { getLlmProviders, getLlmProvider } from "@/plugins/llm"
+import { getCommuteProviders, getCommuteProvider } from "@/plugins/commute"
 ```
 
-(No change needed — it already imports from the index.)
+And in `testProviderSecret`, replace:
+```ts
+const ok =
+  mapping === LLM_SECRET_KEYS
+    ? await createLlmClientForPing(providerId, value).ping()
+    : await createCommuteClient(providerId, value).ping()
+```
+With:
+```ts
+const ok =
+  mapping === LLM_SECRET_KEYS
+    ? await getLlmProvider(providerId).ping(value)
+    : await getCommuteProvider(providerId).ping(value)
+```
 
-- [ ] **Step 5: Update external consumers of CommuteProviderInfo**
+- [ ] **Step 5: Update create-services.ts**
 
-In `src/app/ipc-settings.ts`, change:
-- `getCommuteProviders` stays — it now returns `CommuteProvider[]` instead of `CommuteProviderInfo[]`
-- `createCommuteClient` is removed — use `getCommuteProvider(id).createClient(apiKey)` instead
-- In the `testProviderSecret` function, change from `createCommuteClient(providerId, value).ping()` to `getCommuteProvider(providerId).ping(value)`
+In `src/app/composition/create-services.ts`, replace:
+```ts
+import { createGoogleMapsCommuteClient } from "@/plugins/commute"
+import type { LlmClient, LlmModelRegistry } from "@/plugins/llm"
+import { createLlmClient, createModelRegistry } from "@/plugins/llm"
+```
+With:
+```ts
+import { GoogleMapsCommuteProvider } from "@/plugins/commute"
+import type { LlmClient, LlmModelRegistry } from "@/plugins/llm"
+import { getLlmProvider } from "@/plugins/llm"
+```
 
-In `src/app/composition/create-services.ts`, change:
-- `import { createGoogleMapsCommuteClient } from "@/plugins/commute"` → `import { GoogleMapsCommuteProvider } from "@/plugins/commute"`
-- Use `GoogleMapsCommuteProvider.createClient(googleMapsApiKey)` instead of `createGoogleMapsCommuteClient(googleMapsApiKey)`
+Replace the commute line:
+```ts
+const commuteClient = googleMapsApiKey
+  ? createGoogleMapsCommuteClient(googleMapsApiKey)
+  : context.commuteClient
+```
+With:
+```ts
+const commuteClient = googleMapsApiKey
+  ? GoogleMapsCommuteProvider.createClient(googleMapsApiKey)
+  : context.commuteClient
+```
 
-In `src/ui/data/settings.ts`, change:
-- `CommuteProviderInfoSchema` → `CommuteProviderSchema` (the schema shape is identical: id, name, instructions)
+Replace the `buildLlmClient` function's fallback:
+```ts
+return createLlmClient(provider, apiKey, model)
+```
+With:
+```ts
+return getLlmProvider(provider).createClient(apiKey, model)
+```
 
-In `src/services/vacancy-enricher/vacancy-enricher.test.ts` — only imports `CommuteClient` type, no change needed.
+Replace `createModelRegistry(provider)`:
+```ts
+const modelRegistry = context.modelRegistry ?? createModelRegistry(provider)
+```
+With:
+```ts
+const modelRegistry = context.modelRegistry ?? getLlmProvider(provider).createModelRegistry()
+```
 
-- [ ] **Step 6: Run tests**
+- [ ] **Step 6: Update settings.ts Zod schema name**
+
+In `src/ui/data/settings.ts`, rename `CommuteProviderInfoSchema` to `CommuteProviderSchema` and `LlmProviderInfoSchema` to `LlmProviderSchema`. The schema shapes stay identical since both serialize the same fields (id, name, instructions / id, name, description, instructions).
+
+Change:
+```ts
+const LlmProviderInfoSchema = z.object({
+```
+To:
+```ts
+const LlmProviderSchema = z.object({
+```
+
+Change:
+```ts
+const CommuteProviderInfoSchema = z.object({
+```
+To:
+```ts
+const CommuteProviderSchema = z.object({
+```
+
+Update all references to these renamed variables in the same file.
+
+- [ ] **Step 7: Run tests**
 
 ```bash
 npm test -- src/plugins/commute
 ```
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add -A src/plugins/commute/
-git commit -m "refactor: inline commute types, add CommuteProvider interface, delete types.ts"
+git add -A
+git commit -m "refactor: inline commute types, add CommuteProvider interface, delete types.ts and stub test"
 ```
 
 ---
@@ -474,8 +475,6 @@ git commit -m "refactor: inline commute types, add CommuteProvider interface, de
 
 **Files:**
 - Modify: `src/plugins/pdf-renderer/index.ts`
-- Modify: `src/plugins/pdf-renderer/electron/index.ts`
-- Modify: `src/plugins/pdf-renderer/stub/index.ts`
 - Delete: `src/plugins/pdf-renderer/types.ts`
 - Delete: `src/plugins/pdf-renderer/pdf-renderer.test.ts`
 
@@ -490,20 +489,14 @@ export { createElectronPdfRenderer } from "./electron"
 export { createStubPdfRenderer } from "./stub"
 ```
 
-- [ ] **Step 2: Verify electron and stub imports are from index**
-
-Check `src/plugins/pdf-renderer/electron/index.ts` — it imports `import type { PdfRenderer } from "@/plugins/pdf-renderer"`. No change needed.
-
-Check `src/plugins/pdf-renderer/stub/index.ts` — same. No change needed.
-
-- [ ] **Step 3: Delete types.ts and test**
+- [ ] **Step 2: Delete types.ts and test**
 
 ```bash
 rm src/plugins/pdf-renderer/types.ts
 rm src/plugins/pdf-renderer/pdf-renderer.test.ts
 ```
 
-- [ ] **Step 4: Verify no other imports reference types.ts**
+- [ ] **Step 3: Verify no other imports reference types.ts**
 
 ```bash
 rg "pdf-renderer/types" src/
@@ -511,15 +504,7 @@ rg "pdf-renderer/types" src/
 
 Expected: no results.
 
-- [ ] **Step 5: Run tests**
-
-```bash
-npm test -- src/plugins/pdf-renderer
-```
-
-Expected: tests pass (just the stub is tested in integration contexts, the unit test is deleted).
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add -A src/plugins/pdf-renderer/
@@ -536,9 +521,6 @@ git commit -m "refactor: inline pdf-renderer types, delete types.ts and stub tes
 - Modify: `src/plugins/commute/google-maps/index.test.ts`
 - Modify: `src/utils/http-stub.ts`
 - Modify: `src/utils/index.ts`
-- Delete: `src/plugins/fetch/index.ts`
-- Delete: `src/plugins/fetch/types.ts`
-- Delete: `src/plugins/fetch/stub/index.ts`
 - Delete: `src/plugins/fetch/` directory
 
 - [ ] **Step 1: Add Fetch type to arbeitsagentur**
@@ -585,12 +567,10 @@ function resolveUrl(input: string | URL | Request): string {
 
 - [ ] **Step 3: Export FetchStub from utils/index.ts**
 
-Add `FetchStub` to the exports in `src/utils/index.ts`:
+Add to `src/utils/index.ts`:
 ```ts
 export { FetchStub } from "./http-stub.js"
 ```
-
-(Alongside the existing `HttpStub` export.)
 
 - [ ] **Step 4: Update arbeitsagentur test import**
 
@@ -643,7 +623,6 @@ git commit -m "refactor: inline Fetch type into arbeitsagentur, move FetchStub t
 - Modify: `src/plugins/llm/index.ts`
 - Modify: `src/plugins/llm/openrouter/index.ts`
 - Modify: `src/plugins/llm/requesty/index.ts`
-- Modify: `src/plugins/llm/openai-compatible/index.ts`
 - Modify: `src/models/config/config.ts`
 - Modify: `src/models/config/index.ts`
 - Modify: `src/app/ipc-settings.ts`
@@ -652,58 +631,31 @@ git commit -m "refactor: inline Fetch type into arbeitsagentur, move FetchStub t
 - Modify: `src/ui/pages/settings/views/ai.tsx`
 - Delete: `src/plugins/llm/types.ts`
 
-The `LlmProvider` name is already taken by `models/config` as a string union type (`"openrouter" | "requesty"`). We rename that to `LlmProviderId` to free up `LlmProvider` for the new interface.
+The `LlmProvider` name is already used by `models/config` as a string union type (`"openrouter" | "requesty"`). Rename that to `LlmProviderId`.
+
+Like `CommuteProvider`, `LlmProvider` has methods that won't survive IPC. We add `LlmProviderInfo` as a `Pick` type for the serializable subset. `getLlmProviders()` returns `LlmProviderInfo[]` for IPC; `getLlmProvider()` returns the full `LlmProvider` for server-side use.
 
 - [ ] **Step 1: Rename LlmProvider → LlmProviderId in models/config**
 
-In `src/models/config/config.ts`, change:
-```ts
-export type LlmProvider = "openrouter" | "requesty"
-```
-To:
+In `src/models/config/config.ts`:
 ```ts
 export type LlmProviderId = "openrouter" | "requesty"
-```
-
-And change the default value line:
-```ts
-provider: LlmProvider = DEFAULT_PROVIDER
-```
-To:
-```ts
-provider: LlmProviderId = DEFAULT_PROVIDER
-```
-
-And change:
-```ts
-export const DEFAULT_PROVIDER: LlmProvider = "openrouter"
-```
-To:
-```ts
 export const DEFAULT_PROVIDER: LlmProviderId = "openrouter"
 ```
+And update the `provider` field type to `LlmProviderId`.
 
-In `src/models/config/index.ts`, change the export:
+In `src/models/config/index.ts`:
 ```ts
 export type { Address, LlmModel, LlmProviderId, ConfigKey } from "./config.js"
 ```
 
-- [ ] **Step 2: Update all imports of LlmProvider from models/config**
-
-In `src/ui/data/settings.ts`, change:
-```ts
-import type { ConfigKey, LlmModel, LlmProvider } from "@/models/config"
-```
-To:
+In `src/ui/data/settings.ts` and `src/ui/pages/settings/views/ai.tsx`, update imports:
 ```ts
 import type { ConfigKey, LlmModel, LlmProviderId } from "@/models/config"
 ```
+And update usage `const provider: LlmProviderId = ...`.
 
-And update the usage `const provider: LlmProvider =` to `const provider: LlmProviderId =`.
-
-In `src/ui/pages/settings/views/ai.tsx`, make the same change.
-
-- [ ] **Step 3: Write the new llm/index.ts with inlined types and LlmProvider**
+- [ ] **Step 2: Write the new llm/index.ts with inlined types and LlmProvider**
 
 ```ts
 export interface TypedSchema<T> {
@@ -751,6 +703,11 @@ export interface LlmProvider {
   ping(apiKey: string): Promise<boolean>
 }
 
+export type LlmProviderInfo = Pick<
+  LlmProvider,
+  "id" | "name" | "description" | "instructions"
+>
+
 import { OpenRouterProvider } from "./openrouter"
 import { RequestyProvider } from "./requesty"
 
@@ -759,7 +716,7 @@ const PROVIDERS: readonly LlmProvider[] = [
   RequestyProvider,
 ]
 
-export function getLlmProviders(): readonly LlmProvider[] {
+export function getLlmProviders(): readonly LlmProviderInfo[] {
   return PROVIDERS
 }
 
@@ -772,91 +729,21 @@ export function getLlmProvider(providerId: string): LlmProvider {
 }
 ```
 
-- [ ] **Step 4: Delete llm/types.ts**
+- [ ] **Step 3: Delete llm/types.ts**
 
 ```bash
 rm src/plugins/llm/types.ts
 ```
 
-- [ ] **Step 5: Update-openai-compatible to use LlmProvider types from index**
-
-In `src/plugins/llm/openai-compatible/index.ts`, change:
-```ts
-import type {
-  LlmClient,
-  LlmModelInfo,
-  LlmModelRegistry,
-  LlmPricing,
-  TypedSchema,
-} from "@/plugins/llm"
-```
-(No change needed — it already imports from `@/plugins/llm`.)
-
-- [ ] **Step 6: Convert openrouter to a provider**
-
-In `src/plugins/llm/openrouter/index.ts`, replace the current exports (`createOpenRouterClient`, `createOpenRouterModelRegistry`, `openrouterProviderInfo`) with a single `OpenRouterProvider` object.
+- [ ] **Step 4: Convert openrouter to a provider**
 
 Write `src/plugins/llm/openrouter/index.ts`:
 
 ```ts
-import {
-  createModelRegistry,
-  createOpenAICompatibleClient,
-  normalizeNestedPricing,
-} from "@/plugins/openai-compatible/index.js"
-import type { LlmProvider } from "@/plugins/llm"
-
-export const OpenRouterProvider: LlmProvider = {
-  id: "openrouter",
-  name: "OpenRouter",
-  description: "Global",
-  instructions: [
-    "1. Erstelle ein Konto auf [openrouter.ai](https://openrouter.ai) oder melde dich an",
-    "2. Gehe zu [Credits](https://openrouter.ai/credits)",
-    '3. Klicke auf "Buy Credits" und füge Guthaben hinzu',
-    '4. Gehe zu [Keys](https://openrouter.ai/keys) → klicke auf "Create Key"',
-    '5. Gib dem Schlüssel einen Namen (z.B. "Arbeitssuche") und klicke auf "Create"',
-    "6. Kopiere den Schlüssel - er beginnt mit `sk-or-...`",
-    "7. Füge ihn oben ein",
-  ].join("\n"),
-  createClient(apiKey: string, model: string): LlmClient {
-    return createOpenAICompatibleClient(
-      "https://openrouter.ai/api/v1",
-      apiKey,
-      model,
-      "OpenRouter",
-    )
-  },
-  createModelRegistry(): LlmModelRegistry {
-    return createModelRegistry(
-      "https://openrouter.ai/api/v1/models",
-      (m) => ({
-        id: String(m.id),
-        name: String(m.name),
-        pricing: normalizeNestedPricing(m.pricing),
-      }),
-    )
-  },
-  async ping(apiKey: string): Promise<boolean> {
-    return createOpenAICompatibleClient(
-      "https://openrouter.ai/api/v1",
-      apiKey,
-      "",
-      "OpenRouter",
-    ).ping()
-  },
-}
-
-import type { LlmClient, LlmModelRegistry } from "@/plugins/llm"
-```
-
-Wait — we need `LlmClient` and `LlmModelRegistry` types. These are already in the import from `@/plugins/llm`. Let me restructure:
-
-```ts
 import type { LlmClient, LlmModelRegistry, LlmProvider } from "@/plugins/llm"
 import {
-  createModelRegistry,
   createOpenAICompatibleClient,
+  createModelRegistry,
   normalizeNestedPricing,
 } from "@/plugins/openai-compatible/index.js"
 
@@ -902,15 +789,15 @@ export const OpenRouterProvider: LlmProvider = {
 }
 ```
 
-- [ ] **Step 7: Convert requesty to a provider**
+- [ ] **Step 5: Convert requesty to a provider**
 
 Write `src/plugins/llm/requesty/index.ts`:
 
 ```ts
 import type { LlmClient, LlmModelInfo, LlmModelRegistry, LlmProvider } from "@/plugins/llm"
 import {
-  createModelRegistry,
   createOpenAICompatibleClient,
+  createModelRegistry,
   normalizeFlatPricing,
 } from "@/plugins/openai-compatible/index.js"
 
@@ -1019,104 +906,25 @@ const EU_REGIONS = new Set([
 ])
 ```
 
-- [ ] **Step 8: Update openai-compatible/test imports**
+- [ ] **Step 6: Update remaining consumers**
 
-Check if the test files import from `@/plugins/llm/types` — they don't, they import from `@/plugins/llm`. No change needed.
+The `ipc-settings.ts` and `create-services.ts` updates were already done in Task 3 (for commute) and will be done here (for llm). Ensure all files that imported `LlmProviderInfo`, `getLlmProviders`, `createLlmClient`, `createLlmClientForPing`, or `createModelRegistry` from `@/plugins/llm` are updated:
 
-- [ ] **Step 9: Update ipc-settings.ts**
+- `src/app/ipc-settings.ts` — already updated in Task 3 Step 4 to use `getLlmProvider`; verify `getLlmProviders` still works (it now returns `LlmProviderInfo[]`)
+- `src/app/composition/create-services.ts` — already updated in Task 3 Step 5 to use `getLlmProvider`; verify `getLlmProvider(provider).createModelRegistry()` is used
+- `src/ui/data/settings.ts` — rename `LlmProviderInfoSchema` → `LlmProviderSchema` (already covered in Task 3 Step 6 but applied here since it depends on LlmProvider being defined)
 
-In `src/app/ipc-settings.ts`, change:
-```ts
-import { getLlmProviders, createLlmClientForPing } from "@/plugins/llm"
-import { getCommuteProviders, createCommuteClient } from "@/plugins/commute"
-```
-To:
-```ts
-import { getLlmProviders, getLlmProvider } from "@/plugins/llm"
-import { getCommuteProviders, getCommuteProvider } from "@/plugins/commute"
-```
-
-And update the `testProviderSecret` function. The current code:
-```ts
-const ok =
-  mapping === LLM_SECRET_KEYS
-    ? await createLlmClientForPing(providerId, value).ping()
-    : await createCommuteClient(providerId, value).ping()
-```
-Becomes:
-```ts
-const ok =
-  mapping === LLM_SECRET_KEYS
-    ? await getLlmProvider(providerId).ping(value)
-    : await getCommuteProvider(providerId).ping(value)
-```
-
-- [ ] **Step 10: Update create-services.ts**
-
-In `src/app/composition/create-services.ts`, change:
-```ts
-import { createGoogleMapsCommuteClient } from "@/plugins/commute"
-import type { LlmClient, LlmModelRegistry } from "@/plugins/llm"
-import { createLlmClient, createModelRegistry } from "@/plugins/llm"
-```
-To:
-```ts
-import { GoogleMapsCommuteProvider } from "@/plugins/commute"
-import type { LlmClient, LlmModelRegistry } from "@/plugins/llm"
-import { getLlmProvider } from "@/plugins/llm"
-```
-
-And update `buildLlmClient`:
-```ts
-function buildLlmClient(
-  factory: LlmClientFactory | undefined,
-  provider: string,
-  apiKey: string | undefined,
-  model: string,
-): LlmClient | undefined {
-  if (factory) {
-    try {
-      return factory(model)
-    } catch {
-      return undefined
-    }
-  }
-  if (!apiKey) return undefined
-  return getLlmProvider(provider).createClient(apiKey, model)
-}
-```
-
-And update the commute line:
-```ts
-const commuteClient = googleMapsApiKey
-  ? GoogleMapsCommuteProvider.createClient(googleMapsApiKey)
-  : context.commuteClient
-```
-
-And update modelRegistry:
-```ts
-const modelRegistry = context.modelRegistry ?? getLlmProvider(provider).createModelRegistry()
-```
-
-- [ ] **Step 11: Update LlmProviderInfoSchema in settings.ts**
-
-In `src/ui/data/settings.ts`, the schema name `LlmProviderInfoSchema` should become `LlmProviderSchema` (the shape is identical: id, name, description, instructions). Just rename the variable.
-
-Similarly `CommuteProviderInfoSchema` → `CommuteProviderSchema`.
-
-- [ ] **Step 12: Run tests**
+- [ ] **Step 7: Run tests**
 
 ```bash
-npm test -- src/plugins/llm/
-npm test -- src/app/
-npm test -- src/ui/
+npm test -- src/plugins/llm/ src/app/ src/ui/
 ```
 
-- [ ] **Step 13: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add -A
-git commit -m "refactor: inline LLM types, add LlmProvider interface, rename LlmProvider→LlmProviderId"
+git commit -m "refactor: inline LLM types, add LlmProvider and LlmProviderInfo, rename LlmProvider→LlmProviderId"
 ```
 
 ---
@@ -1131,135 +939,7 @@ git commit -m "refactor: inline LLM types, add LlmProvider interface, rename Llm
 
 - [ ] **Step 1: Write the new job-site/index.ts with inlined public types**
 
-Move the public types from `types.ts` into `index.ts`, but remove `JobPostingJsonLd` and `JobPostingAddress` exports.
-
-Write `src/plugins/job-site/index.ts`:
-
-```ts
-export type {
-  JobSite,
-  SearchCriteria,
-  SearchMode,
-  JobSiteInfo,
-  VacancyListPage,
-  VacancyDetails,
-  VacancyContact,
-}
-
-import type { Browser } from "@/plugins/browser"
-import type { JobSite, JobSiteInfo, SearchMode } from "."
-import {
-  createArbeitsagenturSite,
-  SUPPORTED_MODES as ARBEITSAGENTUR_MODES,
-} from "./arbeitsagentur"
-import { createDmSite, SUPPORTED_MODES as DM_MODES } from "./dm"
-import { createXingSite, SUPPORTED_MODES as XING_MODES } from "./xing"
-import { createZalandoSite, SUPPORTED_MODES as ZALANDO_MODES } from "./zalando"
-
-export function getJobSiteInfos(): JobSiteInfo[] {
-  return Object.entries(REGISTRY).map(([name, entry]) => ({
-    name,
-    supportedModes: entry.supportedModes,
-  }))
-}
-
-export function createJobSite(name: string, browser: Browser): JobSite {
-  if (!isRegistryKey(name)) {
-    throw new Error(
-      `Unknown site: "${name}". Available: ${getJobSiteNames().join(", ")}`,
-    )
-  }
-  return REGISTRY[name].factory(browser)
-}
-
-export function getJobSiteNames(): string[] {
-  return Object.keys(REGISTRY)
-}
-
-function isRegistryKey(name: string): name is keyof typeof REGISTRY {
-  return name in REGISTRY
-}
-
-const REGISTRY = {
-  arbeitsagentur: {
-    factory: createArbeitsagenturSite,
-    supportedModes: ARBEITSAGENTUR_MODES,
-  },
-  xing: { factory: createXingSite, supportedModes: XING_MODES },
-  zalando: { factory: createZalandoSite, supportedModes: ZALANDO_MODES },
-  dm: { factory: createDmSite, supportedModes: DM_MODES },
-} satisfies Record<string, SiteEntry>
-
-interface SiteEntry {
-  factory: (browser: Browser) => JobSite
-  supportedModes: readonly SearchMode[]
-}
-
-export interface SearchCriteria {
-  location: string
-  query: string
-  radiusKm: number
-  mode: SearchMode
-}
-
-export interface JobSite {
-  name: string
-  supportedModes: SearchMode[]
-  getVacancyList(
-    criteria: SearchCriteria,
-    pageId?: string,
-  ): Promise<VacancyListPage>
-  getVacancyDetails(url: string): Promise<VacancyDetails>
-}
-
-export type SearchMode = "employment" | "entry-level" | "apprenticeship"
-
-export interface JobSiteInfo {
-  name: string
-  supportedModes: readonly SearchMode[]
-}
-
-export interface VacancyListPage {
-  urls: string[]
-  nextPageId?: string
-}
-
-export interface VacancyDetails {
-  url: string
-  title: string
-  company: string
-  address?: string
-  descriptionHtml?: string
-  startDate?: string
-  publishedAt?: string
-  contact?: VacancyContact
-}
-
-export interface VacancyContact {
-  name?: string
-  email?: string
-  phone?: string
-}
-```
-
-Wait — the `export type` at the top re-exports, but the interfaces are now defined inline. We don't need `export type` at the top AND `export interface` below. Remove the `export type` block and keep only the `export interface` definitions.
-
-Let me reconsider. The current `index.ts` has:
-```ts
-export type {
-  JobPostingJsonLd,
-  JobSite,
-  SearchCriteria,
-  SearchMode,
-  VacancyContact,
-  VacancyDetails,
-  VacancyListPage,
-} from "./types.js"
-```
-
-And `types.ts` defines all these plus `JobSiteInfo` and `JobPostingAddress`. After inlining, we define them directly in `index.ts` and export them. We remove the `JobPostingJsonLd` and `JobPostingAddress` exports entirely.
-
-The final `index.ts`:
+Remove the `export type { ... } from "./types.js"` block and define all interfaces directly. Remove `JobPostingJsonLd` and `JobPostingAddress` exports entirely.
 
 ```ts
 import type { Browser } from "@/plugins/browser"
@@ -1360,9 +1040,7 @@ interface SiteEntry {
 
 - [ ] **Step 2: Move JobPostingJsonLd and JobPostingAddress into xing**
 
-Add both interfaces locally to `src/plugins/job-site/xing/index.ts`. Remove the import of `JobPostingJsonLd` from `@/plugins/job-site`.
-
-The `JobPostingJsonLd` interface for xing:
+In `src/plugins/job-site/xing/index.ts`, remove `JobPostingJsonLd` from the import from `@/plugins/job-site` and add these interfaces locally:
 
 ```ts
 interface JobPostingJsonLd {
@@ -1382,11 +1060,9 @@ interface JobPostingAddress {
 }
 ```
 
-Update the import in xing — remove `JobPostingJsonLd` from the `import type` from `@/plugins/job-site`.
-
 - [ ] **Step 3: Move JobPostingJsonLd and JobPostingAddress into dm**
 
-Same thing — add the same two interfaces locally in `src/plugins/job-site/dm/index.ts`. Remove `JobPostingJsonLd` from the import from `@/plugins/job-site`.
+In `src/plugins/job-site/dm/index.ts`, same change: remove `JobPostingJsonLd` from the import from `@/plugins/job-site` and add the same two interfaces locally.
 
 - [ ] **Step 4: Delete types.ts**
 
@@ -1419,29 +1095,24 @@ git commit -m "refactor: inline job-site types, move JobPostingJsonLd to site-lo
 
 ## Task 8: Verify openai-compatible still works
 
-No structural changes needed — Task 6 already converted the top-level LLM factories to `LlmProvider` objects. The `openai-compatible` module remains a shared internal utility providing `OpenAICompatibleClient`, `createModelRegistry`, and `toStrictSchema` used by openrouter and requesty.
-
 - [ ] **Step 1: Verify openai-compatible tests still pass**
 
 ```bash
 npm test -- src/plugins/llm/openai-compatible/
 ```
 
+The `openai-compatible` module remains a shared internal utility. No structural changes needed — Task 6 already converted the top-level LLM factories to `LlmProvider` objects.
+
 ---
 
-## Task 9: Rename and convert commute integration test
+## Task 9: Create commute integration test
 
 **Files:**
-- Delete: `src/plugins/commute/commute.test.ts`
-- Create: `src/plugins/commute/google-maps/integration.test.ts`
+- Create: `src/plugins/commute/integration.test.ts`
 
-- [ ] **Step 1: Delete the old stub-only test**
+The old stub-only test `commute.test.ts` was deleted in Task 3. This creates a real integration test against the Google Maps API.
 
-```bash
-rm src/plugins/commute/commute.test.ts
-```
-
-- [ ] **Step 2: Create a real integration test for Google Maps**
+- [ ] **Step 1: Create the integration test**
 
 Create `src/plugins/commute/integration.test.ts`:
 
@@ -1453,8 +1124,7 @@ describe("Google Maps CommuteProvider", () => {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY
 
   test.skipIf(!apiKey)("ping returns true with a valid API key", async () => {
-    const provider = GoogleMapsCommuteProvider
-    const result = await provider.ping(apiKey ?? "")
+    const result = await GoogleMapsCommuteProvider.ping(apiKey ?? "")
     expect(result).toBe(true)
   })
 
@@ -1467,35 +1137,32 @@ describe("Google Maps CommuteProvider", () => {
   })
 
   test("ping returns false with an invalid API key", async () => {
-    const provider = GoogleMapsCommuteProvider
-    const result = await provider.ping("invalid-key")
+    const result = await GoogleMapsCommuteProvider.ping("invalid-key")
     expect(result).toBe(false)
   })
 })
 ```
 
-- [ ] **Step 3: Verify the integration test config includes this file**
+The `vitest.integration.config.ts` include pattern was updated in Task 1 to `src/plugins/**/integration.test.ts`, which covers this file.
 
-The `vitest.integration.config.ts` include pattern was updated in Task 1 Step 3 to `src/plugins/**/*.integration.test.ts`, which covers commute. No further config changes needed.
-
-- [ ] **Step 4: Run the integration test (will skip if no API key)**
+- [ ] **Step 2: Run the integration test (will skip if no API key)**
 
 ```bash
 npx vitest run --config vitest.integration.config.ts src/plugins/commute/integration.test.ts
 ```
 
-Expected: tests skip (no API key) or pass.
+Expected: the "invalid key" test passes; the live API tests skip if no key, or pass with a key.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
 git add -A
-git commit -m "test: replace commute stub test with real Google Maps integration test"
+git commit -m "test: add commute integration test against Google Maps API"
 ```
 
 ---
 
-## Task 10: Rename job-site integration test and delete pdf-renderer stub test
+## Task 10: Rename job-site integration test and verify pdf-renderer test deletion
 
 **Files:**
 - Rename: `src/plugins/job-site/index.integration-test.ts` → `src/plugins/job-site/integration.test.ts`
@@ -1514,11 +1181,13 @@ rg "index.integration-test" src/
 
 Expected: no results.
 
-- [ ] **Step 3: Delete pdf-renderer stub test (if not already done in Task 4)**
+- [ ] **Step 3: Verify pdf-renderer stub test is deleted**
 
 ```bash
-rm -f src/plugins/pdf-renderer/pdf-renderer.test.ts
+ls src/plugins/pdf-renderer/pdf-renderer.test.ts 2>/dev/null || echo "Already deleted"
 ```
+
+If it exists, delete it: `rm src/plugins/pdf-renderer/pdf-renderer.test.ts`
 
 - [ ] **Step 4: Run the integration test config**
 
@@ -1526,7 +1195,7 @@ rm -f src/plugins/pdf-renderer/pdf-renderer.test.ts
 npx vitest run --config vitest.integration.config.ts
 ```
 
-Expected: job-site integration tests run (may need network).
+Expected: job-site and commute integration tests run (may need network/API key).
 
 - [ ] **Step 5: Commit**
 
