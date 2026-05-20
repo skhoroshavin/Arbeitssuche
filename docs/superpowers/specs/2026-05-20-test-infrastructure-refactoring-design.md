@@ -215,12 +215,14 @@ With:
 | `npm run test:integration -- -t "<pattern>"` | Filter integration tests by name |
 ```
 
-### Test suffix convention
+### Test file naming convention
 
-Fix:
+Fix the suffixes list — `integration.test.ts` is a filename, not a suffix:
+
 ```
 - Test suffixes: `.test.ts`, `.test.tsx`, `.test-suite.ts`, `.integration.test.ts`.
-+ Test suffixes: `.test.ts`, `.test.tsx`, `.test-suite.ts`, `integration.test.ts`.
++ Test suffixes: `.test.ts`, `.test.tsx`, `.test-suite.ts`.
++ Integration test filename: `integration.test.ts`.
 ```
 
 ### Shared modules
@@ -239,3 +241,5 @@ Update the layer import rules table to include `test-helpers`:
 ```
 
 All test files (`*.test.ts`, `*.test.tsx`, `integration.test.ts`) may import from `test-helpers`.
+
+> **Note:** This rule is not currently enforceable through `eslint-plugin-unslop`. It will be a convention documented in AGENTS.md, enforced through code review.
