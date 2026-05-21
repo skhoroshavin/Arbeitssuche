@@ -17,10 +17,9 @@ export function markUnseenAsGone(
       site: "all",
       notes: "",
     }
-    return v.with({
-      active: false,
-      activityHistory: [...v.activityHistory, notFoundActivity],
-    })
+    v.addActivity(notFoundActivity)
+    v.active = false
+    return v
   })
 
   return { vacancies, goneCount }
