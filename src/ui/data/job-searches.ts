@@ -1,26 +1,10 @@
 import { z } from "zod"
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-
 import { JobSearch, JobSearchInfoSchema } from "@/models/job-search"
-
-import type {
-  Activity,
-  VacancyDTO,
-  VacancySource,
-  VacancyStatus,
-} from "@/models/vacancy"
-
-import { VacancyWithStatusSchema } from "@/models/vacancy"
-
+import type { Activity } from "@/models/vacancy"
+import { Vacancy, VacancySerializedSchema } from "@/models/vacancy"
 import { api } from "./internal/api"
-
 import { jobSearchQueryKeys, invalidateQuery } from "./job-search-query-keys"
-
-export type VacancyWithStatus = VacancyDTO & {
-  status: VacancyStatus
-  sources: VacancySource[]
-}
 
 export function useJobSearchListView(applicantId?: string) {
   const query = useJobSearches(applicantId)
@@ -223,10 +207,10 @@ export function useJobSearchVacancyListView(id: string) {
 export function useJobSearchVacancy(id: string, hash: string) {
   return useQuery({
     queryKey: jobSearchQueryKeys.vacancyDetail(id, hash),
-    queryFn: async () =>
-      VacancyWithStatusSchema.parse(
-        await api().invoke("job-searches:vacancies:load", id, hash),
-      ),
+    queryFn: async () => {
+      const raw = await api().invoke("job-searches:vacancies:load", id, hash)
+      return Vacancy.parse(VacancySerializedSchema.parse(raw))
+    },
     enabled: !!id && !!hash,
   })
 }
@@ -289,7 +273,7 @@ const EMPTY_JOB_SEARCH_LIST: JobSearchListView = {
 }
 
 type VacancyListView = Readonly<{
-  vacancies: VacancyWithStatus[]
+  vacancies: Vacancy[]
   totalCount: number
 }>
 
@@ -310,10 +294,14 @@ function useJobSearches(applicantId?: string) {
 function useJobSearchVacancies(id: string) {
   return useQuery({
     queryKey: jobSearchQueryKeys.vacancyList(id),
-    queryFn: async () =>
-      VacancyListResponseSchema.parse(
-        await api().invoke("job-searches:vacancies:list", id),
-      ),
+    queryFn: async () => {
+      const response = await api().invoke("job-searches:vacancies:list", id)
+      const parsed = VacancyListResponseSchema.parse(response)
+      return {
+        vacancies: parsed.vacancies.map((v) => Vacancy.parse(v)),
+        totalCount: parsed.totalCount,
+      }
+    },
     enabled: !!id,
   })
 }
@@ -339,8 +327,6 @@ const CreatedJobSearchIdSchema = z.object({
 const ContentSchema = z.object({ content: z.string() })
 
 const VacancyListResponseSchema = z.object({
-  vacancies: z.array(VacancyWithStatusSchema),
+  vacancies: z.array(VacancySerializedSchema),
   totalCount: z.number(),
-  generatedAt: z.string(),
-  latestCrawl: z.string(),
 })
