@@ -88,7 +88,7 @@ export class LiveFlowHelper {
           const hasBoundedCount =
             vacancyList.totalCount >= 1 && vacancyList.totalCount <= 5
           const hasCommute = vacancyList.vacancies.some(
-            (vacancy) => Object.keys(vacancy.commute).length > 0,
+            (vacancy) => vacancy.addresses.some((a) => a.commute),
           )
           const refreshEnabled =
             await this.jobSearchPage.refreshButton.isEnabled()
