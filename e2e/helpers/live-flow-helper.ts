@@ -134,7 +134,7 @@ export class LiveFlowHelper {
             hash: vacancy.hash,
             title: vacancy.title,
             hasSummary: vacancy.summary.trim().length > 0,
-            hasCommute: Object.keys(vacancy.commute).length > 0,
+            hasCommute: vacancy.addresses.some((a) => a.commute),
           })),
         )}`,
       )
@@ -147,7 +147,7 @@ export class LiveFlowHelper {
     const vacancy = vacancyList.vacancies.find(
       (entry) =>
         entry.summary.trim().length > 0 &&
-        Object.keys(entry.commute).length > 0 &&
+        entry.addresses.some((a) => a.commute) &&
         entry.sources.some((source) => source.site === "arbeitsagentur"),
     )
 
