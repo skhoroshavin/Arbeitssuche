@@ -131,3 +131,4 @@ export { resolveVacancy } from "./resolve.js"
 export { Vacancy } from "./vacancy.js"
 
 export { VacancyDTOSchema, VacancyWithStatusSchema } from "./schemas.js"
+export { VacancyAddress } from "./vacancy-address.js"
