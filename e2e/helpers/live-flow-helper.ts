@@ -87,8 +87,8 @@ export class LiveFlowHelper {
           const vacancyList = await this.api.getVacancyList(jobSearchId)
           const hasBoundedCount =
             vacancyList.totalCount >= 1 && vacancyList.totalCount <= 5
-          const hasCommute = vacancyList.vacancies.some(
-            (vacancy) => vacancy.addresses.some((a) => a.commute),
+          const hasCommute = vacancyList.vacancies.some((vacancy) =>
+            vacancy.addresses.some((a) => a.commute),
           )
           const refreshEnabled =
             await this.jobSearchPage.refreshButton.isEnabled()

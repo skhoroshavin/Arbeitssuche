@@ -61,7 +61,9 @@ test.describe("Live major flow", () => {
 
     const vacancyDetail = await api.getVacancy(jobSearchId, vacancy.hash)
     expect(vacancyDetail.summary.trim().length).toBeGreaterThan(0)
-    expect(vacancyDetail.addresses.some((a: { commute?: unknown }) => a.commute)).toBe(true)
+    expect(
+      vacancyDetail.addresses.some((a: { commute?: unknown }) => a.commute),
+    ).toBe(true)
 
     await expect(jobSearchPage.summaryHeading).toBeVisible()
     await expect(jobSearchPage.commuteHeading).toBeVisible()
