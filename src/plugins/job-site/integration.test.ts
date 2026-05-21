@@ -13,7 +13,7 @@ describe("job-site plugins", () => {
     await browser.close()
   })
 
-  const SKIP_SITES = new Set<string>(["xing"])
+  const SKIP_SITES = new Set<string>()
 
   for (const id of getJobSiteProviderIds()) {
     const provider = getJobSiteProvider(id)
