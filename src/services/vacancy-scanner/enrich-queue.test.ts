@@ -259,9 +259,9 @@ describe("EnrichQueue", () => {
         signal?: AbortSignal,
       ): Promise<Vacancy> {
         enrichCalls.push(signal)
-        return Promise.resolve(
-          vacancy.with({ enriched: true, enrichmentDirty: false }),
-        )
+        vacancy.enriched = true
+        vacancy.enrichmentDirty = false
+        return Promise.resolve(vacancy)
       }
     }
 
@@ -318,7 +318,7 @@ const CONTEXT: EnrichContext = {
 }
 
 function makeVacancy(hash: string): Vacancy {
-  return new Vacancy({
+  return Vacancy.parse({
     hash,
     title: "Dev",
     company: "ACME",
@@ -340,7 +340,9 @@ function makeEnricher(delayMs = 0, shouldFail = false): VacancyEnricher {
         if (shouldFail) {
           reject(new Error("enrichment failed"))
         } else {
-          resolve(vacancy.with({ enriched: true, enrichmentDirty: false }))
+          vacancy.enriched = true
+          vacancy.enrichmentDirty = false
+          resolve(vacancy)
         }
       }, delayMs)
     })
