@@ -1,4 +1,3 @@
-import { VacancyWithStatusSchema } from "@/models/vacancy"
 import type { Activity } from "@/models/vacancy"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { Applicant } from "@/models/applicant"
@@ -14,65 +13,75 @@ export function registerVacanciesHandlers(
   safeSend: SafeSend,
 ): void {
   handle("job-searches:vacancies:list", (id: string) => {
-    const output = services.vacancyRepo.loadAll(makeJobSearchID(id))
-    const vacancies = output.vacancies.map((v) => ({
+    const vacancies = services.vacancyRepo.allForJobSearch(makeJobSearchID(id))
+    const serialized = vacancies.map((v) => ({
       ...v,
-      status: v.deriveStatus(),
-      sources: v.deriveSources(),
+      status: v.status,
+      sources: v.sources,
     }))
     return {
-      vacancies,
-      totalCount: vacancies.length,
-      generatedAt: output.generatedAt,
-      latestCrawl: output.latestCrawl,
+      vacancies: serialized,
+      totalCount: serialized.length,
     }
   })
+
   handle(
     "job-searches:vacancies:seed",
-    (id: string, vacancies: Vacancy[], latestCrawl: string) => {
-      services.vacancyRepo.save(makeJobSearchID(id), vacancies, latestCrawl)
+    (id: string, vacancies: Vacancy[]) => {
+      services.vacancyRepo.save(makeJobSearchID(id), vacancies)
       return { ok: true as const, count: vacancies.length }
     },
   )
+
   handle("job-searches:vacancies:load", (id: string, hash: string) => {
     const vacancy = services.vacancyRepo.findByHash(makeJobSearchID(id), hash)
     if (!vacancy) {
       throw new Error(`Vacancy "${hash}" not found`)
     }
-    return VacancyWithStatusSchema.parse({
+    return {
       ...vacancy,
-      status: vacancy.deriveStatus(),
-      sources: vacancy.deriveSources(),
-    })
+      status: vacancy.status,
+      sources: vacancy.sources,
+    }
   })
+
   handle(
     "job-searches:vacancies:add-activity",
     (id: string, hash: string, activity: Activity) => {
-      services.vacancyRepo.addActivity(makeJobSearchID(id), hash, activity)
+      const vacancies = services.vacancyRepo.allForJobSearch(makeJobSearchID(id))
+      const vacancy = vacancies.find((v) => v.hash === hash)
+      if (!vacancy) throw new Error(`Vacancy "${hash}" not found`)
+      vacancy.addActivity(activity)
+      services.vacancyRepo.save(makeJobSearchID(id), vacancies)
       return { ok: true }
     },
   )
 
   handle(
     "vacancies:cover-letter:load",
-    (jobSearchId: string, vacancyHash: string) => ({
-      content: services.vacancyRepo.loadCoverLetter(
+    (jobSearchId: string, vacancyHash: string) => {
+      const vacancy = services.vacancyRepo.findByHash(
         makeJobSearchID(jobSearchId),
         vacancyHash,
-      ),
-    }),
+      )
+      return { content: vacancy?.coverLetter ?? "" }
+    },
   )
+
   handle(
     "vacancies:cover-letter:save",
     (jobSearchId: string, vacancyHash: string, content: string) => {
-      services.vacancyRepo.saveCoverLetter(
+      const vacancies = services.vacancyRepo.allForJobSearch(
         makeJobSearchID(jobSearchId),
-        vacancyHash,
-        content,
       )
+      const vacancy = vacancies.find((v) => v.hash === vacancyHash)
+      if (!vacancy) throw new Error(`Vacancy "${vacancyHash}" not found`)
+      vacancy.coverLetter = content
+      services.vacancyRepo.save(makeJobSearchID(jobSearchId), vacancies)
       return { ok: true }
     },
   )
+
   handle(
     "vacancies:cover-letter:generate",
     (jobSearchId: string, vacancyHash: string) =>
@@ -91,24 +100,17 @@ export function registerVacanciesHandlers(
     )
     const applicant = services.applicantRepo.load(applicantId)
 
-    const dirtyVacancy = vacancy.with({ enrichmentDirty: true })
-    const enriched = await services.vacancyEnricher.enrich(dirtyVacancy, {
+    vacancy.enrichmentDirty = true
+    const enriched = await services.vacancyEnricher.enrich(vacancy, {
       applicant,
       jobSearch,
     })
 
-    const latestCrawl = services.vacancyRepo.loadAll(
+    const allVacancies = services.vacancyRepo.allForJobSearch(
       makeJobSearchID(jobSearchId),
-    ).latestCrawl
-    const allVacancies = services.vacancyRepo.loadAll(
-      makeJobSearchID(jobSearchId),
-    ).vacancies
-    const updated = allVacancies.map((v) => (v.hash === hash ? enriched : v))
-    services.vacancyRepo.save(
-      makeJobSearchID(jobSearchId),
-      updated,
-      latestCrawl,
     )
+    const updated = allVacancies.map((v) => (v.hash === hash ? enriched : v))
+    services.vacancyRepo.save(makeJobSearchID(jobSearchId), updated)
 
     if (enriched.enrichmentDirty) {
       throw new Error(
@@ -131,8 +133,10 @@ export function registerVacanciesHandlers(
       makeJobSearchID(jobSearchId),
     )
     const applicant = services.applicantRepo.load(applicantId)
-    const output = services.vacancyRepo.loadAll(makeJobSearchID(jobSearchId))
-    const vacanciesNeedingEnrichment = output.vacancies.filter(
+    const vacancies = services.vacancyRepo.allForJobSearch(
+      makeJobSearchID(jobSearchId),
+    )
+    const vacanciesNeedingEnrichment = vacancies.filter(
       (v) => !v.enriched || v.enrichmentDirty,
     )
 
@@ -141,7 +145,7 @@ export function registerVacanciesHandlers(
       return { count: 0 }
     }
 
-    const existingByHash = new Map(output.vacancies.map((v) => [v.hash, v]))
+    const existingByHash = new Map(vacancies.map((v) => [v.hash, v]))
 
     try {
       const queue = createEnrichQueue(
@@ -150,7 +154,6 @@ export function registerVacanciesHandlers(
         applicant,
         jobSearch,
         existingByHash,
-        output.latestCrawl,
         safeSend,
         abortController.signal,
       )
@@ -167,9 +170,9 @@ export function registerVacanciesHandlers(
         return { count: 0, aborted: true }
       }
 
-      const updatedVacancies = services.vacancyRepo.loadAll(
+      const updatedVacancies = services.vacancyRepo.allForJobSearch(
         makeJobSearchID(jobSearchId),
-      ).vacancies
+      )
       const anyStillDirty = updatedVacancies.some(
         (vacancy) => vacancy.enrichmentDirty,
       )
@@ -202,7 +205,6 @@ function createEnrichQueue(
   applicant: Applicant,
   jobSearch: JobSearch,
   existingByHash: Map<string, Vacancy>,
-  latestCrawl: string,
   safeSend: SafeSend,
   signal: AbortSignal,
 ): EnrichQueue {
@@ -214,7 +216,6 @@ function createEnrichQueue(
       services.vacancyRepo.save(
         makeJobSearchID(jobSearchId),
         [...existingByHash.values()],
-        latestCrawl,
       )
       safeSend("job:progress", {
         jobSearchId,
