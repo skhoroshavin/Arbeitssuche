@@ -4,10 +4,10 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useApiKeyStatus, useJobSearchVacancyListView } from "@/ui/data"
 import { invalidateQuery, jobSearchQueryKeys } from "@/ui/data"
 import { useStartJobSearchCrawl, useAbortJobSearchCrawl } from "@/ui/data"
+import type { Vacancy } from "@/models/vacancy"
 import {
   useEnrichAllUnenriched,
   useAbortEnrichment,
-  type VacancyWithStatus,
 } from "@/ui/data"
 import {
   getEnrichAbortChannel,
@@ -186,7 +186,7 @@ function useVacancyListData(id: string) {
   }
 }
 
-function useEnrichControl(id: string, vacancies: VacancyWithStatus[]) {
+function useEnrichControl(id: string, vacancies: Vacancy[]) {
   const queryClient = useQueryClient()
   const enrichAll = useEnrichAllUnenriched(id)
   const abortEnrichment = useAbortEnrichment(id)

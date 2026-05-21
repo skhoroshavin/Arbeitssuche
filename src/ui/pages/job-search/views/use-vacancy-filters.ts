@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react"
 import { useSearchParams } from "react-router"
-import type { VacancyWithStatus } from "@/ui/data"
+import type { Vacancy } from "@/models/vacancy"
 import { isSortKey, type SortKey } from "./filter-bar"
 import { compareVacancies } from "./vacancy-utilities"
 
@@ -42,7 +42,7 @@ export function useVacancyFilters() {
 }
 
 export function useFilteredVacancies(
-  vacancies: VacancyWithStatus[],
+  vacancies: Vacancy[],
   filter: string,
   sortBy: SortKey,
 ) {

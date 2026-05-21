@@ -1,11 +1,12 @@
-import type { CommuteInfo } from "@/models/vacancy"
+import type { VacancyAddress } from "@/models/vacancy"
 
 export function VacancyCommuteSection({
-  commute,
+  addresses,
 }: {
-  commute: Record<string, CommuteInfo>
+  addresses: VacancyAddress[]
 }) {
-  if (Object.keys(commute).length === 0) return
+  const withCommute = addresses.filter((a) => a.commute)
+  if (withCommute.length === 0) return
 
   return (
     <div className="mt-4">
@@ -17,14 +18,18 @@ export function VacancyCommuteSection({
         <div className="font-medium">Morgens</div>
         <div className="font-medium">Tagsüber</div>
         <div className="font-medium">Entfernung</div>
-        {Object.entries(commute).map(([addr, info]) => (
-          <div key={addr} className="contents">
-            <div>{addr}</div>
-            <div>{info.durations.morning} min</div>
-            <div>{info.durations.day} min</div>
-            <div>{info.distance}</div>
-          </div>
-        ))}
+        {withCommute.map((addr) => {
+          const info = addr.commute
+          if (!info) return null
+          return (
+            <div key={addr.format()} className="contents">
+              <div>{addr.format()}</div>
+              <div>{info.durations.morning} min</div>
+              <div>{info.durations.day} min</div>
+              <div>{info.distance}</div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

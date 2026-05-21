@@ -1,19 +1,18 @@
-import type { VacancyWithStatus } from "@/ui/data"
+import type { Vacancy } from "@/models/vacancy"
 import type { SortKey } from "./filter-bar"
 
-export function getCommuteSummary(
-  vacancy: VacancyWithStatus,
-): string | undefined {
-  const values = Object.values(vacancy.commute)
-  if (values.length === 0) return undefined
-  const first = values[0]
+export function getCommuteSummary(vacancy: Vacancy): string | undefined {
+  const withCommute = vacancy.addresses.filter((a) => a.commute)
+  if (withCommute.length === 0) return undefined
+  const first = withCommute[0].commute
+  if (!first) return undefined
   return `${first.durations.morning} min (${first.distance})`
 }
 
 export function compareVacancies(
   sortBy: SortKey,
-  a: VacancyWithStatus,
-  b: VacancyWithStatus,
+  a: Vacancy,
+  b: Vacancy,
 ): number {
   switch (sortBy) {
     case "company": {
@@ -34,7 +33,7 @@ export function compareVacancies(
 }
 
 export function getLatestActivityDate(
-  vacancy: Pick<VacancyWithStatus, "activityHistory">,
+  vacancy: Pick<Vacancy, "activityHistory">,
 ): string {
   return vacancy.activityHistory.at(-1)?.date ?? ""
 }
@@ -47,8 +46,10 @@ const MATCH_SCORE_ORDER = [
   "very-bad",
 ] as const
 
-function getCommuteMorningMinutes(vacancy: VacancyWithStatus): number {
-  const values = Object.values(vacancy.commute)
-  if (values.length === 0) return Number.POSITIVE_INFINITY
-  return values[0].durations.morning
+function getCommuteMorningMinutes(vacancy: Vacancy): number {
+  const withCommute = vacancy.addresses.filter((a) => a.commute)
+  if (withCommute.length === 0) return Number.POSITIVE_INFINITY
+  const first = withCommute[0].commute
+  if (!first) return Number.POSITIVE_INFINITY
+  return first.durations.morning
 }
