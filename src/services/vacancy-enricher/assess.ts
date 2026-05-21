@@ -39,7 +39,7 @@ function buildAssessPrompt(
     `## Stellenausschreibung
 Titel: ${vacancy.title}
 Unternehmen: ${vacancy.company}
-Standort: ${vacancy.addresses.join(", ") || "Nicht angegeben"}
+Standort: ${vacancy.addresses.map((a) => a.format()).join(", ") || "Nicht angegeben"}
 ${vacancy.description ? `Beschreibung:\n${vacancy.description}` : "Keine Beschreibung vorhanden."}`,
     applicant.llmFriendlyDescription(),
   ]

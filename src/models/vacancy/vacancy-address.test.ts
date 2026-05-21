@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { VacancyAddress } from "./vacancy-address"
+import { VacancyAddress } from "."
 
 describe("VacancyAddress", () => {
   it("fromString puts whole string into street", () => {

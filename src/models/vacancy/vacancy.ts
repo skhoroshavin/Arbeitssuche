@@ -1,5 +1,10 @@
 import { z } from "zod"
-import { VacancyAddress, CommuteInfo, CommuteInfoSchema } from "./vacancy-address.js"
+
+import {
+  VacancyAddress,
+  CommuteInfo,
+  CommuteInfoSchema,
+} from "./vacancy-address.js"
 
 export type ActivityType =
   | "found"
@@ -10,87 +15,6 @@ export type ActivityType =
   | "offered"
   | "rejected"
   | "not-interested"
-
-export type VacancyStatus =
-  | "new"
-  | "gone"
-  | "renewed"
-  | "applied"
-  | "ignored"
-  | "invited"
-  | "interviewed"
-  | "offered"
-  | "rejected"
-  | "not-interested"
-
-export interface VacancySource {
-  site: string
-  url: string
-}
-
-export interface VacancyContact {
-  name: string
-  email: string
-  phone: string
-}
-
-export type MatchScore = "very-bad" | "bad" | "ok" | "good" | "excellent" | "unknown"
-
-export type Activity =
-  | FoundActivity
-  | NotFoundActivity
-  | AppliedActivity
-  | InvitedActivity
-  | InterviewedActivity
-  | OfferedActivity
-  | RejectedActivity
-  | NotInterestedActivity
-
-export interface FoundActivity extends BaseActivity {
-  type: "found"
-  site: string
-  url: string
-  description: string
-  contact: VacancyContact
-}
-
-export interface NotFoundActivity extends BaseActivity {
-  type: "not-found"
-  site: string
-}
-
-interface AppliedActivity extends BaseActivity {
-  type: "applied"
-}
-
-interface InvitedActivity extends BaseActivity {
-  type: "invited"
-  interviewDate: string
-}
-
-interface InterviewedActivity extends BaseActivity {
-  type: "interviewed"
-  outcome: "completed" | "cancelled"
-}
-
-interface OfferedActivity extends BaseActivity {
-  type: "offered"
-  startDate: string
-  salary: string
-}
-
-interface RejectedActivity extends BaseActivity {
-  type: "rejected"
-}
-
-interface NotInterestedActivity extends BaseActivity {
-  type: "not-interested"
-}
-
-interface BaseActivity {
-  date: string
-  notes: string
-}
 
 export class Vacancy {
   hash = ""
@@ -115,7 +39,9 @@ export class Vacancy {
     vacancy.title = parsed.title
     vacancy.company = parsed.company
     vacancy.addresses = parsed.addresses.map((a) =>
-      typeof a === "string" ? VacancyAddress.fromString(a) : VacancyAddress.parse(a),
+      typeof a === "string"
+        ? VacancyAddress.fromString(a)
+        : VacancyAddress.parse(a),
     )
     vacancy.contact = parsed.contact
     vacancy.startDate = parsed.startDate
@@ -128,10 +54,10 @@ export class Vacancy {
     vacancy.active = parsed.active
     vacancy.coverLetter = parsed.coverLetter
 
-    if (parsed.commute && typeof parsed.commute === "object") {
+    if (parsed.commute) {
       for (const [key, value] of Object.entries(parsed.commute)) {
         const addr = vacancy.addresses.find((a) => a.format() === key)
-        if (addr && value) {
+        if (addr) {
           addr.commute = value
         }
       }
@@ -183,6 +109,60 @@ export class Vacancy {
   getLatestActivityDate(): string {
     return this.activityHistory.at(-1)?.date ?? ""
   }
+}
+
+export type VacancyStatus =
+  | "new"
+  | "gone"
+  | "renewed"
+  | "applied"
+  | "ignored"
+  | "invited"
+  | "interviewed"
+  | "offered"
+  | "rejected"
+  | "not-interested"
+
+export interface VacancySource {
+  site: string
+  url: string
+}
+
+export type MatchScore =
+  | "very-bad"
+  | "bad"
+  | "ok"
+  | "good"
+  | "excellent"
+  | "unknown"
+
+export type Activity =
+  | FoundActivity
+  | NotFoundActivity
+  | AppliedActivity
+  | InvitedActivity
+  | InterviewedActivity
+  | OfferedActivity
+  | RejectedActivity
+  | NotInterestedActivity
+
+export interface FoundActivity extends BaseActivity {
+  type: "found"
+  site: string
+  url: string
+  description: string
+  contact: VacancyContact
+}
+
+export interface VacancyContact {
+  name: string
+  email: string
+  phone: string
+}
+
+export interface NotFoundActivity extends BaseActivity {
+  type: "not-found"
+  site: string
 }
 
 const VacancyContactSchema = z.object({
@@ -271,6 +251,58 @@ const VacancyInputSchema = z
   })
   .passthrough()
 
+export const VacancySerializedSchema = z.object({
+  hash: z.string(),
+  title: z.string(),
+  company: z.string(),
+  addresses: z.array(z.unknown()),
+  contact: VacancyContactSchema,
+  startDate: z.string(),
+  description: z.string(),
+  enriched: z.boolean(),
+  enrichmentDirty: z.boolean(),
+  summary: z.string(),
+  matchScore: z.string(),
+  activityHistory: z.array(z.unknown()),
+  active: z.boolean(),
+  coverLetter: z.string(),
+  status: z.string(),
+  sources: z.array(VacancySourceSchema),
+})
+
+interface AppliedActivity extends BaseActivity {
+  type: "applied"
+}
+
+interface InvitedActivity extends BaseActivity {
+  type: "invited"
+  interviewDate: string
+}
+
+interface InterviewedActivity extends BaseActivity {
+  type: "interviewed"
+  outcome: "completed" | "cancelled"
+}
+
+interface OfferedActivity extends BaseActivity {
+  type: "offered"
+  startDate: string
+  salary: string
+}
+
+interface RejectedActivity extends BaseActivity {
+  type: "rejected"
+}
+
+interface NotInterestedActivity extends BaseActivity {
+  type: "not-interested"
+}
+
+interface BaseActivity {
+  date: string
+  notes: string
+}
+
 function deriveStatusNoUserActivity(
   activityHistory: Activity[],
   active: boolean,
@@ -297,22 +329,3 @@ function deriveStatusFromHistory(
   if (types.has("not-interested")) return "not-interested"
   return active ? "new" : "gone"
 }
-
-export const VacancySerializedSchema = z.object({
-  hash: z.string(),
-  title: z.string(),
-  company: z.string(),
-  addresses: z.array(z.unknown()),
-  contact: VacancyContactSchema,
-  startDate: z.string(),
-  description: z.string(),
-  enriched: z.boolean(),
-  enrichmentDirty: z.boolean(),
-  summary: z.string(),
-  matchScore: z.string(),
-  activityHistory: z.array(z.unknown()),
-  active: z.boolean(),
-  coverLetter: z.string(),
-  status: z.string(),
-  sources: z.array(VacancySourceSchema),
-})

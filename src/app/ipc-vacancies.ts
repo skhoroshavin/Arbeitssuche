@@ -25,13 +25,10 @@ export function registerVacanciesHandlers(
     }
   })
 
-  handle(
-    "job-searches:vacancies:seed",
-    (id: string, vacancies: Vacancy[]) => {
-      services.vacancyRepo.save(makeJobSearchID(id), vacancies)
-      return { ok: true as const, count: vacancies.length }
-    },
-  )
+  handle("job-searches:vacancies:seed", (id: string, vacancies: Vacancy[]) => {
+    services.vacancyRepo.save(makeJobSearchID(id), vacancies)
+    return { ok: true as const, count: vacancies.length }
+  })
 
   handle("job-searches:vacancies:load", (id: string, hash: string) => {
     const vacancy = services.vacancyRepo.findByHash(makeJobSearchID(id), hash)
@@ -48,7 +45,9 @@ export function registerVacanciesHandlers(
   handle(
     "job-searches:vacancies:add-activity",
     (id: string, hash: string, activity: Activity) => {
-      const vacancies = services.vacancyRepo.allForJobSearch(makeJobSearchID(id))
+      const vacancies = services.vacancyRepo.allForJobSearch(
+        makeJobSearchID(id),
+      )
       const vacancy = vacancies.find((v) => v.hash === hash)
       if (!vacancy) throw new Error(`Vacancy "${hash}" not found`)
       vacancy.addActivity(activity)
@@ -213,10 +212,9 @@ function createEnrichQueue(
     context: { applicant, jobSearch },
     onEnriched: (enriched, hash) => {
       existingByHash.set(hash, enriched)
-      services.vacancyRepo.save(
-        makeJobSearchID(jobSearchId),
-        [...existingByHash.values()],
-      )
+      services.vacancyRepo.save(makeJobSearchID(jobSearchId), [
+        ...existingByHash.values(),
+      ])
       safeSend("job:progress", {
         jobSearchId,
         message: "",

@@ -67,7 +67,9 @@ export class CoverLetterWriter {
       this.llm,
     )
 
-    const vacancies = this.vacancyRepo.allForJobSearch(makeJobSearchID(jobSearchId))
+    const vacancies = this.vacancyRepo.allForJobSearch(
+      makeJobSearchID(jobSearchId),
+    )
     const target = vacancies.find((v) => v.hash === vacancyHash)
     if (!target) throw new Error(`Vacancy "${vacancyHash}" not found`)
     target.coverLetter = content

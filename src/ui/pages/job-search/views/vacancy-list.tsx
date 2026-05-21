@@ -5,10 +5,7 @@ import { useApiKeyStatus, useJobSearchVacancyListView } from "@/ui/data"
 import { invalidateQuery, jobSearchQueryKeys } from "@/ui/data"
 import { useStartJobSearchCrawl, useAbortJobSearchCrawl } from "@/ui/data"
 import type { Vacancy } from "@/models/vacancy"
-import {
-  useEnrichAllUnenriched,
-  useAbortEnrichment,
-} from "@/ui/data"
+import { useEnrichAllUnenriched, useAbortEnrichment } from "@/ui/data"
 import {
   getEnrichAbortChannel,
   useJobProgress,

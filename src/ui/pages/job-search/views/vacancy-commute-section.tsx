@@ -20,7 +20,7 @@ export function VacancyCommuteSection({
         <div className="font-medium">Entfernung</div>
         {withCommute.map((addr) => {
           const info = addr.commute
-          if (!info) return null
+          if (!info) return
           return (
             <div key={addr.format()} className="contents">
               <div>{addr.format()}</div>

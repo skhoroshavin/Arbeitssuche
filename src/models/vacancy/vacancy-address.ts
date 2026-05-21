@@ -1,17 +1,6 @@
 import { z } from "zod"
+
 import { Address } from "@/models/common"
-
-export interface CommuteInfo {
-  distance: string
-  durations: CommuteDurations
-  fetchedAt: string
-}
-
-interface CommuteDurations {
-  morning: number
-  day: number
-  evening: number
-}
 
 export const CommuteInfoSchema = z.object({
   distance: z.string(),
@@ -43,6 +32,18 @@ export class VacancyAddress extends Address {
     addr.commute = parsed.commute
     return addr
   }
+}
+
+export interface CommuteInfo {
+  distance: string
+  durations: CommuteDurations
+  fetchedAt: string
+}
+
+interface CommuteDurations {
+  morning: number
+  day: number
+  evening: number
 }
 
 const VacancyAddressSchema = z.object({

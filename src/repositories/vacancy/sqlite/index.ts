@@ -1,3 +1,4 @@
+import { z } from "zod"
 import { Database, semverGreaterThan } from "@/utils/index.js"
 import { Vacancy } from "@/models/vacancy/index.js"
 import type { JobSearchID } from "@/models/job-search"
@@ -49,33 +50,34 @@ function runVacancyMigration(database: Database): void {
 
 function migrateCoverLetters(database: Database): void {
   const tableInfo = database
-    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='cover_letters'")
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='cover_letters'",
+    )
     .get()
   if (!tableInfo) return
 
   const rows = database
     .prepare("SELECT job_search_id, vacancy_hash, content FROM cover_letters")
-    .all() as Array<{
-    job_search_id: string
-    vacancy_hash: string
-    content: string
-  }>
+    .all()
+    .filter(isCoverLetterRow)
 
   for (const row of rows) {
     const existing = database
-      .prepare("SELECT data FROM vacancies WHERE job_search_id = ? AND hash = ?")
-      .get(row.job_search_id, row.vacancy_hash) as
-      | { data: string }
-      | undefined
-    if (!existing) continue
+      .prepare(
+        "SELECT data FROM vacancies WHERE job_search_id = ? AND hash = ?",
+      )
+      .get(row.job_search_id, row.vacancy_hash)
+    if (!isDataRow(existing)) continue
 
-    const data = JSON.parse(existing.data) as Record<string, unknown>
-    data.coverLetter = row.content
+    const parsedData = z
+      .record(z.string(), z.unknown())
+      .parse(JSON.parse(existing.data))
+    parsedData.coverLetter = row.content
     database
       .prepare(
         "UPDATE vacancies SET data = ? WHERE job_search_id = ? AND hash = ?",
       )
-      .run(JSON.stringify(data), row.job_search_id, row.vacancy_hash)
+      .run(JSON.stringify(parsedData), row.job_search_id, row.vacancy_hash)
   }
 }
 
@@ -126,6 +128,35 @@ class SqliteVacancyRepository implements VacancyRepository {
   private readonly deleteStaleVacanciesStmt
   private readonly upsertVacancyStmt
   private readonly findByHashStmt
+}
+
+function isCoverLetterRow(row: unknown): row is {
+  job_search_id: string
+  vacancy_hash: string
+  content: string
+} {
+  return isObjectWithProperties(row, [
+    "job_search_id",
+    "vacancy_hash",
+    "content",
+  ]) satisfies boolean
+}
+
+function isObjectWithProperties(value: unknown, properties: string[]): boolean {
+  if (typeof value !== "object" || value === null) return false
+  for (const property of properties) {
+    if (
+      !(property in value) ||
+      typeof (value satisfies Record<string, unknown>)[property] !== "string"
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+function isDataRow(row: unknown): row is { data: string } {
+  return isObjectWithProperties(row, ["data"]) satisfies boolean
 }
 
 function hydrateVacancyRow(row: Record<string, unknown>): Vacancy {

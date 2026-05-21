@@ -58,11 +58,7 @@ export class ElectronApiHelper {
     vacancies: Record<string, unknown>[],
   ): Promise<number> {
     try {
-      await this.invoke(
-        "job-searches:vacancies:seed",
-        jobSearchId,
-        vacancies,
-      )
+      await this.invoke("job-searches:vacancies:seed", jobSearchId, vacancies)
       return 200
     } catch {
       return 400
@@ -164,7 +160,12 @@ interface E2eVacancy {
   title: string
   company: string
   summary: string
-  addresses: Array<{ street?: string; zip?: string; city?: string; commute?: { distance: string } }>
+  addresses: Array<{
+    street?: string
+    zip?: string
+    city?: string
+    commute?: { distance: string }
+  }>
   sources: Array<{ site: string; url: string }>
 }
 

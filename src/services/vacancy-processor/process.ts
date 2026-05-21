@@ -36,7 +36,13 @@ export function process(
   const existing = existingByHash.get(hash)
 
   if (existing) {
-    return mergeWithExisting(existing, details, hash, foundActivity, description)
+    return mergeWithExisting(
+      existing,
+      details,
+      hash,
+      foundActivity,
+      description,
+    )
   }
 
   const vacancy = new Vacancy()

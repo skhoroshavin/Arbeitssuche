@@ -11,17 +11,9 @@ export {
   VacancySerializedSchema,
   type Activity,
   type ActivityType,
-  type AppliedActivity,
   type FoundActivity,
-  type InterviewedActivity,
-  type InvitedActivity,
-  type MatchScore,
   type NotFoundActivity,
-  type NotInterestedActivity,
-  type OfferedActivity,
-  type RejectedActivity,
   type VacancyContact,
-  type VacancySource,
   type VacancyStatus,
 } from "./vacancy.js"
-export { VacancyAddress, CommuteInfoSchema, type CommuteInfo } from "./vacancy-address.js"
+export { VacancyAddress } from "./vacancy-address.js"
