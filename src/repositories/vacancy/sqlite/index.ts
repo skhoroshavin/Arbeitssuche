@@ -43,7 +43,7 @@ function runVacancyMigration(database: Database): void {
         INSERT OR REPLACE INTO _migrations (repository, version)
         VALUES ('vacancy', '0.4.0')
       `)
-    })()
+    })
   }
 }
 
@@ -113,7 +113,7 @@ class SqliteVacancyRepository implements VacancyRepository {
           JSON.stringify(vacancy),
         )
       }
-    })()
+    })
   }
 
   findByHash(jobSearchId: JobSearchID, hash: string): Vacancy | undefined {

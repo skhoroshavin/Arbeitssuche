@@ -6,7 +6,6 @@ import { createSqliteJobSearchRepository } from "@/repositories/job-search"
 import { makeJobSearchID } from "@/models/job-search"
 import { setupTemporaryDatabaseDirectory } from "@/test-helpers"
 import { Database } from "@/utils"
-import type { VacancyDTO, Activity } from "@/models/vacancy"
 import { Vacancy } from "@/models/vacancy/index.js"
 
 vacancyRepositoryTests("StubVacancyRepository", () => ({
@@ -18,10 +17,10 @@ vacancyRepositoryTests("StubVacancyRepository", () => ({
 
 test("StubVacancyRepository initializes from provided data", () => {
   const repo = createStubVacancyRepository({
-    s1: { vacancies: [makeVacancy()], latestCrawl: "2026-01-01.yaml" },
+    s1: [makeVacancy()],
   })
-  const output = repo.loadAll(makeJobSearchID("s1"))
-  expect(output.vacancies.length).toBe(1)
+  const output = repo.allForJobSearch(makeJobSearchID("s1"))
+  expect(output.length).toBe(1)
 })
 
 // --- SqliteVacancyRepository ---
@@ -37,40 +36,32 @@ vacancyRepositoryTests("SqliteVacancyRepository", () =>
 test("saved vacancies survive new repository instance", () => {
   const id = nextId()
   const { repo: repo1, teardown: t1 } = openDatabaseById(id)
-  repo1.save(makeJobSearchID("s1"), [makeVacancy()], "2026-01-01.yaml")
+  repo1.save(makeJobSearchID("s1"), [makeVacancy()])
   t1()
 
   const { repo: repo2, teardown: t2 } = openDatabaseById(id)
-  const output = repo2.loadAll(makeJobSearchID("s1"))
-  expect(output.vacancies.length).toBe(1)
-  expect(output.latestCrawl).toBe("2026-01-01.yaml")
-  expect(output.vacancies[0].hash).toBe("abc123")
-  expect(output.vacancies[0].title).toBe("Developer")
+  const output = repo2.allForJobSearch(makeJobSearchID("s1"))
+  expect(output.length).toBe(1)
+  expect(output[0].hash).toBe("abc123")
+  expect(output[0].title).toBe("Developer")
   t2()
 })
 
-test("added activity persists across instances", () => {
-  const id = nextId()
-  const { repo: repo1, teardown: t1 } = openDatabaseById(id)
-  repo1.save(makeJobSearchID("s1"), [makeVacancy()], "2026-01-01.yaml")
-  repo1.addActivity(makeJobSearchID("s1"), "abc123", {
-    type: "applied",
-    notes: "",
-    date: "2026-01-15",
-  })
-  t1()
+test("cover letter persists via save round-trip", () => {
+  const { repo, teardown } = openDatabaseById(nextId())
+  const v = makeVacancy()
+  v.coverLetter = "Dear hiring manager..."
+  repo.save(makeJobSearchID("s1"), [v])
 
-  const { repo: repo2, teardown: t2 } = openDatabaseById(id)
-  const loaded = repo2.loadAll(makeJobSearchID("s1"))
-  expect(loaded.vacancies[0].activityHistory.length).toBe(1)
-  expect(loaded.vacancies[0].activityHistory[0].type).toBe("applied")
-  t2()
+  const loaded = repo.allForJobSearch(makeJobSearchID("s1"))
+  expect(loaded[0].coverLetter).toBe("Dear hiring manager...")
+  teardown()
 })
 
 test("findByHash works across instances", () => {
   const id = nextId()
   const { repo: repo1, teardown: t1 } = openDatabaseById(id)
-  repo1.save(makeJobSearchID("s1"), [makeVacancy()], "2026-01-01.yaml")
+  repo1.save(makeJobSearchID("s1"), [makeVacancy()])
   t1()
 
   const { repo: repo2, teardown: t2 } = openDatabaseById(id)
@@ -87,34 +78,33 @@ test("multiple vacancies persist correctly", () => {
   const { repo: repo1, teardown: t1 } = openDatabaseById(id)
   const v1 = makeVacancy({ hash: "h1", title: "Frontend Dev" })
   const v2 = makeVacancy({ hash: "h2", title: "Backend Dev" })
-  repo1.save(makeJobSearchID("s1"), [v1, v2], "2026-01-01.yaml")
+  repo1.save(makeJobSearchID("s1"), [v1, v2])
   t1()
 
   const { repo: repo2, teardown: t2 } = openDatabaseById(id)
-  const output = repo2.loadAll(makeJobSearchID("s1"))
-  expect(output.vacancies.length).toBe(2)
-  const titles = output.vacancies.map((v) => v.title).toSorted()
+  const output = repo2.allForJobSearch(makeJobSearchID("s1"))
+  expect(output.length).toBe(2)
+  const titles = output.map((v) => v.title).toSorted()
   expect(titles).toEqual(["Backend Dev", "Frontend Dev"])
   t2()
 })
 
-test("save replaces vacancies across instances", () => {
+test("save replaces vacancies", () => {
   const id = nextId()
   const { repo: repo1, teardown: t1 } = openDatabaseById(id)
   const v1 = makeVacancy({ hash: "h1" })
   const v2 = makeVacancy({ hash: "h2" })
-  repo1.save(makeJobSearchID("s1"), [v1, v2], "2026-01-01.yaml")
-  repo1.save(makeJobSearchID("s1"), [v1], "2026-02-01.yaml")
+  repo1.save(makeJobSearchID("s1"), [v1, v2])
+  repo1.save(makeJobSearchID("s1"), [v1])
   t1()
 
   const { repo: repo2, teardown: t2 } = openDatabaseById(id)
-  const output = repo2.loadAll(makeJobSearchID("s1"))
-  expect(output.vacancies.length).toBe(1)
-  expect(output.latestCrawl).toBe("2026-02-01.yaml")
+  const output = repo2.allForJobSearch(makeJobSearchID("s1"))
+  expect(output.length).toBe(1)
   t2()
 })
 
-test("migrates v0.2.0 schema to current", () => {
+test("migrates cover_letters into vacancy JSON on init", () => {
   const id = nextId()
   const database = Database.open(pathForId(id))
 
@@ -126,14 +116,6 @@ test("migrates v0.2.0 schema to current", () => {
       data TEXT NOT NULL
     )
   `)
-
-  database.exec(`
-    CREATE TABLE vacancy_meta (
-      job_search_id TEXT PRIMARY KEY,
-      generated_at TEXT NOT NULL,
-      latest_crawl TEXT NOT NULL
-    )
-  `)
   database.exec(`
     CREATE TABLE vacancies (
       job_search_id TEXT NOT NULL,
@@ -143,7 +125,7 @@ test("migrates v0.2.0 schema to current", () => {
     )
   `)
   database.exec(`
-    CREATE TABLE IF NOT EXISTS cover_letters (
+    CREATE TABLE cover_letters (
       job_search_id TEXT NOT NULL,
       vacancy_hash TEXT NOT NULL DEFAULT '',
       content TEXT NOT NULL,
@@ -157,9 +139,6 @@ test("migrates v0.2.0 schema to current", () => {
     )
     .run("s1")
 
-  database
-    .prepare("INSERT INTO vacancy_meta VALUES (?, ?, ?)")
-    .run("s1", "2026-01-01", "2026-01-01.yaml")
   database.prepare("INSERT INTO vacancies VALUES (?, ?, ?)").run(
     "s1",
     "h1",
@@ -167,111 +146,21 @@ test("migrates v0.2.0 schema to current", () => {
       hash: "h1",
       title: "Dev",
       company: "ACME",
-      urls: [],
       addresses: [],
       active: true,
       activityHistory: [],
     }),
   )
+
+  database
+    .prepare("INSERT INTO cover_letters VALUES (?, ?, ?)")
+    .run("s1", "h1", "cover letter content")
 
   const repo = createSqliteVacancyRepository(database)
-
-  const output = repo.loadAll(makeJobSearchID("s1"))
-  expect(output.vacancies.length).toBe(1)
-  expect(output.vacancies[0].contact).toEqual({
-    name: "",
-    email: "",
-    phone: "",
-  })
+  const loaded = repo.allForJobSearch(makeJobSearchID("s1"))
+  expect(loaded[0].coverLetter).toBe("cover letter content")
 
   database.close()
-})
-
-// --- Hydration defaults ---
-
-test("hydrates missing active field as true", () => {
-  const id = nextId()
-  const { db, repo, teardown } = openDatabaseById(id)
-  db.prepare(
-    "INSERT INTO vacancy_meta (job_search_id, generated_at, latest_crawl) VALUES (?, ?, ?)",
-  ).run("s1", "2026-01-01T00:00:00Z", "2026-01-01.yaml")
-  db.prepare(
-    "INSERT INTO vacancies (job_search_id, hash, data) VALUES (?, ?, ?)",
-  ).run(
-    "s1",
-    "h1",
-    JSON.stringify({
-      hash: "h1",
-      title: "Dev",
-      company: "ACME",
-      urls: [],
-      addresses: [],
-      descriptionChanged: false,
-      activityHistory: [],
-    }),
-  )
-
-  const output = repo.loadAll(makeJobSearchID("s1"))
-  expect(output.vacancies[0].active).toBe(true)
-  teardown()
-})
-
-test("hydrates missing enriched field as false when no summary", () => {
-  const id = nextId()
-  const { db, repo, teardown } = openDatabaseById(id)
-  db.prepare(
-    "INSERT INTO vacancy_meta (job_search_id, generated_at, latest_crawl) VALUES (?, ?, ?)",
-  ).run("s1", "2026-01-01T00:00:00Z", "2026-01-01.yaml")
-  db.prepare(
-    "INSERT INTO vacancies (job_search_id, hash, data) VALUES (?, ?, ?)",
-  ).run(
-    "s1",
-    "h1",
-    JSON.stringify({
-      hash: "h1",
-      title: "Dev",
-      company: "ACME",
-      urls: [],
-      addresses: [],
-      active: true,
-      activityHistory: [],
-    }),
-  )
-
-  const output = repo.loadAll(makeJobSearchID("s1"))
-  expect(output.vacancies[0].enriched).toBe(false)
-  expect(output.vacancies[0].enrichmentDirty).toBe(false)
-  teardown()
-})
-
-test("migrates enriched=true for existing vacancy with summary", () => {
-  const id = nextId()
-  const { db, repo, teardown } = openDatabaseById(id)
-  db.prepare(
-    "INSERT INTO vacancy_meta (job_search_id, generated_at, latest_crawl) VALUES (?, ?, ?)",
-  ).run("s1", "2026-01-01T00:00:00Z", "2026-01-01.yaml")
-  db.prepare(
-    "INSERT INTO vacancies (job_search_id, hash, data) VALUES (?, ?, ?)",
-  ).run(
-    "s1",
-    "h1",
-    JSON.stringify({
-      hash: "h1",
-      title: "Dev",
-      company: "ACME",
-      urls: [],
-      addresses: [],
-      active: true,
-      activityHistory: [],
-      summary: "- Good match\n- Relevant experience",
-      descriptionChanged: false,
-    }),
-  )
-
-  const output = repo.loadAll(makeJobSearchID("s1"))
-  expect(output.vacancies[0].enriched).toBe(true)
-  expect(output.vacancies[0].enrichmentDirty).toBe(false)
-  teardown()
 })
 
 function vacancyRepositoryTests(
@@ -279,48 +168,28 @@ function vacancyRepositoryTests(
   createRepo: () => { repo: VacancyRepository; teardown: () => void },
 ) {
   describe(name, () => {
-    test("returns empty output for missing job search", () => {
+    test("returns empty array for missing job search", () => {
       const { repo, teardown } = createRepo()
-      expect(repo.loadAll(makeJobSearchID("nope"))).toEqual({
-        generatedAt: "",
-        latestCrawl: "",
-        vacancies: [],
-      })
+      expect(repo.allForJobSearch(makeJobSearchID("nope"))).toEqual([])
       teardown()
     })
 
-    test("save + loadAll round-trips", () => {
+    test("save + allForSearch round-trips", () => {
       const { repo, teardown } = createRepo()
-      repo.save(makeJobSearchID("s1"), [makeVacancy()], "2026-01-01.yaml")
-      const output = repo.loadAll(makeJobSearchID("s1"))
-      expect(output.vacancies.length).toBe(1)
-      expect(output.vacancies[0].hash).toBe("abc123")
-      teardown()
-    })
-
-    test("addActivity appends to vacancy history", () => {
-      const { repo, teardown } = createRepo()
-      repo.save(makeJobSearchID("s1"), [makeVacancy()], "2026-01-01.yaml")
-      const activity: Activity = {
-        type: "applied",
-        date: "2026-01-15",
-        notes: "",
-      }
-      repo.addActivity(makeJobSearchID("s1"), "abc123", activity)
-      const loaded = repo.loadAll(makeJobSearchID("s1"))
-      expect(loaded.vacancies[0].activityHistory.length).toBe(1)
-      expect(loaded.vacancies[0].activityHistory[0].type).toBe("applied")
+      repo.save(makeJobSearchID("s1"), [makeVacancy()])
+      const output = repo.allForJobSearch(makeJobSearchID("s1"))
+      expect(output.length).toBe(1)
+      expect(output[0].hash).toBe("abc123")
       teardown()
     })
   })
 }
 
-function makeVacancy(overrides: Partial<VacancyDTO> = {}): Vacancy {
-  return new Vacancy({
+function makeVacancy(overrides: Record<string, unknown> = {}): Vacancy {
+  return Vacancy.parse({
     hash: "abc123",
     title: "Developer",
     company: "ACME",
-    urls: ["https://example.com/job/1"],
     addresses: ["Berlin"],
     contact: { name: "", email: "", phone: "" },
     activityHistory: [],
@@ -331,7 +200,6 @@ function makeVacancy(overrides: Partial<VacancyDTO> = {}): Vacancy {
 
 function openDatabaseById(id: string) {
   const database = Database.open(pathForId(id))
-  // Create job_searches table and insert parent row so FK constraints are satisfied
   createSqliteJobSearchRepository(database)
   database
     .prepare(
