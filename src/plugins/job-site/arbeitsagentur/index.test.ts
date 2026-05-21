@@ -16,7 +16,7 @@ describe("arbeitsagentur", () => {
       expect(url.includes("was=Software")).toBeTruthy()
       expect(url.includes("wo=Berlin")).toBeTruthy()
       expect(url.includes("angebotsart=1")).toBeTruthy()
-      expect(url.includes("umkreis=25")).toBeTruthy()
+      expect(url.includes("umkreis=15")).toBeTruthy()
       expect(url.includes("page=1")).toBeTruthy()
       expect(url.includes("size=25")).toBeTruthy()
     })
@@ -37,7 +37,7 @@ describe("arbeitsagentur", () => {
       await site.getVacancyList({
         location: "München",
         query: "",
-        radiusKm: 25,
+        radiusKm: 15,
         mode: "apprenticeship",
       })
 
@@ -53,7 +53,7 @@ describe("arbeitsagentur", () => {
       await site.getVacancyList({
         location: "Hamburg",
         query: "",
-        radiusKm: 25,
+        radiusKm: 15,
         mode: "entry-level",
       })
 
@@ -272,6 +272,6 @@ function buildStub(
 const baseCriteria: SearchCriteria = {
   location: "Berlin",
   query: "Software",
-  radiusKm: 25,
+  radiusKm: 15,
   mode: "employment",
 }

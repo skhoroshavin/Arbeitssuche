@@ -5,7 +5,7 @@ import type {
 import type { ProgressEvent } from "@/models/progress/index.js"
 import { createElectronBrowser } from "@/plugins/browser"
 
-export function startCrawl(options: StartCrawlOptions): void {
+export async function startCrawl(options: StartCrawlOptions): Promise<void> {
   const { jobSearchId, vacancyScanner, onProgress, onComplete, onError } =
     options
 
@@ -22,7 +22,7 @@ export function startCrawl(options: StartCrawlOptions): void {
     phase: "crawling",
   }
   activeCrawls.set(jobSearchId, activeCrawl)
-  const browser = createElectronBrowser()
+  const browser = await createElectronBrowser()
 
   const wrappedOnProgress: OnProgress = (event) => {
     updateActiveCrawl(activeCrawl, event)

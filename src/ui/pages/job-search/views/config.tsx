@@ -57,7 +57,7 @@ export default function JobSearchConfig() {
 
 const DEFAULT_FORM_VALUES: ConfigFormValues = {
   searchTerm: "",
-  radiusKm: 30,
+  radiusKm: 15,
   searchMode: "employment",
   sources: [],
   maxResults: "",
