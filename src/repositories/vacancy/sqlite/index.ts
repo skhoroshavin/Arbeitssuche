@@ -1,35 +1,14 @@
-import { Database, semverGreaterThan } from "@/utils/index.js"
-
-import { Vacancy } from "@/models/vacancy/index.js"
-
-import type { Activity } from "@/models/vacancy"
-
-import type { JobSearchID } from "@/models/job-search"
-
-import { resolveVacancy } from "@/models/vacancy/index.js"
-
-import {
-  EMPTY_VACANCY_LIST_OUTPUT,
-  createVacancyListOutput,
-} from "@/repositories/vacancy/output.js"
-
-import type { VacancyRepository } from "@/repositories/vacancy"
-
 import { z } from "zod"
-
-import { VacancyDTOSchema } from "@/models/vacancy"
+import { Database, semverGreaterThan } from "@/utils/index.js"
+import { Vacancy } from "@/models/vacancy/index.js"
+import type { JobSearchID } from "@/models/job-search"
+import type { VacancyRepository } from "@/repositories/vacancy"
 
 export function createSqliteVacancyRepository(
   database: Database,
 ): VacancyRepository {
   runVacancyMigration(database)
   database.exec(`
-    CREATE TABLE IF NOT EXISTS vacancy_meta (
-      job_search_id TEXT PRIMARY KEY REFERENCES job_searches(id) ON DELETE CASCADE,
-      generated_at TEXT NOT NULL,
-      latest_crawl TEXT NOT NULL
-    );
-
     CREATE TABLE IF NOT EXISTS vacancies (
       job_search_id TEXT NOT NULL REFERENCES job_searches(id) ON DELETE CASCADE,
       hash TEXT NOT NULL,
@@ -56,26 +35,56 @@ function runVacancyMigration(database: Database): void {
       ? String(row.version)
       : "0.0.0"
 
-  if (semverGreaterThan("0.3.0", version)) {
+  if (semverGreaterThan("0.4.0", version)) {
     database.transaction(() => {
+      migrateCoverLetters(database)
+      database.exec(`DROP TABLE IF EXISTS cover_letters`)
+      database.exec(`DROP TABLE IF EXISTS vacancy_meta`)
       database.exec(`
         INSERT OR REPLACE INTO _migrations (repository, version)
-        VALUES ('vacancy', '0.3.0')
+        VALUES ('vacancy', '0.4.0')
       `)
     })
   }
 }
 
+function migrateCoverLetters(database: Database): void {
+  const tableInfo = database
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='cover_letters'",
+    )
+    .get()
+  if (!tableInfo) return
+
+  const rows = database
+    .prepare("SELECT job_search_id, vacancy_hash, content FROM cover_letters")
+    .all()
+    .filter(isCoverLetterRow)
+
+  for (const row of rows) {
+    const existing = database
+      .prepare(
+        "SELECT data FROM vacancies WHERE job_search_id = ? AND hash = ?",
+      )
+      .get(row.job_search_id, row.vacancy_hash)
+    if (!isDataRow(existing)) continue
+
+    const parsedData = z
+      .record(z.string(), z.unknown())
+      .parse(JSON.parse(existing.data))
+    parsedData.coverLetter = row.content
+    database
+      .prepare(
+        "UPDATE vacancies SET data = ? WHERE job_search_id = ? AND hash = ?",
+      )
+      .run(JSON.stringify(parsedData), row.job_search_id, row.vacancy_hash)
+  }
+}
+
 class SqliteVacancyRepository implements VacancyRepository {
   constructor(private readonly database: Database) {
-    this.loadMetaStmt = database.prepare(
-      "SELECT generated_at, latest_crawl FROM vacancy_meta WHERE job_search_id = ?",
-    )
     this.loadAllStmt = database.prepare(
       "SELECT data FROM vacancies WHERE job_search_id = ?",
-    )
-    this.upsertMetaStmt = database.prepare(
-      "INSERT OR REPLACE INTO vacancy_meta (job_search_id, generated_at, latest_crawl) VALUES (?, ?, ?)",
     )
     this.deleteStaleVacanciesStmt = database.prepare(
       "DELETE FROM vacancies WHERE job_search_id = ? AND hash NOT IN (SELECT value FROM json_each(?))",
@@ -86,49 +95,18 @@ class SqliteVacancyRepository implements VacancyRepository {
     this.findByHashStmt = database.prepare(
       "SELECT data FROM vacancies WHERE job_search_id = ? AND hash = ?",
     )
-    this.updateVacancyStmt = database.prepare(
-      "UPDATE vacancies SET data = ? WHERE job_search_id = ? AND hash = ?",
-    )
-    this.loadCoverLetterStmt = database.prepare(
-      "SELECT content FROM cover_letters WHERE job_search_id = ? AND vacancy_hash = ?",
-    )
-    this.saveCoverLetterStmt = database.prepare(
-      "INSERT OR REPLACE INTO cover_letters (job_search_id, vacancy_hash, content) VALUES (?, ?, ?)",
-    )
   }
 
-  loadAll(jobSearchId: JobSearchID) {
-    const metaRaw = this.loadMetaStmt.get(jobSearchId.value)
-    if (metaRaw === undefined) return EMPTY_VACANCY_LIST_OUTPUT
-    const meta = z
-      .object({ generated_at: z.string(), latest_crawl: z.string() })
-      .parse(metaRaw)
-
-    const vacancies = this.loadAllStmt
+  allForJobSearch(jobSearchId: JobSearchID): Vacancy[] {
+    return this.loadAllStmt
       .all(jobSearchId.value)
       .map((raw) => hydrateVacancyRow(raw))
-
-    return {
-      generatedAt: meta.generated_at,
-      latestCrawl: meta.latest_crawl,
-      vacancies,
-    }
   }
 
-  save(
-    jobSearchId: JobSearchID,
-    vacancies: Vacancy[],
-    latestCrawl: string,
-  ): void {
-    const output = createVacancyListOutput(vacancies, latestCrawl)
+  save(jobSearchId: JobSearchID, vacancies: Vacancy[]): void {
     const hashes = JSON.stringify(vacancies.map((v) => v.hash))
 
     this.database.transaction(() => {
-      this.upsertMetaStmt.run(
-        jobSearchId.value,
-        output.generatedAt,
-        output.latestCrawl,
-      )
       this.deleteStaleVacanciesStmt.run(jobSearchId.value, hashes)
       for (const vacancy of vacancies) {
         this.upsertVacancyStmt.run(
@@ -143,81 +121,45 @@ class SqliteVacancyRepository implements VacancyRepository {
   findByHash(jobSearchId: JobSearchID, hash: string): Vacancy | undefined {
     const row = this.findByHashStmt.getJsonData(jobSearchId.value, hash)
     if (row === undefined) return undefined
-    return hydrateVacancy(row)
+    return Vacancy.parse(row)
   }
 
-  addActivity(
-    jobSearchId: JobSearchID,
-    hash: string,
-    activity: Activity,
-  ): void {
-    const row = this.findByHashStmt.getJsonData(jobSearchId.value, hash)
-    if (row === undefined) throw new Error(`Vacancy "${hash}" not found`)
-
-    const vacancy = hydrateVacancy(row)
-    const updated = vacancy.with({
-      activityHistory: [...vacancy.activityHistory, activity],
-    })
-
-    this.updateVacancyStmt.run(JSON.stringify(updated), jobSearchId.value, hash)
-  }
-
-  loadCoverLetter(jobSearchId: JobSearchID, vacancyHash: string): string {
-    const raw = this.loadCoverLetterStmt.get(jobSearchId.value, vacancyHash)
-    if (raw === undefined) return ""
-    return CoverLetterRowSchema.parse(raw).content
-  }
-
-  saveCoverLetter(
-    jobSearchId: JobSearchID,
-    vacancyHash: string,
-    content: string,
-  ): void {
-    this.saveCoverLetterStmt.run(jobSearchId.value, vacancyHash, content)
-  }
-
-  private readonly loadMetaStmt
   private readonly loadAllStmt
-  private readonly upsertMetaStmt
   private readonly deleteStaleVacanciesStmt
   private readonly upsertVacancyStmt
   private readonly findByHashStmt
-  private readonly updateVacancyStmt
-  private readonly loadCoverLetterStmt
-  private readonly saveCoverLetterStmt
+}
+
+function isCoverLetterRow(row: unknown): row is {
+  job_search_id: string
+  vacancy_hash: string
+  content: string
+} {
+  return isObjectWithProperties(row, [
+    "job_search_id",
+    "vacancy_hash",
+    "content",
+  ]) satisfies boolean
+}
+
+function isObjectWithProperties(value: unknown, properties: string[]): boolean {
+  if (typeof value !== "object" || value === null) return false
+  for (const property of properties) {
+    if (
+      !(property in value) ||
+      typeof (value satisfies Record<string, unknown>)[property] !== "string"
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+function isDataRow(row: unknown): row is { data: string } {
+  return isObjectWithProperties(row, ["data"]) satisfies boolean
 }
 
 function hydrateVacancyRow(row: Record<string, unknown>): Vacancy {
   if (typeof row.data !== "string") throw new Error("Invalid vacancy row")
-  return hydrateVacancy(JSON.parse(row.data))
+  return Vacancy.parse(JSON.parse(row.data))
 }
-
-function hydrateVacancy(data: unknown): Vacancy {
-  const parsed = VacancyDTOSchema.partial()
-    .loose()
-    .parse(stripLegacyCommute(data))
-  return new Vacancy(resolveVacancy(parsed))
-}
-
-function stripLegacyCommute(data: unknown): unknown {
-  if (!isRecord(data)) return data
-  if (isRecord(data.commute) && hasLegacyCommuteFormat(data.commute)) {
-    return { ...data, commute: undefined }
-  }
-  return data
-}
-
-function hasLegacyCommuteFormat(commute: Record<string, unknown>): boolean {
-  return Object.values(commute).some((entry) => !isValidCommuteEntry(entry))
-}
-
-function isValidCommuteEntry(entry: unknown): boolean {
-  if (!isRecord(entry) || !isRecord(entry.durations)) return false
-  return typeof entry.durations.morning === "number"
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null
-}
-
-const CoverLetterRowSchema = z.object({ content: z.string() })

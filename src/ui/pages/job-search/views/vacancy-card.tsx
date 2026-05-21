@@ -3,7 +3,7 @@ import { Link } from "react-router"
 import { Markdown } from "@/ui/components"
 import { StatusBadge } from "@/ui/pages/job-search/components"
 import { MATCH_SCORE_LABELS, STATUS_LABELS } from "@/models/vacancy/index"
-import type { VacancyWithStatus } from "@/ui/data"
+import type { Vacancy } from "@/models/vacancy"
 import { useReEnrichVacancy } from "@/ui/data"
 import { getCommuteSummary, getLatestActivityDate } from "./vacancy-utilities"
 import { deriveEnrichmentState, type EnrichmentState } from "./enrichment-state"
@@ -14,7 +14,7 @@ export function VacancyCard({
   searchString,
   isEnriching: isJobSearchEnriching,
 }: {
-  vacancy: VacancyWithStatus
+  vacancy: Vacancy
   jobSearchId: string
   searchString: string
   isEnriching: boolean
@@ -65,7 +65,7 @@ export function VacancyCard({
           <VacancyCardSources sources={v.sources} />
           {v.addresses.length > 0 && (
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              {v.addresses.join(" | ")}
+              {v.addresses.map((a) => a.format()).join(" | ")}
             </p>
           )}
         </div>
@@ -217,7 +217,7 @@ function VacancyCardSources({
   )
 }
 
-function VacancyCardMeta({ vacancy }: { vacancy: VacancyWithStatus }) {
+function VacancyCardMeta({ vacancy }: { vacancy: Vacancy }) {
   const commute = getCommuteSummary(vacancy)
   const latestDate = getLatestActivityDate(vacancy)
   return (

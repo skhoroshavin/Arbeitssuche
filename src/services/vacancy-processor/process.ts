@@ -1,6 +1,7 @@
 import type { VacancyDetails } from "@/plugins/job-site"
 import { Vacancy } from "@/models/vacancy/index.js"
 import type { FoundActivity, VacancyContact } from "@/models/vacancy"
+import { VacancyAddress } from "@/models/vacancy"
 import { vacancyHash } from "./vacancy-hash.js"
 import { htmlToMarkdown } from "./markdown.js"
 
@@ -40,25 +41,24 @@ export function process(
       details,
       hash,
       foundActivity,
-      contact,
       description,
     )
   }
 
-  const vacancy = new Vacancy({
-    hash,
-    title: details.title,
-    company: details.company,
-    urls: [details.url],
-    addresses: details.address.isValid() ? [details.address.format()] : [],
-    contact,
-    startDate: details.startDate.value,
-    description,
-    enriched: false,
-    enrichmentDirty: true,
-    activityHistory: [foundActivity],
-    active: true,
-  })
+  const vacancy = new Vacancy()
+  vacancy.hash = hash
+  vacancy.title = details.title
+  vacancy.company = details.company
+  vacancy.addresses = details.address.isValid()
+    ? [VacancyAddress.fromString(details.address.format())]
+    : []
+  vacancy.contact = contact
+  vacancy.startDate = details.startDate.value
+  vacancy.description = description
+  vacancy.enriched = false
+  vacancy.enrichmentDirty = true
+  vacancy.activityHistory = [foundActivity]
+  vacancy.active = true
 
   return { vacancy, hash, isNew: true }
 }
@@ -68,7 +68,6 @@ function mergeWithExisting(
   details: VacancyDetails,
   hash: string,
   foundActivity: FoundActivity,
-  contact: VacancyContact,
   description: string,
 ): ProcessResult {
   const descriptionChanged = hasDescriptionChanged(
@@ -76,21 +75,22 @@ function mergeWithExisting(
     existing.description,
   )
 
-  const vacancy = existing.with({
-    urls: mergeUrls(existing.urls, details.url),
-    addresses: mergeAddresses(
-      existing.addresses,
-      details.address.isValid() ? [details.address.format()] : [],
-    ),
-    description: description || existing.description,
-    enrichmentDirty: existing.enrichmentDirty || descriptionChanged,
-    contact: hasContact(contact) ? contact : existing.contact,
-    startDate: details.startDate.value || existing.startDate,
-    activityHistory: [...existing.activityHistory, foundActivity],
-    active: true,
-  })
+  existing.addresses = mergeAddresses(
+    existing.addresses,
+    details.address.isValid()
+      ? [VacancyAddress.fromString(details.address.format())]
+      : [],
+  )
+  existing.description = description || existing.description
+  existing.enrichmentDirty = existing.enrichmentDirty || descriptionChanged
+  if (hasContact(details.contact)) {
+    existing.contact = details.contact
+  }
+  existing.startDate = details.startDate.value || existing.startDate
+  existing.addActivity(foundActivity)
+  existing.active = true
 
-  return { vacancy, hash, isNew: false }
+  return { vacancy: existing, hash, isNew: false }
 }
 
 interface ProcessResult {
@@ -99,19 +99,15 @@ interface ProcessResult {
   isNew: boolean
 }
 
-function mergeUrls(existing: string[], newUrl: string): string[] {
-  return existing.includes(newUrl) ? existing : [...existing, newUrl]
-}
-
 export function mergeAddresses(
-  existing: string[],
-  extracted: string[],
-): string[] {
+  existing: VacancyAddress[],
+  extracted: VacancyAddress[],
+): VacancyAddress[] {
   const merged = [...existing]
-  const mergedLower = merged.map((a) => a.toLowerCase())
+  const mergedLower = merged.map((a) => a.format().toLowerCase())
 
   for (const newAddr of extracted) {
-    const newLower = newAddr.toLowerCase()
+    const newLower = newAddr.format().toLowerCase()
 
     const subsumesIndex = mergedLower.findIndex(
       (lower) => lower !== newLower && newLower.includes(lower),

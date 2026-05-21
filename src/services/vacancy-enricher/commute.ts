@@ -8,13 +8,12 @@ export async function computeCommutes(
   const { vacancies, origin, commuteClient, signal, onProgress } = input
 
   const needsCommute = vacancies.filter(
-    (v) => v.active && v.addresses.some((addr) => !(addr in v.commute)),
+    (v) => v.active && v.addresses.some((addr) => !addr.commute),
   )
 
   let computedCount = 0
   let errorCount = 0
   const total = needsCommute.length
-  const updatedMap = new Map<string, Vacancy>()
 
   for (const [index, vacancy] of needsCommute.entries()) {
     if (signal?.aborted) break
@@ -34,15 +33,13 @@ export async function computeCommutes(
     errorCount += result.errors
 
     if (result.computed) {
-      updatedMap.set(vacancy.hash, vacancy.with({ commute: result.commute }))
       computedCount++
     }
   }
 
-  const mapped = vacancies.map((v) => updatedMap.get(v.hash) ?? v)
   const skippedCount = vacancies.length - needsCommute.length
 
-  return { vacancies: mapped, computedCount, skippedCount, errorCount }
+  return { vacancies, computedCount, skippedCount, errorCount }
 }
 
 interface ComputeCommutesInput {
@@ -66,28 +63,31 @@ async function computeSingleVacancyCommute(
   commuteClient: CommuteClient,
   signal?: AbortSignal,
 ) {
-  const commute = { ...vacancy.commute }
   let computed = false
   let errors = 0
 
   for (const address of vacancy.addresses) {
-    if (address in commute) continue
+    if (address.commute) continue
     if (signal?.aborted) break
 
     try {
-      commute[address] = await commuteClient.getCommute(origin, address, signal)
+      address.commute = await commuteClient.getCommute(
+        origin,
+        address.format(),
+        signal,
+      )
       computed = true
     } catch (error) {
       rethrowAbortError(error)
       console.error(
-        `Commute error for "${vacancy.title}" → "${address}":`,
+        `Commute error for "${vacancy.title}" → "${address.format()}":`,
         formatError(error),
       )
       errors++
     }
   }
 
-  return { commute, computed, errors }
+  return { computed, errors }
 }
 
 function rethrowAbortError(error: unknown): void {

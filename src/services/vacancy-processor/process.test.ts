@@ -140,14 +140,13 @@ describe("markUnseenAsGone", () => {
 
 const CRAWL_DATE = "2026-01-01"
 
-function makeExisting(
-  overrides: Partial<ConstructorParameters<typeof Vacancy>[0]> = {},
-): Vacancy {
-  return new Vacancy({
+function makeExisting(overrides: Record<string, unknown> = {}): Vacancy {
+  return Vacancy.parse({
     hash: vacancyHash("Developer", "ACME"),
     title: "Developer",
     company: "ACME",
-    urls: ["https://example.com/job/1"],
+    addresses: [],
+    contact: { name: "", email: "", phone: "" },
     activityHistory: [],
     active: true,
     enriched: true,

@@ -87,8 +87,8 @@ export class LiveFlowHelper {
           const vacancyList = await this.api.getVacancyList(jobSearchId)
           const hasBoundedCount =
             vacancyList.totalCount >= 1 && vacancyList.totalCount <= 5
-          const hasCommute = vacancyList.vacancies.some(
-            (vacancy) => Object.keys(vacancy.commute).length > 0,
+          const hasCommute = vacancyList.vacancies.some((vacancy) =>
+            vacancy.addresses.some((a) => a.commute),
           )
           const refreshEnabled =
             await this.jobSearchPage.refreshButton.isEnabled()
@@ -134,7 +134,7 @@ export class LiveFlowHelper {
             hash: vacancy.hash,
             title: vacancy.title,
             hasSummary: vacancy.summary.trim().length > 0,
-            hasCommute: Object.keys(vacancy.commute).length > 0,
+            hasCommute: vacancy.addresses.some((a) => a.commute),
           })),
         )}`,
       )
@@ -147,7 +147,7 @@ export class LiveFlowHelper {
     const vacancy = vacancyList.vacancies.find(
       (entry) =>
         entry.summary.trim().length > 0 &&
-        Object.keys(entry.commute).length > 0 &&
+        entry.addresses.some((a) => a.commute) &&
         entry.sources.some((source) => source.site === "arbeitsagentur"),
     )
 

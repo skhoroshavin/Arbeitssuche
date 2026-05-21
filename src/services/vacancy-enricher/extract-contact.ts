@@ -1,6 +1,7 @@
 import { z } from "zod"
 import type { Vacancy } from "@/models/vacancy/index.js"
 import type { VacancyContact } from "@/models/vacancy"
+import { VacancyAddress } from "@/models/vacancy"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
 import { mergeAddresses } from "@/services/vacancy-processor/index.js"
 
@@ -40,22 +41,16 @@ export async function extractContactInfo(
 export function mergeContactInfo(
   vacancy: Vacancy,
   extracted: ContactExtractionResult,
-): Vacancy {
-  const addresses =
-    extracted.addresses.length > 0
-      ? mergeAddresses(vacancy.addresses, extracted.addresses)
-      : vacancy.addresses
-
-  const contact = hasContact(extracted.contact)
-    ? { ...vacancy.contact, ...extracted.contact }
-    : vacancy.contact
-
-  const addressesChanged =
-    addresses.length !== vacancy.addresses.length ||
-    addresses.some((a, index) => a !== vacancy.addresses[index])
-
-  if (!addressesChanged && contact === vacancy.contact) return vacancy
-  return vacancy.with({ addresses, contact })
+): void {
+  if (extracted.addresses.length > 0) {
+    const newAddresses = extracted.addresses.map((a) =>
+      VacancyAddress.fromString(a),
+    )
+    vacancy.addresses = mergeAddresses(vacancy.addresses, newAddresses)
+  }
+  if (hasContact(extracted.contact)) {
+    vacancy.contact = { ...vacancy.contact, ...extracted.contact }
+  }
 }
 
 interface ContactExtractionResult {
@@ -83,7 +78,7 @@ const EXTRACT_CONTACT_SCHEMA: TypedSchema<RawContactResult> = {
 function buildContactExtractionPrompt(vacancy: Vacancy): string {
   const existingAddresses =
     vacancy.addresses.length > 0
-      ? vacancy.addresses.join(", ")
+      ? vacancy.addresses.map((a) => a.format()).join(", ")
       : "Keine vorhanden"
 
   const contact = vacancy.contact

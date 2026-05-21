@@ -8,7 +8,7 @@ import {
   useGenerateVacancyCoverLetter,
   useReEnrichVacancy,
 } from "@/ui/data"
-import type { VacancyWithStatus } from "@/ui/data"
+import type { Vacancy } from "@/models/vacancy"
 import { useApiKeyStatus } from "@/ui/data"
 import { Card, SectionHeader, Loading, ArrowLeftIcon } from "@/ui/components"
 import { CoverLetterEditor } from "@/ui/pages/job-search/components"
@@ -113,7 +113,7 @@ function VacancyEnrichmentHeader({
   vacancyHash,
 }: {
   hash: string
-  status: VacancyWithStatus["status"]
+  status: Vacancy["status"]
   matchScore: string
   enrichmentState: EnrichmentState
   jobSearchId: string
@@ -233,12 +233,11 @@ function VacancyInfoCard({
   enrichmentState,
 }: {
   data: Pick<
-    VacancyWithStatus,
+    Vacancy,
     | "title"
     | "company"
     | "addresses"
     | "sources"
-    | "commute"
     | "contact"
     | "summary"
     | "description"
@@ -254,7 +253,7 @@ function VacancyInfoCard({
 
       {data.addresses.length > 0 && (
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-          {data.addresses.join(" | ")}
+          {data.addresses.map((a) => a.format()).join(" | ")}
         </p>
       )}
 
@@ -274,7 +273,7 @@ function VacancyInfoCard({
         </div>
       )}
 
-      <VacancyCommuteSection commute={data.commute} />
+      <VacancyCommuteSection addresses={data.addresses} />
       <VacancyContactSection contact={data.contact} />
 
       <VacancySummarySection

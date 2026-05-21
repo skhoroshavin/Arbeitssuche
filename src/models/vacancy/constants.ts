@@ -1,4 +1,4 @@
-import type { ActivityType, MatchScore, VacancyStatus } from "."
+import type { ActivityType, MatchScore, VacancyStatus } from "./vacancy.js"
 
 export type StatusLabelKey = VacancyStatus | "all" | ActivityType
 
@@ -24,6 +24,7 @@ export const MATCH_SCORE_LABELS: Record<MatchScore, string> = {
   ok: "OK",
   good: "Gut",
   excellent: "Ausgezeichnet",
+  unknown: "Unbekannt",
 }
 
 export const STATUS_COLORS: Record<VacancyStatus, string> = {

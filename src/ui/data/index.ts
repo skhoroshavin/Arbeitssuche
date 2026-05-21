@@ -35,7 +35,6 @@ export {
   useReEnrichVacancy,
   useEnrichAllUnenriched,
   useAbortEnrichment,
-  type VacancyWithStatus,
 } from "./job-searches"
 
 export {

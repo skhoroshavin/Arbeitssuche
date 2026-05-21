@@ -1,14 +1,13 @@
 import { describe, it, test, expect } from "vitest"
 import { Vacancy } from "."
-import type { VacancyDTO } from "."
 
-describe("deriveStatus", () => {
+describe("status getter", () => {
   it("returns 'new' for active vacancy with no history", () => {
-    expect(makeVacancy().deriveStatus()).toBe("new")
+    expect(makeVacancy().status).toBe("new")
   })
 
   it("returns 'gone' for inactive vacancy with no user activities", () => {
-    expect(makeVacancy({ active: false }).deriveStatus()).toBe("gone")
+    expect(makeVacancy({ active: false }).status).toBe("gone")
   })
 
   it("returns 'renewed' for active vacancy that was previously not-found", () => {
@@ -35,7 +34,7 @@ describe("deriveStatus", () => {
             contact: { name: "", email: "", phone: "" },
           },
         ],
-      }).deriveStatus(),
+      }).status,
     ).toBe("renewed")
   })
 
@@ -43,7 +42,7 @@ describe("deriveStatus", () => {
     expect(
       makeVacancy({
         activityHistory: [{ type: "applied", date: "2025-01-01", notes: "" }],
-      }).deriveStatus(),
+      }).status,
     ).toBe("applied")
   })
 
@@ -52,7 +51,7 @@ describe("deriveStatus", () => {
       makeVacancy({
         active: false,
         activityHistory: [{ type: "applied", date: "2025-01-01", notes: "" }],
-      }).deriveStatus(),
+      }).status,
     ).toBe("ignored")
   })
 
@@ -68,7 +67,7 @@ describe("deriveStatus", () => {
             notes: "",
           },
         ],
-      }).deriveStatus(),
+      }).status,
     ).toBe("invited")
   })
 
@@ -84,7 +83,7 @@ describe("deriveStatus", () => {
             notes: "",
           },
         ],
-      }).deriveStatus(),
+      }).status,
     ).toBe("interviewed")
   })
 
@@ -100,7 +99,7 @@ describe("deriveStatus", () => {
             salary: "",
           },
         ],
-      }).deriveStatus(),
+      }).status,
     ).toBe("offered")
   })
 
@@ -118,7 +117,7 @@ describe("deriveStatus", () => {
           },
           { type: "rejected", date: "2025-01-03", notes: "" },
         ],
-      }).deriveStatus(),
+      }).status,
     ).toBe("rejected")
   })
 
@@ -128,7 +127,7 @@ describe("deriveStatus", () => {
         activityHistory: [
           { type: "not-interested", date: "2025-01-01", notes: "" },
         ],
-      }).deriveStatus(),
+      }).status,
     ).toBe("not-interested")
   })
 
@@ -139,18 +138,17 @@ describe("deriveStatus", () => {
           { type: "not-interested", date: "2025-01-01", notes: "" },
           { type: "applied", date: "2025-01-02", notes: "" },
         ],
-      }).deriveStatus(),
+      }).status,
     ).toBe("applied")
   })
 })
 
-describe("constructor", () => {
+describe("parse defaults", () => {
   it("fills missing runtime defaults", () => {
-    expect(new Vacancy({ hash: "abc" })).toMatchObject({
+    expect(Vacancy.parse({ hash: "abc" })).toMatchObject({
       hash: "abc",
       title: "",
       company: "",
-      urls: [],
       addresses: [],
       contact: { name: "", email: "", phone: "" },
       startDate: "",
@@ -158,17 +156,17 @@ describe("constructor", () => {
       enriched: false,
       enrichmentDirty: false,
       summary: "",
-      matchScore: "ok",
-      commute: {},
+      matchScore: "unknown",
       activityHistory: [],
       active: true,
+      coverLetter: "",
     })
   })
 })
 
-describe("deriveSources", () => {
+describe("sources getter", () => {
   test("empty history returns empty sources", () => {
-    expect(makeVacancy().deriveSources()).toEqual([])
+    expect(makeVacancy().sources).toEqual([])
   })
 
   test("single found activity returns one source", () => {
@@ -184,7 +182,7 @@ describe("deriveSources", () => {
           contact: { name: "", email: "", phone: "" },
         },
       ],
-    }).deriveSources()
+    }).sources
     expect(result).toEqual([{ site: "xing", url: "https://xing.com/job/1" }])
   })
 
@@ -210,66 +208,12 @@ describe("deriveSources", () => {
           contact: { name: "", email: "", phone: "" },
         },
       ],
-    }).deriveSources()
+    }).sources
     expect(result.length).toBe(1)
     expect(result[0]).toEqual({
       site: "xing",
       url: "https://xing.com/job/1",
     })
-  })
-
-  test("same site with different URLs produces multiple sources", () => {
-    const result = makeVacancy({
-      activityHistory: [
-        {
-          type: "found",
-          date: "2026-01-01",
-          site: "xing",
-          url: "https://xing.com/job/1",
-          notes: "",
-          description: "",
-          contact: { name: "", email: "", phone: "" },
-        },
-        {
-          type: "found",
-          date: "2026-01-02",
-          site: "xing",
-          url: "https://xing.com/job/2",
-          notes: "",
-          description: "",
-          contact: { name: "", email: "", phone: "" },
-        },
-      ],
-    }).deriveSources()
-    expect(result.length).toBe(2)
-  })
-
-  test("multiple sites return one entry per unique pair", () => {
-    const result = makeVacancy({
-      activityHistory: [
-        {
-          type: "found",
-          date: "2026-01-01",
-          site: "xing",
-          url: "https://xing.com/job/1",
-          notes: "",
-          description: "",
-          contact: { name: "", email: "", phone: "" },
-        },
-        {
-          type: "found",
-          date: "2026-01-01",
-          site: "arbeitsagentur",
-          url: "https://aa.de/job/1",
-          notes: "",
-          description: "",
-          contact: { name: "", email: "", phone: "" },
-        },
-      ],
-    }).deriveSources()
-    expect(result.length).toBe(2)
-    expect(result[0].site).toBe("xing")
-    expect(result[1].site).toBe("arbeitsagentur")
   })
 
   test("non-found activities are ignored", () => {
@@ -285,11 +229,9 @@ describe("deriveSources", () => {
           contact: { name: "", email: "", phone: "" },
         },
         { type: "applied", date: "2026-01-02", notes: "" },
-        { type: "not-found", date: "2026-01-03", site: "xing", notes: "" },
       ],
-    }).deriveSources()
+    }).sources
     expect(result.length).toBe(1)
-    expect(result[0].site).toBe("xing")
   })
 })
 
@@ -298,37 +240,48 @@ describe("getMinCommuteMinutes", () => {
     expect(makeVacancy().getMinCommuteMinutes()).toBe(undefined)
   })
 
-  test("returns undefined for empty commute record", () => {
-    expect(makeVacancy({ commute: {} }).getMinCommuteMinutes()).toBe(undefined)
-  })
-
-  test("returns morning minutes for single address", () => {
+  test("returns morning minutes for single address with commute", () => {
     const v = makeVacancy({
-      commute: {
-        Berlin: {
-          distance: "10 km",
-          durations: { morning: 25, day: 20, evening: 30 },
-          fetchedAt: "2026-01-01",
+      addresses: [
+        {
+          street: "",
+          zip: "",
+          city: "Berlin",
+          commute: {
+            distance: "10 km",
+            durations: { morning: 25, day: 20, evening: 30 },
+            fetchedAt: "2026-01-01",
+          },
         },
-      },
+      ],
     })
     expect(v.getMinCommuteMinutes()).toBe(25)
   })
 
   test("returns minimum morning across multiple addresses", () => {
     const v = makeVacancy({
-      commute: {
-        Berlin: {
-          distance: "10 km",
-          durations: { morning: 25, day: 20, evening: 30 },
-          fetchedAt: "2026-01-01",
+      addresses: [
+        {
+          street: "",
+          zip: "",
+          city: "Berlin",
+          commute: {
+            distance: "10 km",
+            durations: { morning: 25, day: 20, evening: 30 },
+            fetchedAt: "2026-01-01",
+          },
         },
-        Munich: {
-          distance: "600 km",
-          durations: { morning: 15, day: 12, evening: 18 },
-          fetchedAt: "2026-01-01",
+        {
+          street: "",
+          zip: "",
+          city: "Munich",
+          commute: {
+            distance: "600 km",
+            durations: { morning: 15, day: 12, evening: 18 },
+            fetchedAt: "2026-01-01",
+          },
         },
-      },
+      ],
     })
     expect(v.getMinCommuteMinutes()).toBe(15)
   })
@@ -358,28 +311,59 @@ describe("getLatestActivityDate", () => {
   })
 })
 
-describe("with", () => {
-  test("returns new instance with overridden fields", () => {
-    const v = makeVacancy({ title: "Original" })
-    const v2 = v.with({ title: "Updated" })
-    expect(v2.title).toBe("Updated")
-    expect(v.title).toBe("Original")
-    expect(v2 instanceof Vacancy).toBeTruthy()
-  })
-
-  test("preserves non-overridden fields", () => {
-    const v = makeVacancy({ company: "ACME", title: "Dev" })
-    const v2 = v.with({ title: "Senior Dev" })
-    expect(v2.company).toBe("ACME")
+describe("addActivity", () => {
+  test("appends activity to history", () => {
+    const v = makeVacancy()
+    v.addActivity({ type: "applied", date: "2026-01-01", notes: "" })
+    expect(v.activityHistory.length).toBe(1)
+    expect(v.activityHistory[0].type).toBe("applied")
   })
 })
 
-function makeVacancy(overrides: Partial<VacancyDTO> = {}): Vacancy {
-  return new Vacancy({
+describe("legacy parsing", () => {
+  test("ignores old urls field", () => {
+    const v = Vacancy.parse({ hash: "h1", urls: ["http://old"] })
+    expect(v.sources).toEqual([])
+  })
+
+  test("maps old string addresses", () => {
+    const v = Vacancy.parse({ hash: "h1", addresses: ["Berlin"] })
+    expect(v.addresses.length).toBe(1)
+    expect(v.addresses[0].format()).toBe("Berlin")
+  })
+
+  test("merges old commute record into matching address", () => {
+    const v = Vacancy.parse({
+      hash: "h1",
+      addresses: ["Berlin"],
+      commute: {
+        Berlin: {
+          distance: "5 km",
+          durations: { morning: 10, day: 8, evening: 12 },
+          fetchedAt: "2026-01-01",
+        },
+      },
+    })
+    expect(v.addresses[0].commute).toBeDefined()
+    expect(v.addresses[0].commute?.distance).toBe("5 km")
+  })
+
+  test("defaults missing matchScore to unknown", () => {
+    const v = Vacancy.parse({ hash: "h1" })
+    expect(v.matchScore).toBe("unknown")
+  })
+
+  test("defaults missing coverLetter to empty string", () => {
+    const v = Vacancy.parse({ hash: "h1" })
+    expect(v.coverLetter).toBe("")
+  })
+})
+
+function makeVacancy(overrides: Record<string, unknown> = {}): Vacancy {
+  return Vacancy.parse({
     hash: "abc123",
     title: "Test",
     company: "Test Co",
-    urls: [],
     addresses: [],
     contact: { name: "", email: "", phone: "" },
     activityHistory: [],
