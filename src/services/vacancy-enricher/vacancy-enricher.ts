@@ -1,19 +1,11 @@
 import type { LlmClient } from "@/plugins/llm"
-
 import type { CommuteClient } from "@/plugins/commute"
-
 import type { Applicant } from "@/models/applicant"
-
 import type { JobSearch } from "@/models/job-search"
-
 import type { Vacancy } from "@/models/vacancy/index.js"
-
 import { formatError } from "@/services/vacancy-scanner/index.js"
-
 import { computeCommutes } from "./commute.js"
-
 import { needsAssessment, assessVacancy } from "./assess.js"
-
 import {
   needsContactExtraction,
   extractContactInfo,
@@ -41,7 +33,8 @@ export class VacancyEnricher {
       signal,
     )
     if (successful) {
-      return result.with({ enriched: true, enrichmentDirty: false })
+      result.enriched = true
+      result.enrichmentDirty = false
     }
     return result
   }
@@ -89,21 +82,18 @@ export class VacancyEnricher {
       signal,
     )
 
-    let updated = vacancy
     if (assessmentResult) {
-      updated = updated.with({
-        summary: assessmentResult.summary,
-        matchScore: assessmentResult.matchScore,
-      })
+      vacancy.summary = assessmentResult.summary
+      vacancy.matchScore = assessmentResult.matchScore
     }
     if (contactResult) {
-      updated = mergeContactInfo(updated, contactResult)
+      mergeContactInfo(vacancy, contactResult)
     }
 
     const anySucceeded = !!(assessmentResult || contactResult)
     const noneNeeded =
       !needsAssessment(vacancy) && !needsContactExtraction(vacancy)
-    return { result: updated, successful: anySucceeded || noneNeeded }
+    return { result: vacancy, successful: anySucceeded || noneNeeded }
   }
 }
 
