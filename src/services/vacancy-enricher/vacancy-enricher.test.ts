@@ -51,7 +51,7 @@ describe("VacancyEnricher", () => {
       jobSearch: JOB_SEARCH,
     })
 
-    expect(Object.keys(result.commute)).toHaveLength(0)
+    expect(result.addresses.every((a) => !a.commute)).toBe(true)
   })
 
   it("keeps vacancies retryable when no LLM client is configured", async () => {
@@ -80,7 +80,7 @@ describe("VacancyEnricher", () => {
       jobSearch: JOB_SEARCH,
     })
 
-    expect(Object.keys(result.commute)).toHaveLength(0)
+    expect(result.addresses.every((a) => !a.commute)).toBe(true)
     expect(result.summary).toBe("- Good match")
     expect(result.enriched).toBe(true)
   })
@@ -215,10 +215,8 @@ const JOB_SEARCH: JobSearch = (() => {
   return index
 })()
 
-function makeVacancy(
-  overrides: Partial<ConstructorParameters<typeof Vacancy>[0]> = {},
-): Vacancy {
-  return new Vacancy({
+function makeVacancy(overrides: Record<string, unknown> = {}): Vacancy {
+  return Vacancy.parse({
     hash: "abc123",
     title: "Developer",
     company: "ACME",
