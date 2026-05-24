@@ -1,8 +1,8 @@
 import { test, describe, expect } from "vitest"
-import { GoogleMapsCommuteProvider } from "."
-import { FetchStub } from "@/test-helpers"
 
-const API_PATTERN = "maps.googleapis.com/maps/api/distancematrix"
+import { GoogleMapsCommuteProvider } from "."
+
+import { FetchStub } from "@/test-helpers"
 
 describe("GoogleMapsCommuteClient", () => {
   test("returns durations as rounded minutes", async () => {
@@ -83,6 +83,8 @@ describe("GoogleMapsCommuteClient", () => {
     }
   })
 })
+
+const API_PATTERN = "maps.googleapis.com/maps/api/distancematrix"
 
 function matrixResponse(distanceText: string, durationSeconds: number): object {
   return {
