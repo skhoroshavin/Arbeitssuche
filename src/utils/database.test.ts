@@ -1,11 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { rmSync } from "node:fs"
-import { tmpdir } from "node:os"
-import path from "node:path"
-import { Database } from "."
 
-const testDirectory = path.join(tmpdir(), `db-test-${Date.now()}`)
-let database: Database
+import { rmSync } from "node:fs"
+
+import { tmpdir } from "node:os"
+
+import path from "node:path"
+
+import { Database } from "."
 
 beforeAll(() => {
   database = Database.open(path.join(testDirectory, "test.db"))
@@ -63,6 +64,8 @@ describe("Database", () => {
   })
 })
 
+const testDirectory = path.join(tmpdir(), `db-test-${Date.now()}`)
+
 describe("Statement", () => {
   it("get returns matching row", () => {
     const stmt = database.prepare("SELECT data FROM test WHERE id = ?")
@@ -118,3 +121,5 @@ describe("Statement", () => {
     })
   })
 })
+
+let database: Database

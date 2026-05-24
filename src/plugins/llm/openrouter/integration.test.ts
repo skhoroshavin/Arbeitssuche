@@ -1,8 +1,8 @@
 import { describe, test, expect } from "vitest"
-import { OpenRouterProvider } from "."
-import { requireEnv } from "@/test-helpers"
 
-const apiKey = requireEnv("OPENROUTER_API_KEY")
+import { OpenRouterProvider } from "."
+
+import { requireEnv } from "@/test-helpers"
 
 describe("OpenRouter (live)", () => {
   test("ping returns true with a valid API key", async () => {
@@ -36,3 +36,5 @@ describe("OpenRouter (live)", () => {
     expect(result.toLowerCase()).toContain("pong")
   })
 })
+
+const apiKey = requireEnv("OPENROUTER_API_KEY")
