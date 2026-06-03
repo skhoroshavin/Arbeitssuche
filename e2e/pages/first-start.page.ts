@@ -30,4 +30,14 @@ export class FirstStartPage {
     await expect(this.aiHeading).toBeVisible()
     await expect(this.continueButton).toBeVisible()
   }
+
+  async continueToMaps(): Promise<void> {
+    await this.continueButton.click()
+    await expect(this.mapsHeading).toBeVisible()
+  }
+
+  async finishSettings(): Promise<void> {
+    await expect(this.finishButton).toBeVisible()
+    await this.finishButton.click()
+  }
 }

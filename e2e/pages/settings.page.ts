@@ -64,11 +64,7 @@ export class SettingsPage {
   }
 
   testResult(): Locator {
-    return this.page
-      .locator("[class*='text-green'], [class*='text-red']")
-      .filter({
-        hasText: /(Gültig|HTTP|API-Status|Kein Schlüssel)/,
-      })
+    return this.page.getByText(/Gültig|Ungültig|Kein Schlüssel/).first()
   }
 
   secretValue(): Locator {
@@ -102,5 +98,13 @@ export class SettingsPage {
     await this.replaceButton(label).click()
     await this.tokenInput(label).fill(value)
     await this.saveFieldButton(label).click()
+  }
+
+  async expectTestSuccess() {
+    await expect(this.testResult()).toHaveText(/Gültig/)
+  }
+
+  async expectTestFailure() {
+    await expect(this.testResult()).toBeVisible()
   }
 }
