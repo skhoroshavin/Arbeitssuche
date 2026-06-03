@@ -9,11 +9,11 @@ export {
 export {
   Vacancy,
   VacancySerializedSchema,
+  mergeAddresses,
   type Activity,
   type ActivityType,
-  type FoundActivity,
-  type NotFoundActivity,
   type VacancyContact,
+  type VacancyDiscovery,
   type VacancyStatus,
 } from "./vacancy.js"
 export { VacancyAddress } from "./vacancy-address.js"

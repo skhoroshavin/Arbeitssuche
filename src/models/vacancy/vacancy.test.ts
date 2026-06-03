@@ -311,12 +311,182 @@ describe("getLatestActivityDate", () => {
   })
 })
 
-describe("addActivity", () => {
-  test("appends activity to history", () => {
+describe("recordActivity", () => {
+  test("appends user activity to history", () => {
     const v = makeVacancy()
-    v.addActivity({ type: "applied", date: "2026-01-01", notes: "" })
+    v.recordActivity({ type: "applied", date: "2026-01-01", notes: "" })
     expect(v.activityHistory.length).toBe(1)
     expect(v.activityHistory[0].type).toBe("applied")
+  })
+
+  test("rejects found and not-found types", () => {
+    const v = makeVacancy()
+    expect(() =>
+      v.recordActivity({
+        type: "found",
+        date: "",
+        site: "x",
+        url: "u",
+        description: "",
+        contact: { name: "", email: "", phone: "" },
+        notes: "",
+      }),
+    ).toThrow('Cannot record "found" directly')
+    expect(() =>
+      v.recordActivity({ type: "not-found", date: "", site: "all", notes: "" }),
+    ).toThrow('Cannot record "not-found" directly')
+  })
+})
+
+describe("fromDiscovery", () => {
+  const base = {
+    site: "xing",
+    url: "https://example.test/job",
+    crawlDate: "2026-06-03",
+    title: "Developer",
+    company: "ACME",
+    address: "Berlin",
+    contact: { name: "", email: "", phone: "" },
+    description: "Hello",
+    startDate: "",
+  }
+
+  test("creates hash, found activity, sets enriched/enrichmentDirty", () => {
+    const v = Vacancy.fromDiscovery(base)
+    expect(v.hash).toBe(Vacancy.hashForDiscovery(base))
+    expect(v.activityHistory).toHaveLength(1)
+    expect(v.activityHistory[0].type).toBe("found")
+    expect(v.active).toBe(true)
+    expect(v.enriched).toBe(false)
+    expect(v.enrichmentDirty).toBe(true)
+  })
+
+  test("handles blank address", () => {
+    expect(
+      Vacancy.fromDiscovery({ ...base, address: "" }).addresses,
+    ).toHaveLength(0)
+    const v = Vacancy.fromDiscovery({ ...base, address: "Munich" })
+    expect(v.addresses).toHaveLength(1)
+    expect(v.addresses[0].format()).toBe("Munich")
+  })
+})
+
+describe("mergeDiscovery", () => {
+  const discovery = {
+    site: "xing",
+    url: "https://example.test/job",
+    crawlDate: "2026-06-04",
+    title: "Developer",
+    company: "ACME",
+    address: "Berlin",
+    contact: { name: "", email: "", phone: "" },
+    description: "New description",
+    startDate: "",
+  }
+
+  test("updates description and marks enrichmentDirty when changed", () => {
+    const v = Vacancy.fromDiscovery({ ...discovery, description: "Old" })
+    v.mergeDiscovery(discovery)
+    expect(v.description).toBe("New description")
+    expect(v.enrichmentDirty).toBe(true)
+  })
+
+  test("keeps prior description when new is empty", () => {
+    const v = Vacancy.fromDiscovery({ ...discovery, description: "Original" })
+    v.mergeDiscovery({ ...discovery, description: "" })
+    expect(v.description).toBe("Original")
+  })
+
+  test("updates contact when non-empty, preserves when empty", () => {
+    const v = Vacancy.fromDiscovery({
+      ...discovery,
+      contact: { name: "Existing", email: "e@t.com", phone: "456" },
+    })
+    v.mergeDiscovery({
+      ...discovery,
+      contact: { name: "John", email: "john@test.com", phone: "123" },
+    })
+    expect(v.contact.name).toBe("John")
+
+    v.mergeDiscovery({
+      ...discovery,
+      contact: { name: "", email: "", phone: "" },
+    })
+    expect(v.contact.email).toBe("john@test.com")
+  })
+
+  test("renews a previously gone vacancy", () => {
+    const v = Vacancy.fromDiscovery(discovery)
+    v.markNotFound("2026-06-03")
+    expect(v.active).toBe(false)
+    v.mergeDiscovery(discovery)
+    expect(v.active).toBe(true)
+  })
+
+  test("appends a new found activity", () => {
+    const v = Vacancy.fromDiscovery(discovery)
+    v.mergeDiscovery({
+      ...discovery,
+      site: "stepstone",
+      url: "https://s.t/job",
+    })
+    expect(v.activityHistory).toHaveLength(2)
+    expect(v.activityHistory[1].type).toBe("found")
+  })
+})
+
+describe("updateCoverLetter", () => {
+  test("updates cover letter content", () => {
+    const v = makeVacancy()
+    expect(v.coverLetter).toBe("")
+    v.updateCoverLetter("Dear Sir/Madam...")
+    expect(v.coverLetter).toBe("Dear Sir/Madam...")
+  })
+})
+
+describe("markNotFound", () => {
+  test("appends not-found activity and flips active false", () => {
+    const v = makeVacancy({ active: true })
+    v.markNotFound("2026-06-03")
+
+    expect(v.active).toBe(false)
+    const last = v.activityHistory.at(-1)
+    expect(last).toBeDefined()
+    expect(last?.type).toBe("not-found")
+    expect(last?.date).toBe("2026-06-03")
+  })
+
+  test("is idempotent when already inactive", () => {
+    const v = makeVacancy({ active: false })
+    v.markNotFound("2026-06-03")
+
+    expect(v.active).toBe(false)
+    expect(v.activityHistory).toHaveLength(0)
+  })
+})
+
+describe("hashForDiscovery", () => {
+  const d = {
+    site: "xing",
+    url: "https://xing.com/job/1",
+    crawlDate: "2026-01-01",
+    title: "Developer",
+    company: "ACME",
+    address: "Berlin",
+    contact: { name: "", email: "", phone: "" },
+    description: "",
+    startDate: "",
+  }
+
+  test("produces deterministic 6-char hash", () => {
+    expect(Vacancy.hashForDiscovery(d)).toBe(Vacancy.hashForDiscovery(d))
+    expect(Vacancy.hashForDiscovery(d).length).toBe(6)
+  })
+
+  test("different input produces different hash", () => {
+    expect(Vacancy.hashForDiscovery(d)).not.toBe(
+      Vacancy.hashForDiscovery({ ...d, title: "Senior Developer" }),
+    )
   })
 })
 

@@ -3,7 +3,7 @@ import type { Vacancy } from "@/models/vacancy/index.js"
 import type { VacancyContact } from "@/models/vacancy"
 import { VacancyAddress } from "@/models/vacancy"
 import type { LlmClient, TypedSchema } from "@/plugins/llm"
-import { mergeAddresses } from "@/services/vacancy-processor/index.js"
+import { mergeAddresses } from "@/models/vacancy/index.js"
 
 export function needsContactExtraction(vacancy: Vacancy): boolean {
   if (!vacancy.description) return false

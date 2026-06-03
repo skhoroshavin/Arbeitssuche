@@ -1,5 +1,4 @@
 import { Vacancy } from "@/models/vacancy/index.js"
-import type { NotFoundActivity } from "@/models/vacancy"
 
 export function markUnseenAsGone(
   allVacancies: Vacancy[],
@@ -10,19 +9,17 @@ export function markUnseenAsGone(
   const vacancies = allVacancies.map((v) => {
     if (seenHashes.has(v.hash) || !v.active) return v
 
+    v.markNotFound(crawlDate)
     goneCount++
-    const notFoundActivity: NotFoundActivity = {
-      type: "not-found",
-      date: crawlDate,
-      site: "all",
-      notes: "",
-    }
-    v.addActivity(notFoundActivity)
-    v.active = false
     return v
   })
 
   return { vacancies, goneCount }
+}
+
+interface MarkUnseenResult {
+  vacancies: Vacancy[]
+  goneCount: number
 }
 
 interface MarkUnseenResult {

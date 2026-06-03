@@ -50,7 +50,7 @@ export function registerVacanciesHandlers(
       )
       const vacancy = vacancies.find((v) => v.hash === hash)
       if (!vacancy) throw new Error(`Vacancy "${hash}" not found`)
-      vacancy.addActivity(activity)
+      vacancy.recordActivity(activity)
       services.vacancyRepo.save(makeJobSearchID(id), vacancies)
       return { ok: true }
     },
@@ -75,7 +75,7 @@ export function registerVacanciesHandlers(
       )
       const vacancy = vacancies.find((v) => v.hash === vacancyHash)
       if (!vacancy) throw new Error(`Vacancy "${vacancyHash}" not found`)
-      vacancy.coverLetter = content
+      vacancy.updateCoverLetter(content)
       services.vacancyRepo.save(makeJobSearchID(jobSearchId), vacancies)
       return { ok: true }
     },

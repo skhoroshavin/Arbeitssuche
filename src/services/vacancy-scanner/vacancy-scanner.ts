@@ -9,7 +9,7 @@ import type { ProgressEvent } from "@/models/progress/index.js"
 import { SiteCrawler } from "@/services/site-crawler/index.js"
 import { resolveSearchParameters } from "@/services/site-crawler/index.js"
 import {
-  process as processVacancy,
+  toVacancyDiscovery,
   markUnseenAsGone,
 } from "@/services/vacancy-processor/index.js"
 import { VacancyEnricher } from "@/services/vacancy-enricher/index.js"
@@ -86,13 +86,13 @@ export class VacancyScanner {
       signal: abortController.signal,
       onProgress,
       onResult: (details, siteName) => {
-        const result = processVacancy(
-          details,
-          siteName,
-          existingByHash,
-          crawlDate,
-        )
-        const { vacancy, hash, isNew } = result
+        const discovery = toVacancyDiscovery(details, siteName, crawlDate)
+        const hash = Vacancy.hashForDiscovery(discovery)
+        const existing = existingByHash.get(hash)
+        const vacancy = existing
+          ? (existing.mergeDiscovery(discovery), existing)
+          : Vacancy.fromDiscovery(discovery)
+        const isNew = !existing
 
         existingByHash.set(hash, vacancy)
         seenHashes.add(hash)
@@ -115,9 +115,7 @@ export class VacancyScanner {
           onProgress({ message: "", phase: "scan", vacanciesUpdated: true })
         }
 
-        if (vacancy.enrichmentDirty && !enrichAbortController.signal.aborted) {
-          queue.submit(vacancy, hash)
-        }
+        maybeSubmitForEnrichment(queue, vacancy, hash, enrichAbortController)
       },
     })
 
@@ -154,6 +152,17 @@ export class VacancyScanner {
 }
 
 export type OnProgress = (event: ProgressEvent) => void
+
+function maybeSubmitForEnrichment(
+  queue: EnrichQueue,
+  vacancy: Vacancy,
+  hash: string,
+  enrichAbortController: AbortController,
+): void {
+  if (vacancy.enrichmentDirty && !enrichAbortController.signal.aborted) {
+    queue.submit(vacancy, hash)
+  }
+}
 
 async function drainQueue(queue: EnrichQueue): Promise<void> {
   try {

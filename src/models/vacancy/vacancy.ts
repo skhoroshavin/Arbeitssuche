@@ -32,6 +32,99 @@ export class Vacancy {
   active = true
   coverLetter = ""
 
+  static hashForDiscovery(discovery: VacancyDiscovery): string {
+    const key = [
+      discovery.title,
+      discovery.company,
+      discovery.address,
+      discovery.contact.name,
+    ]
+      .map((s) => s.trim().toLowerCase())
+      .join("||")
+    return simpleHash(key)
+  }
+
+  static fromDiscovery(discovery: VacancyDiscovery): Vacancy {
+    const vacancy = new Vacancy()
+    vacancy.hash = Vacancy.hashForDiscovery(discovery)
+    vacancy.title = discovery.title
+    vacancy.company = discovery.company
+    vacancy.addresses = discovery.address.trim()
+      ? [VacancyAddress.fromString(discovery.address)]
+      : []
+    vacancy.contact = { ...discovery.contact }
+    vacancy.startDate = discovery.startDate
+    vacancy.description = discovery.description
+    vacancy.enriched = false
+    vacancy.enrichmentDirty = true
+    vacancy.activityHistory = [Vacancy.createFoundActivity(discovery)]
+    vacancy.active = true
+    return vacancy
+  }
+
+  mergeDiscovery(discovery: VacancyDiscovery): void {
+    const descriptionChanged = hasDescriptionChanged(
+      discovery.description,
+      this.description,
+    )
+
+    this.addresses = mergeAddresses(
+      this.addresses,
+      discovery.address.trim()
+        ? [VacancyAddress.fromString(discovery.address)]
+        : [],
+    )
+
+    this.description = discovery.description || this.description
+    this.enrichmentDirty = this.enrichmentDirty || descriptionChanged
+    if (hasContact(discovery.contact)) {
+      this.contact = { ...discovery.contact }
+    }
+    this.startDate = discovery.startDate || this.startDate
+
+    if (!this.active) {
+      this.active = true
+    }
+
+    this.activityHistory.push(Vacancy.createFoundActivity(discovery))
+  }
+
+  recordActivity(activity: Activity): void {
+    if (activity.type === "found" || activity.type === "not-found") {
+      throw new Error(`Cannot record "${activity.type}" directly`)
+    }
+    this.activityHistory.push(activity)
+  }
+
+  updateCoverLetter(content: string): void {
+    this.coverLetter = content
+  }
+
+  markNotFound(crawlDate: string): void {
+    if (!this.active) return
+    this.activityHistory.push({
+      type: "not-found",
+      date: crawlDate,
+      site: "all",
+      notes: "",
+    })
+    this.active = false
+  }
+
+  private static createFoundActivity(
+    discovery: VacancyDiscovery,
+  ): FoundActivity {
+    return {
+      type: "found",
+      date: discovery.crawlDate,
+      site: discovery.site,
+      url: discovery.url,
+      description: discovery.description,
+      contact: { ...discovery.contact },
+      notes: "",
+    }
+  }
+
   static parse(data: unknown): Vacancy {
     const parsed = VacancyInputSchema.parse(data)
     const vacancy = new Vacancy()
@@ -94,10 +187,6 @@ export class Vacancy {
     return sources
   }
 
-  addActivity(activity: Activity): void {
-    this.activityHistory.push(activity)
-  }
-
   getMinCommuteMinutes(): number | undefined {
     const infos = this.addresses
       .map((a) => a.commute)
@@ -109,6 +198,18 @@ export class Vacancy {
   getLatestActivityDate(): string {
     return this.activityHistory.at(-1)?.date ?? ""
   }
+}
+
+export interface VacancyDiscovery {
+  site: string
+  url: string
+  crawlDate: string
+  title: string
+  company: string
+  address: string
+  contact: VacancyContact
+  description: string
+  startDate: string
 }
 
 export type VacancyStatus =
@@ -160,9 +261,100 @@ export interface VacancyContact {
   phone: string
 }
 
-export interface NotFoundActivity extends BaseActivity {
+export function mergeAddresses(
+  existing: VacancyAddress[],
+  extracted: VacancyAddress[],
+): VacancyAddress[] {
+  const merged = [...existing]
+  const mergedLower = merged.map((a) => a.format().toLowerCase())
+
+  for (const newAddr of extracted) {
+    const newLower = newAddr.format().toLowerCase()
+
+    const subsumesIndex = mergedLower.findIndex(
+      (lower) => lower !== newLower && newLower.includes(lower),
+    )
+
+    if (subsumesIndex === -1) {
+      const alreadyCovered = mergedLower.some(
+        (lower) => lower === newLower || lower.includes(newLower),
+      )
+      if (!alreadyCovered) {
+        merged.push(newAddr)
+        mergedLower.push(newLower)
+      }
+    } else {
+      merged[subsumesIndex] = newAddr
+      mergedLower[subsumesIndex] = newLower
+    }
+  }
+
+  return merged
+}
+
+interface NotFoundActivity extends BaseActivity {
   type: "not-found"
   site: string
+}
+
+interface AppliedActivity extends BaseActivity {
+  type: "applied"
+}
+
+interface InvitedActivity extends BaseActivity {
+  type: "invited"
+  interviewDate: string
+}
+
+interface InterviewedActivity extends BaseActivity {
+  type: "interviewed"
+  outcome: "completed" | "cancelled"
+}
+
+interface OfferedActivity extends BaseActivity {
+  type: "offered"
+  startDate: string
+  salary: string
+}
+
+interface RejectedActivity extends BaseActivity {
+  type: "rejected"
+}
+
+interface NotInterestedActivity extends BaseActivity {
+  type: "not-interested"
+}
+
+interface BaseActivity {
+  date: string
+  notes: string
+}
+
+function deriveStatusNoUserActivity(
+  activityHistory: Activity[],
+  active: boolean,
+): VacancyStatus {
+  if (!active) return "gone"
+  const wasGone = activityHistory.some((a) => a.type === "not-found")
+  return wasGone ? "renewed" : "new"
+}
+
+function deriveStatusFromHistory(
+  types: Set<string>,
+  active: boolean,
+): VacancyStatus {
+  const STATUS_PRIORITY = [
+    "rejected",
+    "offered",
+    "interviewed",
+    "invited",
+  ] as const
+  const match = STATUS_PRIORITY.find((t) => types.has(t))
+  if (match) return match
+
+  if (types.has("applied")) return active ? "applied" : "ignored"
+  if (types.has("not-interested")) return "not-interested"
+  return active ? "new" : "gone"
 }
 
 const VacancyContactSchema = z.object({
@@ -175,6 +367,50 @@ const VacancySourceSchema = z.object({
   site: z.string(),
   url: z.string(),
 })
+
+export const VacancySerializedSchema = z.object({
+  hash: z.string(),
+  title: z.string(),
+  company: z.string(),
+  addresses: z.array(z.unknown()),
+  contact: VacancyContactSchema,
+  startDate: z.string(),
+  description: z.string(),
+  enriched: z.boolean(),
+  enrichmentDirty: z.boolean(),
+  summary: z.string(),
+  matchScore: z.string(),
+  activityHistory: z.array(z.unknown()),
+  active: z.boolean(),
+  coverLetter: z.string(),
+  status: z.string(),
+  sources: z.array(VacancySourceSchema),
+})
+
+function hasDescriptionChanged(newDesc: string, existingDesc: string): boolean {
+  return (
+    newDesc.length > 0 && existingDesc.length > 0 && newDesc !== existingDesc
+  )
+}
+
+function hasContact(contact: VacancyContact): boolean {
+  return (
+    contact.name.trim().length > 0 ||
+    contact.email.trim().length > 0 ||
+    contact.phone.trim().length > 0
+  )
+}
+
+/** Deterministic 6-char hex hash for browser/Node compatibility */
+function simpleHash(input: string): string {
+  let hash = 0
+  for (const char of input) {
+    const code = char.codePointAt(0) ?? 0
+    hash = (hash << 5) - hash + code
+    hash = Math.trunc(hash)
+  }
+  return (hash >>> 0).toString(16).slice(0, 6).padStart(6, "0")
+}
 
 const ActivitySchema = z.discriminatedUnion("type", [
   z.object({
@@ -250,82 +486,3 @@ const VacancyInputSchema = z
     coverLetter: z.string().default(""),
   })
   .passthrough()
-
-export const VacancySerializedSchema = z.object({
-  hash: z.string(),
-  title: z.string(),
-  company: z.string(),
-  addresses: z.array(z.unknown()),
-  contact: VacancyContactSchema,
-  startDate: z.string(),
-  description: z.string(),
-  enriched: z.boolean(),
-  enrichmentDirty: z.boolean(),
-  summary: z.string(),
-  matchScore: z.string(),
-  activityHistory: z.array(z.unknown()),
-  active: z.boolean(),
-  coverLetter: z.string(),
-  status: z.string(),
-  sources: z.array(VacancySourceSchema),
-})
-
-interface AppliedActivity extends BaseActivity {
-  type: "applied"
-}
-
-interface InvitedActivity extends BaseActivity {
-  type: "invited"
-  interviewDate: string
-}
-
-interface InterviewedActivity extends BaseActivity {
-  type: "interviewed"
-  outcome: "completed" | "cancelled"
-}
-
-interface OfferedActivity extends BaseActivity {
-  type: "offered"
-  startDate: string
-  salary: string
-}
-
-interface RejectedActivity extends BaseActivity {
-  type: "rejected"
-}
-
-interface NotInterestedActivity extends BaseActivity {
-  type: "not-interested"
-}
-
-interface BaseActivity {
-  date: string
-  notes: string
-}
-
-function deriveStatusNoUserActivity(
-  activityHistory: Activity[],
-  active: boolean,
-): VacancyStatus {
-  if (!active) return "gone"
-  const wasGone = activityHistory.some((a) => a.type === "not-found")
-  return wasGone ? "renewed" : "new"
-}
-
-function deriveStatusFromHistory(
-  types: Set<string>,
-  active: boolean,
-): VacancyStatus {
-  const STATUS_PRIORITY = [
-    "rejected",
-    "offered",
-    "interviewed",
-    "invited",
-  ] as const
-  const match = STATUS_PRIORITY.find((t) => types.has(t))
-  if (match) return match
-
-  if (types.has("applied")) return active ? "applied" : "ignored"
-  if (types.has("not-interested")) return "not-interested"
-  return active ? "new" : "gone"
-}

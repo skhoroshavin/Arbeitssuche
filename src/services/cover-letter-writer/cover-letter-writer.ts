@@ -72,7 +72,7 @@ export class CoverLetterWriter {
     )
     const target = vacancies.find((v) => v.hash === vacancyHash)
     if (!target) throw new Error(`Vacancy "${vacancyHash}" not found`)
-    target.coverLetter = content
+    target.updateCoverLetter(content)
     this.vacancyRepo.save(makeJobSearchID(jobSearchId), vacancies)
 
     return { content }
