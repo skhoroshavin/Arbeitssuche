@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type MutableRefObject } from "react"
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router"
 import type { AppSetupState } from "@/models/setup"
 import { Card, Loading, SectionHeader } from "@/ui/components"
@@ -23,6 +23,7 @@ export function FirstStartWizard() {
   const [skipDraftResume, setSkipDraftResume] = useState(false)
   const [showResumePrompt, setShowResumePrompt] = useState(false)
   const initialized = useRef(false)
+  const completingPhaseRef = useRef(false)
 
   useEffect(() => {
     if (initialized.current || setupState.data === undefined) {
@@ -49,7 +50,9 @@ export function FirstStartWizard() {
     return <Loading />
   }
 
-  if (state?.completed) {
+  // When completing a phase (especially job-search), handlePhaseComplete handles
+  // the final navigation itself. Skip the guard redirect to avoid races.
+  if (state?.completed && !completingPhaseRef.current) {
     return <Navigate to="/" replace />
   }
 
@@ -74,7 +77,9 @@ export function FirstStartWizard() {
       value={{
         isInFirstStart: true,
         onPhaseComplete: (result) => {
+          completingPhaseRef.current = true
           void handlePhaseComplete({
+            completingPhaseRef,
             saveSetup,
             result,
             completeSetup,
@@ -206,27 +211,33 @@ async function handlePhaseComplete({
   result,
   completeSetup,
   navigate,
+  completingPhaseRef,
 }: {
   saveSetup: ReturnType<typeof useSaveSetupState>
   result: FirstStartPhaseResult
   completeSetup: ReturnType<typeof useCompleteSetupState>
   navigate: ReturnType<typeof useNavigate>
+  completingPhaseRef: MutableRefObject<boolean>
 }): Promise<void> {
-  if (result.jobSearchId) {
-    await completeSetup.mutateAsync()
-    void navigate(`/job-searches/${result.jobSearchId}/vacancies`, {
-      replace: true,
-    })
-    return
-  }
+  try {
+    if (result.jobSearchId) {
+      await completeSetup.mutateAsync()
+      void navigate(`/job-searches/${result.jobSearchId}/vacancies`, {
+        replace: true,
+      })
+      return
+    }
 
-  const nextState = resolveNextPhaseState(result)
-  if (!nextState) {
-    return
-  }
+    const nextState = resolveNextPhaseState(result)
+    if (!nextState) {
+      return
+    }
 
-  await saveSetup.mutateAsync(nextState)
-  void navigate(resolveNextPhaseRoute(nextState), { replace: true })
+    await saveSetup.mutateAsync(nextState)
+    void navigate(resolveNextPhaseRoute(nextState), { replace: true })
+  } finally {
+    completingPhaseRef.current = false
+  }
 }
 
 function resolveNextPhaseState(result: FirstStartPhaseResult) {

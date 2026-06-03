@@ -58,6 +58,28 @@ export class ApplicantListPage {
     await expect(this.wizardFinishButton).not.toBeVisible({ timeout: 15000 })
   }
 
+  async assertWizardVisible() {
+    await expect(this.wizardCancelButton).toBeVisible()
+    await expect(this.wizardTitle).toBeVisible()
+  }
+
+  async fillPersonalDetails({
+    name,
+    street,
+    zip,
+    city,
+  }: {
+    name: string
+    street: string
+    zip: string
+    city: string
+  }) {
+    await this.page.getByLabel("Name").fill(name)
+    await this.page.getByLabel("Straße").fill(street)
+    await this.page.getByLabel("PLZ").fill(zip)
+    await this.page.getByLabel("Stadt").fill(city)
+  }
+
   async openWizard() {
     await this.newApplicantButton.click()
     await expect(this.wizardTitle).toBeVisible()

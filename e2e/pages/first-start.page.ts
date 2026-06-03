@@ -40,4 +40,10 @@ export class FirstStartPage {
     await expect(this.finishButton).toBeVisible()
     await this.finishButton.click()
   }
+
+  async skipSettings(): Promise<void> {
+    await this.skipButton.click()
+    await expect(this.skipConfirmButton).toBeVisible()
+    await this.skipConfirmButton.click()
+  }
 }
