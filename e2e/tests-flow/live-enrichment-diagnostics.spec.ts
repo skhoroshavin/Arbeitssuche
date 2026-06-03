@@ -1,47 +1,34 @@
-import { test, expect } from "../fixtures.js"
+import { test } from "../fixtures.js"
 import {
-  assertLiveProvidersReady,
-  configureLiveProviders,
-  OPENROUTER_LABEL,
   MAPS_LABEL,
+  OPENROUTER_LABEL,
+  readRequiredLiveCredentials,
 } from "../helpers/live-e2e-setup.js"
 
 test.describe("Live enrichment diagnostics", () => {
-  test("shows the configured live provider state for E2E", async ({
-    api,
+  test("shows configured provider state, masked secrets, successful tests, and non-empty model selections through visible UI only", async ({
+    firstStartPage,
     settingsPage,
   }) => {
-    await configureLiveProviders(settingsPage)
-    await expect(assertLiveProvidersReady(api)).resolves.toBeUndefined()
+    const credentials = readRequiredLiveCredentials()
 
-    await settingsPage.goto()
+    await firstStartPage.assertVisible()
+    await settingsPage.expectProviderSelected("OpenRouter")
+
+    await settingsPage.addAndSave(OPENROUTER_LABEL, credentials.openrouterApiKey)
     await settingsPage.assertSavedSecret(OPENROUTER_LABEL)
-    await settingsPage.navLink("Karten").click()
+    await settingsPage.testButton(OPENROUTER_LABEL).click()
+    await settingsPage.expectTestSuccess()
+
+    await settingsPage.expectModelSelected("Bewertungsmodell")
+    await settingsPage.expectModelSelected("Anschreibenmodell")
+    await settingsPage.expectModelSelected("Beratungsmodell")
+
+    await firstStartPage.continueToMaps()
+
+    await settingsPage.addAndSave(MAPS_LABEL, credentials.googleMapsApiKey)
     await settingsPage.assertSavedSecret(MAPS_LABEL)
-
-    const config = await api.getConfig()
-    const models = await api.getLlmModels()
-
-    expect(config.provider).toBe("openrouter")
-    expect(config.assessmentModel).toBeTruthy()
-    expect(config.coverLetterModel).toBeTruthy()
-    expect(config.consultationModel).toBeTruthy()
-
-    expect(models.length).toBeGreaterThan(0)
-    expect(models.some((model) => model.id === config.assessmentModel)).toBe(
-      true,
-    )
-    expect(models.some((model) => model.id === config.coverLetterModel)).toBe(
-      true,
-    )
-  })
-
-  test("verifies the saved live keys can execute provider operations", async ({
-    api,
-    settingsPage,
-  }) => {
-    await configureLiveProviders(settingsPage)
-
-    await expect(assertLiveProvidersReady(api)).resolves.toBeUndefined()
+    await settingsPage.testButton(MAPS_LABEL).click()
+    await settingsPage.expectTestSuccess()
   })
 })

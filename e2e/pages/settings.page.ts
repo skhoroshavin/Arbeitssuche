@@ -48,15 +48,22 @@ export class SettingsPage {
   }
 
   modelSelect(label: string): Locator {
-    return this.page.getByRole("combobox").filter({
-      has: this.page.locator("..").filter({
-        has: this.page.getByText(label, { exact: true }),
-      }),
-    })
+    return this.page
+      .locator(".space-y-1")
+      .filter({ has: this.page.getByText(label, { exact: true }) })
+      .locator("input[role='combobox']")
   }
 
   async selectProvider(name: string) {
     await this.providerButton(name).click()
+  }
+
+  async expectProviderSelected(name: string) {
+    await expect(this.providerButton(name)).toHaveClass(/border-blue-500/)
+  }
+
+  async expectModelSelected(label: string) {
+    await expect(this.modelSelect(label)).toHaveValue(/\S/)
   }
 
   testButton(label: string): Locator {
