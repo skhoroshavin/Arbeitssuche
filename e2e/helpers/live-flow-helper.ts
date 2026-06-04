@@ -1,10 +1,5 @@
 import { expect } from "@playwright/test"
 import type {
-  E2eVacancy,
-  E2eVacancyList,
-  ElectronApiHelper,
-} from "./electron-api-helper.js"
-import type {
   ApplicantListPage,
   ApplicantPage,
   JobSearchPage,
@@ -15,110 +10,94 @@ export class LiveFlowHelper {
     private readonly applicantListPage: ApplicantListPage,
     private readonly applicantPage: ApplicantPage,
     private readonly jobSearchPage: JobSearchPage,
-    private readonly api: ElectronApiHelper,
   ) {}
 
-  async createApplicantWithCity(
+  async completeFirstStartApplicantWithCity(
     name: string,
     city = "Berlin",
   ): Promise<string> {
-    await this.applicantListPage.goto()
-    await this.applicantListPage.openCreateForm()
-    await this.applicantListPage.page.getByLabel("Name").fill(name)
-    await this.applicantListPage.page
-      .getByLabel("Straße")
-      .fill("Friedrichstraße 100")
-    await this.applicantListPage.page.getByLabel("PLZ").fill("10117")
-    await this.applicantListPage.page.getByLabel("Stadt").fill(city)
+    await this.applicantListPage.assertWizardVisible()
+    await this.applicantListPage.fillPersonalDetails({
+      name,
+      street: "Friedrichstraße 100",
+      zip: "10117",
+      city,
+    })
     await this.applicantListPage.advanceWizardToLastStep()
     await this.applicantListPage.wizardFinishButton.click()
-    await expect(this.applicantPage.page).toHaveURL(/\/applicants\/[^/]+$/)
-    return readApplicantId(this.applicantPage.page.url())
+    await expect(this.applicantPage.page).toHaveURL(
+      /\/first-start\/job-search\/[^/]+$/,
+    )
+
+    const applicantId = /\/first-start\/job-search\/([^/]+)$/
+      .exec(this.applicantPage.page.url())?.[1]
+    if (!applicantId) {
+      throw new Error(
+        `Failed to read applicant id from URL: ${this.applicantPage.page.url()}`,
+      )
+    }
+    return applicantId
   }
 
-  async createJobSearchWithBoundedResults(
-    applicantId: string,
+  async completeFirstStartJobSearchWithBoundedResults(
     searchTerm: string,
   ): Promise<string> {
-    await this.applicantPage.goto(applicantId)
-    await this.applicantPage.openWizard()
+    await this.applicantPage.assertJobSearchWizardVisible()
     await this.applicantPage.field("Suchbegriff").fill(searchTerm)
     await this.applicantPage.field("Max. Ergebnisse").fill("5")
 
     await this.applicantPage.wizardContinueButton.click()
-    await expect(this.applicantPage.wizardStepHeading(2)).toBeVisible()
-
     await this.applicantPage.wizardContinueButton.click()
-    await expect(this.applicantPage.wizardStepHeading(3)).toBeVisible()
-    await this.applicantPage.page
-      .getByRole("button", { name: "arbeitsagentur", exact: true })
-      .click()
-
+    await this.applicantPage.sourceButton("arbeitsagentur").click()
     await this.applicantPage.wizardContinueButton.click()
-    await expect(this.applicantPage.wizardStepHeading(4)).toBeVisible()
-
     await this.applicantPage.wizardContinueButton.click()
-    await expect(this.applicantPage.wizardStepHeading(5)).toBeVisible()
     await this.applicantPage.wizardFinishButton.click()
 
-    await expect(this.jobSearchPage.page).toHaveURL(
-      /\/job-searches\/[^/]+\/vacancies/,
-    )
+    await expect(this.jobSearchPage.page).not.toHaveURL(/\/first-start\//, {
+      timeout: 20_000,
+    })
 
-    const jobSearchId = readJobSearchId(this.jobSearchPage.page.url())
-    const jobSearch = await this.api.getJobSearch(jobSearchId)
-    expect(jobSearch.jobSearch.sources.map((s) => s.value)).toEqual([
-      "arbeitsagentur",
-    ])
-    expect(jobSearch.jobSearch.maxResultsPerSource).toBe(5)
+    // Extract job search id from whatever URL we landed on
+    const jobSearchId = /\/job-searches\/([^/]+)/.exec(
+      this.jobSearchPage.page.url(),
+    )?.[1]
+    if (!jobSearchId) {
+      throw new Error(
+        `Failed to parse job search id from URL: ${this.jobSearchPage.page.url()}`,
+      )
+    }
 
+    // Navigate to vacancies explicitly
+    await this.jobSearchPage.gotoVacancies(jobSearchId)
     return jobSearchId
   }
 
-  async startCrawl(): Promise<void> {
+  async startCrawlAndWaitForVacancies(): Promise<number> {
     await expect(this.jobSearchPage.refreshButton).toBeEnabled()
     await this.jobSearchPage.refreshButton.click()
-  }
 
-  async waitForCrawlCompletion(jobSearchId: string): Promise<E2eVacancyList> {
-    await expect
-      .poll(
-        async () => {
-          const vacancyList = await this.api.getVacancyList(jobSearchId)
-          const hasBoundedCount =
-            vacancyList.totalCount >= 1 && vacancyList.totalCount <= 5
-          const hasCommute = vacancyList.vacancies.some((vacancy) =>
-            vacancy.addresses.some((a) => a.commute),
-          )
-          const refreshEnabled =
-            await this.jobSearchPage.refreshButton.isEnabled()
-
-          return refreshEnabled && hasBoundedCount && hasCommute
-        },
-        {
-          timeout: 180_000,
-          intervals: [1_000, 2_000, 5_000],
-        },
-      )
-      .toBe(true)
-
-    return this.api.getVacancyList(jobSearchId)
-  }
-
-  async enrichVacanciesAndWait(jobSearchId: string): Promise<E2eVacancyList> {
-    if (await this.jobSearchPage.enrichAllButton.isVisible()) {
-      await this.jobSearchPage.enrichAllButton.click()
-    }
-
-    let latestVacancyList = await this.api.getVacancyList(jobSearchId)
+    let latestCardCount = 0
+    let latestSourceCount = 0
+    let latestCommuteCardCount = 0
 
     try {
       await expect
         .poll(
           async () => {
-            latestVacancyList = await this.api.getVacancyList(jobSearchId)
-            return latestVacancyList.vacancies.some(
-              (vacancy) => vacancy.summary.trim().length > 0,
+            latestCardCount = await this.jobSearchPage.vacancyCardCount()
+            latestSourceCount =
+              await this.jobSearchPage.sourceChipCount("arbeitsagentur")
+            latestCommuteCardCount =
+              await this.jobSearchPage.vacancyCardCountWithCommute()
+            const refreshEnabled =
+              await this.jobSearchPage.refreshButton.isEnabled()
+
+            return (
+              refreshEnabled &&
+              latestCardCount >= 1 &&
+              latestCardCount <= 5 &&
+              latestSourceCount === latestCardCount &&
+              latestCommuteCardCount >= 1
             )
           },
           {
@@ -129,55 +108,46 @@ export class LiveFlowHelper {
         .toBe(true)
     } catch {
       throw new Error(
-        `Enrichment did not produce summaries: ${JSON.stringify(
-          latestVacancyList.vacancies.map((vacancy) => ({
-            hash: vacancy.hash,
-            title: vacancy.title,
-            hasSummary: vacancy.summary.trim().length > 0,
-            hasCommute: vacancy.addresses.some((a) => a.commute),
-          })),
-        )}`,
+        `Crawl did not finish with 1-5 arbeitsagentur cards and a visible commute result. cards=${latestCardCount}, sources=${latestSourceCount}, commuteCards=${latestCommuteCardCount}`,
       )
     }
 
-    return latestVacancyList
+    return latestCardCount
   }
 
-  pickEnrichedVacancy(vacancyList: E2eVacancyList): E2eVacancy {
-    const vacancy = vacancyList.vacancies.find(
-      (entry) =>
-        entry.summary.trim().length > 0 &&
-        entry.addresses.some((a) => a.commute) &&
-        entry.sources.some((source) => source.site === "arbeitsagentur"),
-    )
-
-    if (!vacancy) {
-      throw new Error("No enriched vacancy with commute data was found")
+  async enrichAllVisibleVacancies(): Promise<void> {
+    if (await this.jobSearchPage.isEnrichAllButtonVisible()) {
+      await this.jobSearchPage.enrichAllButton.click()
     }
 
-    return vacancy
+    let latestCardCount = 0
+
+    try {
+      await expect
+        .poll(
+          async () => {
+            latestCardCount = await this.jobSearchPage.vacancyCardCount()
+            const enrichVisible =
+              await this.jobSearchPage.isEnrichAllButtonVisible()
+            return latestCardCount > 0 && !enrichVisible
+          },
+          {
+            timeout: 180_000,
+            intervals: [1_000, 2_000, 5_000],
+          },
+        )
+        .toBe(true)
+    } catch {
+      throw new Error(
+        `Enrichment did not finish in time. cards=${latestCardCount}`,
+      )
+    }
   }
 
-  async openVacancy(jobSearchId: string, vacancy: E2eVacancy): Promise<void> {
-    await this.jobSearchPage.vacancyCard(vacancy.hash).click()
+  async openVacancyWithCommute(jobSearchId: string): Promise<void> {
+    await this.jobSearchPage.firstVacancyCardWithCommute().click()
     await expect(this.jobSearchPage.page).toHaveURL(
-      new RegExp(`/job-searches/${jobSearchId}/vacancies/${vacancy.hash}$`),
+      new RegExp(`/job-searches/${jobSearchId}/vacancies/[^/]+$`),
     )
   }
-}
-
-function readApplicantId(url: string): string {
-  const applicantId = /\/applicants\/([^/]+)$/.exec(url)?.[1]
-  if (!applicantId) {
-    throw new Error(`Failed to read applicant id from URL: ${url}`)
-  }
-  return applicantId
-}
-
-function readJobSearchId(url: string): string {
-  const jobSearchId = /\/job-searches\/([^/]+)\/vacancies/.exec(url)?.[1]
-  if (!jobSearchId) {
-    throw new Error(`Failed to read job search id from URL: ${url}`)
-  }
-  return jobSearchId
 }

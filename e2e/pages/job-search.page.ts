@@ -112,4 +112,36 @@ export class JobSearchPage {
   async gotoVacancyDetail(id: string, hash: string) {
     await this.page.goto(`/job-searches/${id}/vacancies/${hash}`)
   }
+
+  vacancyCards(): Locator {
+    return this.page.locator("a[href*='/vacancies/']").filter({
+      has: this.page.locator("span.font-mono"),
+    })
+  }
+
+  vacancyCardsWithCommute(): Locator {
+    return this.vacancyCards().filter({
+      hasText: /\d+ min \(.+\)/,
+    })
+  }
+
+  firstVacancyCardWithCommute(): Locator {
+    return this.vacancyCardsWithCommute().first()
+  }
+
+  async vacancyCardCount(): Promise<number> {
+    return this.vacancyCards().count()
+  }
+
+  async vacancyCardCountWithCommute(): Promise<number> {
+    return this.vacancyCardsWithCommute().count()
+  }
+
+  async sourceChipCount(site: string): Promise<number> {
+    return this.page.getByRole("link", { name: site, exact: true }).count()
+  }
+
+  async isEnrichAllButtonVisible(): Promise<boolean> {
+    return this.enrichAllButton.isVisible().catch(() => false)
+  }
 }
