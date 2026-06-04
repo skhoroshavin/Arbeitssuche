@@ -68,6 +68,8 @@ The current live helper methods bundle several checkpoints together. The new sui
 - `first-start` creates the persisted application state
 - `follow-up start` relaunches the app with the same state folder and reuses that state
 - `vacancy view` continues from the state created earlier in the same suite
+- this suite should intentionally share one live Electron app/page context across its serial `it(...)` blocks instead of resetting fixtures per test
+- the shared context should live until the explicit relaunch checkpoint, where the app is closed and reopened against the same state folder, then continue serving the remaining `it(...)` blocks
 - if the cleanest implementation is one fully serial journey under the hood, that is acceptable as long as the grouped structure remains
 
 ### Assertion model
@@ -115,9 +117,15 @@ Each test should prove the new behavior introduced at that checkpoint:
    - fill useful miscellaneous data that can influence downstream generation
    - finish applicant wizard
 
+Use stable seed data for the happy path:
+- applicant address in Berlin
+- search term `Softwareentwickler`
+- max search results per source `3`
+- enabled sources only: Agentur für Arbeit and Xing
+
 8. `it("then asks for job search parameters")`
    - confirm job-search wizard opens
-   - fill search term
+   - fill search term `Softwareentwickler`
    - set max search results per source to `3`
    - limit enabled sources to:
      - Agentur für Arbeit
@@ -133,7 +141,8 @@ Each test should prove the new behavior introduced at that checkpoint:
    - finish the job-search wizard
    - confirm crawling starts automatically
    - verify visible crawl progress/status is shown, ideally via the top status line / progress bar
-   - wait until vacancies are found or the crawl completes enough for the next phase
+   - wait until at least `1` visible vacancy exists and the list is usable for opening a vacancy
+   - if live results stay at `0`, fail explicitly: this happy path requires at least one vacancy to proceed
 
 ### `describe("follow-up start")`
 
@@ -147,6 +156,8 @@ Each test should prove the new behavior introduced at that checkpoint:
 
 13. `it("allows to download a resume")`
    - trigger resume download for that applicant through the UI
+   - use one visible resume template option as the action target
+   - visible success criterion for this suite: the chosen template control enters a pending/disabled state, then returns to enabled state while the applicant overview remains usable
 
 14. `it("allows to select a job search")`
    - open the first job search for that applicant through the UI
@@ -230,7 +241,9 @@ Add helpers/selectors for:
 - filling the invited appointment date UI
 
 ### Fixture/helper layer
-Add relaunch support that:
+Add shared-fixture and relaunch support that:
+- gives this spec one shared Electron app/page context across its serial `it(...)` blocks
+- preserves one state folder for the whole file
 - closes the Electron app after the first-start phase
 - reopens it with the same persisted state folder before `follow-up start`
 - proves successful restart through visible UI only
@@ -286,7 +299,8 @@ Most likely non-trivial implementation work:
 2. finding stable selectors for job-search source configuration and per-source limits
 3. finding a stable visible crawl-progress indicator
 4. finding selectors for vacancy status workflow and invited appointment date
-5. implementing clean app relaunch with the same state folder in the E2E fixture layer
+5. implementing shared app/page fixtures for this serial spec without per-test resets
+6. implementing clean app relaunch with the same state folder in the E2E fixture layer
 
 ## Scope Guard
 
