@@ -119,13 +119,13 @@ Each test should prove the new behavior introduced at that checkpoint:
 
 Use stable seed data for the happy path:
 - applicant address in Berlin
-- search term `Softwareentwickler`
+- search term `Sachbearbeiter`
 - max search results per source `3`
 - enabled sources only: Agentur für Arbeit and Xing
 
 8. `it("then asks for job search parameters")`
    - confirm job-search wizard opens
-   - fill search term `Softwareentwickler`
+   - fill search term `Sachbearbeiter`
    - set max search results per source to `3`
    - limit enabled sources to:
      - Agentur für Arbeit
@@ -141,7 +141,8 @@ Use stable seed data for the happy path:
    - finish the job-search wizard
    - confirm crawling starts automatically
    - verify visible crawl progress/status is shown, ideally via the top status line / progress bar
-   - wait until at least `1` visible vacancy exists and the list is usable for opening a vacancy
+   - wait until the visible search/analysis progress UI is no longer shown
+   - then assert that at least `1` visible vacancy exists and the list is usable for opening a vacancy
    - if live results stay at `0`, fail explicitly: this happy path requires at least one vacancy to proceed
 
 ### `describe("follow-up start")`
@@ -157,7 +158,8 @@ Use stable seed data for the happy path:
 13. `it("allows to download a resume")`
    - trigger resume download for that applicant through the UI
    - use one visible resume template option as the action target
-   - visible success criterion for this suite: the chosen template control enters a pending/disabled state, then returns to enabled state while the applicant overview remains usable
+   - allow one explicit exception to the UI-only rule here: assert that Electron/Playwright reports a PDF download was initiated
+   - verify the downloaded file has a `.pdf` filename and is non-empty
 
 14. `it("allows to select a job search")`
    - open the first job search for that applicant through the UI
@@ -250,13 +252,21 @@ Add shared-fixture and relaunch support that:
 
 ## UI-Only Assertion Rule
 
-These tests should use visible UI only, always:
+These tests should use visible UI only by default:
 - no internal assertions
 - no direct store/database/state inspection
 - no hidden contracts
 - no reading app internals to verify progress
 
 All proof should come from what a user can see and interact with.
+
+### Explicit exception
+The resume-download checkpoint may use Playwright/Electron download assertions to prove that a PDF download is actually offered and emitted:
+- assert a download event is triggered from the visible template-selection action
+- assert the suggested/downloaded filename ends with `.pdf`
+- assert the downloaded file is non-empty
+
+No other exceptions are in scope for this suite.
 
 ## Async and Waiting Strategy
 
