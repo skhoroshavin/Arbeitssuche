@@ -31,10 +31,7 @@ test.describe("First-start wizard", () => {
     await settingsPage.testButton(MAPS_LABEL).click()
     await settingsPage.expectTestFailure()
 
-    await settingsPage.replaceAndSave(
-      MAPS_LABEL,
-      credentials.googleMapsApiKey,
-    )
+    await settingsPage.replaceAndSave(MAPS_LABEL, credentials.googleMapsApiKey)
     await settingsPage.testButton(MAPS_LABEL).click()
     await settingsPage.expectTestSuccess()
   })

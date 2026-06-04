@@ -15,7 +15,10 @@ test.describe("Live enrichment diagnostics", () => {
     await firstStartPage.assertVisible()
     await settingsPage.expectProviderSelected("OpenRouter")
 
-    await settingsPage.addAndSave(OPENROUTER_LABEL, credentials.openrouterApiKey)
+    await settingsPage.addAndSave(
+      OPENROUTER_LABEL,
+      credentials.openrouterApiKey,
+    )
     await settingsPage.assertSavedSecret(OPENROUTER_LABEL)
     await settingsPage.testButton(OPENROUTER_LABEL).click()
     await settingsPage.expectTestSuccess()

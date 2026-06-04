@@ -23,7 +23,7 @@ export function FirstStartWizard() {
   const [skipDraftResume, setSkipDraftResume] = useState(false)
   const [showResumePrompt, setShowResumePrompt] = useState(false)
   const initialized = useRef(false)
-  const completingPhaseRef = useRef(false)
+  const completingPhaseReference = useRef(false)
 
   useEffect(() => {
     if (initialized.current || setupState.data === undefined) {
@@ -50,12 +50,10 @@ export function FirstStartWizard() {
     return <Loading />
   }
 
-  // When completing a phase (especially job-search), handlePhaseComplete handles
-  // the final navigation itself. Skip the guard redirect to avoid races.
-  if (state?.completed) {
-    if (location.pathname.startsWith("/first-start") && !completingPhaseRef.current) {
-      return <Navigate to="/" replace />
-    }
+  if (
+    shouldRedirectToRoot(state, location.pathname, completingPhaseReference)
+  ) {
+    return <Navigate to="/" replace />
   }
 
   if (shouldShowResumePrompt(state, showResumePrompt)) {
@@ -79,7 +77,7 @@ export function FirstStartWizard() {
       value={{
         isInFirstStart: true,
         onPhaseComplete: (result) => {
-          completingPhaseRef.current = true
+          completingPhaseReference.current = true
           void handlePhaseComplete({
             saveSetup,
             result,
@@ -185,6 +183,18 @@ function shouldShowResumePrompt(
   showResumePrompt: boolean,
 ) {
   return state !== undefined && showResumePrompt && hasSavedPhase(state)
+}
+
+function shouldRedirectToRoot(
+  state: AppSetupState | undefined,
+  pathname: string,
+  completingPhaseReference: { current: boolean },
+): boolean {
+  return Boolean(
+    state?.completed &&
+    pathname.startsWith("/first-start") &&
+    !completingPhaseReference.current,
+  )
 }
 
 function resolveResumeTarget({

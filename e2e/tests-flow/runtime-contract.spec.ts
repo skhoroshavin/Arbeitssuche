@@ -25,10 +25,9 @@ test.describe("Live E2E runtime contract", () => {
     await applicantListPage.advanceWizardToLastStep()
     await applicantListPage.wizardFinishButton.click()
 
-    await expect(applicantPage.page).toHaveURL(
-      /\/first-start\/job-search\//,
-      { timeout: 10_000 },
-    )
+    await expect(applicantPage.page).toHaveURL(/\/first-start\/job-search\//, {
+      timeout: 10_000,
+    })
     await applicantPage.assertJobSearchWizardVisible()
 
     await applicantPage.field("Suchbegriff").fill("Softwareentwickler")

@@ -59,8 +59,7 @@ test.describe("Live major flow", () => {
     await expect
       .poll(
         async () => {
-          return (await jobSearchPage.coverLetterInput.inputValue())
-            .trim()
+          return (await jobSearchPage.coverLetterInput.inputValue()).trim()
             .length
         },
         {

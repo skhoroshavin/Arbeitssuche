@@ -29,8 +29,9 @@ export class LiveFlowHelper {
       /\/first-start\/job-search\/[^/]+$/,
     )
 
-    const applicantId = /\/first-start\/job-search\/([^/]+)$/
-      .exec(this.applicantPage.page.url())?.[1]
+    const applicantId = /\/first-start\/job-search\/([^/]+)$/.exec(
+      this.applicantPage.page.url(),
+    )?.[1]
     if (!applicantId) {
       throw new Error(
         `Failed to read applicant id from URL: ${this.applicantPage.page.url()}`,
