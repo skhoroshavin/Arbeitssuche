@@ -23,6 +23,7 @@ export function FirstStartWizard() {
   const [skipDraftResume, setSkipDraftResume] = useState(false)
   const [showResumePrompt, setShowResumePrompt] = useState(false)
   const initialized = useRef(false)
+  const completingPhaseReference = useRef(false)
 
   useEffect(() => {
     if (initialized.current || setupState.data === undefined) {
@@ -49,7 +50,9 @@ export function FirstStartWizard() {
     return <Loading />
   }
 
-  if (state?.completed) {
+  if (
+    shouldRedirectToRoot(state, location.pathname, completingPhaseReference)
+  ) {
     return <Navigate to="/" replace />
   }
 
@@ -74,6 +77,7 @@ export function FirstStartWizard() {
       value={{
         isInFirstStart: true,
         onPhaseComplete: (result) => {
+          completingPhaseReference.current = true
           void handlePhaseComplete({
             saveSetup,
             result,
@@ -181,6 +185,18 @@ function shouldShowResumePrompt(
   return state !== undefined && showResumePrompt && hasSavedPhase(state)
 }
 
+function shouldRedirectToRoot(
+  state: AppSetupState | undefined,
+  pathname: string,
+  completingPhaseReference: { current: boolean },
+): boolean {
+  return Boolean(
+    state?.completed &&
+    pathname.startsWith("/first-start") &&
+    !completingPhaseReference.current,
+  )
+}
+
 function resolveResumeTarget({
   pathname,
   showResumePrompt,
@@ -216,6 +232,7 @@ async function handlePhaseComplete({
     await completeSetup.mutateAsync()
     void navigate(`/job-searches/${result.jobSearchId}/vacancies`, {
       replace: true,
+      state: { startInitialUpdate: true },
     })
     return
   }

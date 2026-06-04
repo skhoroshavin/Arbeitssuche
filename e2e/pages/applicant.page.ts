@@ -62,6 +62,15 @@ export class ApplicantPage {
     })
   }
 
+  sourceButton(name: string): Locator {
+    return this.page.getByRole("button", { name, exact: true })
+  }
+
+  async assertJobSearchWizardVisible() {
+    await expect(this.wizardStepHeading(1)).toBeVisible()
+    await expect(this.wizardContinueButton).toBeVisible()
+  }
+
   tabLink(name: string): Locator {
     return this.page.getByRole("link", { name })
   }

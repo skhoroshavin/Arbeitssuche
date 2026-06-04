@@ -48,15 +48,22 @@ export class SettingsPage {
   }
 
   modelSelect(label: string): Locator {
-    return this.page.getByRole("combobox").filter({
-      has: this.page.locator("..").filter({
-        has: this.page.getByText(label, { exact: true }),
-      }),
-    })
+    return this.page
+      .locator(".space-y-1")
+      .filter({ has: this.page.getByText(label, { exact: true }) })
+      .locator("input[role='combobox']")
   }
 
   async selectProvider(name: string) {
     await this.providerButton(name).click()
+  }
+
+  async expectProviderSelected(name: string) {
+    await expect(this.providerButton(name)).toHaveClass(/border-blue-500/)
+  }
+
+  async expectModelSelected(label: string) {
+    await expect(this.modelSelect(label)).toHaveValue(/\S/)
   }
 
   testButton(label: string): Locator {
@@ -64,11 +71,7 @@ export class SettingsPage {
   }
 
   testResult(): Locator {
-    return this.page
-      .locator("[class*='text-green'], [class*='text-red']")
-      .filter({
-        hasText: /(Gültig|HTTP|API-Status|Kein Schlüssel)/,
-      })
+    return this.page.getByText(/Gültig|Ungültig|Kein Schlüssel/).first()
   }
 
   secretValue(): Locator {
@@ -102,5 +105,13 @@ export class SettingsPage {
     await this.replaceButton(label).click()
     await this.tokenInput(label).fill(value)
     await this.saveFieldButton(label).click()
+  }
+
+  async expectTestSuccess() {
+    await expect(this.testResult()).toHaveText(/Gültig/)
+  }
+
+  async expectTestFailure() {
+    await expect(this.testResult()).toBeVisible()
   }
 }

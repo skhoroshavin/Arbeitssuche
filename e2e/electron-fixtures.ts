@@ -4,20 +4,14 @@ import {
   type ElectronApplication,
 } from "@playwright/test"
 import { resolve } from "node:path"
-import {
-  existsSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { ElectronApiHelper } from "./helpers/electron-api-helper.js"
 import { REQUIRED_E2E_ENV } from "./helpers/live-e2e-setup.js"
 import {
   ApplicantListPage,
   ApplicantPage,
+  FirstStartPage,
   JobSearchPage,
   LayoutPage,
   SettingsPage,
@@ -32,7 +26,7 @@ if (existsSync(envFilePath)) {
 
 type Fixtures = {
   electronApp: ElectronApplication
-  api: ElectronApiHelper
+  firstStartPage: FirstStartPage
   applicantListPage: ApplicantListPage
   applicantPage: ApplicantPage
   jobSearchPage: JobSearchPage
@@ -42,13 +36,9 @@ type Fixtures = {
 
 export const test = base.extend<Fixtures>({
   electronApp: async ({}, use) => {
-    assertRequiredE2eEnvironment()
     const dataDir = mkdtempSync(join(tmpdir(), "e2e-data-"))
-    writeFileSync(
-      join(dataDir, "config.json"),
-      JSON.stringify({ setup: { completed: true } }),
-    )
     const isCI = !!process.env.CI
+
     const electronApp = await electron.launch({
       args: [
         resolve("out/main/main.cjs"),
@@ -61,6 +51,7 @@ export const test = base.extend<Fixtures>({
         ELECTRON_TEST_DATA_DIR: dataDir,
       },
     })
+
     await use(electronApp)
     await electronApp.close()
     rmSync(dataDir, { recursive: true, force: true })
@@ -87,8 +78,8 @@ export const test = base.extend<Fixtures>({
     await use(page)
   },
 
-  api: async ({ page }, use) => {
-    await use(new ElectronApiHelper(page))
+  firstStartPage: async ({ page }, use) => {
+    await use(new FirstStartPage(page))
   },
 
   applicantListPage: async ({ page }, use) => {
@@ -109,20 +100,6 @@ export const test = base.extend<Fixtures>({
 })
 
 export { expect } from "@playwright/test"
-
-function assertRequiredE2eEnvironment(): void {
-  const missing = Object.entries(REQUIRED_E2E_ENV)
-    .filter(([name]) => !process.env[name]?.trim())
-    .map(([name, label]) => `${label} (${name})`)
-
-  if (missing.length === 0) {
-    return
-  }
-
-  throw new Error(
-    `Missing required E2E environment variables: ${missing.join(", ")}`,
-  )
-}
 
 function createElectronEnvironment(): NodeJS.ProcessEnv {
   const environment = { ...process.env }
