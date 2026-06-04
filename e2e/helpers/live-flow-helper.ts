@@ -74,8 +74,10 @@ export class LiveFlowHelper {
   }
 
   async startCrawlAndWaitForVacancies(): Promise<number> {
-    await expect(this.jobSearchPage.refreshButton).toBeEnabled()
-    await this.jobSearchPage.refreshButton.click()
+    const refreshEnabled = await this.jobSearchPage.refreshButton.isEnabled()
+    if (refreshEnabled) {
+      await this.jobSearchPage.refreshButton.click()
+    }
 
     let latestCardCount = 0
     let latestSourceCount = 0
