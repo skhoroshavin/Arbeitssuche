@@ -232,6 +232,7 @@ async function handlePhaseComplete({
     await completeSetup.mutateAsync()
     void navigate(`/job-searches/${result.jobSearchId}/vacancies`, {
       replace: true,
+      state: { startInitialUpdate: true },
     })
     return
   }
