@@ -1,4 +1,5 @@
 import { test, expect } from "../fixtures.js"
+import { MAIN_FLOW_SEED } from "../helpers/main-flow-seed.js"
 import {
   MAPS_LABEL,
   OPENROUTER_LABEL,
@@ -48,6 +49,41 @@ test.describe("main flow", () => {
       await settingsPage.expectTestSuccess()
 
       await firstStartPage.finishSettings()
+    })
+
+    test("then asks for user personal data", async ({ applicantListPage }) => {
+      await applicantListPage.fillPersonalStep(MAIN_FLOW_SEED.applicant.personal)
+      await applicantListPage.continueToStep("Berufserfahrung")
+    })
+
+    test("then asks for work experience", async ({ applicantListPage }) => {
+      await applicantListPage.fillExperienceStep(
+        MAIN_FLOW_SEED.applicant.experience,
+      )
+      await applicantListPage.continueToStep("Ausbildung")
+    })
+
+    test("then asks for education", async ({ applicantListPage }) => {
+      await applicantListPage.fillEducationStep(
+        MAIN_FLOW_SEED.applicant.education,
+      )
+      await applicantListPage.continueToStep("Zertifikate")
+    })
+
+    test("then asks for certification", async ({ applicantListPage }) => {
+      await applicantListPage.fillCertificationStep(
+        MAIN_FLOW_SEED.applicant.certification,
+      )
+      await applicantListPage.continueToStep("Sonstiges")
+    })
+
+    test("then asks for miscellaneous", async ({
+      applicantListPage,
+      applicantPage,
+    }) => {
+      await applicantListPage.fillOtherStep(MAIN_FLOW_SEED.applicant.other)
+      await applicantListPage.wizardFinishButton.click()
+      await applicantPage.assertJobSearchWizardVisible()
     })
   })
 })
