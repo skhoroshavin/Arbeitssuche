@@ -44,7 +44,10 @@ test.describe("main flow", () => {
       await settingsPage.testButton(MAPS_LABEL).click()
       await settingsPage.expectTestFailure()
 
-      await settingsPage.replaceAndSave(MAPS_LABEL, credentials.googleMapsApiKey)
+      await settingsPage.replaceAndSave(
+        MAPS_LABEL,
+        credentials.googleMapsApiKey,
+      )
       await settingsPage.testButton(MAPS_LABEL).click()
       await settingsPage.expectTestSuccess()
 
@@ -52,7 +55,9 @@ test.describe("main flow", () => {
     })
 
     test("then asks for user personal data", async ({ applicantListPage }) => {
-      await applicantListPage.fillPersonalStep(MAIN_FLOW_SEED.applicant.personal)
+      await applicantListPage.fillPersonalStep(
+        MAIN_FLOW_SEED.applicant.personal,
+      )
       await applicantListPage.continueToStep("Berufserfahrung")
     })
 
@@ -102,10 +107,7 @@ test.describe("main flow", () => {
       await expect(applicantPage.wizardFinishButton).toBeVisible()
     })
 
-    test("then starts job search", async ({
-      applicantPage,
-      jobSearchPage,
-    }) => {
+    test("then starts job search", async ({ applicantPage, jobSearchPage }) => {
       await applicantPage.wizardFinishButton.click()
       await jobSearchPage.waitForProgressToAppear()
       await jobSearchPage.waitForProgressToDisappearAndRequireVacancies()
@@ -215,27 +217,19 @@ test.describe("main flow", () => {
       )
       await jobSearchPage.confirmActivityButton.click()
       await expect(jobSearchPage.statusBadge("Eingeladen")).toBeVisible()
-      await expect(
-        jobSearchPage.activityButton("Gespräch"),
-      ).toBeVisible()
+      await expect(jobSearchPage.activityButton("Gespräch")).toBeVisible()
     })
 
-    test("then allows to mark it as interviewed", async ({
-      jobSearchPage,
-    }) => {
+    test("then allows to mark it as interviewed", async ({ jobSearchPage }) => {
       await jobSearchPage.recordActivity("Gespräch")
       await expect(jobSearchPage.statusBadge("Gespräch")).toBeVisible()
-      await expect(
-        jobSearchPage.activityButton("Angebot"),
-      ).toBeVisible()
+      await expect(jobSearchPage.activityButton("Angebot")).toBeVisible()
     })
 
     test("then allows to mark it as offered", async ({ jobSearchPage }) => {
       await jobSearchPage.recordActivity("Angebot")
       await expect(jobSearchPage.statusBadge("Angebot")).toBeVisible()
-      await expect(
-        jobSearchPage.activityButton("Ablehnen"),
-      ).toBeVisible()
+      await expect(jobSearchPage.activityButton("Ablehnen")).toBeVisible()
     })
   })
 })

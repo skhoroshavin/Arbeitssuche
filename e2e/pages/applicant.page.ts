@@ -1,4 +1,9 @@
-import { expect, type Download, type Locator, type Page } from "@playwright/test"
+import {
+  expect,
+  type Download,
+  type Locator,
+  type Page,
+} from "@playwright/test"
 
 export class ApplicantPage {
   readonly page: Page

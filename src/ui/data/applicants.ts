@@ -110,11 +110,11 @@ export function useDownloadResume(id: string, applicantName: string) {
         ? `${applicantName.toLowerCase().replaceAll(" ", "_")}_lebenslauf.pdf`
         : `${id}_lebenslauf.pdf`
       a.download = filename
-      document.body.appendChild(a)
+      document.body.append(a)
       a.click()
       // Keep blob URL alive while download starts
       setTimeout(() => {
-        document.body.removeChild(a)
+        a.remove()
         URL.revokeObjectURL(url)
       }, 1000)
     },

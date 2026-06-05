@@ -200,19 +200,17 @@ export class ApplicantListPage {
     hobbies: string
     personalNote: string
   }) {
-    await this.page
-      .getByRole("button", { name: "Kenntnis hinzufügen" })
-      .click()
+    await this.page.getByRole("button", { name: "Kenntnis hinzufügen" }).click()
     await this.page.getByLabel("Kenntnis").fill(seed.skill)
 
-    await this.page
-      .getByRole("button", { name: "Sprache hinzufügen" })
-      .click()
+    await this.page.getByRole("button", { name: "Sprache hinzufügen" }).click()
     await this.page.getByLabel("Sprache").fill(seed.language)
     await this.page.getByLabel("Niveau").fill(seed.level)
 
     await this.page.getByLabel("Hobbys (kommagetrennt)").fill(seed.hobbies)
-    await this.page.getByLabel("Notizen (eine pro Zeile)").fill(seed.personalNote)
+    await this.page
+      .getByLabel("Notizen (eine pro Zeile)")
+      .fill(seed.personalNote)
   }
 
   async openFirstApplicant() {
