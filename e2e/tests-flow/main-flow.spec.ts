@@ -85,5 +85,30 @@ test.describe("main flow", () => {
       await applicantListPage.wizardFinishButton.click()
       await applicantPage.assertJobSearchWizardVisible()
     })
+
+    test("then asks for job search parameters", async ({ applicantPage }) => {
+      await applicantPage.fillSearchParameters(MAIN_FLOW_SEED.jobSearch)
+      await applicantPage.continueToWizardStep(2)
+    })
+
+    test("then proposes to generate a cover letter template", async ({
+      applicantPage,
+    }) => {
+      await applicantPage.continueToWizardStep(3)
+      await applicantPage.enableOnlySources(MAIN_FLOW_SEED.jobSearch.sources)
+      await applicantPage.continueToWizardStep(4)
+      await applicantPage.continueToWizardStep(5)
+      await expect(applicantPage.coverLetterTemplateField).toBeVisible()
+      await expect(applicantPage.wizardFinishButton).toBeVisible()
+    })
+
+    test("then starts job search", async ({
+      applicantPage,
+      jobSearchPage,
+    }) => {
+      await applicantPage.wizardFinishButton.click()
+      await jobSearchPage.waitForProgressToAppear()
+      await jobSearchPage.waitForProgressToDisappearAndRequireVacancies()
+    })
   })
 })

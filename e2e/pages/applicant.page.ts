@@ -15,6 +15,7 @@ export class ApplicantPage {
   readonly wizardStepThreeHeading: Locator
   readonly wizardStepFourHeading: Locator
   readonly wizardStepFiveHeading: Locator
+  readonly coverLetterTemplateField: Locator
   readonly wizardContinueButton: Locator
   readonly wizardFinishButton: Locator
   readonly wizardCancelButton: Locator
@@ -45,6 +46,7 @@ export class ApplicantPage {
       name: "Praferenzen",
     })
     this.wizardStepFiveHeading = page.getByLabel("Anschreiben")
+    this.coverLetterTemplateField = page.getByLabel("Anschreiben")
     this.wizardContinueButton = page.getByRole("button", { name: "Weiter" })
     this.wizardFinishButton = page.getByRole("button", {
       name: "Fertigstellen",
@@ -158,6 +160,32 @@ export class ApplicantPage {
 
   async downloadTemplate(name: string) {
     await this.templateButton(name).click()
+  }
+
+  async continueToWizardStep(step: 2 | 3 | 4 | 5) {
+    await this.wizardContinueButton.click()
+    await expect(this.wizardStepHeading(step)).toBeVisible()
+  }
+
+  async fillSearchParameters(seed: {
+    searchTerm: string
+    maxResultsPerSource: string
+  }) {
+    await this.field("Suchbegriff").fill(seed.searchTerm)
+    await this.field("Max. Ergebnisse").fill(seed.maxResultsPerSource)
+  }
+
+  async enableOnlySources(sources: readonly string[]) {
+    for (const source of sources) {
+      await this.sourceButton(source).click()
+    }
+
+    await expect(this.page.locator("button.bg-zinc-700")).toHaveCount(
+      sources.length,
+    )
+    for (const source of sources) {
+      await expect(this.sourceButton(source)).toHaveClass(/bg-zinc-700/)
+    }
   }
 }
 
