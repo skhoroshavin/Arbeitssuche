@@ -186,4 +186,56 @@ test.describe("main flow", () => {
       await jobSearchPage.waitForProgressToDisappearAndRequireVacancies()
     })
   })
+
+  test.describe("vacancy view", () => {
+    test("proposes to generate personalised cover letter", async ({
+      jobSearchPage,
+    }) => {
+      await jobSearchPage.openFirstVacancy()
+      await expect(jobSearchPage.summaryHeading).toBeVisible()
+      await expect(jobSearchPage.coverLetterInput).toHaveValue("")
+
+      await jobSearchPage.generateCoverLetterAndWaitForContent()
+      await expect(jobSearchPage.coverLetterInput).toHaveValue(/\S/)
+    })
+
+    test("allows to mark it as applied", async ({ jobSearchPage }) => {
+      await jobSearchPage.recordActivity("Bewerben")
+      await expect(jobSearchPage.statusBadge("Beworben")).toBeVisible()
+      await expect(jobSearchPage.activityButton("Einladen")).toBeVisible()
+    })
+
+    test("then allows to mark it as invited, and asks for appointment date", async ({
+      jobSearchPage,
+    }) => {
+      await jobSearchPage.activityButton("Einladen").click()
+      await expect(jobSearchPage.interviewDateInput).toBeVisible()
+      await jobSearchPage.interviewDateInput.fill(
+        MAIN_FLOW_SEED.jobSearch.appointmentDate,
+      )
+      await jobSearchPage.confirmActivityButton.click()
+      await expect(jobSearchPage.statusBadge("Eingeladen")).toBeVisible()
+      await expect(
+        jobSearchPage.activityButton("Gespräch"),
+      ).toBeVisible()
+    })
+
+    test("then allows to mark it as interviewed", async ({
+      jobSearchPage,
+    }) => {
+      await jobSearchPage.recordActivity("Gespräch")
+      await expect(jobSearchPage.statusBadge("Gespräch")).toBeVisible()
+      await expect(
+        jobSearchPage.activityButton("Angebot"),
+      ).toBeVisible()
+    })
+
+    test("then allows to mark it as offered", async ({ jobSearchPage }) => {
+      await jobSearchPage.recordActivity("Angebot")
+      await expect(jobSearchPage.statusBadge("Angebot")).toBeVisible()
+      await expect(
+        jobSearchPage.activityButton("Ablehnen"),
+      ).toBeVisible()
+    })
+  })
 })

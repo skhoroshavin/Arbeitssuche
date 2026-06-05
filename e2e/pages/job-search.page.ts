@@ -22,6 +22,8 @@ export class JobSearchPage {
   readonly coverLetterInput: Locator
   readonly scanProgressLabel: Locator
   readonly enrichProgressLabel: Locator
+  readonly interviewDateInput: Locator
+  readonly confirmActivityButton: Locator
 
   constructor(page: Page) {
     this.page = page
@@ -59,6 +61,11 @@ export class JobSearchPage {
     this.coverLetterInput = page.getByLabel("Anschreiben")
     this.scanProgressLabel = page.getByText("Wird gescannt...")
     this.enrichProgressLabel = page.getByText("Wird analysiert...")
+    this.interviewDateInput = page.getByPlaceholder("Vorstellungstermin")
+    this.confirmActivityButton = page.getByRole("button", {
+      name: "Bestätigen",
+      exact: true,
+    })
   }
 
   filterButton(label: string): Locator {
@@ -196,5 +203,42 @@ export class JobSearchPage {
 
   async openFirstVacancy(): Promise<void> {
     await this.vacancyCards().first().click()
+  }
+
+  activityButton(label: string): Locator {
+    return this.page.getByRole("button", { name: label, exact: true })
+  }
+
+  statusBadge(label: string): Locator {
+    return this.page.getByText(label, { exact: true }).first()
+  }
+
+  async generateCoverLetterAndWaitForContent(): Promise<void> {
+    await this.generateButton.click()
+
+    await expect
+      .poll(
+        async () => {
+          return (await this.coverLetterInput.inputValue()).trim().length
+        },
+        {
+          timeout: 120_000,
+          intervals: [1_000, 2_000, 5_000],
+        },
+      )
+      .toBeGreaterThan(0)
+  }
+
+  async recordActivity(
+    actionLabel: string,
+    extra?: { interviewDate?: string },
+  ): Promise<void> {
+    await this.activityButton(actionLabel).click()
+
+    if (extra?.interviewDate) {
+      await this.interviewDateInput.fill(extra.interviewDate)
+    }
+
+    await this.confirmActivityButton.click()
   }
 }
