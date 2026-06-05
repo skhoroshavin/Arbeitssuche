@@ -46,6 +46,7 @@ export function TemplateSelector({
           <button
             key={opt.value}
             type="button"
+            aria-label={`Lebenslauf-Vorlage ${opt.label}`}
             title={`${opt.label} - ${opt.description}`}
             disabled={isPending}
             onClick={() => onSelect(opt.value)}

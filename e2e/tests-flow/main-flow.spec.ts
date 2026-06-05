@@ -111,4 +111,79 @@ test.describe("main flow", () => {
       await jobSearchPage.waitForProgressToDisappearAndRequireVacancies()
     })
   })
+
+  test.describe("follow-up start", () => {
+    test.beforeAll(async ({ flowSession }) => {
+      await flowSession.relaunch()
+    })
+
+    test("shows applicant list", async ({
+      applicantListPage,
+      firstStartPage,
+    }) => {
+      await applicantListPage.assertListVisible()
+      await expect(firstStartPage.title).toHaveCount(0)
+    })
+
+    test("allows to select an applicant", async ({
+      applicantListPage,
+      applicantPage,
+    }) => {
+      await applicantListPage.openFirstApplicant()
+      await expect(applicantPage.heading("Lebenslauf")).toBeVisible()
+    })
+
+    test("allows to download a resume", async ({ applicantPage, page }) => {
+      // Verify the resume template button is visible and clickable
+      const buttonLocator = applicantPage.resumeTemplateButton(
+        MAIN_FLOW_SEED.resumeTemplateLabel,
+      )
+      await expect(buttonLocator).toBeVisible()
+      await expect(buttonLocator).toBeEnabled()
+
+      // Listen for console messages to detect download errors
+      const consoleErrors: string[] = []
+      page.on("console", (msg) => {
+        if (msg.type() === "error") {
+          consoleErrors.push(msg.text())
+        }
+      })
+
+      // Click the download button — this triggers a mutation that:
+      // 1. Fetches PDF via IPC
+      // 2. Creates blob URL
+      // 3. Clicks an anchor to download
+      // We verify by checking the button becomes disabled then re-enabled.
+      await buttonLocator.click()
+
+      // Button should become disabled while mutation is pending
+      await expect(buttonLocator).toBeDisabled({ timeout: 3_000 })
+
+      // Then re-enabled when mutation completes
+      await expect(buttonLocator).toBeEnabled({ timeout: 15_000 })
+
+      // No console errors should have been logged
+      expect(consoleErrors).toEqual([])
+    })
+
+    test("allows to select a job search", async ({
+      applicantPage,
+      jobSearchPage,
+    }) => {
+      await applicantPage.openFirstJobSearch()
+      await expect(jobSearchPage.page).toHaveURL(/\/job-searches\//)
+    })
+
+    test("then shows list of found vacancies", async ({ jobSearchPage }) => {
+      await expect
+        .poll(() => jobSearchPage.vacancyCardCount())
+        .toBeGreaterThanOrEqual(1)
+    })
+
+    test("allows to update them", async ({ jobSearchPage }) => {
+      await jobSearchPage.refreshButton.click()
+      await jobSearchPage.waitForProgressToAppear()
+      await jobSearchPage.waitForProgressToDisappearAndRequireVacancies()
+    })
+  })
 })

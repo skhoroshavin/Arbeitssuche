@@ -1,5 +1,4 @@
-import type { Locator, Page } from "@playwright/test"
-import { expect } from "@playwright/test"
+import { expect, type Download, type Locator, type Page } from "@playwright/test"
 
 export class ApplicantPage {
   readonly page: Page
@@ -186,6 +185,38 @@ export class ApplicantPage {
     for (const source of sources) {
       await expect(this.sourceButton(source)).toHaveClass(/bg-zinc-700/)
     }
+  }
+
+  resumeTemplateButton(name: string): Locator {
+    return this.page.getByRole("button", {
+      name: `Lebenslauf-Vorlage ${name}`,
+      exact: true,
+    })
+  }
+
+  async downloadResumeTemplate(name: string): Promise<Download> {
+    // CDP session might not be available, so try and ignore errors
+    try {
+      const cdp = await this.page.context().newCDPSession(this.page)
+      await cdp
+        .send("Browser.setDownloadBehavior", {
+          behavior: "allow",
+          downloadPath: "/tmp",
+        })
+        .catch(() => {})
+    } catch {
+      // CDP not available in Electron
+    }
+
+    const [download] = await Promise.all([
+      this.page.waitForEvent("download", { timeout: 10_000 }),
+      this.resumeTemplateButton(name).click(),
+    ])
+    return download
+  }
+
+  async openFirstJobSearch() {
+    await this.page.locator("div[role='button'].cursor-pointer").first().click()
   }
 }
 
