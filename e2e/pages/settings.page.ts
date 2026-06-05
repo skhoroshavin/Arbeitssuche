@@ -112,6 +112,9 @@ export class SettingsPage {
   }
 
   async expectTestFailure() {
-    await expect(this.testResult()).toBeVisible()
+    // Verify a test result appeared (proves the button triggered an API call)
+    // Note: OpenRouter models endpoint returns 200 for any key → shows "Gültig"
+    // Maps API rejects invalid keys → shows "Ungültig"
+    await expect(this.testResult()).toHaveText(/Gültig|Ungültig/)
   }
 }

@@ -105,12 +105,18 @@ export function useDownloadResume(id: string, applicantName: string) {
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
+      a.style.display = "none"
       const filename = applicantName
         ? `${applicantName.toLowerCase().replaceAll(" ", "_")}_lebenslauf.pdf`
         : `${id}_lebenslauf.pdf`
       a.download = filename
+      document.body.append(a)
       a.click()
-      URL.revokeObjectURL(url)
+      // Keep blob URL alive while download starts
+      setTimeout(() => {
+        a.remove()
+        URL.revokeObjectURL(url)
+      }, 1000)
     },
   })
 }
